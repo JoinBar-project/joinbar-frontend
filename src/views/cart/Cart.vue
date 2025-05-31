@@ -1,4 +1,3 @@
-<!-- Cart.vue - 純 CSS 變數版本 -->
 <template>
   <div class="cart-container">
     <h2>購物車</h2>
@@ -11,8 +10,8 @@
     <div v-else>
       <div v-if="cartItems.length === 0" class="empty-cart">
         <h3>購物車是空的</h3>
-        <p class="empty-description">快去挑選喜歡的商品吧！</p>
-        <button class="shop-btn" @click="goShopping">開始購物</button>
+        <p class="empty-description">快去尋找喜歡的活動吧！</p>
+        <button class="shop-btn" @click="goShopping">前往活動頁面</button>
       </div>
 
       <div v-else>
