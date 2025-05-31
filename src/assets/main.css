@@ -1,35 +1,19 @@
 @import './base.css';
 
-#app {
-  max-width: 1280px;
-  margin: 0 auto;
-  padding: 2rem;
-  font-weight: normal;
+/* 全站通用樣式 */
+
+:root {
+  --color-primary-red: #860914;
+  --color-primary-orange: #daa258;
+  --color-secondary-pink: #decdd5;
+  --color-secondary-green: #afb18c;
+  --color-black: #3A3435;
 }
 
-a,
-.green {
-  text-decoration: none;
-  color: hsla(160, 100%, 37%, 1);
-  transition: 0.4s;
-  padding: 3px;
-}
-
-@media (hover: hover) {
-  a:hover {
-    background-color: hsla(160, 100%, 37%, 0.2);
-  }
-}
-
-@media (min-width: 1024px) {
-  body {
-    display: flex;
-    place-items: center;
-  }
-
-  #app {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    padding: 0 2rem;
-  }
-}
+/* :root {
+  --color-primary-red: #d4624e;
+  --color-primary-orange: #f2bf56;
+  --color-secondary-pink: #f4dad9;
+  --color-secondary-green: #d0de80;
+  --color-black: #292929;
+} */
