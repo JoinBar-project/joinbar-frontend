@@ -87,7 +87,7 @@ const goToPayment = () => {
 }
 
 const goShopping = () => {
-  router.push('/')
+  router.push('/events')
 }
 </script>
 
