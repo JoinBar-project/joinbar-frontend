@@ -21,8 +21,9 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 20px 40px;
+  padding: 1rem 2rem;
   background-color: #bbbbbb;
+  color: white;
   height: 100px;
 }
 
@@ -34,12 +35,28 @@
 .nav-links {
   list-style: none;
   display: flex;
-  gap: 30px;
+  gap: 1.5rem;
+  align-items: center;
+  height: 100%;
+}
+
+.nav-links li {
+  display: flex;
+  align-items: center;
+  height: 100%;
 }
 
 .nav-links a {
-  font-size: 18px;
   color: white;
   text-decoration: none;
+  display: flex;
+  align-items: center;
+  height: 100%;
+}
+
+.cart-icon {
+  height: 55%;
+  width: auto;
+  display: block;
 }
 </style>
