@@ -21,7 +21,7 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 1rem 2rem;
+  padding: 16px 32px;
   background-color: #bbbbbb;
   color: white;
   height: 100px;
@@ -35,7 +35,7 @@
 .nav-links {
   list-style: none;
   display: flex;
-  gap: 1.5rem;
+  gap: 24px;
   align-items: center;
   height: 100%;
 }
