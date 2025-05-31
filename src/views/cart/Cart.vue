@@ -1,3 +1,4 @@
+<!-- Cart.vue - 純 CSS 變數版本 -->
 <template>
   <div class="cart-container">
     <h2>購物車</h2>
@@ -10,8 +11,8 @@
     <div v-else>
       <div v-if="cartItems.length === 0" class="empty-cart">
         <h3>購物車是空的</h3>
-        <p class="empty-description">快去選擇喜歡的活動吧！</p>
-        <button class="shop-btn" @click="goShopping">前往活動頁面</button>
+        <p class="empty-description">快去挑選喜歡的商品吧！</p>
+        <button class="shop-btn" @click="goShopping">開始購物</button>
       </div>
 
       <div v-else>
@@ -86,7 +87,7 @@ const goToPayment = () => {
 }
 
 const goShopping = () => {
-  router.push('/events')
+  router.push('/')
 }
 </script>
 
@@ -103,7 +104,7 @@ const goShopping = () => {
 
 .cart-container h2 {
   color: var(--color-black);
-  margin-bottom: 2rem;
+  margin-bottom: 32px;
 }
 
 .loading-box {
@@ -247,9 +248,10 @@ const goShopping = () => {
 }
 
 .checkout-btn:hover {
-  background-color: var(--color-black);
+  background-color: var(--color-secondary-pink);
 }
 
+/* 空購物車樣式 */
 .empty-cart {
   text-align: center;
   padding: 80px 40px;
@@ -257,20 +259,20 @@ const goShopping = () => {
 }
 
 .empty-icon {
-  font-size: 5rem;
-  margin-bottom: 1.5rem;
+  font-size: 80px;
+  margin-bottom: 24px;
   opacity: 0.6;
 }
 
 .empty-cart h3 {
-  font-size: 1.5rem;
-  margin-bottom: 1rem;
+  font-size: 24px;
+  margin-bottom: 16px;
   color: var(--color-black);
 }
 
 .empty-description {
-  font-size: 1rem;
-  margin-bottom: 2rem;
+  font-size: 16px;
+  margin-bottom: 32px;
   color: #666;
   line-height: 1.5;
 }
