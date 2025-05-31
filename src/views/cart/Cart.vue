@@ -1,3 +1,4 @@
+<!-- Cart.vue - 純 CSS 變數版本 -->
 <template>
   <div class="cart-container">
     <h2>購物車</h2>
@@ -68,15 +69,11 @@ onMounted(() => {
 })
 
 const cartItems = computed(() => cart.items)
-
 const removeItem = (id) => cart.removeItem(id)
-
 const calcSubtotal = (item) => (item.price * item.quantity).toLocaleString()
-
 const totalPrice = computed(() =>
   cartItems.value.reduce((acc, item) => acc + item.price * item.quantity, 0).toLocaleString(),
 )
-
 const goToPayment = () => {
   router.push('/payment')
 }
@@ -93,10 +90,15 @@ const goToPayment = () => {
   font-size: 15px;
 }
 
+.cart-container h2 {
+  color: var(--color-black);
+  margin-bottom: 2rem;
+}
+
 .loading-box {
   text-align: center;
   padding: 48px 0;
-  color: #3A3435;
+  color: var(--color-black);
 }
 
 .spinner {
@@ -104,7 +106,7 @@ const goToPayment = () => {
   width: 40px;
   height: 40px;
   border: 4px solid #eee;
-  border-top: 4px solid #860914;
+  border-top: 4px solid var(--color-primary-red);
   border-radius: 50%;
   animation: spin 0.8s linear infinite;
 }
@@ -120,6 +122,7 @@ const goToPayment = () => {
   padding: 16px 0;
   font-weight: bold;
   border-bottom: 1px solid #ddd;
+  color: var(--color-black);
 }
 
 .cart-header > div {
@@ -171,6 +174,7 @@ const goToPayment = () => {
   font-size: 16px;
   font-weight: 600;
   margin: 0;
+  color: var(--color-black);
 }
 
 .qty-box {
@@ -180,21 +184,6 @@ const goToPayment = () => {
   gap: 8px;
 }
 
-.qty-box button {
-  width: 32px;
-  height: 32px;
-  border: 1px solid #bbb;
-  border-radius: 4px;
-  background-color: white;
-  font-size: 18px;
-  cursor: pointer;
-  transition: background-color 0.2s;
-}
-
-.qty-box button:hover {
-  background-color: #eee;
-}
-
 .qty-box span {
   width: 36px;
   text-align: center;
@@ -202,8 +191,8 @@ const goToPayment = () => {
 }
 
 .actions button {
-  border: 1px solid #860914;
-  color: #860914;
+  border: 1px solid var(--color-primary-red);
+  color: var(--color-primary-red);
   background: white;
   padding: 6px 12px;
   font-size: 13px;
@@ -213,7 +202,7 @@ const goToPayment = () => {
 }
 
 .actions button:hover {
-  background-color: #860914;
+  background-color: var(--color-primary-red);
   color: white;
 }
 
@@ -227,10 +216,16 @@ const goToPayment = () => {
 
 .total-label {
   font-size: 19px;
+  color: var(--color-black);
+  margin: 0;
+}
+
+.total-label strong {
+  color: var(--color-black);
 }
 
 .checkout-btn {
-  background-color: #860914;
+  background-color: var(--color-primary-red);
   color: white;
   border: none;
   padding: 10px 24px;
@@ -241,6 +236,6 @@ const goToPayment = () => {
 }
 
 .checkout-btn:hover {
-  background-color: #860914;
+  background-color: var(--color-secondary-pink);
 }
 </style>
