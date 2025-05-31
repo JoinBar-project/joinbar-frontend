@@ -1,4 +1,3 @@
-<!-- Cart.vue - 純 CSS 變數版本 -->
 <template>
   <div class="cart-container">
     <h2>購物車</h2>
@@ -9,44 +8,52 @@
     </div>
 
     <div v-else>
-      <div class="cart-header">
-        <div>商品</div>
-        <div>單價</div>
-        <div>數量</div>
-        <div>小計</div>
-        <div>操作</div>
+      <div v-if="cartItems.length === 0" class="empty-cart">
+        <h3>購物車是空的</h3>
+        <p class="empty-description">快去選擇喜歡的活動吧！</p>
+        <button class="shop-btn" @click="goShopping">前往活動頁面</button>
       </div>
 
-      <div v-for="item in cartItems" :key="item.id" class="cart-row">
-        <div class="product">
-          <img
-            class="product-img"
-            :src="item.image || 'https://placehold.co/80x80?text=No+Image'"
-            alt="活動圖片"
-          />
-          <div class="product-info">
-            <p class="product-name">{{ item.name }}</p>
+      <div v-else>
+        <div class="cart-header">
+          <div>商品</div>
+          <div>單價</div>
+          <div>數量</div>
+          <div>小計</div>
+          <div>操作</div>
+        </div>
+
+        <div v-for="item in cartItems" :key="item.id" class="cart-row">
+          <div class="product">
+            <img
+              class="product-img"
+              :src="item.image || 'https://placehold.co/80x80?text=No+Image'"
+              alt="活動圖片"
+            />
+            <div class="product-info">
+              <p class="product-name">{{ item.name }}</p>
+            </div>
+          </div>
+
+          <div class="price">${{ item.price }}</div>
+
+          <div class="qty-box">
+            <span>{{ item.quantity }}</span>
+          </div>
+
+          <div class="subtotal">${{ calcSubtotal(item) }}</div>
+
+          <div class="actions">
+            <button @click="removeItem(item.id)">刪除</button>
           </div>
         </div>
 
-        <div class="price">${{ item.price }}</div>
-
-        <div class="qty-box">
-          <span>{{ item.quantity }}</span>
+        <div class="total-bar">
+          <p class="total-label">
+            總金額：<strong>${{ totalPrice }}</strong>
+          </p>
+          <button class="checkout-btn" @click="goToPayment">去買單</button>
         </div>
-
-        <div class="subtotal">${{ calcSubtotal(item) }}</div>
-
-        <div class="actions">
-          <button @click="removeItem(item.id)">刪除</button>
-        </div>
-      </div>
-
-      <div class="total-bar">
-        <p class="total-label">
-          總金額：<strong>${{ totalPrice }}</strong>
-        </p>
-        <button class="checkout-btn" @click="goToPayment">去買單</button>
       </div>
     </div>
   </div>
@@ -76,6 +83,10 @@ const totalPrice = computed(() =>
 )
 const goToPayment = () => {
   router.push('/payment')
+}
+
+const goShopping = () => {
+  router.push('/events')
 }
 </script>
 
@@ -236,6 +247,47 @@ const goToPayment = () => {
 }
 
 .checkout-btn:hover {
+  background-color: var(--color-black);
+}
+
+.empty-cart {
+  text-align: center;
+  padding: 80px 40px;
+  color: var(--color-black);
+}
+
+.empty-icon {
+  font-size: 5rem;
+  margin-bottom: 1.5rem;
+  opacity: 0.6;
+}
+
+.empty-cart h3 {
+  font-size: 1.5rem;
+  margin-bottom: 1rem;
+  color: var(--color-black);
+}
+
+.empty-description {
+  font-size: 1rem;
+  margin-bottom: 2rem;
+  color: #666;
+  line-height: 1.5;
+}
+
+.shop-btn {
+  background-color: var(--color-primary-red);
+  color: white;
+  border: none;
+  padding: 12px 32px;
+  font-size: 16px;
+  font-weight: 600;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.shop-btn:hover {
   background-color: var(--color-secondary-pink);
 }
 </style>
