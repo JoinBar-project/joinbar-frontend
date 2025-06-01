@@ -416,6 +416,7 @@ function getCurrentLocation() {
   color: #ffffff;
   padding: 8px;
   margin: 10px 0 5px 0px;
+  border-radius: 0px 5px 5px 0px;
   border: 0px;
   cursor: pointer;
 }
@@ -435,6 +436,27 @@ function getCurrentLocation() {
 }
 .place-now:hover {
   background-color: #860914;
+}
+.suggestions-list {
+  position: absolute;
+  top:100%;
+  left: 0;
+  right: 0;
+  z-index: 10;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  background: white;
+  border: 1px solid #ddd;
+  max-height: 200px;
+  overflow-y: auto;
+}
+.suggestions-list li {
+  padding: 8px;
+  cursor: pointer;
+}
+.suggestions-list li:hover {
+  background: #f0f0f0;
 }
 
 </style>
