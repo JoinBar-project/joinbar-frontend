@@ -40,6 +40,7 @@ const mapContainer = ref(null)
 const isSearching = ref(false)
 
 let map
+let markers = []
 let infoWindow
 let autocompleteService = null
 let placesService
@@ -101,6 +102,32 @@ function initMap(center, shouldGetCurrent = false) {
     center,
     zoom: 12,
 
+// 允許直接滾輪縮放、不顯示提示
+    gestureHandling: 'greedy',
+    restriction: {
+      latLngBounds: {
+        north: 25.5,
+        south: 21.5,
+        east: 122.2,
+        west: 119.3
+      },
+      strictBounds: false
+    },
+    mapTypeControl: false,
+    zoomControl: false,
+    scaleControl: false,
+    streetViewControl: false,
+    rotateControl: false,
+    fullscreenControl: false,
+
+    // 把地圖上預設的商家、餐廳、學校、醫院等圖示 (poi, Point of Interest) 都隱藏掉
+    styles: [
+      {
+        featureType: 'poi',
+        elementType: 'labels',
+        stylers: [{ visibility: 'off' }]
+      }
+    ]
   })
 
   infoWindow = new google.maps.InfoWindow()
@@ -114,6 +141,41 @@ function initMap(center, shouldGetCurrent = false) {
   }
 }
 
+function searchNearbyBars(location) {
+  if (!location || typeof location.lat !== 'number' || typeof location.lng !== 'number') {
+  console.error('searchNearbyBars: 無效的位置', location)
+  return
+}
+  clearMarkers()
+
+  const request = {
+    location,
+    radius: 1500, 
+    type: ['bar']
+  }
+
+  placesService.nearbySearch(request, (results, status) => {
+    if (status === google.maps.places.PlacesServiceStatus.OK && results.length > 0) {
+      const bounds = new google.maps.LatLngBounds()
+      results.forEach(place => {
+        if (!place.geometry || !place.geometry.location) return
+
+        const marker = new google.maps.Marker({
+          map,
+          position: place.geometry.location,
+          title: place.name
+        })
+
+        markers.push(marker)
+        bounds.extend(place.geometry.location)
+      })
+
+      map.fitBounds(bounds)
+    } else {
+      console.warn('附近找不到酒吧，狀態：', status)
+    }
+  })
+}
 
 function requestGeolocationPermission() {
   if (!navigator.geolocation) {
