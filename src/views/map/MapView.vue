@@ -141,6 +141,7 @@ function initMap(center, shouldGetCurrent = false) {
   }
 }
 
+// 搜尋附近的「酒吧」並加上 marker
 function searchNearbyBars(location) {
   if (!location || typeof location.lat !== 'number' || typeof location.lng !== 'number') {
   console.error('searchNearbyBars: 無效的位置', location)
@@ -164,6 +165,23 @@ function searchNearbyBars(location) {
           map,
           position: place.geometry.location,
           title: place.name
+        })
+
+        marker.addListener('click', () => {
+          placesService.getDetails({
+            placeId: place.place_id,
+            fields: ['name', 'formatted_address', 'rating', 'website']
+          }, (details, status) => {
+            if (status === google.maps.places.PlacesServiceStatus.OK) {
+              infoWindow.setContent(`
+                <strong>${details.name}</strong><br/>
+                地址：${details.formatted_address}<br/>
+                評分：${details.rating}<br/>
+                ${details.website ? `<a href="${details.website}" target="_blank">網站</a>` : ''}
+              `)
+              infoWindow.open(map, marker)
+            }
+          })
         })
 
         markers.push(marker)
@@ -194,6 +212,29 @@ function requestGeolocationPermission() {
   )
 }
 
+// 搜尋 - 防抖機制
+const onInputChange= debounce(() =>{
+  if (!autocompleteService || !searchQuery.value) {
+    suggestions.value = []
+    return
+  }
+
+  autocompleteService.getPlacePredictions(
+    {
+      input: searchQuery.value,
+      componentRestrictions: { country: 'tw' },
+      location: map.getCenter(), 
+      radius: 18000
+    },
+    (predictions, status) => {
+      if (status === google.maps.places.PlacesServiceStatus.OK && predictions) {
+        suggestions.value = predictions
+      } else {
+        suggestions.value = []
+      }
+    }
+  )
+}, 300)
 
 function selectSuggestion(suggestion) {
   searchQuery.value = suggestion.description
