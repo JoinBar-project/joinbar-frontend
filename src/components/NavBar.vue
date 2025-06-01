@@ -21,9 +21,8 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 16px 32px;
+  padding: 20px 40px;
   background-color: #bbbbbb;
-  color: white;
   height: 100px;
 }
 
@@ -35,7 +34,7 @@
 .nav-links {
   list-style: none;
   display: flex;
-  gap: 24px;
+  gap: 30px;
   align-items: center;
   height: 100%;
 }
@@ -47,6 +46,7 @@
 }
 
 .nav-links a {
+  font-size: 18px;
   color: white;
   text-decoration: none;
   display: flex;
