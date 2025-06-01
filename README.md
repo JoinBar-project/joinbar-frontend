@@ -1,35 +1,5 @@
-# JoinBar-Frontend
+### JoinBar｜想喝就揪吧！
 
-This template should help get you started developing with Vue 3 in Vite.
-
-## Recommended IDE Setup
-
-[VSCode](https://code.visualstudio.com/) + [Volar](https://marketplace.visualstudio.com/items?itemName=Vue.volar) (and disable Vetur).
-
-## Customize configuration
-
-See [Vite Configuration Reference](https://vite.dev/config/).
-
-## Project Setup
-
-```sh
-npm install
-```
-
-### Compile and Hot-Reload for Development
-
-```sh
-npm run dev
-```
-
-### Compile and Minify for Production
-
-```sh
-npm run build
-```
-
-### Run Unit Tests with [Vitest](https://vitest.dev/)
-
-```sh
-npm run test:unit
-```
+🗺️ 🥂JoinBar 是一個以酒吧為主題的社交互動平台，整合了地圖搜尋、活動建立與購買、評論分享等功能。  
+使用者可以輕鬆尋找附近酒吧、舉辦或參與酒吧相關活動，並將有興趣的官方活動加入購物車，一併完成報名與結帳付款，體驗從探索到參與的一站式流程。
+此外，我們也提供平台專屬的「酒友卡」系統，用戶可透過訂閱解鎖，憑卡在特約店家享有專屬優惠，例如免費酒精飲品或折扣活動，讓喝酒更有趣、更划算！
