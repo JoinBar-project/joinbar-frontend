@@ -1,9 +1,7 @@
 import { defineStore } from 'pinia'
-import { ref, watch } from 'vue'
+import { ref } from 'vue'
 
 export const useCartStore = defineStore('cart', () => {
-  const items = ref([])
-
   const sampleProducts = [
     {
       id: 1,
@@ -23,27 +21,7 @@ export const useCartStore = defineStore('cart', () => {
     },
   ]
 
-  const loadFromStorage = () => {
-    try {
-      const saved = localStorage.getItem('cart')
-      items.value = saved ? JSON.parse(saved) : sampleProducts
-    } catch (err) {
-      console.error('載入購物車失敗:', err)
-      items.value = sampleProducts
-    }
-  }
-
-  watch(
-    items,
-    (val) => {
-      try {
-        localStorage.setItem('cart', JSON.stringify(val))
-      } catch (err) {
-        console.error('儲存購物車失敗:', err)
-      }
-    },
-    { deep: true },
-  )
+  const items = ref(sampleProducts)
 
   const addItem = (item) => {
     const existing = items.value.find((i) => i.id === item.id)
@@ -61,5 +39,7 @@ export const useCartStore = defineStore('cart', () => {
 
   const clearCart = () => (items.value = [])
 
-  return { items, loadFromStorage, addItem, removeItem, clearCart }
+  return { items, addItem, removeItem, clearCart }
+}, {
+  persist: true
 })
