@@ -44,7 +44,7 @@ let markers = []
 let infoWindow
 let autocompleteService = null
 let placesService
-
+let currentMarker
 
 const defaultCenter = { lat: 25.0375, lng: 121.5637 }
 
@@ -144,56 +144,64 @@ function initMap(center, shouldGetCurrent = false) {
 // 搜尋附近的「酒吧」並加上 marker
 function searchNearbyBars(location) {
   if (!location || typeof location.lat !== 'number' || typeof location.lng !== 'number') {
-  console.error('searchNearbyBars: 無效的位置', location)
-  return
-}
+    console.error('searchNearbyBars: 無效的位置', location)
+    return
+  }
+
   clearMarkers()
 
   const request = {
     location,
-    radius: 1500, 
+    radius: 1500,
     type: ['bar']
   }
 
   placesService.nearbySearch(request, (results, status) => {
-    if (status === google.maps.places.PlacesServiceStatus.OK && results.length > 0) {
-      const bounds = new google.maps.LatLngBounds()
-      results.forEach(place => {
-        if (!place.geometry || !place.geometry.location) return
+    if (status !== google.maps.places.PlacesServiceStatus.OK || results.length === 0) {
+      console.warn('附近找不到酒吧，狀態：', status)
+      return
+    }
 
-        const marker = new google.maps.Marker({
-          map,
-          position: place.geometry.location,
-          title: place.name
-        })
+    const bounds = new google.maps.LatLngBounds()
 
-        marker.addListener('click', () => {
-          placesService.getDetails({
+    results.forEach(place => {
+      if (!place.geometry || !place.geometry.location) return
+
+      const marker = new google.maps.Marker({
+        map,
+        position: place.geometry.location,
+        title: place.name
+      })
+
+      marker.addListener('click', () => {
+        placesService.getDetails(
+          {
             placeId: place.place_id,
             fields: ['name', 'formatted_address', 'rating', 'website']
-          }, (details, status) => {
+          },
+          (details, status) => {
             if (status === google.maps.places.PlacesServiceStatus.OK) {
-              infoWindow.setContent(`
+              const content = `
                 <strong>${details.name}</strong><br/>
                 地址：${details.formatted_address}<br/>
                 評分：${details.rating}<br/>
                 ${details.website ? `<a href="${details.website}" target="_blank">網站</a>` : ''}
-              `)
+              `
+              infoWindow.setContent(content)
               infoWindow.open(map, marker)
             }
-          })
-        })
-
-        markers.push(marker)
-        bounds.extend(place.geometry.location)
+          }
+        )
       })
 
-      map.fitBounds(bounds)
-    } else {
-      console.warn('附近找不到酒吧，狀態：', status)
-    }
+      markers.push(marker)
+      bounds.extend(place.geometry.location)
+    })
+
+    map.fitBounds(bounds)
   })
 }
+
 
 function requestGeolocationPermission() {
   if (!navigator.geolocation) {
