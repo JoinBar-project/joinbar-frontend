@@ -315,6 +315,12 @@ function searchPlaceByText(query) {
       })
 
       map.fitBounds(bounds)
+       // 限制 zoom 不要放太大
+      const listener = google.maps.event.addListenerOnce(map, 'bounds_changed', () => {
+        if (map.getZoom() > 15) {
+          map.setZoom(15)
+        }
+      })
     }
   )
 }
