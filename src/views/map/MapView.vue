@@ -1,4 +1,23 @@
 <template>
+  <div class="search-panel">
+    <div class="input-group">
+      <input
+        type="text"
+        id="searchInput" 
+        class="input search-input"
+        v-model="searchQuery"
+        placeholder="輸入地點名稱"
+        @input="onInputChange"
+      />
+      <button @click="handleSearch"  class="btn bg-[#decdd5] hover:bg-[#860914] text-white rounded-r-lg font-normal search-bt">🔍 搜尋</button>
+      <ul v-if="suggestions.length" class="suggestions-list">
+        <li v-for="(suggestion, index) in suggestions" :key="index" @click="selectSuggestion(suggestion)">
+          🔍 {{ suggestion.description }}
+        </li>
+      </ul>
+    </div>
+      <button @click="getCurrentLocation" class="btn font-normal place-now">📍 顯示我目前位置</button>
+  </div>
 
   <!-- loading -->
   <div v-if="isSearching" class="custom-loading">
@@ -259,6 +278,60 @@ function getCurrentLocation() {
   width: 100%;
   height: 600px;
   position: relative;
+}
+.search-panel{
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  position: absolute;
+  top: 120px;
+  left: 30px;
+  background-color: rgba(255, 255, 255,0.5);
+  z-index: 10;
+  padding: 10px;
+  border-radius: 8px;
+  box-shadow: 0 2px 6px rgba(48, 21, 21, 0.2);
+} 
+.input-group{
+  display: flex;
+  position: relative;
+  margin-left: 10px;
+}
+.search-input{
+  height: 40px;
+  padding: 8px 12px;
+  font-size: 16px;
+  margin-top: 10px;
+  border: 1px solid #decdd5;
+  border-right: none;
+  border-radius: 5px 0 0 5px;
+  outline: none;
+  flex: 1;
+}
+.search-bt{
+  background-color: #decdd5;
+  color: #ffffff;
+  padding: 8px;
+  margin: 10px 0 5px 0px;
+  border: 0px;
+  cursor: pointer;
+}
+.search-bt:hover{
+  background-color: #860914;
+}
+.place-now {
+  padding: 8px 12px;
+  margin: 10px;
+  height: 40px;
+  border: none;
+  background-color: #decdd5;
+  color: white;
+  border-radius: 5px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.place-now:hover {
+  background-color: #860914;
 }
 
 </style>
