@@ -1,7 +1,7 @@
 <script setup>
 import { ref } from 'vue'
 import { defineEmits } from 'vue'
-
+import Hashtag from './Hashtag.vue'
 const emit = defineEmits(['submit'])
 
 const eventName = ref('')
@@ -46,10 +46,7 @@ function handleSubmit() {
             <label for="event-time">參加人數</label>
             <input type="number" id="event-people" v-model="eventPeople" min="1" step="1" max="30"/>
           </div>
-          <div class="form-row">
-            <label for="event-hastags">特色標籤</label>
-            <input type="text" id="event-hastags" v-model="eventHashtags" />
-          </div>
+          <Hashtag v-model="eventHashtags" />
         </div>
         <div class="form-right"></div>
       </div>
