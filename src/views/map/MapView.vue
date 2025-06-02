@@ -363,7 +363,7 @@ function clearMarkers() {
 }
 
 function getCurrentLocation() {
-  console.log('Getting current location...')
+  console.log('取得目前位置...')
   if (!navigator.geolocation) {
     alert('你的瀏覽器不支援定位功能')
     return
@@ -449,7 +449,6 @@ function getCurrentLocation() {
 .search-input{
   height: 40px;
   padding: 8px 12px;
-  font-size: 16px;
   margin-top: 10px;
   border: 1px solid #decdd5;
   border-right: none;
@@ -459,8 +458,8 @@ function getCurrentLocation() {
 }
 .search-bt{
   background-color: #decdd5;
-  color: #ffffff;
-  padding: 8px;
+  color: #3A3435;
+  padding: 8px 12px;
   margin: 10px 0 5px 0px;
   border-radius: 0px 5px 5px 0px;
   border: 0px;
@@ -468,6 +467,7 @@ function getCurrentLocation() {
 }
 .search-bt:hover{
   background-color: #860914;
+  color: #ffffff;
 }
 .place-now {
   padding: 8px 12px;
@@ -475,13 +475,14 @@ function getCurrentLocation() {
   height: 40px;
   border: none;
   background-color: #decdd5;
-  color: white;
+  color: #3A3435;
   border-radius: 5px;
   cursor: pointer;
   white-space: nowrap;
 }
 .place-now:hover {
   background-color: #860914;
+  color: #ffffff;
 }
 .suggestions-list {
   position: absolute;
