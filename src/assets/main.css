@@ -1,4 +1,5 @@
-@import './base.css';
+@import "tailwindcss";
+@plugin "daisyui";
 
 /* 全站通用樣式 */
 
