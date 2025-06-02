@@ -1,5 +1,5 @@
 <script setup>
-import FormModal from './FormModal.vue'
+import FormModal from '@/components/events/FormModal.vue'
 </script>
 
 <template>
