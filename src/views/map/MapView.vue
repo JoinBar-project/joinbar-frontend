@@ -37,7 +37,7 @@ const suggestions = ref([])
 const mapContainer = ref(null)
 
 // 列表消失
-const searchArea = ref(null)
+const inputArea = ref(null)
 
 // 定義 loading 狀態
 const isSearching = ref(false)
@@ -85,7 +85,6 @@ onMounted(async () => {
     initMap(defaultCenter)
 
     navigator.geolocation.getCurrentPosition(
-
     // 如果成功，可存取使用者位置；失敗就用預設的 defaultCenter
       (position) => {
         const userLocation = {
@@ -212,6 +211,19 @@ function searchNearbyBars(location) {
   })
 }
 
+function handleClickOutside(event) {
+  if (inputArea.value && !inputArea.value.contains(event.target)) {
+    suggestions.value = []
+  }
+}
+
+onMounted(() => {
+  document.addEventListener('click', handleClickOutside)
+})
+
+onBeforeUnmount(() => {
+  document.removeEventListener('click', handleClickOutside)
+})
 
 function requestGeolocationPermission() {
   if (!navigator.geolocation) {
