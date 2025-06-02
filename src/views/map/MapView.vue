@@ -1,6 +1,6 @@
 <template>
   <div class="search-panel">
-    <div class="input-group">
+    <div ref="inputArea" class="input-group">
       <input
         type="text"
         id="searchInput" 
@@ -29,12 +29,15 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, onBeforeUnmount } from 'vue'
 import debounce from 'lodash/debounce'
 
 const searchQuery = ref('')
 const suggestions = ref([])
 const mapContainer = ref(null)
+
+// 列表消失
+const searchArea = ref(null)
 
 // 定義 loading 狀態
 const isSearching = ref(false)
