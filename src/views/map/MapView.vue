@@ -40,6 +40,7 @@ const mapContainer = ref(null)
 const isSearching = ref(false)
 
 let map
+// 儲存所有地圖上的 marker 的陣列
 let markers = []
 let infoWindow
 let autocompleteService = null
@@ -57,7 +58,7 @@ function loadGoogleMapsScript() {
     }
 
     const script = document.createElement('script')
-    script.src = `https://maps.googleapis.com/maps/api/js?key=${import.meta.env.VITE_GOOGLE_MAPS_API_KEY}&libraries=places`
+    script.src = `https://maps.googleapis.com/maps/api/js?key=${import.meta.env.VITE_GOOGLE_MAPS_API_KEY}&libraries=places,marker&v=beta&solution_channel=GMP_CCS_complexmarkers_v3`
     script.async = true
     script.defer = true
     script.onload = () => {
@@ -77,9 +78,12 @@ onMounted(async () => {
   try {
     await loadGoogleMapsScript()
 
+    // 一進入地圖，先用預設地點初始化地圖
+    initMap(defaultCenter)
+
     navigator.geolocation.getCurrentPosition(
 
-    // 如果成功，使用使用者位置；失敗就 fallback 用預設的 defaultCenter
+    // 如果成功，可存取使用者位置；失敗就用預設的 defaultCenter
       (position) => {
         const userLocation = {
           lat: position.coords.latitude,
@@ -102,7 +106,10 @@ function initMap(center, shouldGetCurrent = false) {
     center,
     zoom: 12,
 
-// 允許直接滾輪縮放、不顯示提示
+    // 改成我的 Map ID
+    mapId:'de9836f814a14783c63e9078',
+
+    // 允許直接滾輪縮放、不顯示提示
     gestureHandling: 'greedy',
     restriction: {
       latLngBounds: {
@@ -260,6 +267,7 @@ function handleSearch() {
 
 function searchPlaceByText(query) {
   isSearching.value = true
+  
   placesService.textSearch(
     {
       query,
@@ -284,13 +292,26 @@ function searchPlaceByText(query) {
       results.forEach((place) => {
         if (!place.geometry || !place.geometry.location) return
 
-        const marker = new google.maps.Marker({
+        const marker = new google.maps.marker.AdvancedMarkerElement({
           map,
           position: place.geometry.location,
-          title: place.name
-        })
+          title: place.name,
+          content: (() => {
+            const barMarkerWrapper = document.createElement('div')
+            // barMarkerWrapper.className = 'bar-marker-wrapper'
 
-        marker.addListener('click', () => {
+            const img = document.createElement('img')
+            img.src = '/wine.png'
+            img.style.width = '36px'
+            img.style.height = '36px'
+            img.style.transform = 'translate(-50%, -100%)'
+            img.className = 'bar-marker-img'
+
+            return img
+        })()
+      })
+
+        marker.addListener('gmp-click', () => {
           placesService.getDetails(
             {
               placeId: place.place_id,
@@ -510,4 +531,7 @@ function getCurrentLocation() {
   font-size: 20px;
   color: #333;
 }
+
+
+
 </style>
