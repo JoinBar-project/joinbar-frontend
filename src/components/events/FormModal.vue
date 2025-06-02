@@ -2,8 +2,10 @@
 import { ref } from 'vue'
 import FormCreate from './FormCreate.vue'
 import FormUpdate from './FormUpdate.vue'
+import AlertModal from '@/components/AlertModal.vue'
 
 const showForm = ref(false)
+const showAlert = ref(false)
 const formStatus = ref('create')
 
 function openForm() {
@@ -11,10 +13,15 @@ function openForm() {
 }
 
 function closeForm() {
-  const confirmClose = window.confirm('確定要關閉編輯視窗嗎？未儲存的內容將會遺失。')
-  if (confirmClose) {
-    showForm.value = false
-  }
+  showAlert.value = true
+}
+
+function handleAlertAccept() {
+  showForm.value = false
+  showAlert.value = false
+}
+function handleAlertDeny() {
+  showAlert.value = false
 }
 
 function overlayClick(event) {
@@ -40,7 +47,11 @@ function handleDelete() {
 
 <template>
   <div class="event-model-wrapper">
-
+    <AlertModal 
+      :visible="showAlert" 
+      @accept="handleAlertAccept"
+      @deny="handleAlertDeny"
+    />
     <button @click="openForm":class="['btn-open-form', formStatus === 'update' ? 'btn-edit' : 'btn-create']">
     {{ formStatus === 'create' ? '建立活動' : '編輯活動' }}
     </button>
