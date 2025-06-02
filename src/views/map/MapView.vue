@@ -81,11 +81,7 @@ onMounted(async () => {
   try {
     await loadGoogleMapsScript()
 
-    // 一進入地圖，先用預設地點初始化地圖
-    initMap(defaultCenter)
-
     navigator.geolocation.getCurrentPosition(
-    // 如果成功，可存取使用者位置；失敗就用預設的 defaultCenter
       (position) => {
         const userLocation = {
           lat: position.coords.latitude,
@@ -93,8 +89,7 @@ onMounted(async () => {
         }
         initMap(userLocation)
       },
-      (error) => {
-        console.warn('定位失敗或用戶不同意存取定位，使用預設位置', error)
+      () => {
         initMap(defaultCenter)
       }
     )
@@ -102,6 +97,7 @@ onMounted(async () => {
     console.error('地圖載入失敗：', err)
   }
 })
+
 
 function initMap(center, shouldGetCurrent = false) {
   map = new google.maps.Map(mapContainer.value, {
