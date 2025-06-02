@@ -172,10 +172,24 @@ function searchNearbyBars(location) {
     results.forEach(place => {
       if (!place.geometry || !place.geometry.location) return
 
+       // 判斷是否含「酒」或「bar」：名稱或評論內容
+      const nameMatches = /酒|bar/i.test(place.name)
+      const reviewMatches = Array.isArray(place.reviews)
+      ? place.reviews.some(review => /酒|bar/i.test(review.text))
+      : false
+
+      const isBarLike = nameMatches || reviewMatches
+
       const marker = new google.maps.Marker({
         map,
         position: place.geometry.location,
-        title: place.name
+        title: place.name,
+        icon: isBarLike
+          ? {
+              url: '/wine.png',
+              scaledSize: new google.maps.Size(32, 32) 
+            }
+          : undefined // 使用預設圖示
       })
 
       marker.addListener('click', () => {
@@ -303,14 +317,15 @@ function searchPlaceByText(query) {
       results.forEach((place) => {
         if (!place.geometry || !place.geometry.location) return
 
-        const marker = new google.maps.marker.AdvancedMarkerElement({
+        const isBarLike = /酒|bar/i.test(place.name)
+        const marker = isBarLike
+        ? new google.maps.marker.AdvancedMarkerElement({
           map,
           position: place.geometry.location,
           title: place.name,
           content: (() => {
             const barMarkerWrapper = document.createElement('div')
-            // barMarkerWrapper.className = 'bar-marker-wrapper'
-
+            
             const img = document.createElement('img')
             img.src = '/wine.png'
             img.style.width = '36px'
@@ -322,6 +337,13 @@ function searchPlaceByText(query) {
         })()
       })
 
+    : new google.maps.Marker({
+      map,
+      position: place.geometry.location,
+      title: place.name,
+    })
+
+      function attachPlaceClickListener(marker, place) {
         marker.addListener('gmp-click', () => {
           placesService.getDetails(
             {
@@ -341,6 +363,7 @@ function searchPlaceByText(query) {
             }
           )
         })
+      }
 
         markers.push(marker)
         bounds.extend(place.geometry.location)
