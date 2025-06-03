@@ -1,8 +1,11 @@
 <script setup>
-import { ref } from 'vue'
-import { defineEmits } from 'vue'
+import { ref, watch, onMounted, defineEmits } from 'vue'
+import { useEventStore } from '@/stores/event'
 import Hashtag from './Hashtag.vue'
 const emit = defineEmits(['update', 'delete'])
+
+const eventStore = useEventStore()
+const props = defineProps({ eventId: String }) // 傳 id 進來
 
 const eventName = ref('')
 const eventLocation = ref('')
@@ -11,12 +14,37 @@ const eventTime = ref('')
 const eventPeople = ref('')
 const eventHashtags = ref([])
 
+onMounted(async () => {
+  if (props.eventId) {
+    await eventStore.fetchEvent(props.eventId)
+    const data = eventStore.event
+    eventName.value = data.name
+    eventLocation.value = data.location
+    eventDate.value = data.date
+    eventTime.value = data.time
+    eventPeople.value = data.people
+    eventHashtags.value = data.hashtags
+  }
+})
+
 function handleUpdate() {
+  const payload = {
+    name: eventName.value,
+    location: eventLocation.value,
+    date: eventDate.value,
+    time: eventTime.value,
+    people: Number(eventPeople.value),
+    hashtags: eventHashtags.value
+  }
+  eventStore.updateEvent(props.eventId, payload)
   emit('update')
 }
+
 function handleDelete() {
+  eventStore.deleteEvent(props.eventId)
   emit('delete')
 }
+
 function handleCancel() {
   emit('update')
 }

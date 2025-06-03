@@ -7,6 +7,7 @@ import AlertModal from '@/components/AlertModal.vue'
 const showForm = ref(false)
 const showAlert = ref(false)
 const formStatus = ref('create')
+const currentEventId = ref(null)
 
 function openForm() {
   showForm.value = true
@@ -69,7 +70,8 @@ function handleDelete() {
           />
 
           <FormUpdate 
-            v-if="formStatus === 'update'" 
+            v-if="formStatus === 'update'"
+            :event-id="currentEventId" 
             @click.stop
             @update="handleUpdate"
             @delete="handleDelete"

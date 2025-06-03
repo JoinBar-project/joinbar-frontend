@@ -1,8 +1,10 @@
 <script setup>
 import { ref } from 'vue'
 import { defineEmits } from 'vue'
+import { useEventStore } from '@/stores/event'
 import Hashtag from './Hashtag.vue'
 const emit = defineEmits(['submit'])
+const eventStore = useEventStore()
 
 const eventName = ref('')
 const eventLocation = ref('')
@@ -12,6 +14,15 @@ const eventPeople = ref('')
 const eventHashtags = ref([])
 
 function handleSubmit() {
+  const payload = {
+    name: eventName.value,
+    location: eventLocation.value,
+    date: eventDate.value,
+    time: eventTime.value,
+    people: Number(eventPeople.value),
+    hashtags: eventHashtags.value
+  }
+  eventStore.createEvent(payload)
   emit('submit')
 }
 </script>
