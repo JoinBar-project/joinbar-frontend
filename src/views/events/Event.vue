@@ -1,9 +1,5 @@
 <script setup>
 // import FormModal from '@/components/events/FormModal.vue'
-import EventInfoFree from '@/components/events/EventInfoFree.vue'
-import EventInfoPay from '@/components/events/EventInfoPay.vue'
-import EventHoster from '@/components/events/EventHoster.vue'
-import MessageBoard from '@/components/events/MessageBoard.vue'
 
 
 
@@ -17,11 +13,7 @@ import MessageBoard from '@/components/events/MessageBoard.vue'
     <p>探索附近的酒吧活動。</p>
   </div>
 
-  <!-- <FormModal /> -->
-  <EventInfoFree />
-  <EventInfoPay />
-  <EventHoster />
-  <MessageBoard />
+  <FormModal />
 
 </template>
 
