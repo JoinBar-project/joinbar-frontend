@@ -2,8 +2,9 @@
 // import FormModal from '@/components/events/FormModal.vue'
 import EventInfoFree from '@/components/events/EventInfoFree.vue'
 import EventInfoPay from '@/components/events/EventInfoPay.vue'
-
 import EventHoster from '@/components/events/EventHoster.vue'
+import MessageBoard from '@/components/events/MessageBoard.vue'
+
 
 
 </script>
@@ -20,7 +21,7 @@ import EventHoster from '@/components/events/EventHoster.vue'
   <EventInfoFree />
   <EventInfoPay />
   <EventHoster />
-
+  <MessageBoard />
 
 </template>
 
