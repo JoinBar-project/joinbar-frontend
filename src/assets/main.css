@@ -18,3 +18,8 @@
   --color-secondary-green: #d0de80;
   --color-black: #292929;
 } */
+
+* {
+  font-size: revert !important;
+  font-weight: revert !important;
+}
