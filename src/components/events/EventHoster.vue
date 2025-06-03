@@ -155,7 +155,7 @@
 }
 
 .follow-btn:hover{
-  background-color: var(--color-secondary-orange);
+  background-color: var(--color-primary-orange);
   color: white;
 }
 
