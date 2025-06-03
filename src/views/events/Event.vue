@@ -1,6 +1,8 @@
 <script setup>
 // import FormModal from '@/components/events/FormModal.vue'
+import EventInfoFree from '@/components/events/EventInfoFree.vue'
 import EventHoster from '@/components/events/EventHoster.vue'
+
 
 </script>
 
@@ -13,7 +15,9 @@ import EventHoster from '@/components/events/EventHoster.vue'
   </div>
 
   <!-- <FormModal /> -->
+  <EventInfoFree />
   <EventHoster />
+
 
 </template>
 

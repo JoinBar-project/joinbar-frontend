@@ -37,3 +37,110 @@
 
 </template>
 
+<style scoped>
+
+.event-information-section{
+  max-width: 100vw;
+  padding-top: 2%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.event-information-card{
+  max-width: 1200px;
+  min-width: 1000px;
+  width: 100%;
+  background-color: #f1f1f1;
+  padding-bottom: 30px;
+  margin: 0 auto;
+  position: relative;
+  border-radius: 20px;
+  overflow: hidden
+}
+
+.event-img > img{
+  width: 100%;
+  aspect-ratio: 3.5 / 1;
+  object-fit: cover;
+}
+
+.event-map{
+  position: absolute;
+  bottom: 70px;
+  left: 80px;
+  z-index: 2;
+  background-color: gray;
+  border-radius: 10px;
+  max-width: 325px;
+  width: 325px;
+  height: 500px;
+  margin: 0 auto;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+  cursor: pointer;
+}
+
+.event-tags{
+  display: flex;
+}
+
+.event-tags div{
+  background-color: var(--color-black);
+  padding: 8px 20px; 
+  text-align: center;
+  margin-right: 10px; 
+  border-radius: 20px; 
+  color: white;
+}
+
+.event-content-box{
+  display: flex;
+}
+
+.event-content{
+  padding: 40px 70px 40px 500px;
+}
+
+.event-content-info{
+  display: flex;
+  align-items: center;
+  padding: 1px 0;
+}
+
+.event-content-info p{
+  font-size: 20px;
+  line-height: 2.5;
+  margin: 0;
+}
+
+.fa-solid{
+  padding: 0 30px 0 0;
+}
+
+.event-title{
+  font-size: 28px;
+  font-weight: bold;
+}
+
+.event-btn{
+  margin-right: 30px;
+  margin-top: 30px;
+  border-radius: 20px;
+  border: 0 ;
+  font-size: 24px;
+  text-align: center;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+  cursor: pointer;
+}
+
+.event-btn-free{
+  background-color: white;
+  padding: 8px 45px 10px 45px;
+}
+
+.event-btn-free:hover{
+  background-color: var(--color-primary-orange);
+  color: white;
+}
+
+</style>
