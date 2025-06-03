@@ -172,25 +172,39 @@ function searchNearbyBars(location) {
     results.forEach(place => {
       if (!place.geometry || !place.geometry.location) return
 
-       // 判斷是否含「酒」或「bar」：名稱或評論內容
-      const nameMatches = /酒|bar/i.test(place.name)
-      const reviewMatches = Array.isArray(place.reviews)
-      ? place.reviews.some(review => /酒|bar/i.test(review.text))
-      : false
-
-      const isBarLike = nameMatches || reviewMatches
-
       const marker = new google.maps.Marker({
         map,
         position: place.geometry.location,
         title: place.name,
-        icon: isBarLike
-          ? {
+    })
+
+    // 延伸：取得詳細資料（含評論）
+    placesService.getDetails(
+      {
+        placeId: place.place_id,
+        fields: ['name', 'rating', 'website', 'reviews']
+      },
+      (details, status) => {
+          if (status !== google.maps.places.PlacesServiceStatus.OK) {
+            console.warn('getDetails 失敗：', status, place.name)
+            return
+          }
+
+          const reviewMatches = array.isArray(details.reviews)
+            ? details.reviews.some(r => /酒|bar/i.test(r.text))
+            : false
+
+          const nameMatches = /酒|bar/i.test(details.name)
+          const isBarLike = nameMatches || reviewMatches
+
+          if (isBarLike) {
+            marker.setIcon({
               url: '/wine.png',
-              scaledSize: new google.maps.Size(32, 32) 
-            }
-          : undefined // 使用預設圖示
-      })
+              scaledSize: new google.maps.Size(32, 32)
+            })
+          }
+        }
+      )
 
       marker.addListener('click', () => {
         placesService.getDetails(
@@ -317,53 +331,47 @@ function searchPlaceByText(query) {
       results.forEach((place) => {
         if (!place.geometry || !place.geometry.location) return
 
-        const isBarLike = /酒|bar/i.test(place.name)
-        const marker = isBarLike
-        ? new google.maps.marker.AdvancedMarkerElement({
+        const marker = new google.maps.Marker({
           map,
           position: place.geometry.location,
           title: place.name,
-          content: (() => {
-            const barMarkerWrapper = document.createElement('div')
-            
-            const img = document.createElement('img')
-            img.src = '/wine.png'
-            img.style.width = '36px'
-            img.style.height = '36px'
-            img.style.transform = 'translate(-50%, -100%)'
-            img.className = 'bar-marker-img'
+        })
 
-            return img
-        })()
-      })
+        // 取得詳細資訊（包含評論）
+        placesService.getDetails(
+          {
+            placeId: place.place_id,
+            fields: ['name', 'formatted_address', 'rating', 'website', 'reviews'],
+          },
+          (details, status) => {
+            if (status === google.maps.places.PlacesServiceStatus.OK && details) {
+              const nameMatches = /酒|bar/i.test(details.name)
+              const reviewMatches = Array.isArray(details.reviews)
+                ? details.reviews.some((review) => /酒|bar/i.test(review.text))
+                : false
 
-    : new google.maps.Marker({
-      map,
-      position: place.geometry.location,
-      title: place.name,
-    })
+              const isBarLike = nameMatches || reviewMatches
 
-      function attachPlaceClickListener(marker, place) {
-        marker.addListener('gmp-click', () => {
-          placesService.getDetails(
-            {
-              placeId: place.place_id,
-              fields: ['name', 'formatted_address', 'rating', 'website']
-            },
-            (details, status) => {
-              if (status === google.maps.places.PlacesServiceStatus.OK) {
-                infoWindow.setContent(`
+              if (isBarLike) {
+                marker.setIcon({
+                  url: '/wine.png',
+                  scaledSize: new google.maps.Size(32, 32),
+                })
+              }
+
+              marker.addListener('click', () => {
+                const content = `
                   <strong>${details.name}</strong><br/>
                   地址：${details.formatted_address}<br/>
                   評分：${details.rating}<br/>
                   ${details.website ? `<a href="${details.website}" target="_blank">網站</a>` : ''}
-                `)
+                `
+                infoWindow.setContent(content)
                 infoWindow.open(map, marker)
-              }
+              })
             }
-          )
-        })
-      }
+          }
+        )
 
         markers.push(marker)
         bounds.extend(place.geometry.location)
@@ -407,6 +415,11 @@ function getCurrentLocation() {
         currentMarker = new google.maps.Marker({
           map,
           position: location,
+          // icon: {
+          //   url: 'https://cdn-icons-png.flaticon.com/512/5622/5622327.png',
+          //   scaledSize: new google.maps.Size(40, 40),
+          //   anchor: new google.maps.Point(20, 40)
+          // }
         })
           currentMarker.addListener('click', () => {
           showCurrentLocationInfo(location)
