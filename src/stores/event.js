@@ -13,7 +13,7 @@ export const useEventStore = defineStore('event', {
     async createEvent(payload) {
       this.loading = true
       try {
-        const res = await axios.post('/api/event/create', payload)
+        const res = await axios.post('/event/create', payload)
         this.event = res.data
         this.error = null
       } catch (e) {
