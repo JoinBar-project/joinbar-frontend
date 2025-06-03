@@ -191,7 +191,7 @@ function searchNearbyBars(location) {
           }
 
           const reviewMatches = array.isArray(details.reviews)
-            ? details.reviews.some(r => /酒|bar/i.test(r.text))
+            ? details.reviews.some(r => /酒吧|bar/i.test(r.text))
             : false
 
           const nameMatches = /酒|bar/i.test(details.name)
@@ -410,16 +410,14 @@ function getCurrentLocation() {
       map.setCenter(location)
       map.setZoom(15)
 
-      // 加入 marker
       if (!currentMarker) {
         currentMarker = new google.maps.Marker({
           map,
           position: location,
-          // icon: {
-          //   url: 'https://cdn-icons-png.flaticon.com/512/5622/5622327.png',
-          //   scaledSize: new google.maps.Size(40, 40),
-          //   anchor: new google.maps.Point(20, 40)
-          // }
+          icon: {
+            url: '/now.png',
+              scaledSize: new google.maps.Size(32, 32)
+          }
         })
           currentMarker.addListener('click', () => {
           showCurrentLocationInfo(location)
