@@ -1,6 +1,8 @@
 import { defineStore } from 'pinia'
 import axios from 'axios'
 
+axios.defaults.baseURL = 'http://localhost:3000'
+
 export const useEventStore = defineStore('event', {
   state: () => ({
     event: null,   // 儲存單一活動資訊
@@ -11,7 +13,7 @@ export const useEventStore = defineStore('event', {
     async createEvent(payload) {
       this.loading = true
       try {
-        const res = await axios.post('/api/events', payload)
+        const res = await axios.post('/api/event/create', payload)
         this.event = res.data
         this.error = null
       } catch (e) {
@@ -23,7 +25,7 @@ export const useEventStore = defineStore('event', {
     async updateEvent(id, payload) {
       this.loading = true
       try {
-        const res = await axios.put(`/api/events/${id}`, payload)
+        const res = await axios.put(`/event/update/${id}`, payload)
         this.event = res.data
         this.error = null
       } catch (e) {
@@ -35,7 +37,7 @@ export const useEventStore = defineStore('event', {
     async deleteEvent(id) {
       this.loading = true
       try {
-        await axios.delete(`/api/events/${id}`)
+        await axios.delete(`/event/delete/${id}`)
         this.event = null
         this.error = null
       } catch (e) {
@@ -47,7 +49,7 @@ export const useEventStore = defineStore('event', {
     async fetchEvent(id) {
       this.loading = true
       try {
-        const res = await axios.get(`/api/events/${id}`)
+        const res = await axios.get(`/event/${id}`)
         this.event = res.data
         this.error = null
       } catch (e) {
