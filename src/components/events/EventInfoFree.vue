@@ -2,7 +2,7 @@
   <div class="event-information-section">
     <div class="event-information-card">
       <div class="event-img">
-        <img src="../../../public/酒吧示意圖.jpg" alt=""> 
+        <img src="@/components/events/picture/酒吧示意圖.jpg" alt="酒吧示意圖"> 
       </div>
       <div class="event-content-box">
         <div class="event-map">
