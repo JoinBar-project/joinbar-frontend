@@ -6,6 +6,8 @@ import MessageBoard from '@/components/events/MessageBoard.vue'
 
 
 
+
+
 </script>
 
 <template>

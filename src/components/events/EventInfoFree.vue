@@ -1,3 +1,16 @@
+<script setup>
+import { ref } from 'vue';
+import MessageBoard from './MessageBoard.vue';
+
+const isJoin = ref(false)
+
+function toggleJoin(){
+  isJoin.value = !isJoin.value
+  console.log('現在狀態是：', isJoin.value)
+}
+
+</script>
+
 <template>
   <div class="event-information-section">
     <div class="event-information-card">
@@ -29,11 +42,13 @@
               <p>目前報名人數： <span>12</span> / <span>20</span></p>
             </div>
           </div>
-          <button type="button" class="event-btn event-btn-free">免費參加</button>
+          <button @click="toggleJoin()" type="button" class="event-btn event-btn-free" >{{ isJoin ? '取消參加' : '免費參加' }}</button>
         </div>
       </div>
     </div>
   </div>
+  <MessageBoard v-if="isJoin" />
+  
 
 </template>
 
