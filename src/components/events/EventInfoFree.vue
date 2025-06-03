@@ -1,19 +1,59 @@
 <script setup>
 import { ref } from 'vue';
 import MessageBoard from './MessageBoard.vue';
+import { computed } from 'vue'
 
 const isJoin = ref(false)
+const showModal = ref(false)
+const eventStartTime = new Date('2025-06-10T21:00:00')
+
+const canCancel = computed(() => {
+  const now = new Date()
+  const beforeEvent = (eventStartTime - now)
+  return beforeEvent > 24
+})
 
 function toggleJoin(){
   isJoin.value = !isJoin.value
   console.log('現在狀態是：', isJoin.value)
 }
 
+function openCancelModal(){
+  showModal.value = true
+}
+
+function closeModal() {
+  showModal.value = false
+}
+
+function handleConfirmCancel(){
+  isJoin.value = false
+  showModal.value = false
+}
+
 </script>
 
 <template>
+
+<div :class="['modal', { 'modal-open': showModal }]">
+  <div class="modal-box">
+    <h3 class="text-lg font-bold">確認取消報名</h3>
+    <p class="py-4">
+      您確定要取消這次報名嗎？ <br/>
+      <span>取消後如人數額滿或是活動開始前24小時內都將無法報名</span>， <br/>
+      請再次確認您的選擇。
+    </p>
+    <div class="modal-action">
+      <button class="btn" @click="closeModal">放棄取消</button>
+      <button class="btn" @click="handleConfirmCancel">確認取消</button>
+
+    </div>
+  </div>
+</div>
+
   <div class="event-information-section">
     <div class="event-information-card">
+      <!-- <div class="apply-tag">已報名</div> -->
       <div class="event-img">
         <img src="@/components/events/picture/酒吧示意圖.jpg" alt="酒吧示意圖"> 
       </div>
@@ -42,7 +82,9 @@ function toggleJoin(){
               <p>目前報名人數： <span>12</span> / <span>20</span></p>
             </div>
           </div>
-          <button @click="toggleJoin()" type="button" class="event-btn event-btn-free" >{{ isJoin ? '取消參加' : '免費參加' }}</button>
+          <button @click="toggleJoin()" :disabled = "isJoin" :class="{ 'opacity-50 cursor-not-allowed': isJoin }" type="button" class="event-btn event-btn-free" >{{ isJoin ? '已報名' : '參加活動' }}</button>
+          <button v-if="isJoin" @click="openCancelModal()" :disabled="!canCancel" :class="{ 'opacity-50 cursor-not-allowed': !canCancel }"  type="button" class="event-btn event-btn-free" >取消報名</button>
+
         </div>
       </div>
     </div>
@@ -62,6 +104,8 @@ function toggleJoin(){
   align-items: center;
 }
 
+
+
 .event-information-card{
   max-width: 1200px;
   min-width: 1000px;
@@ -71,7 +115,20 @@ function toggleJoin(){
   margin: 0 auto;
   position: relative;
   border-radius: 20px;
-  overflow: hidden
+  overflow: hidden;
+  position: relative;
+
+}
+
+.apply-tag{
+  background-color: var(--color-primary-red);
+  color: #f1f1f1;
+  padding: 20px 80px;
+  font-size: 28px;
+  position: absolute;
+  top: 0;
+  right: 80px;
+
 }
 
 .event-img > img{
@@ -97,6 +154,7 @@ function toggleJoin(){
 
 .event-tags{
   display: flex;
+
 }
 
 .event-tags div{
@@ -113,7 +171,7 @@ function toggleJoin(){
 }
 
 .event-content{
-  padding: 40px 70px 40px 500px;
+  padding: 20px 70px 40px 500px;
 }
 
 .event-content-info{
@@ -135,6 +193,7 @@ function toggleJoin(){
 .event-title{
   font-size: 28px;
   font-weight: bold;
+  margin-top: 30px;
 }
 
 .event-btn{
