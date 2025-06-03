@@ -90,11 +90,11 @@ onMounted(async () => {
           lng: position.coords.longitude
         }
         initMap(userLocation)
-        searchNearbyBars('酒吧', userLocation, 5000);
+        searchNearbyBars('酒吧', userLocation, 2000);
       },
       () => {
         initMap(defaultCenter)
-        searchNearbyBars('酒吧', defaultCenter, 5000);
+        searchNearbyBars('酒吧', defaultCenter, 2000);
       }
     )
   } catch (err) {
@@ -144,7 +144,7 @@ function initMap(center) {
 }
 
 // 搜尋附近的「酒吧」並加上 marker
-function searchNearbyBars(query, location, radius = 5000) {
+function searchNearbyBars(query, location, radius = 2000) {
   if (!location || typeof location.lat !== 'number' || typeof location.lng !== 'number') {
     console.error('searchNearbyBars: 無效的位置', location)
     return
@@ -251,23 +251,6 @@ onMounted(() => {
 onBeforeUnmount(() => {
   document.removeEventListener('click', handleClickOutside)
 })
-
-function requestGeolocationPermission() {
-  if (!navigator.geolocation) {
-    console.warn('瀏覽器不支援地理位置存取')
-    searchNearbyBars(defaultCenter)
-    return
-  }
-
-  navigator.geolocation.getCurrentPosition(
-    () => {
-      console.log('使用者已允許位置權限')
-    },
-    (err) => {
-      console.warn('使用者未允許位置權限，錯誤碼:', err.code)
-    }
-  )
-}
 
 // 搜尋 - 防抖機制
 const onInputChange= debounce(() =>{
