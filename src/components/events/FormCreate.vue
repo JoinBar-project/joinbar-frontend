@@ -7,24 +7,35 @@ const emit = defineEmits(['submit'])
 const eventStore = useEventStore()
 
 const eventName = ref('')
+const barName = ref('')
 const eventLocation = ref('')
-const eventDate = ref('')
-const eventTime = ref('')
+const eventStartDate = ref('')
+const eventEndDate = ref('')
+const eventImageUrl = ref('')
+const eventPrice = ref('')
 const eventPeople = ref('')
+const hostUser = ref('')
 const eventHashtags = ref([])
 
 function handleSubmit() {
+
   const payload = {
     name: eventName.value,
+    barName: barName.value,
     location: eventLocation.value,
-    date: eventDate.value,
-    time: eventTime.value,
-    people: Number(eventPeople.value),
-    hashtags: eventHashtags.value
+    startDate: eventStartDate.value,
+    endDate: eventEndDate.value,
+    maxPeople: Number(eventPeople.value),
+    imageUrl: eventImageUrl.value,
+    price: Number(eventPrice.value),
+    hostUser: hostUser.value,
+    tags: eventHashtags.value
   }
+  console.log(payload)
   eventStore.createEvent(payload)
   emit('submit')
 }
+
 </script>
 
 <template>
@@ -46,12 +57,28 @@ function handleSubmit() {
             <input type="text" id="event-location" v-model="eventLocation" placeholder="請輸入活動地點" />
           </div>
           <div class="form-row">
-            <label for="event-date">活動日期</label>
-            <input type="date" id="event-date" v-model="eventDate" />
+            <label for="bar-name">酒吧名稱</label>
+            <input type="text" id="bar-name" v-model="barName" placeholder="請輸入酒吧名稱" />
           </div>
           <div class="form-row">
+            <label for="event-start-date">開始日期</label>
+            <input type="date" id="event-start-date" v-model="eventStartDate" />
+          </div>
+          <div class="form-row">
+            <label for="event-end-date">結束日期</label>
+            <input type="date" id="event-end-date" v-model="eventEndDate" />
+          </div>
+          <!-- <div class="form-row">
             <label for="event-time">活動時間</label>
             <input type="time" id="event-time" v-model="eventTime" />
+          </div> -->
+          <div class="form-row">
+            <label for="event-price">價格</label>
+            <input type="number" id="event-price" v-model="eventPrice" placeholder="請輸入價格" />
+          </div>
+          <div class="form-row">
+            <label for="host-user">主辦者</label>
+            <input type="text" id="host-user" v-model="hostUser" placeholder="請輸入主辦者" />
           </div>
           <div class="form-row">
             <label for="event-time">參加人數</label>
