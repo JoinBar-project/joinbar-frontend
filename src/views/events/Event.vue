@@ -1,6 +1,8 @@
 <script setup>
 // import FormModal from '@/components/events/FormModal.vue'
 import EventInfoFree from '@/components/events/EventInfoFree.vue'
+import EventInfoPay from '@/components/events/EventInfoPay.vue'
+
 import EventHoster from '@/components/events/EventHoster.vue'
 
 
@@ -16,6 +18,7 @@ import EventHoster from '@/components/events/EventHoster.vue'
 
   <!-- <FormModal /> -->
   <EventInfoFree />
+  <EventInfoPay />
   <EventHoster />
 
 
