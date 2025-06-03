@@ -81,6 +81,8 @@ onMounted(async () => {
   try {
     await loadGoogleMapsScript()
 
+    initMap(defaultCenter)
+    
     navigator.geolocation.getCurrentPosition(
       (position) => {
         const userLocation = {
@@ -88,9 +90,11 @@ onMounted(async () => {
           lng: position.coords.longitude
         }
         initMap(userLocation)
+        searchNearbyBars('酒吧', userLocation, 5000);
       },
       () => {
         initMap(defaultCenter)
+        searchNearbyBars('酒吧', defaultCenter, 5000);
       }
     )
   } catch (err) {
@@ -98,8 +102,7 @@ onMounted(async () => {
   }
 })
 
-
-function initMap(center, shouldGetCurrent = false) {
+function initMap(center) {
   map = new google.maps.Map(mapContainer.value, {
     center,
     zoom: 12,
@@ -138,27 +141,26 @@ function initMap(center, shouldGetCurrent = false) {
   infoWindow = new google.maps.InfoWindow()
   placesService = new google.maps.places.PlacesService(map)
   autocompleteService = new google.maps.places.AutocompleteService()
-
-  if (shouldGetCurrent) {
-    getCurrentLocation()
-  } else {
-    searchNearbyBars(center)
-  }
 }
 
 // 搜尋附近的「酒吧」並加上 marker
-function searchNearbyBars(location) {
+function searchNearbyBars(query, location, radius = 5000) {
   if (!location || typeof location.lat !== 'number' || typeof location.lng !== 'number') {
     console.error('searchNearbyBars: 無效的位置', location)
     return
   }
 
-  clearMarkers()
+  if (currentMarker && (location.lat !== currentMarker.getPosition().lat || location.lng !== currentMarker.getPosition().lng)) { 
+    clearAllMarkers(); 
+  } else if (!currentMarker) {
+    clearAllMarkers();
+  }
 
   const request = {
     location,
     radius: 1500,
-    type: ['bar']
+    type: (query.includes('酒吧') || query.includes('bar')) ? ['bar', 'liquor_store'] : undefined, 
+    keyword: query
   }
 
   placesService.nearbySearch(request, (results, status) => {
@@ -182,7 +184,7 @@ function searchNearbyBars(location) {
     placesService.getDetails(
       {
         placeId: place.place_id,
-        fields: ['name', 'rating', 'website', 'reviews']
+        fields: ['name', 'rating', 'website', 'reviews','types']
       },
       (details, status) => {
           if (status !== google.maps.places.PlacesServiceStatus.OK) {
@@ -190,12 +192,13 @@ function searchNearbyBars(location) {
             return
           }
 
-          const reviewMatches = array.isArray(details.reviews)
-            ? details.reviews.some(r => /酒吧|bar/i.test(r.text))
+          const isBarType = details.types && (details.types.includes('bar') || details.types.includes('liquor_store'));
+          const nameMatches = /酒|bar|pub|雞尾酒|lounge/i.test(details.name); 
+          const reviewMatches = Array.isArray(details.reviews)
+            ? details.reviews.some(r => /酒|bar|pub|雞尾酒|lounge/i.test(r.text))
             : false
 
-          const nameMatches = /酒|bar/i.test(details.name)
-          const isBarLike = nameMatches || reviewMatches
+          const isBarLike = isBarType || nameMatches || reviewMatches
 
           if (isBarLike) {
             marker.setIcon({
@@ -278,7 +281,7 @@ const onInputChange= debounce(() =>{
       input: searchQuery.value,
       componentRestrictions: { country: 'tw' },
       location: map.getCenter(), 
-      radius: 18000
+      radius: 20000
     },
     (predictions, status) => {
       if (status === google.maps.places.PlacesServiceStatus.OK && predictions) {
@@ -301,7 +304,7 @@ function handleSearch() {
     alert('請輸入搜尋關鍵字')
     return
   }
-  searchPlaceByText(searchQuery.value)
+  searchPlaceByText(searchQuery.value, map.getCenter(), 5000)
 }
 
 function searchPlaceByText(query) {
@@ -345,12 +348,13 @@ function searchPlaceByText(query) {
           },
           (details, status) => {
             if (status === google.maps.places.PlacesServiceStatus.OK && details) {
+              const isBarType = details.types && details.types.includes('bar')
               const nameMatches = /酒|bar/i.test(details.name)
               const reviewMatches = Array.isArray(details.reviews)
                 ? details.reviews.some((review) => /酒|bar/i.test(review.text))
                 : false
 
-              const isBarLike = nameMatches || reviewMatches
+              const isBarLike = isBarType ||nameMatches || reviewMatches
 
               if (isBarLike) {
                 marker.setIcon({
@@ -439,12 +443,12 @@ function getCurrentLocation() {
   })
 }
 
-      // 搜尋附近酒吧
-      searchNearbyBars(location)
+      // 搜尋附近酒吧 (location)
     },
     (error) => {
       alert('無法取得你的位置，錯誤代碼：' + error.code)
       console.error(error)
+      initMap(defaultCenter, false);
     },
     {
       enableHighAccuracy: true,
