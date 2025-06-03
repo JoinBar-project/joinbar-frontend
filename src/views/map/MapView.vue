@@ -82,7 +82,7 @@ onMounted(async () => {
     await loadGoogleMapsScript()
 
     initMap(defaultCenter)
-    
+
     navigator.geolocation.getCurrentPosition(
       (position) => {
         const userLocation = {
@@ -485,7 +485,7 @@ function getCurrentLocation() {
   margin-left: 10px;
 }
 .search-input{
-  height: 40px;
+  /* height: 40px; */
   padding: 8px 12px;
   margin-top: 10px;
   border: 1px solid #decdd5;
@@ -510,7 +510,6 @@ function getCurrentLocation() {
 .place-now {
   padding: 8px 12px;
   margin: 10px;
-  height: 40px;
   border: none;
   background-color: #decdd5;
   color: #3A3435;
