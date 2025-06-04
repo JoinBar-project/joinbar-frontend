@@ -88,6 +88,10 @@ const goShopping = () => {
 </script>
 
 <style scoped>
+* {
+  font-size: revert !important;
+  font-weight: revert !important;
+}
 .cart-container {
   max-width: 1280px;
   margin: 48px auto;
