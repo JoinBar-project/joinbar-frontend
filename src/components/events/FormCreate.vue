@@ -17,7 +17,7 @@ const eventPeople = ref('')
 // const hostUser = ref('') 等會員系統建置完成
 const eventHashtags = ref([])
 
-// 新增：自動填寫地點
+// 等加入地圖元件：暫時自動填寫地點
 watch(barName, (newVal) => {
   if (newVal) {
     eventLocation.value = '台北市中正區中正路100號'
@@ -189,14 +189,6 @@ function handleSubmit() {
   margin-left: 110px;
   color:var(--color-primary-red)
 }
-/* #event-location{
-  height: 40px;
-  padding: 0 10px;
-  font-size: 18px;
-  border: 3px solid #b9b9b9;
-  border-radius: 15px;
-  background-color: white;
-} */
 
 .form-bottom{
   padding-bottom: 20px;

@@ -1,11 +1,31 @@
 <script setup>
-import { ref, onMounted, defineEmits, defineProps } from 'vue'
+import { ref, onMounted, defineEmits, defineProps, watch } from 'vue'
 import { useEventStore } from '@/stores/event'
 import Hashtag from './Hashtag.vue'
 
 const emit = defineEmits(['update', 'delete'])
 const eventStore = useEventStore()
 const props = defineProps({ eventId: String }) // 傳 id 進來
+
+const eventName = ref('')
+const barName = ref('')
+const eventLocation = ref('')
+const eventStartDate = ref('')
+const eventEndDate = ref('')
+const eventImageUrl = ref('')
+const eventPrice = ref('')
+const eventPeople = ref('')
+const hostUser = ref('') // 等會員系統建置完成
+const eventHashtags = ref([])
+
+// 等加入地圖元件：暫時自動填寫地點
+watch(barName, (newVal) => {
+  if (newVal) {
+    eventLocation.value = '台北市中正區中正路100號'
+  } else {
+    eventLocation.value = ''
+  }
+})
 
 onMounted(async () => {
   if (props.eventId) {
@@ -14,8 +34,8 @@ onMounted(async () => {
     eventName.value = data.name || ''
     barName.value = data.barName || ''
     eventLocation.value = data.location || ''
-    eventStartDate.value = data.startDate ? data.startDate.slice(0, 10) : ''
-    eventEndDate.value = data.endDate ? data.endDate.slice(0, 10) : ''
+    eventStartDate.value = data.startDate ? data.startDate.slice(0, 16) : ''
+    eventEndDate.value = data.endDate ? data.endDate.slice(0, 16) : ''
     eventImageUrl.value = data.imageUrl || ''
     eventPrice.value = data.price || ''
     eventPeople.value = data.maxPeople || ''
@@ -25,6 +45,17 @@ onMounted(async () => {
 })
 
 function handleUpdate() {
+  if (
+    !eventName.value ||
+    !barName.value ||
+    !eventStartDate.value ||
+    !eventEndDate.value ||
+    !eventPrice.value ||
+    !eventPeople.value
+  ) {
+    alert('請完整填寫所有欄位！')
+    return
+  }
   const payload = {
     name: eventName.value,
     barName: barName.value,
@@ -34,8 +65,8 @@ function handleUpdate() {
     maxPeople: Number(eventPeople.value),
     imageUrl: eventImageUrl.value,
     price: Number(eventPrice.value),
-    hostUser: hostUser.value,
-    tags: eventHashtags.value
+    hostUser: 888, // 與 FormCreate 一致，等會員系統
+    tags: [...eventHashtags.value]
   }
   console.log(payload)
   eventStore.updateEvent(props.eventId, payload)
@@ -66,12 +97,11 @@ function handleCancel() {
             <input type="text" id="event-name" v-model="eventName" placeholder="請輸入活動名稱" />
           </div>
           <div class="form-row">
-            <label for="event-location">活動地點</label>
-            <input type="text" id="event-location" v-model="eventLocation" placeholder="請輸入活動地點" />
-          </div>
-          <div class="form-row">
             <label for="bar-name">酒吧名稱</label>
             <input type="text" id="bar-name" v-model="barName" placeholder="請輸入酒吧名稱" />
+          </div>
+          <div class="event-location">
+            {{eventLocation}}
           </div>
           <div class="form-row">
             <label for="event-start-date">開始日期</label>
@@ -84,10 +114,6 @@ function handleCancel() {
           <div class="form-row">
             <label for="event-price">價格</label>
             <input type="number" id="event-price" v-model="eventPrice" placeholder="請輸入價格" />
-          </div>
-          <div class="form-row">
-            <label for="host-user">主辦者</label>
-            <input type="text" id="host-user" v-model="hostUser" placeholder="請輸入主辦者" />
           </div>
           <div class="form-row">
             <label for="event-people">參加人數</label>
@@ -183,6 +209,12 @@ function handleCancel() {
   border: 3px solid #b9b9b9;
   border-radius: 15px;
   background-color: white;
+}
+
+.event-location {
+  font-size: 16px;
+  margin-left: 110px;
+  color:var(--color-primary-red)
 }
 
 .form-bottom{
