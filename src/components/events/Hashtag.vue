@@ -126,9 +126,8 @@ watch(() => props.modelValue, (val) => {
   user-select: none;
 }
 .btn-hashtag-modal {
-  height: 44px;
   border-radius: 15px;
-  padding: 0 18px;
+  padding: 5px 18px;
   background: #eee;
   border: 3px solid #b9b9b9;
   font-size: 15px;
@@ -179,7 +178,7 @@ watch(() => props.modelValue, (val) => {
   flex-wrap: wrap;
   gap: 12px;
   justify-content: center;
-  margin-bottom: 10px;
+  margin-bottom: 15px;
 }
 .tag-btn {
   font-size: 16px;
@@ -203,7 +202,7 @@ watch(() => props.modelValue, (val) => {
   border: none;
   background: var(--color-primary-red, #c9475d);
   color: #fff;
-  border-radius: 15px;
+  border-radius: 20px;
   font-size: 16px;
   padding: 6px 22px;
   cursor: pointer;

@@ -114,14 +114,11 @@ function handleCancel() {
 
 .form-header{
   width: 140px;
-  height: 55px;
   text-align: center;
-  align-items: center;
   margin: 0 auto;
   font-size: 18px;
-  padding-top: 10px;
-  margin-bottom: -10px;
-  border-radius: 10px;
+  padding: 6px;
+  border-radius: 15px 15px 0 0;
   color: #fff;
   background-color: var(--color-primary-orange);
 }
@@ -199,7 +196,7 @@ function handleCancel() {
   display: block;
   margin: 0 auto;
   width: 180px;
-  height: 45px;
+  padding: 5px 0;
   font-size: 20px;
   color: white;
   border: none;
