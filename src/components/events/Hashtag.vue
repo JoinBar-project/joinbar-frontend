@@ -7,10 +7,18 @@ const props = defineProps({
   // modelValue 是陣列，讓預設給空陣列
   modelValue: { type: Array, default: () => [] }
 })
-const selectedTags = ref([...props.modelValue])
 
+const options = ref([
+  { id: 1, name: '免費活動' },
+  { id: 2, name: '限時報名' },
+  { id: 3, name: '單身限定' },
+  { id: 4, name: '週末來喝' },
+  { id: 5, name: '主題之夜' },
+  { id: 6, name: '現場LIVE' },
+])
+
+const selectedTags = ref([])
 const modalOpen = ref(false)
-const options = ref(['免費活動', '限時報名', '單身限定', '週末來喝', '主題之夜', '現場LIVE']) 
 const warning = ref('')
 
 function openModal() {
@@ -22,9 +30,7 @@ function closeModal() {
   warning.value = ''
 }
 function toggleTag(tag) {
-  // 檢查這個 tag 有沒有在已選標籤列表裡
-  const idx = selectedTags.value.indexOf(tag)
-  // -1 : 還沒被選過
+  const idx = selectedTags.value.findIndex(t => t.id === tag.id)
   if (idx === -1) {
     if (selectedTags.value.length >= 2) {
       warning.value = '最多選擇 2 個標籤'
@@ -32,22 +38,21 @@ function toggleTag(tag) {
     }
     selectedTags.value.push(tag)
   } else {
-    // 已經選了這個標籤，再選一次 = 移除(splice)
     selectedTags.value.splice(idx, 1)
     warning.value = ''
   }
 }
 function confirmTags() {
-  emit('update:modelValue', [...selectedTags.value])
+  emit('update:modelValue', selectedTags.value.map(tag => tag.id))
   closeModal()
 }
 function removeTag(tag) {
   toggleTag(tag)
 }
 
-// 同步
+// 同步：modelValue（id陣列）→ selectedTags（物件陣列）
 watch(() => props.modelValue, (val) => {
-  selectedTags.value = [...val]
+  selectedTags.value = options.value.filter(option => val.includes(option.id))
 })
 </script>
 
@@ -57,8 +62,8 @@ watch(() => props.modelValue, (val) => {
     <div style="display:flex;align-items:center;gap:8px;width:100%;flex-wrap:wrap;">
       <button type="button" class="btn-hashtag-modal" @click="openModal">選擇</button>
       <div class="selected-tags">
-        <span v-for="tag in selectedTags" :key="tag" class="selected-tag">
-          {{ tag }}
+        <span v-for="tag in selectedTags" :key="tag.id" class="selected-tag">
+          {{ tag.name }}
           <span class="remove-tag" @click="removeTag(tag)">×</span>
         </span>
       </div>
@@ -74,11 +79,11 @@ watch(() => props.modelValue, (val) => {
         <div class="modal-tags">
           <button
             v-for="tag in options"
-            :key="tag"
+            :key="tag.id"
             class="tag-btn"
-            :class="{active:selectedTags.includes(tag)}"
+            :class="{active: selectedTags.some(t => t.id === tag.id)}"
             @click="toggleTag(tag)"
-          >{{ tag }}</button>
+          >{{ tag.name }}</button>
         </div>
         <div class="modal-actions">
           <span class="warning" v-if="warning">{{ warning }}</span>
