@@ -1,5 +1,8 @@
 <template>
   <div class="cart-container">
+    <button class="btn btn-sm mb-4" @click="goBack">
+      ← 返回購物車
+    </button>
     <h2>付款資訊</h2>
 
     <div v-if="isLoading" class="loading-box">
@@ -95,6 +98,13 @@ const isSubmitting = ref(false)
 
 onMounted(() => {
   setTimeout(() => {
+    // 檢查購物車是否為空
+    if (cart.items.length === 0) {
+      alert('購物車是空的，即將返回購物車頁面')
+      router.push('/cart')
+      return
+    }
+    
     isLoading.value = false
   }, 600)
 })
@@ -151,9 +161,18 @@ const submitOrder = async () => {
     isSubmitting.value = false
   }
 }
+
+const goBack = () => {
+  router.push('/cart')
+}
 </script>
 
 <style scoped>
+* {
+  font-size: revert !important;
+  font-weight: revert !important;
+}
+
 .cart-container {
   max-width: 1280px;
   margin: 48px auto;
