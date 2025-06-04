@@ -85,8 +85,10 @@
 <script setup>
 import { useCartStore } from '@/stores/cartStore'
 import { computed, ref, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
 
 const cart = useCartStore()
+const router = useRouter()
 const paymentMethod = ref('')
 const isLoading = ref(true)
 const isSubmitting = ref(false)
@@ -94,7 +96,6 @@ const isSubmitting = ref(false)
 onMounted(() => {
   setTimeout(() => {
     isLoading.value = false
-    console.log('付款頁面已載入')
   }, 600)
 })
 
@@ -115,15 +116,37 @@ const submitOrder = async () => {
 
   try {
     isSubmitting.value = true
-    
+
+    // 模擬訂單建立
+    const mockOrderResult = {
+      order: {
+        orderId: Date.now().toString(),
+        orderNumber: `ORDER-${new Date().toISOString().slice(0, 10).replace(/-/g, '')}-${Date.now().toString().slice(-6)}`,
+        totalAmount: cartItems.value.reduce((acc, item) => acc + item.price * item.quantity, 0).toString()
+      }
+    }
     // 模擬 API 處理延遲
     await new Promise(resolve => setTimeout(resolve, 1500))
+
+    // 根據付款方式處理
+    if (paymentMethod.value === 'linepay') {
+      // 顯示模擬訊息
+      alert(`🟢 LINE Pay 模擬付款\n\n訂單編號：${mockOrderResult.order.orderNumber}\n金額：${totalPrice.value}\n\n點擊確定完成模擬付款`)
+      
+    } else if (paymentMethod.value === 'creditcard') {
+      // 模擬信用卡付款
+      alert(`💳 信用卡模擬付款\n\n訂單編號：${mockOrderResult.order.orderNumber}\n金額：${totalPrice.value}\n\n點擊確定完成模擬付款`)
+    }
+
+    // 模擬付款成功，清空購物車
+    cart.clearCart()
     
-    console.log('付款提交成功')
-    
+    // 跳轉到成功頁面
+    router.push(`/order-success/${mockOrderResult.order.orderNumber}?orderId=${mockOrderResult.order.orderId}`)
+
   } catch (error) {
-    console.error('付款錯誤:', error)
-    alert('付款失敗，請重新嘗試')
+    console.error('模擬付款錯誤:', error)
+    alert('模擬付款失敗，請重新嘗試')
   } finally {
     isSubmitting.value = false
   }
