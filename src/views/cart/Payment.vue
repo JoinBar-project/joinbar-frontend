@@ -66,6 +66,16 @@
           <p class="total-label">
             總金額：<strong>${{ totalPrice }}</strong>
           </p>
+          <!-- 確認付款按鈕 -->
+          <button 
+            class="btn bg-[#860914] text-white checkout-btn"
+            :class="{ 'btn-disabled': !canSubmit || isSubmitting }"
+            :disabled="!canSubmit || isSubmitting" 
+            @click="submitOrder"
+          >
+            <span v-if="isSubmitting" class="loading loading-spinner loading-sm"></span>
+            {{ isSubmitting ? '處理中...' : '確認付款' }}
+          </button>
         </div>
       </div>
     </div>
@@ -79,6 +89,7 @@ import { computed, ref, onMounted } from 'vue'
 const cart = useCartStore()
 const paymentMethod = ref('')
 const isLoading = ref(true)
+const isSubmitting = ref(false)
 
 onMounted(() => {
   setTimeout(() => {
@@ -94,6 +105,29 @@ const calcSubtotal = (item) => (item.price * item.quantity).toLocaleString()
 const totalPrice = computed(() =>
   cartItems.value.reduce((acc, item) => acc + item.price * item.quantity, 0).toLocaleString(),
 )
+
+const canSubmit = computed(() => {
+  return paymentMethod.value
+})
+
+const submitOrder = async () => {
+  if (isSubmitting.value || !canSubmit.value) return
+
+  try {
+    isSubmitting.value = true
+    
+    // 模擬 API 處理延遲
+    await new Promise(resolve => setTimeout(resolve, 1500))
+    
+    console.log('付款提交成功')
+    
+  } catch (error) {
+    console.error('付款錯誤:', error)
+    alert('付款失敗，請重新嘗試')
+  } finally {
+    isSubmitting.value = false
+  }
+}
 </script>
 
 <style scoped>
@@ -228,5 +262,18 @@ const totalPrice = computed(() =>
 .payment-btn:hover {
   transform: translateY(-1px);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+/* 確認付款按鈕樣式 */
+.checkout-btn {
+  font-size: 14px;
+  padding: 10px 24px;
+  transition: all 0.2s ease-in-out;
+}
+
+/* 禁用狀態的按鈕 */
+.checkout-btn.btn-disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 </style>
