@@ -294,7 +294,21 @@ const submitOrder = async () => {
   transition: all 0.2s ease-in-out;
 }
 
-/* 禁用狀態的按鈕 */
+/* 確認付款按鈕 hover 效果 */
+.checkout-btn:hover:not(.btn-disabled) {
+  background-color: #a50b18 !important;
+  border-color: #a50b18;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(134, 9, 20, 0.3);
+}
+
+/* 確認付款按鈕 active 狀態 */
+.checkout-btn:active:not(.btn-disabled) {
+  transform: translateY(0);
+  box-shadow: 0 2px 8px rgba(134, 9, 20, 0.25);
+}
+
+/* 禁用狀態的按鈕不應有 hover 效果 */
 .checkout-btn.btn-disabled {
   opacity: 0.5;
   cursor: not-allowed;
