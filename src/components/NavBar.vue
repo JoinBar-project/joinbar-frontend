@@ -11,6 +11,7 @@
       <li><RouterLink to="/events">酒吧活動</RouterLink></li>
       <li><RouterLink to="/subscription">訂閱優惠</RouterLink></li>
       <li><RouterLink to="/member">會員服務</RouterLink></li>
+      <li><RouterLink to="/cart"><img class="cart-icon" src="/cart.png" alt="Cart Icon" /></RouterLink></li>
     </ul>
   </nav>
 </template>
@@ -20,8 +21,9 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 20px 40px;
+  padding: 16px 32px;
   background-color: #bbbbbb;
+  color: white;
   height: 100px;
 }
 
@@ -33,12 +35,28 @@
 .nav-links {
   list-style: none;
   display: flex;
-  gap: 30px;
+  gap: 24px;
+  align-items: center;
+  height: 100%;
+}
+
+.nav-links li {
+  display: flex;
+  align-items: center;
+  height: 100%;
 }
 
 .nav-links a {
-  font-size: 18px;
   color: white;
   text-decoration: none;
+  display: flex;
+  align-items: center;
+  height: 100%;
+}
+
+.cart-icon {
+  height: 55%;
+  width: auto;
+  display: block;
 }
 </style>
