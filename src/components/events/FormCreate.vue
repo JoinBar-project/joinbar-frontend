@@ -67,8 +67,8 @@ function handleSubmit() {
   text-align: center;
   margin: 0 auto;
   font-size: 18px;
-  padding: 10px;
-  border-radius: 10px 10px 0 0;
+  padding: 6px;
+  border-radius: 15px 15px 0 0;
   color: #fff;
   background-color: var(--color-primary-red);
 }
