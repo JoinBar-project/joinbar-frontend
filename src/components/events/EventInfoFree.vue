@@ -4,6 +4,8 @@ import { useRoute } from 'vue-router'
 import dayjs from 'dayjs';
 import axios from 'axios'
 import MessageBoard from './MessageBoard.vue';
+import 'dayjs/locale/zh-tw'
+dayjs.locale('zh-tw')
 
 const isJoin = ref(false)
 const showModal = ref(false)
@@ -20,6 +22,7 @@ onMounted( async() => {
   try{
       const res = await axios.get(`/event/${eventId}`)
       event.value = res.data
+      console.log(event.value)
   }catch(err){
     if( err.reaponse && err.response.status === 404){
       notFound.value = true
@@ -29,7 +32,6 @@ onMounted( async() => {
       console.error('取得活動資料失敗', err)
     }
   }finally{
-    
     isLoading.value = false
     }
 })
@@ -39,6 +41,12 @@ const isOver24hr = computed(() => {
   return dayjs(event.value.startDate).diff(now.value, 'hour') > 24
 })
 
+const formattedEventTime = computed(() =>{
+  if (!event.value) return ''
+  const start = dayjs(event.value.startDate).format('YYYY.MM.DD HH:mm (ddd)')
+  const end = dayjs(event.value.endDate).format('YYYY.MM.DD HH:mm (ddd)')
+  return `${start} ~ ${end}`
+})
 
 function toggleJoin(){
   isJoin.value = !isJoin.value
@@ -83,7 +91,6 @@ function handleConfirmCancel(){
 
     <div class="event-information-section">
       <div class="event-information-card">
-        <!-- <div class="apply-tag">已報名</div> -->
         <div class="event-img">
           <img src="@/components/events/picture/酒吧示意圖.jpg" alt="酒吧示意圖"> 
         </div>
@@ -101,11 +108,15 @@ function handleConfirmCancel(){
               </h3>
               <div class="event-content-info">
                 <i class="fa-solid fa-calendar"></i>
-                <p>2025.01.01(一) 21:00 ~ 2025.02.28(五) 23:59</p>
+                <p v-if="formattedEventTime">活動時間：{{ formattedEventTime }}</p>
               </div>
               <div class="event-content-info">
                 <i class="fa-solid fa-location-dot"></i>
-                <p>BAR AMIGO｜新北市板橋區中正路100號</p>
+                <p>店名：BAR AMIGO</p>
+              </div>
+              <div class="event-content-info">
+                <i class="fa-solid fa-wine-glass"></i>
+                <p>地址：BAR AMIGO新北市板橋區中正路100號</p>
               </div>
               <div class="event-content-info">
                 <i class="fa-solid fa-user"></i>
@@ -113,7 +124,7 @@ function handleConfirmCancel(){
               </div>
             </div>
             <button @click="toggleJoin()" :disabled = "isJoin" :class="{ 'opacity-50 cursor-not-allowed': isJoin }" type="button" class="event-btn event-btn-free" >{{ isJoin ? '已報名' : '參加活動' }}</button>
-            <button v-if="isJoin" @click="openCancelModal()" :disabled="!isOver24hr" :class="{ 'opacity-50 cursor-not-allowed': !isOver24hr }"  type="button" class="event-btn event-btn-free" >取消報名</button>
+            <button v-if="isJoin" @click="openCancelModal()" :disabled="!isOver24hr" :class="['event-btn event-btn-free',    isOver24hr ? 'cursor-pointer' : 'cursor-not-allowed opacity-50']"  type="button" class="event-btn event-btn-free" >取消報名</button>
 
           </div>
         </div>
@@ -138,7 +149,7 @@ function handleConfirmCancel(){
 
 .event-information-card{
   max-width: 1200px;
-  min-width: 1000px;
+  min-width: 1170px;
   width: 100%;
   background-color: #f1f1f1;
   padding-bottom: 30px;
@@ -184,7 +195,7 @@ function handleConfirmCancel(){
 
 .event-tags{
   display: flex;
-
+  margin-top: 10px;
 }
 
 .event-tags div{
@@ -212,7 +223,7 @@ function handleConfirmCancel(){
 
 .event-content-info p{
   font-size: 20px;
-  line-height: 2.5;
+  line-height: 2;
   margin: 0;
 }
 
@@ -223,7 +234,8 @@ function handleConfirmCancel(){
 .event-title{
   font-size: 28px;
   font-weight: bold;
-  margin-top: 30px;
+  margin-top: 20px;
+  margin-bottom: 20px;
 }
 
 .event-btn{
@@ -234,7 +246,6 @@ function handleConfirmCancel(){
   font-size: 24px;
   text-align: center;
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
-  cursor: pointer;
 }
 
 .event-btn-free{
