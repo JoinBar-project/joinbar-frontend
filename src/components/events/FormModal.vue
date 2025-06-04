@@ -87,7 +87,7 @@ function handleDelete() {
   align-items: center;
   margin: 0 auto;
   width: 180px;
-  height: 45px;
+  padding: 8px 0;
   font-size: 20px;
   color: white;
   border: none;
@@ -123,7 +123,6 @@ function handleDelete() {
   max-height: 90vh;
   overflow-y: auto;
 }
-
 
 .popup-close-btn {
   position: absolute;
