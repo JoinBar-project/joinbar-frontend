@@ -27,20 +27,31 @@ watch(barName, (newVal) => {
   }
 })
 
+function toDatetimeLocal(dtString) {
+  if (!dtString) return '';
+  // 直接 new Date 解析，再 format
+  const d = new Date(dtString);
+  const pad = n => n.toString().padStart(2, '0');
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+
 onMounted(async () => {
   if (props.eventId) {
     await eventStore.fetchEvent(props.eventId)
+    console.log(eventStore.event)
     const data = eventStore.event
-    eventName.value = data.name || ''
-    barName.value = data.barName || ''
-    eventLocation.value = data.location || ''
-    eventStartDate.value = data.startDate ? data.startDate.slice(0, 16) : ''
-    eventEndDate.value = data.endDate ? data.endDate.slice(0, 16) : ''
-    eventImageUrl.value = data.imageUrl || ''
-    eventPrice.value = data.price || ''
-    eventPeople.value = data.maxPeople || ''
-    hostUser.value = data.hostUser || ''
-    eventHashtags.value = data.tags || []
+    if (data && data.stringModel) {
+      eventName.value = data.stringModel.name || ''
+      barName.value = data.stringModel.barName || ''
+      eventLocation.value = data.stringModel.location || ''
+      eventStartDate.value = toDatetimeLocal(data.stringModel.startDate)
+      eventEndDate.value = toDatetimeLocal(data.stringModel.endDate)
+      eventImageUrl.value = data.stringModel.imageUrl || ''
+      eventPrice.value = data.stringModel.price || ''
+      eventPeople.value = data.stringModel.maxPeople || ''
+      hostUser.value = data.stringModel.hostUser || ''
+      eventHashtags.value = data.tagIds || []
+    }
   }
 })
 
@@ -105,11 +116,11 @@ function handleCancel() {
           </div>
           <div class="form-row">
             <label for="event-start-date">開始日期</label>
-            <input type="date" id="event-start-date" v-model="eventStartDate" />
+            <input type="datetime-local" id="event-start-date" v-model="eventStartDate" />
           </div>
           <div class="form-row">
             <label for="event-end-date">結束日期</label>
-            <input type="date" id="event-end-date" v-model="eventEndDate" />
+            <input type="datetime-local" id="event-end-date" v-model="eventEndDate" />
           </div>
           <div class="form-row">
             <label for="event-price">價格</label>
