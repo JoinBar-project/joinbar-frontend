@@ -1,5 +1,5 @@
 <script setup>
-import { ref } from 'vue'
+import { ref, watch } from 'vue'
 import { defineEmits } from 'vue'
 import { useEventStore } from '@/stores/event'
 import Hashtag from './Hashtag.vue'
@@ -14,11 +14,30 @@ const eventEndDate = ref('')
 const eventImageUrl = ref('')
 const eventPrice = ref('')
 const eventPeople = ref('')
-const hostUser = ref('')
+// const hostUser = ref('') 等會員系統建置完成
 const eventHashtags = ref([])
 
-function handleSubmit() {
+// 新增：自動填寫地點
+watch(barName, (newVal) => {
+  if (newVal) {
+    eventLocation.value = '台北市中正區中正路100號'
+  } else {
+    eventLocation.value = ''
+  }
+})
 
+function handleSubmit() {
+  if (
+    !eventName.value ||
+    !barName.value ||
+    !eventStartDate.value ||
+    !eventEndDate.value ||
+    !eventPrice.value ||
+    !eventPeople.value
+  ) {
+    alert('請完整填寫所有欄位！')
+    return
+  }
   const payload = {
     name: eventName.value,
     barName: barName.value,
@@ -28,8 +47,9 @@ function handleSubmit() {
     maxPeople: Number(eventPeople.value),
     imageUrl: eventImageUrl.value,
     price: Number(eventPrice.value),
-    hostUser: hostUser.value,
-    tags: eventHashtags.value
+    hostUser: 888,
+    // hostUser: hostUser.value, 等會員系統建置完成
+    tags: [...eventHashtags.value]
   }
   console.log(payload)
   eventStore.createEvent(payload)
@@ -53,32 +73,23 @@ function handleSubmit() {
             <input type="text" id="event-name" v-model="eventName" placeholder="請輸入活動名稱" />
           </div>
           <div class="form-row">
-            <label for="event-location">活動地點</label>
-            <input type="text" id="event-location" v-model="eventLocation" placeholder="請輸入活動地點" />
-          </div>
-          <div class="form-row">
             <label for="bar-name">酒吧名稱</label>
             <input type="text" id="bar-name" v-model="barName" placeholder="請輸入酒吧名稱" />
           </div>
+          <div class="event-location">
+            {{eventLocation}}
+          </div>
           <div class="form-row">
             <label for="event-start-date">開始日期</label>
-            <input type="date" id="event-start-date" v-model="eventStartDate" />
+            <input type="datetime-local" id="event-start-date" v-model="eventStartDate" />
           </div>
           <div class="form-row">
             <label for="event-end-date">結束日期</label>
-            <input type="date" id="event-end-date" v-model="eventEndDate" />
+            <input type="datetime-local" id="event-end-date" v-model="eventEndDate" />
           </div>
-          <!-- <div class="form-row">
-            <label for="event-time">活動時間</label>
-            <input type="time" id="event-time" v-model="eventTime" />
-          </div> -->
           <div class="form-row">
             <label for="event-price">價格</label>
             <input type="number" id="event-price" v-model="eventPrice" placeholder="請輸入價格" />
-          </div>
-          <div class="form-row">
-            <label for="host-user">主辦者</label>
-            <input type="text" id="host-user" v-model="hostUser" placeholder="請輸入主辦者" />
           </div>
           <div class="form-row">
             <label for="event-time">參加人數</label>
@@ -172,6 +183,20 @@ function handleSubmit() {
   border-radius: 15px;
   background-color: white;
 }
+
+.event-location {
+  font-size: 16px;
+  margin-left: 110px;
+  color:var(--color-primary-red)
+}
+/* #event-location{
+  height: 40px;
+  padding: 0 10px;
+  font-size: 18px;
+  border: 3px solid #b9b9b9;
+  border-radius: 15px;
+  background-color: white;
+} */
 
 .form-bottom{
   padding-bottom: 20px;
