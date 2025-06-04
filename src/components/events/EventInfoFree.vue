@@ -1,17 +1,44 @@
 <script setup>
-import { ref } from 'vue';
+import { ref, computed, onMounted } from 'vue';
+import { useRoute } from 'vue-router'
+import dayjs from 'dayjs';
+import axios from 'axios'
 import MessageBoard from './MessageBoard.vue';
-import { computed } from 'vue'
 
 const isJoin = ref(false)
 const showModal = ref(false)
-const eventStartTime = new Date('2025-06-10T21:00:00')
+const event = ref(null)
+const now = ref(dayjs())
+const route = useRoute()
+const eventId = route.params.id
+const notFound = ref(false)
+const isLoading = ref(true)
+const errorMsg = ref('')
 
-const canCancel = computed(() => {
-  const now = new Date()
-  const beforeEvent = (eventStartTime - now)
-  return beforeEvent > 24
+
+onMounted( async() => {
+  try{
+      const res = await axios.get(`/event/${eventId}`)
+      event.value = res.data
+  }catch(err){
+    if( err.reaponse && err.response.status === 404){
+      notFound.value = true
+      
+    }else{
+      errorMsg.value = '取得活動資料失敗'
+      console.error('取得活動資料失敗', err)
+    }
+  }finally{
+    
+    isLoading.value = false
+    }
 })
+
+const isOver24hr = computed(() => {
+  if( !event.value || !event.value.startDate ) return false
+  return dayjs(event.value.startDate).diff(now.value, 'hour') > 24
+})
+
 
 function toggleJoin(){
   isJoin.value = !isJoin.value
@@ -34,63 +61,66 @@ function handleConfirmCancel(){
 </script>
 
 <template>
+<p v-if="isLoading">載入中，請稍後...</p>
+<p v-else-if="notFound">找不到活動</p>
+<p v-else-if="errorMsg">{{ errorMsg }}</p>
+<div v-else>
+  <div :class="['modal', { 'modal-open': showModal }]">
+    <div class="modal-box">
+      <h3 class="text-lg font-bold">確認取消報名</h3>
+      <p class="py-4">
+        您確定要取消這次報名嗎？ <br/>
+        <span>取消後如人數額滿或是活動開始前24小時內都將無法報名</span>， <br/>
+        請再次確認您的選擇。
+      </p>
+      <div class="modal-action">
+        <button class="btn" @click="closeModal">放棄取消</button>
+        <button class="btn" @click="handleConfirmCancel">確認取消</button>
 
-<div :class="['modal', { 'modal-open': showModal }]">
-  <div class="modal-box">
-    <h3 class="text-lg font-bold">確認取消報名</h3>
-    <p class="py-4">
-      您確定要取消這次報名嗎？ <br/>
-      <span>取消後如人數額滿或是活動開始前24小時內都將無法報名</span>， <br/>
-      請再次確認您的選擇。
-    </p>
-    <div class="modal-action">
-      <button class="btn" @click="closeModal">放棄取消</button>
-      <button class="btn" @click="handleConfirmCancel">確認取消</button>
-
-    </div>
-  </div>
-</div>
-
-  <div class="event-information-section">
-    <div class="event-information-card">
-      <!-- <div class="apply-tag">已報名</div> -->
-      <div class="event-img">
-        <img src="@/components/events/picture/酒吧示意圖.jpg" alt="酒吧示意圖"> 
-      </div>
-      <div class="event-content-box">
-        <div class="event-map">
-        </div>
-        <div class="event-content">
-          <div class="event-tags">
-            <div>免費活動</div>
-            <div>下班來喝</div>
-          </div>
-          <div>
-            <h3 class="event-title">周末CHILL調酒Day，藍調爵士抒情夜
-              入場免費招待一杯SHOT，歡迎加入!
-            </h3>
-            <div class="event-content-info">
-              <i class="fa-solid fa-calendar"></i>
-              <p>2025.01.01(一) 21:00 ~ 2025.02.28(五) 23:59</p>
-            </div>
-            <div class="event-content-info">
-              <i class="fa-solid fa-location-dot"></i>
-              <p>BAR AMIGO｜新北市板橋區中正路100號</p>
-            </div>
-            <div class="event-content-info">
-              <i class="fa-solid fa-user"></i>
-              <p>目前報名人數： <span>12</span> / <span>20</span></p>
-            </div>
-          </div>
-          <button @click="toggleJoin()" :disabled = "isJoin" :class="{ 'opacity-50 cursor-not-allowed': isJoin }" type="button" class="event-btn event-btn-free" >{{ isJoin ? '已報名' : '參加活動' }}</button>
-          <button v-if="isJoin" @click="openCancelModal()" :disabled="!canCancel" :class="{ 'opacity-50 cursor-not-allowed': !canCancel }"  type="button" class="event-btn event-btn-free" >取消報名</button>
-
-        </div>
       </div>
     </div>
   </div>
-  <MessageBoard v-if="isJoin" />
-  
+
+    <div class="event-information-section">
+      <div class="event-information-card">
+        <!-- <div class="apply-tag">已報名</div> -->
+        <div class="event-img">
+          <img src="@/components/events/picture/酒吧示意圖.jpg" alt="酒吧示意圖"> 
+        </div>
+        <div class="event-content-box">
+          <div class="event-map">
+          </div>
+          <div class="event-content">
+            <div class="event-tags">
+              <div>免費活動</div>
+              <div>下班來喝</div>
+            </div>
+            <div>
+              <h3 class="event-title">周末CHILL調酒Day，藍調爵士抒情夜
+                入場免費招待一杯SHOT，歡迎加入!
+              </h3>
+              <div class="event-content-info">
+                <i class="fa-solid fa-calendar"></i>
+                <p>2025.01.01(一) 21:00 ~ 2025.02.28(五) 23:59</p>
+              </div>
+              <div class="event-content-info">
+                <i class="fa-solid fa-location-dot"></i>
+                <p>BAR AMIGO｜新北市板橋區中正路100號</p>
+              </div>
+              <div class="event-content-info">
+                <i class="fa-solid fa-user"></i>
+                <p>目前報名人數： <span>12</span> / <span>20</span></p>
+              </div>
+            </div>
+            <button @click="toggleJoin()" :disabled = "isJoin" :class="{ 'opacity-50 cursor-not-allowed': isJoin }" type="button" class="event-btn event-btn-free" >{{ isJoin ? '已報名' : '參加活動' }}</button>
+            <button v-if="isJoin" @click="openCancelModal()" :disabled="!isOver24hr" :class="{ 'opacity-50 cursor-not-allowed': !isOver24hr }"  type="button" class="event-btn event-btn-free" >取消報名</button>
+
+          </div>
+        </div>
+      </div>
+    </div>
+    <MessageBoard v-if="isJoin" />
+</div>  
 
 </template>
 
