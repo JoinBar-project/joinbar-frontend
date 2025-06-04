@@ -111,11 +111,12 @@ function handleConfirmCancel(){
                 <p v-if="formattedEventTime">活動時間：{{ formattedEventTime }}</p>
               </div>
               <div class="event-content-info">
-                <i class="fa-solid fa-location-dot"></i>
+                <i class="fa-solid fa-wine-glass"></i>
+
                 <p>店名：BAR AMIGO</p>
               </div>
               <div class="event-content-info">
-                <i class="fa-solid fa-wine-glass"></i>
+                <i class="fa-solid fa-location-dot"></i>
                 <p>地址：BAR AMIGO新北市板橋區中正路100號</p>
               </div>
               <div class="event-content-info">
