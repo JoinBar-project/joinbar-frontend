@@ -1,6 +1,6 @@
 <template>
   <div class="search-panel">
-    <div class="input-group">
+    <div ref="inputArea" class="input-group">
       <input
         type="text"
         id="searchInput" 
@@ -29,17 +29,21 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, onBeforeUnmount } from 'vue'
 import debounce from 'lodash/debounce'
 
 const searchQuery = ref('')
 const suggestions = ref([])
 const mapContainer = ref(null)
 
+// 列表消失
+const inputArea = ref(null)
+
 // 定義 loading 狀態
 const isSearching = ref(false)
 
 let map
+// 儲存所有地圖上的 marker 的陣列
 let markers = []
 let infoWindow
 let autocompleteService = null
@@ -57,7 +61,7 @@ function loadGoogleMapsScript() {
     }
 
     const script = document.createElement('script')
-    script.src = `https://maps.googleapis.com/maps/api/js?key=${import.meta.env.VITE_GOOGLE_MAPS_API_KEY}&libraries=places`
+    script.src = `https://maps.googleapis.com/maps/api/js?key=${import.meta.env.VITE_GOOGLE_MAPS_API_KEY}&libraries=places,marker&v=beta&solution_channel=GMP_CCS_complexmarkers_v3`
     script.async = true
     script.defer = true
     script.onload = () => {
@@ -77,19 +81,20 @@ onMounted(async () => {
   try {
     await loadGoogleMapsScript()
 
-    navigator.geolocation.getCurrentPosition(
+    initMap(defaultCenter)
 
-    // 如果成功，使用使用者位置；失敗就 fallback 用預設的 defaultCenter
+    navigator.geolocation.getCurrentPosition(
       (position) => {
         const userLocation = {
           lat: position.coords.latitude,
           lng: position.coords.longitude
         }
         initMap(userLocation)
+        searchNearbyBars('酒吧', userLocation, 2000);
       },
-      (error) => {
-        console.warn('定位失敗或用戶不同意存取定位，使用預設位置', error)
+      () => {
         initMap(defaultCenter)
+        searchNearbyBars('酒吧', defaultCenter, 2000);
       }
     )
   } catch (err) {
@@ -97,12 +102,15 @@ onMounted(async () => {
   }
 })
 
-function initMap(center, shouldGetCurrent = false) {
+function initMap(center) {
   map = new google.maps.Map(mapContainer.value, {
     center,
     zoom: 12,
 
-// 允許直接滾輪縮放、不顯示提示
+    // 改成我的 Map ID
+    mapId:'de9836f814a14783c63e9078',
+
+    // 允許直接滾輪縮放、不顯示提示
     gestureHandling: 'greedy',
     restriction: {
       latLngBounds: {
@@ -133,27 +141,26 @@ function initMap(center, shouldGetCurrent = false) {
   infoWindow = new google.maps.InfoWindow()
   placesService = new google.maps.places.PlacesService(map)
   autocompleteService = new google.maps.places.AutocompleteService()
-
-  if (shouldGetCurrent) {
-    getCurrentLocation()
-  } else {
-    searchNearbyBars(center)
-  }
 }
 
 // 搜尋附近的「酒吧」並加上 marker
-function searchNearbyBars(location) {
+function searchNearbyBars(query, location, radius = 2000) {
   if (!location || typeof location.lat !== 'number' || typeof location.lng !== 'number') {
     console.error('searchNearbyBars: 無效的位置', location)
     return
   }
 
-  clearMarkers()
+  if (currentMarker && (location.lat !== currentMarker.getPosition().lat || location.lng !== currentMarker.getPosition().lng)) { 
+    clearAllMarkers(); 
+  } else if (!currentMarker) {
+    clearAllMarkers();
+  }
 
   const request = {
     location,
     radius: 1500,
-    type: ['bar']
+    type: (query.includes('酒吧') || query.includes('bar')) ? ['bar', 'liquor_store'] : undefined, 
+    keyword: query
   }
 
   placesService.nearbySearch(request, (results, status) => {
@@ -170,8 +177,37 @@ function searchNearbyBars(location) {
       const marker = new google.maps.Marker({
         map,
         position: place.geometry.location,
-        title: place.name
-      })
+        title: place.name,
+    })
+
+    // 延伸：取得詳細資料（含評論）
+    placesService.getDetails(
+      {
+        placeId: place.place_id,
+        fields: ['name', 'rating', 'website', 'reviews','types']
+      },
+      (details, status) => {
+          if (status !== google.maps.places.PlacesServiceStatus.OK) {
+            console.warn('getDetails 失敗：', status, place.name)
+            return
+          }
+
+          const isBarType = details.types && (details.types.includes('bar') || details.types.includes('liquor_store'));
+          const nameMatches = /酒|bar|pub|雞尾酒|lounge/i.test(details.name); 
+          const reviewMatches = Array.isArray(details.reviews)
+            ? details.reviews.some(r => /酒|bar|pub|雞尾酒|lounge/i.test(r.text))
+            : false
+
+          const isBarLike = isBarType || nameMatches || reviewMatches
+
+          if (isBarLike) {
+            marker.setIcon({
+              url: '/wine.png',
+              scaledSize: new google.maps.Size(32, 32)
+            })
+          }
+        }
+      )
 
       marker.addListener('click', () => {
         placesService.getDetails(
@@ -202,23 +238,19 @@ function searchNearbyBars(location) {
   })
 }
 
-
-function requestGeolocationPermission() {
-  if (!navigator.geolocation) {
-    console.warn('瀏覽器不支援地理位置存取')
-    searchNearbyBars(defaultCenter)
-    return
+function handleClickOutside(event) {
+  if (inputArea.value && !inputArea.value.contains(event.target)) {
+    suggestions.value = []
   }
-
-  navigator.geolocation.getCurrentPosition(
-    () => {
-      console.log('使用者已允許位置權限')
-    },
-    (err) => {
-      console.warn('使用者未允許位置權限，錯誤碼:', err.code)
-    }
-  )
 }
+
+onMounted(() => {
+  document.addEventListener('click', handleClickOutside)
+})
+
+onBeforeUnmount(() => {
+  document.removeEventListener('click', handleClickOutside)
+})
 
 // 搜尋 - 防抖機制
 const onInputChange= debounce(() =>{
@@ -232,7 +264,7 @@ const onInputChange= debounce(() =>{
       input: searchQuery.value,
       componentRestrictions: { country: 'tw' },
       location: map.getCenter(), 
-      radius: 18000
+      radius: 20000
     },
     (predictions, status) => {
       if (status === google.maps.places.PlacesServiceStatus.OK && predictions) {
@@ -255,11 +287,12 @@ function handleSearch() {
     alert('請輸入搜尋關鍵字')
     return
   }
-  searchPlaceByText(searchQuery.value)
+  searchPlaceByText(searchQuery.value, map.getCenter(), 5000)
 }
 
 function searchPlaceByText(query) {
   isSearching.value = true
+  
   placesService.textSearch(
     {
       query,
@@ -287,34 +320,57 @@ function searchPlaceByText(query) {
         const marker = new google.maps.Marker({
           map,
           position: place.geometry.location,
-          title: place.name
+          title: place.name,
         })
 
-        marker.addListener('click', () => {
-          placesService.getDetails(
-            {
-              placeId: place.place_id,
-              fields: ['name', 'formatted_address', 'rating', 'website']
-            },
-            (details, status) => {
-              if (status === google.maps.places.PlacesServiceStatus.OK) {
-                infoWindow.setContent(`
+        // 取得詳細資訊（包含評論）
+        placesService.getDetails(
+          {
+            placeId: place.place_id,
+            fields: ['name', 'formatted_address', 'rating', 'website', 'reviews'],
+          },
+          (details, status) => {
+            if (status === google.maps.places.PlacesServiceStatus.OK && details) {
+              const isBarType = details.types && details.types.includes('bar')
+              const nameMatches = /酒|bar/i.test(details.name)
+              const reviewMatches = Array.isArray(details.reviews)
+                ? details.reviews.some((review) => /酒|bar/i.test(review.text))
+                : false
+
+              const isBarLike = isBarType ||nameMatches || reviewMatches
+
+              if (isBarLike) {
+                marker.setIcon({
+                  url: '/wine.png',
+                  scaledSize: new google.maps.Size(32, 32),
+                })
+              }
+
+              marker.addListener('click', () => {
+                const content = `
                   <strong>${details.name}</strong><br/>
                   地址：${details.formatted_address}<br/>
                   評分：${details.rating}<br/>
                   ${details.website ? `<a href="${details.website}" target="_blank">網站</a>` : ''}
-                `)
+                `
+                infoWindow.setContent(content)
                 infoWindow.open(map, marker)
-              }
+              })
             }
-          )
-        })
+          }
+        )
 
         markers.push(marker)
         bounds.extend(place.geometry.location)
       })
 
       map.fitBounds(bounds)
+       // 限制 zoom 不要放太大
+      const listener = google.maps.event.addListenerOnce(map, 'bounds_changed', () => {
+        if (map.getZoom() > 15) {
+          map.setZoom(15)
+        }
+      })
     }
   )
 }
@@ -325,7 +381,7 @@ function clearMarkers() {
 }
 
 function getCurrentLocation() {
-  console.log('Getting current location...')
+  console.log('取得目前位置...')
   if (!navigator.geolocation) {
     alert('你的瀏覽器不支援定位功能')
     return
@@ -341,11 +397,14 @@ function getCurrentLocation() {
       map.setCenter(location)
       map.setZoom(15)
 
-      // 加入 marker
       if (!currentMarker) {
         currentMarker = new google.maps.Marker({
           map,
           position: location,
+          icon: {
+            url: '/now.png',
+              scaledSize: new google.maps.Size(32, 32)
+          }
         })
           currentMarker.addListener('click', () => {
           showCurrentLocationInfo(location)
@@ -367,12 +426,12 @@ function getCurrentLocation() {
   })
 }
 
-      // 搜尋附近酒吧
-      searchNearbyBars(location)
+      // 搜尋附近酒吧 (location)
     },
     (error) => {
       alert('無法取得你的位置，錯誤代碼：' + error.code)
       console.error(error)
+      initMap(defaultCenter, false);
     },
     {
       enableHighAccuracy: true,
@@ -409,9 +468,8 @@ function getCurrentLocation() {
   margin-left: 10px;
 }
 .search-input{
-  height: 40px;
+  /* height: 40px; */
   padding: 8px 12px;
-  font-size: 16px;
   margin-top: 10px;
   border: 1px solid #decdd5;
   border-right: none;
@@ -421,8 +479,8 @@ function getCurrentLocation() {
 }
 .search-bt{
   background-color: #decdd5;
-  color: #ffffff;
-  padding: 8px;
+  color: #3A3435;
+  padding: 8px 12px;
   margin: 10px 0 5px 0px;
   border-radius: 0px 5px 5px 0px;
   border: 0px;
@@ -430,20 +488,21 @@ function getCurrentLocation() {
 }
 .search-bt:hover{
   background-color: #860914;
+  color: #ffffff;
 }
 .place-now {
   padding: 8px 12px;
   margin: 10px;
-  height: 40px;
   border: none;
   background-color: #decdd5;
-  color: white;
+  color: #3A3435;
   border-radius: 5px;
   cursor: pointer;
   white-space: nowrap;
 }
 .place-now:hover {
   background-color: #860914;
+  color: #ffffff;
 }
 .suggestions-list {
   position: absolute;
@@ -504,4 +563,7 @@ function getCurrentLocation() {
   font-size: 20px;
   color: #333;
 }
+
+
+
 </style>
