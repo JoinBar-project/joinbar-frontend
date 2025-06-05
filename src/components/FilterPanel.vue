@@ -394,22 +394,22 @@ onMounted(() => {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  gap: 0.5rem; /* 小時-分鐘組之間的間距 */
-  margin-bottom: 0.8rem;
+  gap: 8px;
+  margin-bottom: 13px; 
 }
 
 .time-input-group {
   display: flex;
   align-items: center;
-  gap: 0.2rem; /* 小時與分鐘輸入框之間的冒號間距 */
+  gap: 3px;
 }
 
 .time-number-input {
-  width: 45px; /* 調整寬度以容納兩位數字 */
-  padding: 0.6rem 0.4rem; /* 調整內邊距 */
+  width: 45px; 
+  padding: 10px 6px;
   border: 1px solid #e0e0e0;
-  border-radius: 0.5rem;
-  font-size: 0.95rem;
+  border-radius: 8px;
+  font-size: 15px;
   text-align: center;
   -moz-appearance: textfield;
 }
@@ -420,20 +420,20 @@ onMounted(() => {
 }
 
 .time-input-group span {
-  font-size: 0.95rem;
+  font-size: 15px;
   color: #555;
 }
 
 .time-input-hint {
-  font-size: 0.85rem;
+  font-size: 14px;
   color: #888;
-  margin-top: 0.5rem;
+  margin-top: 8px;
   text-align: center;
 }
 
-/* 其他現有樣式，保持不變 */
+
 .applied-filters-list-wrapper {
-  margin-bottom: 1.5rem;
+  margin-bottom: 24px;
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
@@ -447,7 +447,7 @@ onMounted(() => {
   color: white;
   padding: 5px 12px;
   border-radius: 20px;
-  font-size: 0.9rem;
+  font-size: 14px;
   white-space: nowrap;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
@@ -457,7 +457,7 @@ onMounted(() => {
   border: none;
   color: white;
   margin-left: 8px;
-  font-size: 0.9rem;
+  font-size: 14px;
   font-weight: bold;
   cursor: pointer;
   opacity: 0.8;
@@ -469,7 +469,7 @@ onMounted(() => {
 }
 
 .filter-panel-container {
-  padding: 1.5rem;
+  padding: 24px;
   background-color: #ffffff;
   height: 100%;
   overflow-y: auto;
@@ -488,13 +488,13 @@ onMounted(() => {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 2rem;
-  padding-bottom: 1rem;
+  margin-bottom: 32px;
+  padding-bottom: 16px;
   border-bottom: 1px solid #f0f0f0;
 }
 
 .filter-title {
-  font-size: 1.6rem;
+  font-size: 26px; 
   font-weight: 700;
   color: #333;
 }
@@ -502,10 +502,10 @@ onMounted(() => {
 .close-button {
   background: none;
   border: none;
-  font-size: 1.8rem;
+  font-size: 29px; 
   color: #888;
   cursor: pointer;
-  padding: 0.5rem;
+  padding: 8px; 
   border-radius: 50%;
   transition:
     background-color 0.2s,
@@ -518,29 +518,29 @@ onMounted(() => {
 }
 
 .filter-section {
-  margin-bottom: 2rem;
+  margin-bottom: 32px; 
 }
 
 .filter-label {
   display: block;
   font-weight: 600;
   color: #333;
-  margin-bottom: 0.8rem;
-  font-size: 1.05rem;
+  margin-bottom: 13px; 
+  font-size: 17px; 
 }
 
 .filter-select {
   width: 100%;
-  padding: 0.75rem;
+  padding: 12px; 
   border: 1px solid #e0e0e0;
-  border-radius: 0.5rem;
-  font-size: 0.95rem;
+  border-radius: 8px; 
+  font-size: 15px; 
   color: #555;
   background-color: #fff;
   appearance: none;
   background-image: url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%23666%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-25.3%200L146.2%20188.2%2030.7%2069.4a17.6%2017.6%200%200%200-25.3%200%2017.6%2017.6%200%200%200%200%2025.3l130.8%20129.8c6.8%206.7%2017.7%206.7%2024.5%200l130.8-129.8c6.9-6.8%206.9-17.7%200-25.4z%22%2F%3E%3C%2Fsvg%3E');
   background-repeat: no-repeat;
-  background-position: right 0.75rem center;
+  background-position: right 12px center; 
   background-size: 0.8em auto;
   box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.05);
   transition: border-color 0.2s;
@@ -556,16 +556,16 @@ onMounted(() => {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  gap: 0.5rem;
-  margin-bottom: 0.8rem;
+  gap: 8px; 
+  margin-bottom: 13px; 
 }
 
 .range-number-input {
   width: 45%;
-  padding: 0.6rem;
+  padding: 10px; 
   border: 1px solid #e0e0e0;
-  border-radius: 0.5rem;
-  font-size: 0.95rem;
+  border-radius: 8px; 
+  font-size: 15px; 
   text-align: center;
   -moz-appearance: textfield;
 }
@@ -583,7 +583,7 @@ onMounted(() => {
   background: #f0f0f0;
   outline: none;
   border-radius: 5px;
-  margin-top: 0.5rem;
+  margin-top: 8px; 
 }
 
 .range-slider::-webkit-slider-thumb {
@@ -611,23 +611,23 @@ onMounted(() => {
 .range-labels {
   display: flex;
   justify-content: space-between;
-  font-size: 0.85rem;
+  font-size: 14px; 
   color: #666;
-  margin-top: 0.5rem;
+  margin-top: 8px; 
 }
 
 .tags-grid {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.75rem;
+  gap: 12px; 
 }
 
 .tag-button,
 .tag-button-active {
-  padding: 0.6rem 1rem;
-  border-radius: 1.5rem;
+  padding: 10px 16px; 
+  border-radius: 24px; 
   cursor: pointer;
-  font-size: 0.9rem;
+  font-size: 14px; 
   font-weight: 500;
   transition:
     background-color 0.2s,
@@ -664,14 +664,14 @@ onMounted(() => {
   display: flex;
   justify-content: flex-end;
   margin-top: auto;
-  padding-top: 1rem;
+  padding-top: 16px; 
   border-top: 1px solid #f0f0f0;
 }
 
 .action-button {
-  padding: 0.85rem 1.25rem;
-  border-radius: 0.5rem;
-  font-size: 1rem;
+  padding: 14px 20px; 
+  border-radius: 8px; 
+  font-size: 16px; 
   font-weight: 600;
   cursor: pointer;
   transition:
@@ -696,7 +696,7 @@ onMounted(() => {
     width: 100vw;
     right: 0;
     left: 0;
-    padding: 1rem;
+    padding: 16px; /* 1rem = 16px */
   }
 }
 </style>

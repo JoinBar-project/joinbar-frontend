@@ -550,7 +550,6 @@ watch(selectedBar, (newVal) => {
 </script>
 
 <style scoped>
-/* 保持你的 CSS 樣式不變 */
 .map-view-container {
   display: flex;
   height: 100vh;
@@ -569,7 +568,7 @@ watch(selectedBar, (newVal) => {
   flex-direction: row;
   align-items: center;
   flex-wrap: wrap;
-  gap: 10px;
+  gap: 10px; /* 保持一致性 */
 
   padding: 15px;
   background-color: rgba(255, 255, 255, 0.9);
@@ -594,7 +593,7 @@ watch(selectedBar, (newVal) => {
 }
 
 .sidebar-header {
-  padding: 1.5rem 1rem 1rem;
+  padding: 24px 16px 16px; 
   background-color: #fff;
   border-bottom: 1px solid #eee;
   display: flex;
@@ -605,19 +604,19 @@ watch(selectedBar, (newVal) => {
 }
 
 .app-title {
-  font-size: 1.8rem;
+  font-size: 29px; 
   font-weight: bold;
   color: #860914;
   margin: 0;
 }
 
 .map-control-button {
-  padding: 0.75rem 1.25rem;
+  padding: 12px 20px; 
   border: none;
   background-color: #decdd5;
   color: black;
-  border-radius: 0.5rem;
-  font-size: 1rem;
+  border-radius: 8px; 
+  font-size: 16px; 
   cursor: pointer;
   white-space: nowrap;
   font-weight: bold;
@@ -653,9 +652,9 @@ watch(selectedBar, (newVal) => {
 .search-input {
   height: 40px;
   padding: 8px 12px;
-  font-size: 1rem;
+  font-size: 16px; 
   border: 1px solid #decdd5;
-  border-radius: 0.5rem;
+  border-radius: 8px; 
   outline: none;
   flex: 1;
 }
@@ -683,7 +682,7 @@ watch(selectedBar, (newVal) => {
   padding: 0;
   background: white;
   border: 1px solid #ddd;
-  border-radius: 0.5rem;
+  border-radius: 8px; 
   max-height: 200px;
   overflow-y: auto;
   box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
@@ -703,27 +702,27 @@ watch(selectedBar, (newVal) => {
 .info-window-content {
   padding: 15px;
   font-family: "Noto Sans TC", sans-serif;
-  color: #333; /* 確保這裡顏色是深灰色，作為 fallback */
+  color: #333; 
   max-width: 300px;
 }
 
 .info-window-title {
-  font-size: 1.4rem;
+  font-size: 22px; 
   font-weight: bold;
   margin-bottom: 8px;
-  color: #2c3e50; /* 確保這裡顏色是深色，作為 fallback */
+  color: #2c3e50; 
   line-height: 1.3;
 }
 
 .info-window-meta {
-  font-size: 0.95rem;
-  color: #555; /* 確保這裡顏色是深色，作為 fallback */
+  font-size: 15px; 
+  color: #555; /
   margin-bottom: 5px;
 }
 
 .info-window-description {
-  font-size: 0.85rem;
-  color: #777; /* 確保這裡顏色是深色，作為 fallback */
+  font-size: 14px; 
+  color: #777; 
   margin-top: 10px;
   line-height: 1.5;
 }
@@ -738,10 +737,10 @@ watch(selectedBar, (newVal) => {
 .info-window-tag {
   display: inline-block;
   background-color: #e9ecef;
-  color: #495057; /* 確保這裡顏色是深色，作為 fallback */
+  color: #495057; 
   padding: 5px 10px;
   border-radius: 15px;
-  font-size: 0.8rem;
+  font-size: 13px; 
   white-space: nowrap;
 }
 
@@ -757,7 +756,7 @@ watch(selectedBar, (newVal) => {
 .bar-list-scroll-area {
   flex-grow: 1;
   overflow-y: auto;
-  padding: 1rem;
+  padding: 16px; 
 }
 
 .map-container {

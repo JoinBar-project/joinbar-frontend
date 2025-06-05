@@ -87,7 +87,7 @@ interface Bar {
   openingHours?: google.maps.places.OpeningHours | { weekday_text?: string[] }; // Google Places API 的營業時間物件
   location?: { lat: number; lng: number }; // 添加 location 屬性以匹配您的數據
   description?: string; // 添加 description 屬性以匹配您的數據
-  // 移除 isWishlisted 屬性
+  isWishlisted?: boolean; // 添加 isWishlisted 屬性以匹配您的數據
   distance?: number; // 添加 distance 屬性以匹配您的篩選邏輯
   // 其他您可能從 Google Places API 獲取的屬性...
 }
@@ -163,27 +163,35 @@ const toggleFavorite = (placeId: string | undefined) => {
 </script>
 
 <style scoped>
+/* 您的現有樣式，已移除 color 相關的屬性，讓 Tailwind 類別來控制顏色 */
+
 .bar-list-wrapper {
-  padding: 1rem;
+  padding: 16px;
+  /* 移除這裡的 height 和 overflow 樣式，它們應該由父組件控制 */
+  /* height: 100%; */
+  /* overflow-y: auto; */
+  /* overflow-x: hidden; */ /* 僅在父組件設置，讓它負責側邊欄的滾動 */
 }
 
 .no-results {
   text-align: center;
-  padding: 2rem;
-  font-size: 1.1rem;
+  /* color: #666; <--- 已移除，因為模板中已添加 text-gray-600 */
+  padding: 32px;
+  font-size: 18px;
 }
 
 .bar-cards-list {
   display: flex;
   flex-direction: column;
-  gap: 1rem;
+  gap: 16px;
+  /* 移除這裡的任何 height 或 max-height，讓它自然撐開內容 */
+  /* 確保沒有 overflow 屬性，除非你希望卡片列表內部有自己的滾動條 */
 }
 
 .bar-card {
   background-color: #ffffff;
-  border-radius: 0.75rem;
-  box-shadow: 0 6px 15px rgba(0, 0, 0, 0.1);
-  overflow: hidden;
+  border-radius: 12px; x rgba(0, 0, 0, 0.1);
+  overflow: hidden; /* 為了圓角，保留 */
   cursor: pointer;
   transition:
     transform 0.2s ease-in-out,
@@ -191,7 +199,7 @@ const toggleFavorite = (placeId: string | undefined) => {
   border: 1px solid #f0f0f0;
   display: flex;
   flex-direction: column;
-  position: relative;
+  position: relative; /* 確保子元素的絕對定位是相對於卡片 */
 }
 
 .bar-card:hover {
@@ -203,7 +211,7 @@ const toggleFavorite = (placeId: string | undefined) => {
   width: 100%;
   height: 180px;
   overflow: hidden;
-  position: relative;
+  position: relative; /* 確保 wishlist-button 可以相對於圖片定位 */
 }
 
 .bar-card-image img {
@@ -214,44 +222,51 @@ const toggleFavorite = (placeId: string | undefined) => {
 
 .wishlist-button {
   position: absolute;
-  top: 0.75rem;
-  right: 0.75rem;
+  top: 12px; 
+  right: 12px; 
   background-color: rgba(0, 0, 0, 0.4);
   border: none;
   border-radius: 50%;
-  padding: 0.5rem;
+  padding: 8px; 
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
   transition: background-color 0.2s;
-  z-index: 10;
+  z-index: 10; /* 確保在圖片和其他內容上方 */
 }
 
 .wishlist-button:hover {
   background-color: rgba(0, 0, 0, 0.6);
 }
 
+/* 愛心圖標的顏色控制 */
 .wishlist-button svg {
-  fill: white;
-  transition: fill 0.2s ease;
+  fill: white; /* 預設愛心顏色為白色 */
+  transition: fill 0.2s ease; /* 為 fill 屬性添加過渡效果 */
 }
 
+/* 當滑鼠懸停在按鈕上且未收藏時，SVG 的顏色變為 red-400 的效果 */
 .wishlist-button:not([fill="red"]):hover svg {
-  fill: #f87171;
+  /* 檢查非紅色的情況下 hover */
+  fill: #f87171; /* Tailwind's red-400 */
 }
+
+/* 收藏狀態的愛心顏色由模板中的 :fill="isFavorite(...) ? 'red' : 'white'" 控制 */
+/* 所以不需要額外的 .favorite class 或複雜的 CSS 規則來控制紅色狀態 */
 
 .bar-card-content {
-  padding: 1rem;
+  padding: 16px; 
   flex-grow: 1;
   display: flex;
   flex-direction: column;
 }
 
 .bar-name {
-  font-size: 1.25rem;
+  font-size: 20px; 
   font-weight: 700;
-  margin-bottom: 0.5rem;
+  /* color: #333; */
+  margin-bottom: 8px; 
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -261,42 +276,45 @@ const toggleFavorite = (placeId: string | undefined) => {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 0.5rem;
+  margin-bottom: 8px; 
 }
 
 .bar-rating {
-  font-size: 0.9rem;
+  font-size: 14px; 
+  /* color: #666;*/
   display: flex;
   align-items: center;
 }
 
 .bar-rating .star-icon {
-  margin-right: 0.2rem;
+  margin-right: 3px; 
 }
 
 .bar-price {
-  font-size: 1rem;
+  font-size: 16px; 
   font-weight: 600;
+  /* color: #b8a28e;  */
 }
 
 .bar-tags {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.5rem;
-  margin-bottom: 0.75rem;
+  gap: 12px; 
+  margin-bottom: 12px; 
 }
 
 .bar-tag {
   background-color: #f0f0f0;
-  color: #495057;
-  padding: 0.3rem 0.7rem;
-  border-radius: 1rem;
-  font-size: 0.8rem;
+  color: #495057; 
+  padding: 5px 11px; 
+  border-radius: 16px; 
+  font-size: 13px; 
   white-space: nowrap;
 }
 
 .bar-hours {
-  font-size: 0.85rem;
+  font-size: 14px; 
+  /* color: #888;  */
   margin-top: auto;
 }
 </style>
