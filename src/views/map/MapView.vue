@@ -5,7 +5,7 @@
         class="filter-toggle-button map-control-button"
         @click="toggleFilterPanel"
       >
-        <i class="fas fa-cog"></i> 篩選
+        篩選 ⚙️
       </button>
 
       <div class="search-panel-map">
@@ -43,9 +43,6 @@
     </div>
 
     <aside class="bar-list-sidebar">
-      <div class="sidebar-header">
-        <h1 class="app-title">JoinBar</h1>
-      </div>
 
       <div class="bar-list-scroll-area">
         <BarList

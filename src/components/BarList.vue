@@ -87,7 +87,7 @@ interface Bar {
   openingHours?: google.maps.places.OpeningHours | { weekday_text?: string[] }; // Google Places API 的營業時間物件
   location?: { lat: number; lng: number }; // 添加 location 屬性以匹配您的數據
   description?: string; // 添加 description 屬性以匹配您的數據
-  isWishlisted?: boolean; // 添加 isWishlisted 屬性以匹配您的數據
+  // 移除 isWishlisted 屬性
   distance?: number; // 添加 distance 屬性以匹配您的篩選邏輯
   // 其他您可能從 Google Places API 獲取的屬性...
 }
@@ -163,19 +163,12 @@ const toggleFavorite = (placeId: string | undefined) => {
 </script>
 
 <style scoped>
-/* 您的現有樣式，已移除 color 相關的屬性，讓 Tailwind 類別來控制顏色 */
-
 .bar-list-wrapper {
   padding: 1rem;
-  /* 移除這裡的 height 和 overflow 樣式，它們應該由父組件控制 */
-  /* height: 100%; */
-  /* overflow-y: auto; */
-  /* overflow-x: hidden; */ /* 僅在父組件設置，讓它負責側邊欄的滾動 */
 }
 
 .no-results {
   text-align: center;
-  /* color: #666; <--- 已移除，因為模板中已添加 text-gray-600 */
   padding: 2rem;
   font-size: 1.1rem;
 }
@@ -184,15 +177,13 @@ const toggleFavorite = (placeId: string | undefined) => {
   display: flex;
   flex-direction: column;
   gap: 1rem;
-  /* 移除這裡的任何 height 或 max-height，讓它自然撐開內容 */
-  /* 確保沒有 overflow 屬性，除非你希望卡片列表內部有自己的滾動條 */
 }
 
 .bar-card {
   background-color: #ffffff;
   border-radius: 0.75rem;
   box-shadow: 0 6px 15px rgba(0, 0, 0, 0.1);
-  overflow: hidden; /* 為了圓角，保留 */
+  overflow: hidden;
   cursor: pointer;
   transition:
     transform 0.2s ease-in-out,
@@ -200,7 +191,7 @@ const toggleFavorite = (placeId: string | undefined) => {
   border: 1px solid #f0f0f0;
   display: flex;
   flex-direction: column;
-  position: relative; /* 確保子元素的絕對定位是相對於卡片 */
+  position: relative;
 }
 
 .bar-card:hover {
@@ -212,7 +203,7 @@ const toggleFavorite = (placeId: string | undefined) => {
   width: 100%;
   height: 180px;
   overflow: hidden;
-  position: relative; /* 確保 wishlist-button 可以相對於圖片定位 */
+  position: relative;
 }
 
 .bar-card-image img {
@@ -234,27 +225,21 @@ const toggleFavorite = (placeId: string | undefined) => {
   align-items: center;
   justify-content: center;
   transition: background-color 0.2s;
-  z-index: 10; /* 確保在圖片和其他內容上方 */
+  z-index: 10;
 }
 
 .wishlist-button:hover {
   background-color: rgba(0, 0, 0, 0.6);
 }
 
-/* 愛心圖標的顏色控制 */
 .wishlist-button svg {
-  fill: white; /* 預設愛心顏色為白色 */
-  transition: fill 0.2s ease; /* 為 fill 屬性添加過渡效果 */
+  fill: white;
+  transition: fill 0.2s ease;
 }
 
-/* 當滑鼠懸停在按鈕上且未收藏時，SVG 的顏色變為 red-400 的效果 */
 .wishlist-button:not([fill="red"]):hover svg {
-  /* 檢查非紅色的情況下 hover */
-  fill: #f87171; /* Tailwind's red-400 */
+  fill: #f87171;
 }
-
-/* 收藏狀態的愛心顏色由模板中的 :fill="isFavorite(...) ? 'red' : 'white'" 控制 */
-/* 所以不需要額外的 .favorite class 或複雜的 CSS 規則來控制紅色狀態 */
 
 .bar-card-content {
   padding: 1rem;
@@ -266,7 +251,6 @@ const toggleFavorite = (placeId: string | undefined) => {
 .bar-name {
   font-size: 1.25rem;
   font-weight: 700;
-  /* color: #333; <--- 已移除，因為模板中已添加 text-gray-900 */
   margin-bottom: 0.5rem;
   white-space: nowrap;
   overflow: hidden;
@@ -282,7 +266,6 @@ const toggleFavorite = (placeId: string | undefined) => {
 
 .bar-rating {
   font-size: 0.9rem;
-  /* color: #666; <--- 已移除，因為模板中已添加 text-gray-700 */
   display: flex;
   align-items: center;
 }
@@ -294,7 +277,6 @@ const toggleFavorite = (placeId: string | undefined) => {
 .bar-price {
   font-size: 1rem;
   font-weight: 600;
-  /* color: #b8a28e; <--- 已移除，因為模板中已添加 text-orange-700 */
 }
 
 .bar-tags {
@@ -306,7 +288,7 @@ const toggleFavorite = (placeId: string | undefined) => {
 
 .bar-tag {
   background-color: #f0f0f0;
-  color: #495057; /* 確保這裡顏色是深灰色，作為 fallback。儘管模板已用 text-gray-600 */
+  color: #495057;
   padding: 0.3rem 0.7rem;
   border-radius: 1rem;
   font-size: 0.8rem;
@@ -315,7 +297,6 @@ const toggleFavorite = (placeId: string | undefined) => {
 
 .bar-hours {
   font-size: 0.85rem;
-  /* color: #888; <--- 已移除，因為模板中已添加 text-gray-700 */
   margin-top: auto;
 }
 </style>
