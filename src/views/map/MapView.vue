@@ -5,7 +5,7 @@
         class="filter-toggle-button map-control-button"
         @click="toggleFilterPanel"
       >
-        篩選 ⚙️
+        <i class="fas fa-cog"></i> 篩選
       </button>
 
       <div class="search-panel-map">
@@ -62,6 +62,8 @@
       v-if="isFilterPanelOpen"
       @filter-changed="handleFilterChanged"
       @close-panel="toggleFilterPanel"
+      @remove-applied-filter="handleRemoveAppliedFilter"
+      :initial-filters="currentFilters"
     />
 
     <div v-if="isLoading || googleMapsLoading" class="loading-overlay">
@@ -76,72 +78,68 @@ import { ref, onMounted, computed, watch, shallowRef } from "vue";
 import debounce from "lodash/debounce";
 
 // 1. 引入你的組件
-import FilterPanel from "@/components/FilterPanel.vue"; // 從 src/components 目錄引入
-import BarList from "@/components/BarList.vue"; // 從 src/components 目錄引入
+import FilterPanel from "@/components/FilterPanel.vue";
+import BarList from "@/components/BarList.vue";
 
-import { useGoogleMaps } from "@/composable/useGoogleMaps"; // 引入你的 Composable
+import { useGoogleMaps } from "@/composable/useGoogleMaps";
 
 // 確保 API Key 存在
 const googleMapsApiKey = import.meta.env.VITE_MAPS_API_KEY;
 if (!googleMapsApiKey) {
   console.error("VITE_MAPS_API_KEY is not defined in environment variables.");
-  // 可以在這裡處理錯誤，例如顯示錯誤訊息給用戶
 }
 
-// 內部 loading 狀態 (現在可以與 useGoogleMaps 的 loading 狀態合併或協調)
-const isLoading = ref(false); // 應用程式其他數據載入狀態
-
-// 地圖容器 ref
+const isLoading = ref(false);
 const mapContainer = ref(null);
 
-// 使用 useGoogleMaps Composable
 const {
   map,
   markers,
   infoWindow,
   currentMarker,
-  loading: googleMapsLoading, // 將 Composable 的 loading 狀態重命名以區分
+  loading: googleMapsLoading,
   error: googleMapsError,
   loadGoogleMapsAPI,
   initMap,
-  clearMarkers: clearMapMarkers, // 重命名以避免與 BarList 衝突
-  addMarker: addMapMarker, // 重命名以避免與 BarList 衝突
+  clearMarkers: clearMapMarkers,
+  addMarker: addMapMarker,
   showInfoWindow: showMapInfoWindow,
   closeInfoWindow,
   panTo,
   setZoom,
   fitBounds,
   requestGeolocationPermission,
-  getCurrentLocation: getMapCurrentLocation, // 從 Composable 獲取定位函式
+  getCurrentLocation: getMapCurrentLocation,
   getPlacePredictions,
   textSearch,
 } = useGoogleMaps(mapContainer, {
   googleMapsApiKey: googleMapsApiKey,
   onLoading: () => {
     isLoading.value = true;
-  }, // 當地圖開始載入時，更新整體 loading 狀態
+  },
   onLoaded: () => {
     isLoading.value = false;
-  }, // 當地圖載入完成時，更新整體 loading 狀態
+  },
   onError: (msg) => {
     console.error("useGoogleMaps error:", msg);
     isLoading.value = false;
   },
 });
 
-// 其他應用程式狀態
 const isFilterPanelOpen = ref(false);
 const searchQuery = ref("");
 const suggestions = ref([]);
 
 const allBars = ref([]);
 const currentFilters = ref({
-  address: "any", // 這可能指的是標籤篩選，而非實際地址
+  address: "any",
   ratingSort: "any",
   minDistance: 0,
   maxDistance: 5000,
   minOpenHour: 0,
+  minOpenMinute: 0, // 新增
   maxOpenHour: 24,
+  maxOpenMinute: 0, // 新增
   tags: [],
 });
 
@@ -193,55 +191,44 @@ const filteredBars = computed(() => {
   // 營業時間篩選
   if (
     currentFilters.value.minOpenHour !== 0 ||
-    currentFilters.value.maxOpenHour !== 24
+    currentFilters.value.minOpenMinute !== 0 ||
+    currentFilters.value.maxOpenHour !== 24 ||
+    currentFilters.value.maxOpenMinute !== 0
   ) {
     barsToFilter = barsToFilter.filter((bar) => {
-      const openHoursStr = bar.openingHours || "";
+      // 確保 bar.openingHours 是一個物件，並從 weekday_text 中獲取字串
+      const openHoursStr =
+        bar.openingHours?.weekday_text?.[0] || ""; // <-- 關鍵修改點
       const match = openHoursStr.match(/(\d{2}):(\d{2})\s*-\s*(\d{2}):(\d{2})/);
 
       if (!match) return false;
 
-      let openTime = parseInt(match[1]);
-      let closeTime = parseInt(match[3]);
+      // 解析酒吧的營業時間 (總分鐘數)
+      let barOpenMinutes = parseInt(match[1]) * 60 + parseInt(match[2]);
+      let barCloseMinutes = parseInt(match[3]) * 60 + parseInt(match[4]);
 
-      if (closeTime < openTime) {
-        // 處理跨日營業
-        closeTime += 24;
+      // 處理酒吧的跨日營業
+      if (barCloseMinutes < barOpenMinutes) {
+        barCloseMinutes += 24 * 60; // 跨日加上 24 小時的分鐘數
       }
 
-      const filterMin = currentFilters.value.minOpenHour;
-      let filterMax = currentFilters.value.maxOpenHour;
-      if (filterMax === 0 && filterMin !== 0) {
-        // 處理 24 小時的篩選邊界
-        filterMax = 24;
-      } else if (filterMax < filterMin) {
-        // 處理跨日篩選條件
-        filterMax += 24;
+      // 解析篩選條件的時間 (總分鐘數)
+      const filterMinMinutes = currentFilters.value.minOpenHour * 60 + currentFilters.value.minOpenMinute;
+      let filterMaxMinutes = currentFilters.value.maxOpenHour * 60 + currentFilters.value.maxOpenMinute;
+
+      // 特殊處理篩選條件為 24:00 的情況 (視為次日 00:00，但篩選範圍包含 23:59)
+      if (currentFilters.value.maxOpenHour === 24 && currentFilters.value.maxOpenMinute === 0) {
+        filterMaxMinutes = 24 * 60; // 24:00 就是 1440 分鐘
+      }
+
+      // 處理篩選條件的跨日
+      if (filterMaxMinutes < filterMinMinutes) {
+        filterMaxMinutes += 24 * 60; // 跨日篩選加上 24 小時的分鐘數
       }
 
       // 檢查營業時間與篩選區間是否有重疊
-      return Math.max(openTime, filterMin) < Math.min(closeTime, filterMax);
-    });
-  }
-
-  // 標籤篩選
-  if (currentFilters.value.tags.length > 0) {
-    barsToFilter = barsToFilter.filter((bar) =>
-      currentFilters.value.tags.every((tag) => bar.tags.includes(tag))
-    );
-  }
-
-  // 評分排序
-  if (currentFilters.value.ratingSort !== "any") {
-    barsToFilter.sort((a, b) => {
-      if (currentFilters.value.ratingSort === "highToLow") {
-        return b.rating - a.rating;
-      } else if (currentFilters.value.ratingSort === "lowToHigh") {
-        return a.rating - b.rating;
-      } else if (currentFilters.value.ratingSort === "mostPopular") {
-        return (b.reviews || 0) - (a.reviews || 0);
-      }
-      return 0;
+      // 邏輯：兩個區間 [A, B] 和 [C, D] 重疊的條件是 Math.max(A, C) < Math.min(B, D)
+      return Math.max(barOpenMinutes, filterMinMinutes) < Math.min(barCloseMinutes, filterMaxMinutes);
     });
   }
 
@@ -258,13 +245,13 @@ function formatBarInfoWindowContent(bar) {
   div.className = "info-window-content";
   div.innerHTML = `
     ${bar.imageUrl ? `<img src="${bar.imageUrl}" alt="${bar.name}" class="info-window-image">` : ""}
-    <h3 class="info-window-title">${bar.name}</h3>
-    <p class="info-window-meta">⭐️ ${bar.rating} (${bar.reviews || 0} 評論)</p>
-    <p class="info-window-meta">💰 ${bar.priceRange || "N/A"}</p>
-    <p class="info-window-meta">⏱️ ${bar.openingHours || "未提供營業時間"}</p>
-    <p class="info-window-description">${bar.description || ""}</p>
+    <h3 class="info-window-title text-gray-800">${bar.name}</h3>
+    <p class="info-window-meta text-gray-800">⭐️ ${bar.rating} (${bar.reviews || 0} 評論)</p>
+    <p class="info-window-meta text-gray-800">💰 ${bar.priceRange || "N/A"}</p>
+    <p class="info-window-meta text-gray-800">⏱️ ${bar.openingHours?.weekday_text?.[0] || "未提供營業時間"}</p>
+    <p class="info-window-description text-gray-800">${bar.description || ""}</p>
     <div class="info-window-tags-container">
-      ${bar.tags?.map((tag) => `<span class="info-window-tag">${tag}</span>`).join("") || ""}
+      ${bar.tags?.map((tag) => `<span class="info-window-tag text-gray-800">${tag}</span>`).join("") || ""}
     </div>
   `;
   return div;
@@ -351,12 +338,15 @@ async function searchPlaceByText(query) {
         place.name || "",
         (marker) => {
           if (infoWindow.value) {
+            const placeOpeningHoursText =
+              place.opening_hours?.weekday_text?.[0] || "未提供營業時間";
+
             infoWindow.value.setContent(`
-              <strong>${place.name}</strong><br/>
-              地址：${place.formatted_address || "N/A"}<br/>
-              ${place.rating ? `評分：${place.rating} (${place.user_ratings_total || 0} 評論)<br/>` : ""}
-              ${place.international_phone_number ? `電話：${place.international_phone_number}<br/>` : ""}
-              ${place.website ? `<a href="${place.website}" target="_blank">網站</a>` : ""}
+              <strong class="text-gray-800">${place.name}</strong><br/>
+              <span class="text-gray-800">地址：${place.formatted_address || "N/A"}</span><br/>
+              ${place.rating ? `<span class="text-gray-800">評分：${place.rating} (${place.user_ratings_total || 0} 評論)</span><br/>` : ""}
+              ${place.international_phone_number ? `<span class="text-gray-800">電話：${place.international_phone_number}</span><br/>` : ""}
+              ${place.website ? `<a href="${place.website}" target="_blank" class="text-blue-600">網站</a>` : ""}
             `);
             infoWindow.value.open(map.value, marker);
           }
@@ -378,12 +368,16 @@ async function searchPlaceByText(query) {
         // 等待地圖空閒後再顯示單一結果的資訊視窗
         window.google.maps.event.addListenerOnce(map.value, "idle", () => {
           if (firstResultMarker && infoWindow.value) {
+            const placeOpeningHoursText =
+              results[0].opening_hours?.weekday_text?.[0] || "未提供營業時間";
+
+            // 修改這裡，添加 text-gray-800 到文字元素。連結使用 text-blue-600
             infoWindow.value.setContent(`
-              <strong>${results[0].name}</strong><br/>
-              地址：${results[0].formatted_address || "N/A"}<br/>
-              ${results[0].rating ? `評分：${results[0].rating} (${results[0].user_ratings_total || 0} 評論)<br/>` : ""}
-              ${results[0].international_phone_number ? `電話：${results[0].international_phone_number}<br/>` : ""}
-              ${results[0].website ? `<a href="${results[0].website}" target="_blank">網站</a>` : ""}
+              <strong class="text-gray-800">${results[0].name}</strong><br/>
+              <span class="text-gray-800">地址：${results[0].formatted_address || "N/A"}</span><br/>
+              ${results[0].rating ? `<span class="text-gray-800">評分：${results[0].rating} (${results[0].user_ratings_total || 0} 評論)</span><br/>` : ""}
+              ${results[0].international_phone_number ? `<span class="text-gray-800">電話：${results[0].international_phone_number}</span><br/>` : ""}
+              ${results[0].website ? `<a href="${results[0].website}" target="_blank" class="text-blue-600">網站</a>` : ""}
             `);
             infoWindow.value.open(map.value, firstResultMarker);
           }
@@ -419,6 +413,37 @@ function handleFilterChanged(filters) {
   console.log("接收到篩選條件:", filters);
   currentFilters.value = filters;
 }
+// 在這裡新增 handleRemoveAppliedFilter 方法
+function handleRemoveAppliedFilter(payload) {
+  const { type, value } = payload;
+  switch (type) {
+    case "address":
+      currentFilters.value.address = "any";
+      break;
+    case "ratingSort":
+      currentFilters.value.ratingSort = "any";
+      break;
+    case "distance":
+      currentFilters.value.minDistance = 0;
+      currentFilters.value.maxDistance = 5000;
+      break;
+    case "openHour":
+      currentFilters.value.minOpenHour = 0;
+      currentFilters.value.minOpenMinute = 0;
+      currentFilters.value.maxOpenHour = 24;
+      currentFilters.value.maxOpenMinute = 0;
+      break;
+    case "tag":
+      currentFilters.value.tags = currentFilters.value.tags.filter(
+        (tag) => tag !== value
+      );
+      break;
+    default:
+      console.warn("未知篩選類型:", type);
+  }
+  // 因為直接修改了 currentFilters.value，watch 會自動觸發 filteredBars 的更新
+  // FilterPanel 會通過 watch(props.initialFilters) 自動同步其狀態
+}
 
 // 切換 FilterPanel 的顯示狀態
 function toggleFilterPanel() {
@@ -445,10 +470,6 @@ function handleBarSelected(bar) {
     // 如果沒找到現有標記，也可以直接移動地圖並顯示一個臨時資訊視窗
     panTo(bar.location);
     setZoom(15);
-    // 這裡可以考慮建立一個臨時標記來顯示資訊視窗，或者只顯示資訊視窗不帶標記
-    // 因為 Composable 的 showInfoWindow 需要 marker，這裡會稍微有點問題
-    // 如果要更完美，showInfoWindow 應該可以接受 LatLngLiteral 而不只是 Marker
-    // 但為簡化，我們假定通常會找到對應 marker
   }
 }
 
@@ -476,7 +497,8 @@ function fetchBars() {
       reviews: 120,
       priceRange: "300-600",
       tags: ["精釀啤酒", "放鬆氛圍", "平價", "中山區"],
-      openingHours: "週二至週日 18:00 - 01:00",
+      // 修改這裡：將 openingHours 改為物件格式
+      openingHours: { weekday_text: ["週二至週日 18:00 - 01:00"] },
       imageUrl:
         "https://images.unsplash.com/photo-1543007137-b715ee51102b?q=80&w=2070&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
       description: "隱身巷弄中的小酒館，提供多款精釀啤酒，適合下班小酌。",
@@ -490,7 +512,8 @@ function fetchBars() {
       reviews: 350,
       priceRange: "800-1500",
       tags: ["高空美景", "創意調酒", "約會小酌", "信義區"],
-      openingHours: "每日 20:00 - 02:00",
+      // 修改這裡：將 openingHours 改為物件格式
+      openingHours: { weekday_text: ["每日 20:00 - 02:00"] },
       imageUrl:
         "https://images.unsplash.com/photo-1582855171120-6d80f837e2c9?q=80&w=2070&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
       description: "俯瞰台北市夜景的絕佳地點，提供精緻調酒與餐點，是約會首選。",
@@ -502,9 +525,10 @@ function fetchBars() {
       rating: 4.2,
       reviews: 200,
       priceRange: "NT$ 400-900",
-      openingHours: "每日 17:00 - 03:00",
+      // 修改這裡：將 openingHours 改為物件格式
+      openingHours: { weekday_text: ["每日 17:00 - 03:00"] },
       description: "提供多台大型螢幕轉播運動賽事，氛圍熱烈，適合與朋友一起看球",
-      tags: ["運動酒吧", "大型螢幕", "觀賽熱點", "美式"],
+      tags: ["運動酒吧", "大型螢幕", "觀賽熱點", "美式", "大安區"],
       imageUrl:
         "https://images.unsplash.com/photo-1543007137-b715ee51102b?q=80&w=2070&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
       location: { lat: 25.038, lng: 121.543 },
@@ -517,7 +541,8 @@ function fetchBars() {
       reviews: 80,
       priceRange: "600-1200",
       tags: ["爵士樂", "現場表演", "復古", "調酒", "松山區"],
-      openingHours: "週三至週日 20:30 - 01:30",
+      // 修改這裡：將 openingHours 改為物件格式
+      openingHours: { weekday_text: ["週三至週日 20:30 - 01:30"] },
       imageUrl:
         "https://images.unsplash.com/photo-1620857106093-6c7e39a3f25c?q=80&w=2070&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
       description: "每晚有現場爵士樂表演，提供多款經典調酒，適合品味人士。",
@@ -531,7 +556,8 @@ function fetchBars() {
       reviews: 95,
       priceRange: "350-700",
       tags: ["老屋改造", "復古", "特色", "小酌", "萬華區"],
-      openingHours: "週一至週六 19:00 - 00:00",
+      // 修改這裡：將 openingHours 改為物件格式
+      openingHours: { weekday_text: ["週一至週六 19:00 - 00:00"] },
       imageUrl:
         "https://images.unsplash.com/photo-1567119054760-449e6d0a794c?q=80&w=2070&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
       description: "由老屋改造的特色酒吧，保留復古元素，提供獨特調酒。",
@@ -545,7 +571,8 @@ function fetchBars() {
       reviews: 150,
       priceRange: "450-800",
       tags: ["文青", "咖啡", "輕食", "獨立", "士林區"],
-      openingHours: "週二至週日 14:00 - 23:00",
+      // 修改這裡：將 openingHours 改為物件格式
+      openingHours: { weekday_text: ["週二至週日 14:00 - 23:00"] },
       imageUrl:
         "https://images.unsplash.com/photo-1624467362791-0391d84e4f58?q=80&w=2070&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
       description: "結合咖啡與酒精，氛圍輕鬆，適合閱讀或安靜小酌。",
@@ -559,7 +586,8 @@ function fetchBars() {
       reviews: 90,
       priceRange: "700-1300",
       tags: ["秘密基地", "私密空間", "預約制", "信義區"],
-      openingHours: "週三至週六 21:00 - 03:00",
+      // 修改這裡：將 openingHours 改為物件格式
+      openingHours: { weekday_text: ["週三至週六 21:00 - 03:00"] },
       imageUrl:
         "https://images.unsplash.com/photo-1517409259508-3331b262a048?q=80&w=2070&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
       description: "隱藏在城市中的秘密酒吧，需要預約才能進入，提供客製化調酒。",
@@ -573,7 +601,8 @@ function fetchBars() {
       reviews: 250,
       priceRange: "500-1000",
       tags: ["居酒屋", "日式", "燒烤", "深夜食堂", "大安區"],
-      openingHours: "每日 18:00 - 00:00",
+      // 修改這裡：將 openingHours 改為物件格式
+      openingHours: { weekday_text: ["每日 18:00 - 00:00"] },
       imageUrl:
         "https://images.unsplash.com/photo-1549429402-d96201e523f4?q=80&w=2070&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
       description: "提供地道日式居酒屋氛圍，美味串燒與多種清酒。",
@@ -596,7 +625,6 @@ onMounted(async () => {
     requestGeolocationPermission(); // 請求地理定位權限
   } catch (err) {
     console.error("地圖或數據載入失敗：", err);
-    // 可以在這裡顯示更友善的錯誤訊息
   } finally {
     isLoading.value = false; // 整體應用程式載入完成
   }
@@ -697,7 +725,7 @@ watch(selectedBar, (newVal) => {
   padding: 0.75rem 1.25rem;
   border: none;
   background-color: #decdd5;
-  color: white;
+  color: black;
   border-radius: 0.5rem;
   font-size: 1rem;
   cursor: pointer;
@@ -785,7 +813,7 @@ watch(selectedBar, (newVal) => {
 .info-window-content {
   padding: 15px;
   font-family: "Noto Sans TC", sans-serif;
-  color: #333;
+  color: #333; /* 確保這裡顏色是深灰色，作為 fallback */
   max-width: 300px;
 }
 
@@ -793,19 +821,19 @@ watch(selectedBar, (newVal) => {
   font-size: 1.4rem;
   font-weight: bold;
   margin-bottom: 8px;
-  color: #2c3e50;
+  color: #2c3e50; /* 確保這裡顏色是深色，作為 fallback */
   line-height: 1.3;
 }
 
 .info-window-meta {
   font-size: 0.95rem;
-  color: #555;
+  color: #555; /* 確保這裡顏色是深色，作為 fallback */
   margin-bottom: 5px;
 }
 
 .info-window-description {
   font-size: 0.85rem;
-  color: #777;
+  color: #777; /* 確保這裡顏色是深色，作為 fallback */
   margin-top: 10px;
   line-height: 1.5;
 }
@@ -820,7 +848,7 @@ watch(selectedBar, (newVal) => {
 .info-window-tag {
   display: inline-block;
   background-color: #e9ecef;
-  color: #495057;
+  color: #495057; /* 確保這裡顏色是深色，作為 fallback */
   padding: 5px 10px;
   border-radius: 15px;
   font-size: 0.8rem;
@@ -880,5 +908,9 @@ watch(selectedBar, (newVal) => {
   -webkit-mask-composite: destination-in;
   mask-composite: intersect;
   animation: l4 1s infinite;
+}
+
+.remove-filter-button:hover {
+  opacity: 1;
 }
 </style>

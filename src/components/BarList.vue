@@ -1,6 +1,6 @@
 <template>
   <div class="bar-list-wrapper">
-    <div v-if="bars.length === 0" class="no-results">
+    <div v-if="bars.length === 0" class="no-results text-gray-600">
       目前沒有符合條件的酒吧。
     </div>
     <div v-else class="bar-cards-list">
@@ -38,25 +38,29 @@
           </button>
         </div>
         <div class="bar-card-content">
-          <h3 class="bar-name">{{ bar.name }}</h3>
+          <h3 class="bar-name text-gray-900">{{ bar.name }}</h3>
           <div class="bar-rating-price">
-            <span class="bar-rating"
-              >⭐️ {{ bar.rating || "N/A" }} ({{
-                bar.user_ratings_total || "0"
-              }})</span
+            <span class="bar-rating text-gray-700"
+              >⭐️ {{ bar.rating || "N/A" }}</span
             >
-            <span class="bar-price">NT$ {{ bar.priceRange || "???" }}</span>
+            <span class="bar-reviews text-gray-700 ml-1"> ({{ bar.user_ratings_total || "0" }} 評論)</span>
+            <span class="bar-price text-orange-700">NT$ {{ bar.priceRange || "???" }}</span>
           </div>
-          <div class="bar-tags">
+
+          <div v-if="bar.tags && bar.tags.length" class="bar-tags">
             <span
-              v-for="(tag, index) in bar.types"
+              v-for="(tag, index) in bar.tags"
               :key="index"
-              class="bar-tag"
+              class="bar-tag text-gray-600"
               >{{ tag }}</span
             >
           </div>
-          <div class="bar-hours">
-            {{ bar.openingHours?.weekday_text?.join(", ") || "暫無營業時間" }}
+          <div class="bar-hours text-gray-700">
+            {{
+              (bar.openingHours && bar.openingHours.weekday_text && bar.openingHours.weekday_text.length > 0)
+                ? bar.openingHours.weekday_text[0]
+                : (bar.openingHours ? "營業時間待提供" : "未提供營業時間")
+            }}
           </div>
         </div>
       </div>
@@ -71,14 +75,20 @@ import type { PropType } from "vue";
 // 定義 Bar 介面，明確屬性，特別是 place_id
 interface Bar {
   id?: string; // 如果 place_id 不存在，可以用 id 作為 fallback
-  place_id: string; // 這是識別地點的唯一 ID，Google Places API 返回
+  place_id?: string; // 這是識別地點的唯一 ID，Google Places API 返回，使其可選
   name: string;
   imageUrl?: string;
   rating?: number;
+  reviews?: number; // 添加 reviews 屬性以匹配您的數據
   user_ratings_total?: number; // Google Places API 的評論總數
   priceRange?: string; // 這需要您自己處理或定義
-  types?: string[]; // Google Places API 的類型列表 (例如 'bar', 'restaurant')
-  openingHours?: google.maps.places.OpeningHours; // Google Places API 的營業時間物件
+  tags?: string[]; // 從您的模擬數據中看到 tags 屬性
+  types?: string[]; // Google Places API 的類型列表 (例如 'bar', 'restaurant') - 用於標籤
+  openingHours?: google.maps.places.OpeningHours | { weekday_text?: string[] }; // Google Places API 的營業時間物件
+  location?: { lat: number; lng: number }; // 添加 location 屬性以匹配您的數據
+  description?: string; // 添加 description 屬性以匹配您的數據
+  isWishlisted?: boolean; // 添加 isWishlisted 屬性以匹配您的數據
+  distance?: number; // 添加 distance 屬性以匹配您的篩選邏輯
   // 其他您可能從 Google Places API 獲取的屬性...
 }
 
@@ -128,12 +138,13 @@ watch(
 );
 
 // 檢查某個酒吧是否已收藏
-const isFavorite = (placeId: string): boolean => {
+const isFavorite = (placeId: string | undefined): boolean => {
+  if (!placeId) return false; // 如果 placeId 不存在，則不可能是收藏的
   return favoritePlaceIds.value.has(placeId);
 };
 
 // 切換收藏狀態
-const toggleFavorite = (placeId: string) => {
+const toggleFavorite = (placeId: string | undefined) => {
   if (!placeId) {
     console.warn("無法收藏/取消收藏，因為 place_id 不存在。");
     return;
@@ -152,7 +163,7 @@ const toggleFavorite = (placeId: string) => {
 </script>
 
 <style scoped>
-/* 您的現有樣式 */
+/* 您的現有樣式，已移除 color 相關的屬性，讓 Tailwind 類別來控制顏色 */
 
 .bar-list-wrapper {
   padding: 1rem;
@@ -164,7 +175,7 @@ const toggleFavorite = (placeId: string) => {
 
 .no-results {
   text-align: center;
-  color: #666;
+  /* color: #666; <--- 已移除，因為模板中已添加 text-gray-600 */
   padding: 2rem;
   font-size: 1.1rem;
 }
@@ -255,7 +266,7 @@ const toggleFavorite = (placeId: string) => {
 .bar-name {
   font-size: 1.25rem;
   font-weight: 700;
-  color: #333;
+  /* color: #333; <--- 已移除，因為模板中已添加 text-gray-900 */
   margin-bottom: 0.5rem;
   white-space: nowrap;
   overflow: hidden;
@@ -271,7 +282,7 @@ const toggleFavorite = (placeId: string) => {
 
 .bar-rating {
   font-size: 0.9rem;
-  color: #666;
+  /* color: #666; <--- 已移除，因為模板中已添加 text-gray-700 */
   display: flex;
   align-items: center;
 }
@@ -283,7 +294,7 @@ const toggleFavorite = (placeId: string) => {
 .bar-price {
   font-size: 1rem;
   font-weight: 600;
-  color: #b8a28e;
+  /* color: #b8a28e; <--- 已移除，因為模板中已添加 text-orange-700 */
 }
 
 .bar-tags {
@@ -295,7 +306,7 @@ const toggleFavorite = (placeId: string) => {
 
 .bar-tag {
   background-color: #f0f0f0;
-  color: #666;
+  color: #495057; /* 確保這裡顏色是深灰色，作為 fallback。儘管模板已用 text-gray-600 */
   padding: 0.3rem 0.7rem;
   border-radius: 1rem;
   font-size: 0.8rem;
@@ -304,7 +315,7 @@ const toggleFavorite = (placeId: string) => {
 
 .bar-hours {
   font-size: 0.85rem;
-  color: #888;
+  /* color: #888; <--- 已移除，因為模板中已添加 text-gray-700 */
   margin-top: auto;
 }
 </style>
