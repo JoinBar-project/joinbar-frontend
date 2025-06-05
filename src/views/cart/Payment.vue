@@ -34,22 +34,19 @@
       <div class="payment-method section-spacing">
         <h3>選擇付款方式</h3>
         
-        <!-- 付款方式選擇 -->
         <div class="payment-options">
-          <!-- LINE Pay 選項 -->
           <button 
-            class="btn bg-[#03C755] text-white border-[#00b544] payment-btn"
-            :class="{ 'ring-2 ring-[#03C755] ring-offset-2': paymentMethod === 'linepay' }"
+            class="btn bg-[#25c916] text-white border-[#25c916] payment-btn"
+            :class="{ 'ring-2 ring-[#25c916] ring-offset-2': paymentMethod === 'linepay' }"
             @click="paymentMethod = 'linepay'"
           >
           <IconLine />
             LINE Pay
           </button>
 
-          <!-- 信用卡選項 -->
           <button 
-            class="btn bg-[#daa258] text-white border-[#c89242] payment-btn"
-            :class="{ 'ring-2 ring-[#daa258] ring-offset-2': paymentMethod === 'creditcard' }"
+            class="btn bg-[#ffd4d4] text-black border-[#ffd4d4] payment-btn"
+            :class="{ 'ring-2 ring-[#ffd4d4] ring-offset-2': paymentMethod === 'creditcard' }"
             @click="paymentMethod = 'creditcard'"
           >
           <IconCreditCard />  
@@ -61,7 +58,6 @@
           <p class="total-label">
             總金額：<strong>${{ totalPrice }}</strong>
           </p>
-          <!-- 確認付款按鈕 -->
           <button 
             class="btn bg-[#860914] text-white checkout-btn"
             :class="{ 'btn-disabled': !canSubmit || isSubmitting }"
@@ -93,7 +89,6 @@ const isSubmitting = ref(false)
 
 onMounted(() => {
   setTimeout(() => {
-    // 檢查購物車是否為空
     if (cart.items.length === 0) {
       alert('購物車是空的，即將返回購物車頁面')
       router.push('/cart')
@@ -122,7 +117,6 @@ const submitOrder = async () => {
   try {
     isSubmitting.value = true
 
-    // 模擬訂單建立
     const mockOrderResult = {
       order: {
         orderId: Date.now().toString(),
@@ -135,18 +129,14 @@ const submitOrder = async () => {
 
     // 根據付款方式處理
     if (paymentMethod.value === 'linepay') {
-      // 顯示模擬訊息
       alert(`🟢 LINE Pay 模擬付款\n\n訂單編號：${mockOrderResult.order.orderNumber}\n金額：${totalPrice.value}\n\n點擊確定完成模擬付款`)
       
     } else if (paymentMethod.value === 'creditcard') {
-      // 模擬信用卡付款
       alert(`💳 信用卡模擬付款\n\n訂單編號：${mockOrderResult.order.orderNumber}\n金額：${totalPrice.value}\n\n點擊確定完成模擬付款`)
     }
 
-    // 模擬付款成功，清空購物車
     cart.clearCart()
     
-    // 跳轉到成功頁面
     router.push(`/order-success/${mockOrderResult.order.orderNumber}?orderId=${mockOrderResult.order.orderId}`)
 
   } catch (error) {
@@ -275,7 +265,6 @@ const goBack = () => {
   margin-top: 16px;
 }
 
-/* 付款方式選擇樣式 */
 .payment-options {
   display: flex;
   gap: 16px;
@@ -301,14 +290,12 @@ const goBack = () => {
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
 }
 
-/* 確認付款按鈕樣式 */
 .checkout-btn {
   font-size: 14px;
   padding: 10px 24px;
   transition: all 0.2s ease-in-out;
 }
 
-/* 確認付款按鈕 hover 效果 */
 .checkout-btn:hover:not(.btn-disabled) {
   background-color: #a50b18;
   border-color: #a50b18;
@@ -316,13 +303,11 @@ const goBack = () => {
   box-shadow: 0 4px 12px rgba(134, 9, 20, 0.3);
 }
 
-/* 確認付款按鈕 active 狀態 */
 .checkout-btn:active:not(.btn-disabled) {
   transform: translateY(0);
   box-shadow: 0 2px 8px rgba(134, 9, 20, 0.25);
 }
 
-/* 禁用狀態的按鈕不應有 hover 效果 */
 .checkout-btn.btn-disabled {
   cursor: not-allowed;
 }
