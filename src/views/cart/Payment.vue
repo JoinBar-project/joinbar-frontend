@@ -106,7 +106,7 @@ onMounted(() => {
     }
     
     isLoading.value = false
-  }, 600)
+  }, 400)
 })
 
 const cartItems = computed(() => cart.items)
@@ -169,8 +169,8 @@ const goBack = () => {
 
 <style scoped>
 * {
-  font-size: revert !important;
-  font-weight: revert !important;
+  font-size: revert ;
+  font-weight: revert ;
 }
 
 .cart-container {
