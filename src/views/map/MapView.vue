@@ -559,7 +559,7 @@ watch(
 }
 
 .map-control-button:hover {
-  background-color: #a08d7a;
+  background-color: #860914;
   transform: translateY(-2px);
 }
 
@@ -621,14 +621,17 @@ watch(
   overflow-y: auto;
   box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
 }
+
 .suggestions-list li {
   padding: 10px 12px;
   cursor: pointer;
   border-bottom: 1px solid #f0f0f0;
 }
+
 .suggestions-list li:last-child {
   border-bottom: none;
 }
+
 .suggestions-list li:hover {
   background: #f0f0f0;
 }
