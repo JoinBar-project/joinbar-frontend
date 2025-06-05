@@ -1,6 +1,6 @@
 <script setup>
-// import FormModal from '@/components/events/FormModal.vue'
-import EventInfoFree from '@/components/events/EventInfoFree.vue'
+import FormModal from '@/components/events/FormModal.vue'
+
 
 </script>
 
@@ -11,9 +11,7 @@ import EventInfoFree from '@/components/events/EventInfoFree.vue'
     <p>探索附近的酒吧活動。</p>
   </div>
 
-  <!-- <FormModal /> -->
-  <EventInfoFree />
-
+  <FormModal />
 
 
 </template>
