@@ -1,10 +1,7 @@
 <template>
   <div class="map-view-container">
     <div class="top-left-controls">
-      <button
-        class="filter-toggle-button map-control-button"
-        @click="toggleFilterPanel"
-      >
+      <button class="filter-toggle-button map-control-button" @click="toggleFilterPanel">
         <i class="fas fa-cog"></i> 篩選
       </button>
 
@@ -18,6 +15,9 @@
             placeholder="輸入地點名稱或關鍵字"
             @input="debouncedSearchSuggestions"
           />
+          <button @click="handleSearch" class="btn search-bt-new">
+            <b>🔍 搜尋</b>
+          </button>
           <ul v-if="suggestions.length" class="suggestions-list">
             <li
               v-for="(suggestion, index) in suggestions"
@@ -30,14 +30,7 @@
         </div>
       </div>
 
-      <button @click="handleSearch" class="btn search-bt map-control-button">
-        <b>🔍 搜尋</b>
-      </button>
-
-      <button
-        @click="handleGetCurrentLocation"
-        class="place-now-map map-control-button"
-      >
+      <button @click="handleGetCurrentLocation" class="place-now-map map-control-button">
         <b>📍 顯示我目前位置</b>
       </button>
     </div>
@@ -46,7 +39,7 @@
       <div class="sidebar-header">
         <h1 class="app-title">JoinBar</h1>
       </div>
-      </aside>
+    </aside>
 
     <div ref="mapContainer" class="map-container"></div>
 
@@ -70,8 +63,7 @@ import { ref, onMounted, computed, watch, shallowRef } from "vue";
 import debounce from "lodash/debounce";
 
 // 1. 引入你的組件
-import FilterPanel from "@/components/FilterPanel.vue";
-// BarList 已移除
+import FilterPanel from "@/components/map/FilterPanel.vue";
 
 import { useGoogleMaps } from "@/composable/useGoogleMaps";
 
@@ -136,8 +128,6 @@ const currentFilters = ref({
   maxOpenMinute: 0,
   tags: [],
 });
-
-// selectedBar 和 handleBarSelected 已移除
 
 // ----------------------------------------------------------------------
 // Computed Properties
@@ -229,7 +219,7 @@ const filteredBars = computed(() => {
     // 由於你的模擬數據中沒有 "近期" 相關的時間戳，這裡暫時可以將它視為按 reviews 數量排序
     barsToFilter.sort((a, b) => (b.reviews || 0) - (a.reviews || 0));
   }
-  
+
   // 標籤篩選
   if (currentFilters.value.tags && currentFilters.value.tags.length > 0) {
     barsToFilter = barsToFilter.filter((bar) =>
@@ -322,8 +312,6 @@ function handleRemoveAppliedFilter(payload) {
 function toggleFilterPanel() {
   isFilterPanelOpen.value = !isFilterPanelOpen.value;
 }
-
-// handleBarSelected 和 handleToggleWishlist 已移除
 
 // 模擬從後端獲取酒吧數據 (保留，因為地圖仍需要顯示酒吧)
 function fetchBars() {
@@ -468,20 +456,17 @@ watch(
   (newBars) => {
     if (map.value) {
       // 這裡現在會顯示 filteredBars 中的酒吧標記，而不是選中的單一酒吧
-      clearMarkers('bar'); // 清除現有的酒吧標記
-      clearMarkers('search'); // 確保搜尋結果標記也被清除
+      clearMarkers("bar"); // 清除現有的酒吧標記
+      clearMarkers("search"); // 確保搜尋結果標記也被清除
       closeInfoWindow(); // 關閉任何開啟的資訊視窗
       displayBarsOnMap(newBars); // 呼叫 Composable 新增的函式來顯示篩選後的酒吧
     }
   },
   { immediate: true }
 );
-
-// 監聽 selectedBar 的邏輯已移除
 </script>
 
 <style scoped>
-/* 保持你的 CSS 樣式不變 */
 .map-view-container {
   display: flex;
   height: 100vh;
@@ -493,14 +478,14 @@ watch(
 .top-left-controls {
   position: absolute;
   top: 20px;
-  left: calc(380px + 20px);
+  left: calc(380px + 20px); /* 保持位置不變 */
   z-index: 100;
 
-  display: flex;
+  display: flex; /* 使用 flexbox 讓元素排成一行 */
   flex-direction: row;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 10px;
+  align-items: center; /* 垂直置中 */
+  /* flex-wrap: wrap; <--- 移除這個，確保不換行 */
+  gap: 10px; /* 元素間距 */
 
   padding: 15px;
   background-color: rgba(255, 255, 255, 0.9);
@@ -559,36 +544,38 @@ watch(
 }
 
 .map-control-button:hover {
-  background-color: #860914;
+  background-color: #a08d7a;
   transform: translateY(-2px);
 }
 
 .filter-toggle-button {
-  order: 1;
+  /* order: 1; 保持不變 */
 }
 
 .search-panel-map {
-  order: 2;
+  /* order: 2; 保持不變 */
   display: flex;
   position: relative;
-  width: 300px;
+  width: auto; /* 讓內容決定寬度 */
   flex-shrink: 1;
 }
 
 .input-group {
-  display: flex;
+  display: flex; /* 讓 input 和 button 排列在內部 */
   position: relative;
-  width: 100%;
+  width: auto; /* 讓內容決定寬度 */
 }
 
+/* 調整 search-input 樣式 */
 .search-input {
   height: 40px;
   padding: 8px 12px;
   font-size: 1rem;
   border: 1px solid #decdd5;
-  border-radius: 0.5rem;
+  border-right: none; /* 移除右邊框，讓它與按鈕連接 */
+  border-radius: 5px 0 0 5px; /* 左圓角，右直角 */
   outline: none;
-  flex: 1;
+  flex: 1; /* 佔用可用空間 */
   color: #333;
 }
 
@@ -597,19 +584,37 @@ watch(
   box-shadow: 0 0 0 2px rgba(184, 162, 142, 0.2);
 }
 
-.search-bt {
-  order: 3;
+/* 新增搜尋按鈕的樣式，與同學的搜尋按鈕匹配 */
+.search-bt-new {
+  background-color: #decdd5;
+  color: #ffffff; /* 調整文字顏色為白色 */
+  padding: 8px 12px; /* 增加左右 padding */
+  /* margin: 10px 0 5px 0px; <--- 移除這個，避免錯位 */
+  border-radius: 0px 5px 5px 0px; /* 左直角，右圓角 */
+  border: 0px; /* 移除邊框 */
+  cursor: pointer;
+  height: 40px; /* 確保高度一致 */
+  display: flex; /* 讓文字和圖標居中 */
+  align-items: center;
+  justify-content: center;
 }
 
+.search-bt-new:hover {
+  background-color: #860914; /* 與同學的 hover 顏色一致 */
+}
+
+
 .place-now-map {
-  order: 4;
+  /* order: 4; 保持不變 */
 }
 
 .suggestions-list {
   position: absolute;
   top: calc(100% + 5px);
   left: 0;
-  right: 0;
+  /* right: 0; <--- 這裡如果 search-panel-map 寬度為 auto，right: 0 可能導致溢出 */
+  /* 可以改為 width: 100% 或是根據 input-group 的寬度來設定 */
+  width: calc(100% - 40px); /* 假設搜尋按鈕寬度大約 40px */
   z-index: 20;
   list-style: none;
   margin: 0;
@@ -621,17 +626,14 @@ watch(
   overflow-y: auto;
   box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
 }
-
 .suggestions-list li {
   padding: 10px 12px;
   cursor: pointer;
   border-bottom: 1px solid #f0f0f0;
 }
-
 .suggestions-list li:last-child {
   border-bottom: none;
 }
-
 .suggestions-list li:hover {
   background: #f0f0f0;
 }
