@@ -94,24 +94,25 @@ const mapContainer = ref(null);
 
 const {
   map,
-  markers,
+  markers, // 雖然現在不直接操作 markers，但如果未來需要，仍然可以取得
+  searchMarkers, // 新增的搜尋結果標記列表
   infoWindow,
   currentMarker,
-  loading: googleMapsLoading,
-  error: googleMapsError,
+  loading: googleMapsLoading, // 從 Composable 取得的 loading 狀態
+  error: googleMapsError, // 從 Composable 取得的 error 狀態
   loadGoogleMapsAPI,
   initMap,
-  clearMarkers: clearMapMarkers,
-  addMarker: addMapMarker,
-  showInfoWindow: showMapInfoWindow,
+  clearMarkers, // 現在 Composable 內部會判斷清除哪種標記
+  showInfoWindow,
   closeInfoWindow,
   panTo,
   setZoom,
   fitBounds,
+  displayBarsOnMap, // 新增：用來顯示酒吧標記的函式
   requestGeolocationPermission,
-  getCurrentLocation: getMapCurrentLocation,
+  getCurrentLocation: getMapCurrentLocation, // 為了避免命名衝突，這裡重新命名
   getPlacePredictions,
-  textSearch,
+  searchAndDisplayPlaces, // 新增：用來搜尋並顯示地點的函式
 } = useGoogleMaps(mapContainer, {
   googleMapsApiKey: googleMapsApiKey,
   onLoading: () => {
@@ -232,61 +233,22 @@ const filteredBars = computed(() => {
     });
   }
 
+  // 評分排序
+  if (currentFilters.value.ratingSort === "highest") {
+    barsToFilter.sort((a, b) => b.rating - a.rating);
+  } else if (currentFilters.value.ratingSort === "lowest") {
+    barsToFilter.sort((a, b) => a.rating - b.rating);
+  }
+  
+  // 標籤篩選
+  if (currentFilters.value.tags && currentFilters.value.tags.length > 0) {
+    barsToFilter = barsToFilter.filter((bar) =>
+      currentFilters.value.tags.every((tag) => bar.tags.includes(tag))
+    );
+  }
+
   return barsToFilter;
 });
-
-// ----------------------------------------------------------------------
-// 地圖與資料處理
-// ----------------------------------------------------------------------
-
-// 顯示酒吧資訊視窗的內容格式化函式
-function formatBarInfoWindowContent(bar) {
-  const div = document.createElement("div");
-  div.className = "info-window-content";
-  div.innerHTML = `
-    ${bar.imageUrl ? `<img src="${bar.imageUrl}" alt="${bar.name}" class="info-window-image">` : ""}
-    <h3 class="info-window-title text-gray-800">${bar.name}</h3>
-    <p class="info-window-meta text-gray-800">⭐️ ${bar.rating} (${bar.reviews || 0} 評論)</p>
-    <p class="info-window-meta text-gray-800">💰 ${bar.priceRange || "N/A"}</p>
-    <p class="info-window-meta text-gray-800">⏱️ ${bar.openingHours?.weekday_text?.[0] || "未提供營業時間"}</p>
-    <p class="info-window-description text-gray-800">${bar.description || ""}</p>
-    <div class="info-window-tags-container">
-      ${bar.tags?.map((tag) => `<span class="info-window-tag text-gray-800">${tag}</span>`).join("") || ""}
-    </div>
-  `;
-  return div;
-}
-
-// 添加酒吧標記到地圖
-function addBarMarkers(barsToMark) {
-  clearMapMarkers(); // 清除所有舊標記
-
-  const bounds = new window.google.maps.LatLngBounds();
-  barsToMark.forEach((bar) => {
-    const position = new window.google.maps.LatLng(
-      bar.location.lat,
-      bar.location.lng
-    );
-    const marker = addMapMarker(
-      position,
-      bar.name,
-      // 點擊標記時的回調函式
-      (marker) => {
-        showMapInfoWindow(marker, formatBarInfoWindowContent(bar));
-        selectedBar.value = bar;
-      }
-    );
-    bounds.extend(position);
-  });
-
-  if (barsToMark.length > 0 && map.value) {
-    fitBounds(bounds); // 讓地圖適應所有標記
-  } else if (map.value) {
-    // 如果沒有酒吧，重置地圖視圖
-    map.value.setCenter({ lat: 25.033, lng: 121.5654 }); // defaultCenter
-    map.value.setZoom(12); // defaultZoom
-  }
-}
 
 // ----------------------------------------------------------------------
 // 事件處理函式
@@ -303,7 +265,7 @@ const debouncedSearchSuggestions = debounce(async () => {
 async function selectSuggestion(suggestion) {
   searchQuery.value = suggestion.description;
   suggestions.value = [];
-  await searchPlaceByText(suggestion.description);
+  await handleSearch(); // 選擇建議後直接執行搜尋
 }
 
 async function handleSearch() {
@@ -311,87 +273,8 @@ async function handleSearch() {
     alert("請輸入搜尋關鍵字");
     return;
   }
-  await searchPlaceByText(searchQuery.value);
-}
-
-async function searchPlaceByText(query) {
-  isLoading.value = true;
-  try {
-    const results = await textSearch(query);
-
-    if (!results.length) {
-      alert("找不到符合條件的地點");
-      clearMapMarkers();
-      return;
-    }
-
-    clearMapMarkers(); // 清除舊標記
-    const bounds = new window.google.maps.LatLngBounds();
-
-    let firstResultMarker = null;
-
-    results.forEach((place) => {
-      if (!place.geometry || !place.geometry.location) return;
-
-      const marker = addMapMarker(
-        place.geometry.location,
-        place.name || "",
-        (marker) => {
-          if (infoWindow.value) {
-            const placeOpeningHoursText =
-              place.opening_hours?.weekday_text?.[0] || "未提供營業時間";
-
-            infoWindow.value.setContent(`
-              <strong class="text-gray-800">${place.name}</strong><br/>
-              <span class="text-gray-800">地址：${place.formatted_address || "N/A"}</span><br/>
-              ${place.rating ? `<span class="text-gray-800">評分：${place.rating} (${place.user_ratings_total || 0} 評論)</span><br/>` : ""}
-              ${place.international_phone_number ? `<span class="text-gray-800">電話：${place.international_phone_number}</span><br/>` : ""}
-              ${place.website ? `<a href="${place.website}" target="_blank" class="text-blue-600">網站</a>` : ""}
-            `);
-            infoWindow.value.open(map.value, marker);
-          }
-        }
-      );
-
-      bounds.extend(place.geometry.location);
-
-      if (!firstResultMarker) {
-        firstResultMarker = marker;
-      }
-    });
-
-    if (map.value) {
-      if (results.length === 1 && results[0].geometry?.location) {
-        panTo(results[0].geometry.location);
-        setZoom(16);
-
-        // 等待地圖空閒後再顯示單一結果的資訊視窗
-        window.google.maps.event.addListenerOnce(map.value, "idle", () => {
-          if (firstResultMarker && infoWindow.value) {
-            const placeOpeningHoursText =
-              results[0].opening_hours?.weekday_text?.[0] || "未提供營業時間";
-
-            // 修改這裡，添加 text-gray-800 到文字元素。連結使用 text-blue-600
-            infoWindow.value.setContent(`
-              <strong class="text-gray-800">${results[0].name}</strong><br/>
-              <span class="text-gray-800">地址：${results[0].formatted_address || "N/A"}</span><br/>
-              ${results[0].rating ? `<span class="text-gray-800">評分：${results[0].rating} (${results[0].user_ratings_total || 0} 評論)</span><br/>` : ""}
-              ${results[0].international_phone_number ? `<span class="text-gray-800">電話：${results[0].international_phone_number}</span><br/>` : ""}
-              ${results[0].website ? `<a href="${results[0].website}" target="_blank" class="text-blue-600">網站</a>` : ""}
-            `);
-            infoWindow.value.open(map.value, firstResultMarker);
-          }
-        });
-      } else {
-        fitBounds(bounds);
-      }
-    }
-  } catch (err) {
-    console.error("地點搜尋失敗:", err);
-    alert("地點搜尋過程中發生錯誤。");
-  } finally {
-    isLoading.value = false;
-  }
+  // 直接呼叫 Composable 內的高階搜尋函式
+  await searchAndDisplayPlaces(searchQuery.value);
 }
 
 async function handleGetCurrentLocation() {
@@ -453,10 +336,16 @@ function toggleFilterPanel() {
 // 處理 BarList 發出的 'bar-selected' 事件
 function handleBarSelected(bar) {
   console.log("列表選中酒吧:", bar.name);
-  selectedBar.value = bar;
+  selectedBar.value = bar; // 設定選中的酒吧
+
+  // 清除搜尋標記（如果有的話），確保只顯示酒吧
+  clearMarkers('search');
+  if (currentMarker.value) { // 隱藏目前位置標記
+    currentMarker.value.setMap(null);
+  }
 
   // 找到對應的標記並操作地圖
-  const targetMarker = markers.value.find(
+  const targetMarker = markers.value.find( // 這裡仍需從 markers 找到對應的標記
     (marker) =>
       marker.getPosition()?.lat() === bar.location.lat &&
       marker.getPosition()?.lng() === bar.location.lng
@@ -465,11 +354,14 @@ function handleBarSelected(bar) {
   if (map.value && targetMarker) {
     panTo(targetMarker.getPosition());
     setZoom(15);
-    showMapInfoWindow(targetMarker, formatBarInfoWindowContent(bar));
+    // 直接呼叫 Composable 的 showInfoWindow，傳入標記和組件處理後的內容
+    showInfoWindow(targetMarker, targetMarker.getContent()); // 假設 marker 已經有內容，或我們重新格式化
   } else if (map.value) {
-    // 如果沒找到現有標記，也可以直接移動地圖並顯示一個臨時資訊視窗
+    // 如果沒找到現有標記 (例如，地圖上的標記是篩選前的)，也可以直接移動地圖並顯示一個臨時資訊視窗
     panTo(bar.location);
     setZoom(15);
+    // 這裡我們需要手動格式化內容，因為這個 bar 不一定有對應的地圖標記
+    showInfoWindow(null, formatBarInfoWindowContent(bar)); // 傳入 null 標記，InfoWindow 會在中心打開
   }
 }
 
@@ -497,7 +389,6 @@ function fetchBars() {
       reviews: 120,
       priceRange: "300-600",
       tags: ["精釀啤酒", "放鬆氛圍", "平價", "中山區"],
-      // 修改這裡：將 openingHours 改為物件格式
       openingHours: { weekday_text: ["週二至週日 18:00 - 01:00"] },
       imageUrl:
         "https://images.unsplash.com/photo-1543007137-b715ee51102b?q=80&w=2070&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
@@ -512,7 +403,6 @@ function fetchBars() {
       reviews: 350,
       priceRange: "800-1500",
       tags: ["高空美景", "創意調酒", "約會小酌", "信義區"],
-      // 修改這裡：將 openingHours 改為物件格式
       openingHours: { weekday_text: ["每日 20:00 - 02:00"] },
       imageUrl:
         "https://images.unsplash.com/photo-1582855171120-6d80f837e2c9?q=80&w=2070&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
@@ -525,7 +415,6 @@ function fetchBars() {
       rating: 4.2,
       reviews: 200,
       priceRange: "NT$ 400-900",
-      // 修改這裡：將 openingHours 改為物件格式
       openingHours: { weekday_text: ["每日 17:00 - 03:00"] },
       description: "提供多台大型螢幕轉播運動賽事，氛圍熱烈，適合與朋友一起看球",
       tags: ["運動酒吧", "大型螢幕", "觀賽熱點", "美式", "大安區"],
@@ -541,7 +430,6 @@ function fetchBars() {
       reviews: 80,
       priceRange: "600-1200",
       tags: ["爵士樂", "現場表演", "復古", "調酒", "松山區"],
-      // 修改這裡：將 openingHours 改為物件格式
       openingHours: { weekday_text: ["週三至週日 20:30 - 01:30"] },
       imageUrl:
         "https://images.unsplash.com/photo-1620857106093-6c7e39a3f25c?q=80&w=2070&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
@@ -556,7 +444,6 @@ function fetchBars() {
       reviews: 95,
       priceRange: "350-700",
       tags: ["老屋改造", "復古", "特色", "小酌", "萬華區"],
-      // 修改這裡：將 openingHours 改為物件格式
       openingHours: { weekday_text: ["週一至週六 19:00 - 00:00"] },
       imageUrl:
         "https://images.unsplash.com/photo-1567119054760-449e6d0a794c?q=80&w=2070&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
@@ -571,7 +458,6 @@ function fetchBars() {
       reviews: 150,
       priceRange: "450-800",
       tags: ["文青", "咖啡", "輕食", "獨立", "士林區"],
-      // 修改這裡：將 openingHours 改為物件格式
       openingHours: { weekday_text: ["週二至週日 14:00 - 23:00"] },
       imageUrl:
         "https://images.unsplash.com/photo-1624467362791-0391d84e4f58?q=80&w=2070&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
@@ -586,7 +472,6 @@ function fetchBars() {
       reviews: 90,
       priceRange: "700-1300",
       tags: ["秘密基地", "私密空間", "預約制", "信義區"],
-      // 修改這裡：將 openingHours 改為物件格式
       openingHours: { weekday_text: ["週三至週六 21:00 - 03:00"] },
       imageUrl:
         "https://images.unsplash.com/photo-1517409259508-3331b262a048?q=80&w=2070&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
@@ -601,7 +486,6 @@ function fetchBars() {
       reviews: 250,
       priceRange: "500-1000",
       tags: ["居酒屋", "日式", "燒烤", "深夜食堂", "大安區"],
-      // 修改這裡：將 openingHours 改為物件格式
       openingHours: { weekday_text: ["每日 18:00 - 00:00"] },
       imageUrl:
         "https://images.unsplash.com/photo-1549429402-d96201e523f4?q=80&w=2070&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
@@ -635,13 +519,14 @@ watch(
   filteredBars,
   (newBars) => {
     if (map.value) {
-      addBarMarkers(newBars); // 使用封裝過後的 addBarMarkers 函式
+      displayBarsOnMap(newBars); // 呼叫 Composable 新增的函式
     }
   },
   { immediate: true } // 在組件載入後立即執行一次
 );
 
 // 監聽選中的酒吧，在地圖上顯示其資訊視窗
+// 注意：現在資訊視窗的內容格式化在 Composable 內部處理
 watch(selectedBar, (newVal) => {
   if (newVal && map.value) {
     const targetMarker = markers.value.find(
@@ -651,7 +536,15 @@ watch(selectedBar, (newVal) => {
     );
     if (targetMarker) {
       closeInfoWindow(); // 先關閉可能已有的資訊視窗
-      showMapInfoWindow(targetMarker, formatBarInfoWindowContent(newVal));
+      // 直接讓 Composable 負責顯示資訊視窗，內容由 Composable 內部的 formatBarInfoWindowContent 處理
+      targetMarker.addListener("click", () => showInfoWindow(targetMarker, targetMarker.getContent())); // 重新綁定點擊事件，或在 displayBarsOnMap 中處理
+      showInfoWindow(targetMarker, targetMarker.getContent()); // 嘗試顯示已渲染標記的內容
+    } else {
+      // 如果 selectedBar 不在地圖上的當前標記中（例如，來自列表點擊但未在篩選結果中），
+      // 則直接平移地圖並顯示資訊視窗。Composable 內部會處理內容格式。
+      panTo(newVal.location);
+      setZoom(15);
+      closeInfoWindow(); // 確保關閉舊的 infoWindow
     }
   } else {
     closeInfoWindow(); // 如果沒有選中的酒吧，關閉資訊視窗
