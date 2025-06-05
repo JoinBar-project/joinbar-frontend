@@ -10,7 +10,7 @@ import FormModal from '@/components/events/FormModal.vue'
   </div>
 
   <FormModal />
-  
+
 </template>
 
 
