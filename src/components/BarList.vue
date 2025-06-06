@@ -1,6 +1,6 @@
 <template>
   <div class="bar-list-wrapper">
-    <div v-if="bars.length === 0" class="no-results text-gray-600">
+    <div v-if="bars.length === 0" class="text-gray-600 no-results">
       目前沒有符合條件的酒吧。
     </div>
     <div v-else class="bar-cards-list">
@@ -38,28 +38,36 @@
           </button>
         </div>
         <div class="bar-card-content">
-          <h3 class="bar-name text-gray-900">{{ bar.name }}</h3>
+          <h3 class="text-gray-900 bar-name">{{ bar.name }}</h3>
           <div class="bar-rating-price">
-            <span class="bar-rating text-gray-700"
+            <span class="text-gray-700 bar-rating"
               >⭐️ {{ bar.rating || "N/A" }}</span
             >
-            <span class="bar-reviews text-gray-700 ml-1"> ({{ bar.user_ratings_total || "0" }} 評論)</span>
-            <span class="bar-price text-orange-700">NT$ {{ bar.priceRange || "???" }}</span>
+            <span class="ml-1 text-gray-700 bar-reviews">
+              ({{ bar.user_ratings_total || "0" }} 評論)</span
+            >
+            <span class="text-orange-700 bar-price"
+              >NT$ {{ bar.priceRange || "???" }}</span
+            >
           </div>
 
           <div v-if="bar.tags && bar.tags.length" class="bar-tags">
             <span
               v-for="(tag, index) in bar.tags"
               :key="index"
-              class="bar-tag text-gray-600"
+              class="text-gray-600 bar-tag"
               >{{ tag }}</span
             >
           </div>
-          <div class="bar-hours text-gray-700">
+          <div class="text-gray-700 bar-hours">
             {{
-              (bar.openingHours && bar.openingHours.weekday_text && bar.openingHours.weekday_text.length > 0)
+              bar.openingHours &&
+              bar.openingHours.weekday_text &&
+              bar.openingHours.weekday_text.length > 0
                 ? bar.openingHours.weekday_text[0]
-                : (bar.openingHours ? "營業時間待提供" : "未提供營業時間")
+                : bar.openingHours
+                  ? "營業時間待提供"
+                  : "未提供營業時間"
             }}
           </div>
         </div>
@@ -222,12 +230,12 @@ const toggleFavorite = (placeId: string | undefined) => {
 
 .wishlist-button {
   position: absolute;
-  top: 12px; 
-  right: 12px; 
+  top: 12px;
+  right: 12px;
   background-color: rgba(0, 0, 0, 0.4);
   border: none;
   border-radius: 50%;
-  padding: 8px; 
+  padding: 8px;
   cursor: pointer;
   display: flex;
   align-items: center;
@@ -256,17 +264,17 @@ const toggleFavorite = (placeId: string | undefined) => {
 /* 所以不需要額外的 .favorite class 或複雜的 CSS 規則來控制紅色狀態 */
 
 .bar-card-content {
-  padding: 16px; 
+  padding: 16px;
   flex-grow: 1;
   display: flex;
   flex-direction: column;
 }
 
 .bar-name {
-  font-size: 20px; 
+  font-size: 20px;
   font-weight: 700;
   /* color: #333; */
-  margin-bottom: 8px; 
+  margin-bottom: 8px;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -276,22 +284,22 @@ const toggleFavorite = (placeId: string | undefined) => {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 8px; 
+  margin-bottom: 8px;
 }
 
 .bar-rating {
-  font-size: 14px; 
+  font-size: 14px;
   /* color: #666;*/
   display: flex;
   align-items: center;
 }
 
 .bar-rating .star-icon {
-  margin-right: 3px; 
+  margin-right: 3px;
 }
 
 .bar-price {
-  font-size: 16px; 
+  font-size: 16px;
   font-weight: 600;
   /* color: #b8a28e;  */
 }
@@ -299,21 +307,21 @@ const toggleFavorite = (placeId: string | undefined) => {
 .bar-tags {
   display: flex;
   flex-wrap: wrap;
-  gap: 12px; 
-  margin-bottom: 12px; 
+  gap: 12px;
+  margin-bottom: 12px;
 }
 
 .bar-tag {
   background-color: #f0f0f0;
-  color: #495057; 
-  padding: 5px 11px; 
-  border-radius: 16px; 
-  font-size: 13px; 
+  color: #495057;
+  padding: 5px 11px;
+  border-radius: 16px;
+  font-size: 13px;
   white-space: nowrap;
 }
 
 .bar-hours {
-  font-size: 14px; 
+  font-size: 14px;
   /* color: #888;  */
   margin-top: auto;
 }

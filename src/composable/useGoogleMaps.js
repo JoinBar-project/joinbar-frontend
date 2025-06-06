@@ -157,18 +157,24 @@ export function useGoogleMaps(mapContainerRef, options) {
   };
 
   // 3. 地圖標記操作
-  const clearMarkers = (type = 'all') => {
-    if (type === 'bars' || type === 'all') {
+  const clearMarkers = (type = "all") => {
+    if (type === "bars" || type === "all") {
       markers.value.forEach((marker) => marker.setMap(null));
       markers.value = [];
     }
-    if (type === 'search' || type === 'all') {
+    if (type === "search" || type === "all") {
       searchMarkers.value.forEach((marker) => marker.setMap(null));
       searchMarkers.value = [];
     }
   };
 
-  const addMarker = (position, title, onClickCallback, iconUrl, markerType = 'bars') => {
+  const addMarker = (
+    position,
+    title,
+    onClickCallback,
+    iconUrl,
+    markerType = "bars"
+  ) => {
     if (!map.value) throw new Error("Map not initialized.");
 
     const marker = new window.google.maps.Marker({
@@ -183,12 +189,12 @@ export function useGoogleMaps(mapContainerRef, options) {
     if (onClickCallback) {
       marker.addListener("click", () => onClickCallback(marker));
     }
-    if (markerType === 'bars') {
+    if (markerType === "bars") {
       markers.value.push(marker);
-    } else if (markerType === 'search') {
+    } else if (markerType === "search") {
       searchMarkers.value.push(marker);
     }
-    
+
     return marker;
   };
 
@@ -236,7 +242,6 @@ export function useGoogleMaps(mapContainerRef, options) {
     `;
   };
 
-
   // 5. 地圖視圖控制
   const panTo = (location) => {
     if (map.value) {
@@ -260,7 +265,7 @@ export function useGoogleMaps(mapContainerRef, options) {
   const displayBarsOnMap = (barsToMark) => {
     if (!map.value) return;
 
-    clearMarkers('bars'); // 清除所有舊的酒吧標記
+    clearMarkers("bars"); // 清除所有舊的酒吧標記
     closeInfoWindow(); // 關閉可能開啟的資訊視窗
 
     const bounds = new window.google.maps.LatLngBounds();
@@ -279,7 +284,7 @@ export function useGoogleMaps(mapContainerRef, options) {
           // 例如：emit('barMarkerSelected', bar.id); (Composable 不直接 emit 事件，但可以回調)
         },
         null, // 沒有自定義圖標，使用預設
-        'bars' // 標記類型為酒吧
+        "bars" // 標記類型為酒吧
       );
       bounds.extend(position);
     });
@@ -292,7 +297,6 @@ export function useGoogleMaps(mapContainerRef, options) {
       map.value.setZoom(defaultZoom);
     }
   };
-
 
   // 6. 地理定位功能
   const requestGeolocationPermission = () => {
@@ -350,7 +354,7 @@ export function useGoogleMaps(mapContainerRef, options) {
           });
 
           // 清除舊的搜尋標記和酒吧標記
-          clearMarkers('all');
+          clearMarkers("all");
           closeInfoWindow();
 
           if (!currentMarker.value) {
@@ -381,7 +385,6 @@ export function useGoogleMaps(mapContainerRef, options) {
             currentMarker.value.setPosition(location);
             currentMarker.value.setMap(map.value); // 確保標記在地圖上
           }
-
 
           geocoder.value.geocode({ location }, (results, status) => {
             if (
@@ -505,16 +508,17 @@ export function useGoogleMaps(mapContainerRef, options) {
       const results = await textSearch(query);
 
       if (!results.length) {
-        clearMarkers('search');
+        clearMarkers("search");
         closeInfoWindow();
         return [];
       }
 
-      clearMarkers('bars'); // 清除酒吧標記
-      if (currentMarker.value) { // 隱藏目前位置標記
+      clearMarkers("bars"); // 清除酒吧標記
+      if (currentMarker.value) {
+        // 隱藏目前位置標記
         currentMarker.value.setMap(null);
       }
-      clearMarkers('search'); // 清除舊的搜尋標記
+      clearMarkers("search"); // 清除舊的搜尋標記
       closeInfoWindow(); // 關閉可能已有的資訊視窗
 
       const bounds = new window.google.maps.LatLngBounds();
@@ -530,7 +534,7 @@ export function useGoogleMaps(mapContainerRef, options) {
             showInfoWindow(marker, formatPlaceInfoWindowContent(place));
           },
           null, // 預設圖標
-          'search' // 標記類型為搜尋結果
+          "search" // 標記類型為搜尋結果
         );
 
         bounds.extend(place.geometry.location);
@@ -547,7 +551,10 @@ export function useGoogleMaps(mapContainerRef, options) {
           // 等待地圖空閒後再顯示單一結果的資訊視窗
           window.google.maps.event.addListenerOnce(map.value, "idle", () => {
             if (firstResultMarker && infoWindow.value) {
-              showInfoWindow(firstResultMarker, formatPlaceInfoWindowContent(results[0]));
+              showInfoWindow(
+                firstResultMarker,
+                formatPlaceInfoWindowContent(results[0])
+              );
             }
           });
         } else {
@@ -564,7 +571,6 @@ export function useGoogleMaps(mapContainerRef, options) {
       onLoaded?.();
     }
   };
-
 
   // 8. 組件卸載時清理
   onUnmounted(() => {
