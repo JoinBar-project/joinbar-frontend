@@ -69,7 +69,7 @@ const isLoading = ref(true)
 onMounted(() => {
   setTimeout(() => {
     isLoading.value = false
-  }, 600)
+  }, 400)
 })
 
 const cartItems = computed(() => cart.items)
@@ -88,6 +88,10 @@ const goShopping = () => {
 </script>
 
 <style scoped>
+* {
+  font-size: revert;
+  font-weight: revert;
+}
 .cart-container {
   max-width: 1280px;
   margin: 48px auto;
