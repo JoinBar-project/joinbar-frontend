@@ -18,7 +18,7 @@
           <option value="松山區">松山區</option>
           <option value="萬華區">萬華區</option>
           <option value="士林區">士林區</option>
-          </select>
+        </select>
       </div>
 
       <div class="filter-section">
@@ -31,7 +31,7 @@
       </div>
 
       <div class="filter-section">
-        <h3 class="section-title">距離 (公里)</h3>
+        <h3 class="section-title">距離 (公尺)</h3>
         <div class="distance-inputs">
           <input
             type="number"
@@ -39,6 +39,7 @@
             min="0"
             step="100"
             class="distance-input"
+            @input="updateDistance"
           />
           <span>-</span>
           <input
@@ -47,6 +48,7 @@
             min="0"
             step="100"
             class="distance-input"
+            @input="updateDistance"
           />
         </div>
         <input
@@ -56,7 +58,7 @@
           max="5000"
           step="100"
           class="distance-range"
-        />
+          @input="updateDistance" />
         <div class="range-labels">
           <span>0</span>
           <span>5000</span>
@@ -162,6 +164,31 @@ watch(
   },
   { deep: true }
 );
+
+// 更新距離數值輸入框和滑桿，並同步篩選
+const updateDistance = () => {
+  filters.value.minDistance = Number(filters.value.minDistance);
+  filters.value.maxDistance = Number(filters.value.maxDistance);
+
+  // 確保 min <= max
+  if (filters.value.minDistance > filters.value.maxDistance) {
+    filters.value.minDistance = filters.value.maxDistance;
+  }
+  // 限制數值在有效範圍內
+  filters.value.minDistance = Math.max(
+    0,
+    Math.min(filters.value.minDistance, 5000)
+  );
+  filters.value.maxDistance = Math.max(
+    0,
+    Math.min(filters.value.maxDistance, 5000)
+  );
+
+  // 由於 watch 已經深度監聽 filters，這裡不需要額外呼叫 applyFilters()
+  // 但如果您希望更即時地觸發，可以選擇性地加上 applyFilters()
+  // applyFilters();
+};
+
 
 function toggleTag(tag) {
   const index = filters.value.tags.indexOf(tag);
