@@ -43,7 +43,6 @@
     </div>
 
     <aside class="bar-list-sidebar">
-
       <div class="bar-list-scroll-area">
         <BarList
           :bars="filteredBars"
@@ -195,8 +194,7 @@ const filteredBars = computed(() => {
   ) {
     barsToFilter = barsToFilter.filter((bar) => {
       // 確保 bar.openingHours 是一個物件，並從 weekday_text 中獲取字串
-      const openHoursStr =
-        bar.openingHours?.weekday_text?.[0] || ""; // <-- 關鍵修改點
+      const openHoursStr = bar.openingHours?.weekday_text?.[0] || ""; // <-- 關鍵修改點
       const match = openHoursStr.match(/(\d{2}):(\d{2})\s*-\s*(\d{2}):(\d{2})/);
 
       if (!match) return false;
@@ -211,11 +209,18 @@ const filteredBars = computed(() => {
       }
 
       // 解析篩選條件的時間 (總分鐘數)
-      const filterMinMinutes = currentFilters.value.minOpenHour * 60 + currentFilters.value.minOpenMinute;
-      let filterMaxMinutes = currentFilters.value.maxOpenHour * 60 + currentFilters.value.maxOpenMinute;
+      const filterMinMinutes =
+        currentFilters.value.minOpenHour * 60 +
+        currentFilters.value.minOpenMinute;
+      let filterMaxMinutes =
+        currentFilters.value.maxOpenHour * 60 +
+        currentFilters.value.maxOpenMinute;
 
       // 特殊處理篩選條件為 24:00 的情況 (視為次日 00:00，但篩選範圍包含 23:59)
-      if (currentFilters.value.maxOpenHour === 24 && currentFilters.value.maxOpenMinute === 0) {
+      if (
+        currentFilters.value.maxOpenHour === 24 &&
+        currentFilters.value.maxOpenMinute === 0
+      ) {
         filterMaxMinutes = 24 * 60; // 24:00 就是 1440 分鐘
       }
 
@@ -226,7 +231,10 @@ const filteredBars = computed(() => {
 
       // 檢查營業時間與篩選區間是否有重疊
       // 邏輯：兩個區間 [A, B] 和 [C, D] 重疊的條件是 Math.max(A, C) < Math.min(B, D)
-      return Math.max(barOpenMinutes, filterMinMinutes) < Math.min(barCloseMinutes, filterMaxMinutes);
+      return (
+        Math.max(barOpenMinutes, filterMinMinutes) <
+        Math.min(barCloseMinutes, filterMaxMinutes)
+      );
     });
   }
 
@@ -236,7 +244,7 @@ const filteredBars = computed(() => {
   } else if (currentFilters.value.ratingSort === "lowest") {
     barsToFilter.sort((a, b) => a.rating - b.rating);
   }
-  
+
   // 標籤篩選
   if (currentFilters.value.tags && currentFilters.value.tags.length > 0) {
     barsToFilter = barsToFilter.filter((bar) =>
@@ -336,13 +344,15 @@ function handleBarSelected(bar) {
   selectedBar.value = bar; // 設定選中的酒吧
 
   // 清除搜尋標記（如果有的話），確保只顯示酒吧
-  clearMarkers('search');
-  if (currentMarker.value) { // 隱藏目前位置標記
+  clearMarkers("search");
+  if (currentMarker.value) {
+    // 隱藏目前位置標記
     currentMarker.value.setMap(null);
   }
 
   // 找到對應的標記並操作地圖
-  const targetMarker = markers.value.find( // 這裡仍需從 markers 找到對應的標記
+  const targetMarker = markers.value.find(
+    // 這裡仍需從 markers 找到對應的標記
     (marker) =>
       marker.getPosition()?.lat() === bar.location.lat &&
       marker.getPosition()?.lng() === bar.location.lng
@@ -534,7 +544,9 @@ watch(selectedBar, (newVal) => {
     if (targetMarker) {
       closeInfoWindow(); // 先關閉可能已有的資訊視窗
       // 直接讓 Composable 負責顯示資訊視窗，內容由 Composable 內部的 formatBarInfoWindowContent 處理
-      targetMarker.addListener("click", () => showInfoWindow(targetMarker, targetMarker.getContent())); // 重新綁定點擊事件，或在 displayBarsOnMap 中處理
+      targetMarker.addListener("click", () =>
+        showInfoWindow(targetMarker, targetMarker.getContent())
+      ); // 重新綁定點擊事件，或在 displayBarsOnMap 中處理
       showInfoWindow(targetMarker, targetMarker.getContent()); // 嘗試顯示已渲染標記的內容
     } else {
       // 如果 selectedBar 不在地圖上的當前標記中（例如，來自列表點擊但未在篩選結果中），
@@ -593,7 +605,7 @@ watch(selectedBar, (newVal) => {
 }
 
 .sidebar-header {
-  padding: 24px 16px 16px; 
+  padding: 24px 16px 16px;
   background-color: #fff;
   border-bottom: 1px solid #eee;
   display: flex;
@@ -604,19 +616,19 @@ watch(selectedBar, (newVal) => {
 }
 
 .app-title {
-  font-size: 29px; 
+  font-size: 29px;
   font-weight: bold;
   color: #860914;
   margin: 0;
 }
 
 .map-control-button {
-  padding: 12px 20px; 
+  padding: 12px 20px;
   border: none;
   background-color: #decdd5;
   color: black;
-  border-radius: 8px; 
-  font-size: 16px; 
+  border-radius: 8px;
+  font-size: 16px;
   cursor: pointer;
   white-space: nowrap;
   font-weight: bold;
@@ -652,9 +664,9 @@ watch(selectedBar, (newVal) => {
 .search-input {
   height: 40px;
   padding: 8px 12px;
-  font-size: 16px; 
+  font-size: 16px;
   border: 1px solid #decdd5;
-  border-radius: 8px; 
+  border-radius: 8px;
   outline: none;
   flex: 1;
 }
@@ -682,7 +694,7 @@ watch(selectedBar, (newVal) => {
   padding: 0;
   background: white;
   border: 1px solid #ddd;
-  border-radius: 8px; 
+  border-radius: 8px;
   max-height: 200px;
   overflow-y: auto;
   box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
@@ -702,27 +714,27 @@ watch(selectedBar, (newVal) => {
 .info-window-content {
   padding: 15px;
   font-family: "Noto Sans TC", sans-serif;
-  color: #333; 
+  color: #333;
   max-width: 300px;
 }
 
 .info-window-title {
-  font-size: 22px; 
+  font-size: 22px;
   font-weight: bold;
   margin-bottom: 8px;
-  color: #2c3e50; 
+  color: #2c3e50;
   line-height: 1.3;
 }
 
 .info-window-meta {
-  font-size: 15px; 
-  color: #555; /
+  font-size: 15px;
+  color: #555; /* */
   margin-bottom: 5px;
 }
 
 .info-window-description {
-  font-size: 14px; 
-  color: #777; 
+  font-size: 14px;
+  color: #777;
   margin-top: 10px;
   line-height: 1.5;
 }
@@ -737,10 +749,10 @@ watch(selectedBar, (newVal) => {
 .info-window-tag {
   display: inline-block;
   background-color: #e9ecef;
-  color: #495057; 
+  color: #495057;
   padding: 5px 10px;
   border-radius: 15px;
-  font-size: 13px; 
+  font-size: 13px;
   white-space: nowrap;
 }
 
@@ -756,7 +768,7 @@ watch(selectedBar, (newVal) => {
 .bar-list-scroll-area {
   flex-grow: 1;
   overflow-y: auto;
-  padding: 16px; 
+  padding: 16px;
 }
 
 .map-container {
