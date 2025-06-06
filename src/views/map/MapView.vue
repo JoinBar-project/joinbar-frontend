@@ -73,41 +73,39 @@
 
 <script setup>
 import { ref, onMounted, computed, watch } from "vue";
-import debounce from "lodash/debounce"; // 確保 lodash/debounce 已安裝
+import debounce from "lodash/debounce";
 
 // --- 引入組件與 Google Maps Composable ---
 import FilterPanel from "../../components/map/FilterPanel.vue";
 import BarList from "../../components/map/BarList.vue";
-import { useGoogleMaps } from "@/composable/useGoogleMaps"; // 檢查路徑是否正確
+import { useGoogleMaps } from "@/composable/useGoogleMaps"; 
 
 // 環境變數中的 Google Maps API Key
-// **重要：請確保 .env 檔案中是 VITE_Maps_API_KEY="你的Key"**
-const googleMapsApiKey = import.meta.env.VITE_MAPS_API_KEY;
+const googleMapsApiKey = import.meta.env.VITE_Maps_API_KEY;
 
 // --- 響應式狀態 ---
-const isLoading = ref(false); // 用於本地數據或其他非地圖載入
-const mapContainer = ref(null); // 地圖 DOM 元素的引用
+const isLoading = ref(false); 
+const mapContainer = ref(null); 
 
 // --- 引入 useGoogleMaps Composable ---
-// 這裡將 mapContainer ref 直接傳入，而不是 mapContainer.value
-// 因為 useGoogleMaps 內部會 watch 這個 ref 的變化
+
 const {
-  map, // Google Map 實例
-  markers, // 地圖標記數組
-  infoWindow, // 資訊視窗實例
-  loading: googleMapsLoading, // 地圖 API 載入狀態 (來自 useGoogleMaps)
-  loadGoogleMapsAPI, // 載入 API 腳本
-  initMap, // 初始化地圖
-  showInfoWindow, // 顯示資訊視窗
-  closeInfoWindow, // 關閉資訊視窗
-  panTo, // 平移地圖到指定位置
-  setZoom, // 設定地圖縮放等級
-  displayBarsOnMap, // 在地圖上顯示酒吧標記
-  requestGeolocationPermission, // 請求地理定位權限
-  getCurrentLocation: getMapCurrentLocation, // 獲取當前地理位置
-  getPlacePredictions, // 獲取地點預測（用於搜尋建議）
-  searchAndDisplayPlaces, // 搜尋地點並顯示在地圖上
-  panToAndShowBarInfo, // 平移到酒吧位置並顯示其資訊
+  map, 
+  markers, 
+  infoWindow, 
+  loading: googleMapsLoading,
+  loadGoogleMapsAPI,
+  initMap,
+  showInfoWindow,
+  closeInfoWindow,
+  panTo,
+  setZoom,
+  displayBarsOnMap,
+  requestGeolocationPermission,
+  getCurrentLocation: getMapCurrentLocation,
+  getPlacePredictions,
+  searchAndDisplayPlaces,
+  panToAndShowBarInfo,
 } = useGoogleMaps(mapContainer, {
   googleMapsApiKey: googleMapsApiKey,
   // 透過這裡的回調來更新 MapView 的 loading 狀態
@@ -122,7 +120,7 @@ const {
 const isFilterPanelOpen = ref(false);
 const searchQuery = ref("");
 const suggestions = ref([]);
-const allBars = ref([]); // 儲存所有酒吧數據
+const allBars = ref([]);
 const currentFilters = ref({
   address: "any",
   ratingSort: "any",
@@ -174,9 +172,6 @@ const filteredBars = computed(() => {
           return bar;
         })
         .filter((bar) => {
-          // 注意：您的篩選條件 minDistance, maxDistance 單位是什麼？
-          // 如果是公里，bar.distance / 1000
-          // 這裡假設 min/maxDistance 單位與 bar.distance (米) 一致
           return (
             bar.distance !== undefined &&
             bar.distance >= currentFilters.value.minDistance &&
@@ -277,7 +272,6 @@ async function handleSearch() {
 async function handleGetCurrentLocation() {
   isLoading.value = true; // 設置本地加載狀態
   try {
-    // 傳遞 sidebar 寬度以調整地圖中心點
     await getMapCurrentLocation(
       document.querySelector(".bar-list-sidebar")?.offsetWidth || 0
     );
@@ -285,7 +279,7 @@ async function handleGetCurrentLocation() {
     console.error("獲取目前位置失敗:", err);
     alert("無法獲取您的目前位置，請檢查瀏覽器權限設定。");
   } finally {
-    isLoading.value = false; // 清除本地加載狀態
+    isLoading.value = false;
   }
 }
 
@@ -327,7 +321,6 @@ function toggleFilterPanel() {
 
 function handleBarSelected(bar) {
   selectedBar.value = bar;
-  // panToAndShowBarInfo 應該會自動處理地圖移動和資訊視窗顯示
   panToAndShowBarInfo(bar);
 }
 
@@ -466,21 +459,17 @@ function fetchBarsData() {
 onMounted(async () => {
   isLoading.value = true; // 開始載入所有非地圖相關數據
   try {
-    // 步驟 1: 載入 Google Maps API 腳本
     await loadGoogleMapsAPI();
     console.log("Google Maps API 載入完成，準備初始化地圖...");
 
-    // 步驟 2: 初始化地圖 (確保 mapContainer 已綁定)
     if (mapContainer.value) {
       initMap();
       console.log("地圖初始化完成。");
 
-      // 步驟 3: 獲取酒吧數據
-      fetchBarsData(); // 僅獲取數據
+      fetchBarsData();
       console.log("所有酒吧數據已載入:", allBars.value);
 
-      // 步驟 4: 請求地理定位權限
-      // 可以在地圖和數據都準備好後才嘗試獲取用戶位置
+      // 請求地理定位權限
       requestGeolocationPermission();
     } else {
       console.error("錯誤：地圖容器 ref 未綁定，無法初始化地圖。");
@@ -489,7 +478,7 @@ onMounted(async () => {
     console.error("地圖或數據載入失敗:", err);
     alert("初始化失敗，請檢查控制台錯誤。");
   } finally {
-    isLoading.value = false; // 結束本地載入狀態
+    isLoading.value = false;
   }
 });
 
@@ -512,8 +501,6 @@ watch(
 // 監聽選中的酒吧，並在地圖上顯示其資訊視窗
 watch(selectedBar, (newVal) => {
   if (newVal && map.value) {
-    // 這裡的邏輯是通過經緯度匹配 marker，但更好的方式是將 bar.id 儲存在 marker 上
-    // 或者直接通過 panToAndShowBarInfo 處理
     panToAndShowBarInfo(newVal); // useGoogleMaps 內部應處理標記查找和資訊視窗顯示
   } else {
     closeInfoWindow();
@@ -525,7 +512,7 @@ watch(selectedBar, (newVal) => {
 /* 頁面整體佈局 */
 .map-view-container {
   display: flex;
-  height: 100vh; /* 確保容器有高度 */
+  height: 100vh;
   width: 100vw;
   overflow: hidden;
   position: relative;
@@ -535,7 +522,7 @@ watch(selectedBar, (newVal) => {
 .top-left-controls {
   position: absolute;
   top: 20px;
-  left: calc(380px + 20px); /* 考慮到 sidebar 的寬度 */
+  left: calc(380px + 20px);
   z-index: 100;
   display: flex;
   flex-direction: row;
@@ -729,7 +716,6 @@ watch(selectedBar, (newVal) => {
 }
 
 /* 資訊視窗內容樣式 */
-/* 這些樣式通常是在 useGoogleMaps 內部渲染的，但放在這裡作為通用樣式也無妨 */
 .info-window-content {
   padding: 15px;
   font-family: "Noto Sans TC", sans-serif;
@@ -843,9 +829,9 @@ watch(selectedBar, (newVal) => {
 /* 如果你的側邊欄是響應式，可能需要調整 top-left-controls 的 left 值 */
 @media (max-width: 768px) {
   .top-left-controls {
-    left: 20px; /* 在小螢幕上調整位置 */
-    width: calc(100% - 40px); /* 佔滿寬度 */
-    flex-direction: column; /* 垂直排列 */
+    left: 20px;
+    width: calc(100% - 40px);
+    flex-direction: column;
   }
   .search-panel-map {
     width: 100%;

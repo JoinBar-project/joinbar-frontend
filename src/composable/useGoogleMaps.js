@@ -17,8 +17,8 @@ export function useGoogleMaps(mapContainerRef, options) {
 
   // 響應式狀態，用於儲存地圖相關實例和資訊
   const map = shallowRef(null);
-  const markers = ref([]); // 儲存所有自定義標記 (例如酒吧)
-  const searchMarkers = ref([]); // 儲存搜尋結果的標記
+  const markers = ref([]);
+  const searchMarkers = ref([]);
   const infoWindow = shallowRef(null);
   const autocompleteService = shallowRef(null);
   const placesService = shallowRef(null);
@@ -504,20 +504,18 @@ export function useGoogleMaps(mapContainerRef, options) {
     onLoading?.();
     try {
       const results = await textSearch(query);
-
       if (!results.length) {
         clearMarkers("search");
         closeInfoWindow();
         return [];
       }
 
-      clearMarkers("bars"); // 清除酒吧標記
+      clearMarkers("bars");
       if (currentMarker.value) {
-        // 隱藏目前位置標記
         currentMarker.value.setMap(null);
       }
-      clearMarkers("search"); // 清除舊的搜尋標記
-      closeInfoWindow(); // 關閉可能已有的資訊視窗
+      clearMarkers("search");
+      closeInfoWindow();
 
       const bounds = new window.google.maps.LatLngBounds();
       let firstResultMarker = null;
@@ -577,7 +575,7 @@ export function useGoogleMaps(mapContainerRef, options) {
       return;
     }
 
-    clearMarkers("search"); // 清除搜尋標記
+    clearMarkers("search");
     if (currentMarker.value) {
       currentMarker.value.setMap(null); // 隱藏目前位置標記
     }
