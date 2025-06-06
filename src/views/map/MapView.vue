@@ -82,7 +82,7 @@ import { useGoogleMaps } from "@/composable/useGoogleMaps"; // 檢查路徑是�
 
 // 環境變數中的 Google Maps API Key
 // **重要：請確保 .env 檔案中是 VITE_Maps_API_KEY="你的Key"**
-const googleMapsApiKey = import.meta.env.VITE_MAPS_API_KEY;
+const googleMapsApiKey = import.meta.env.VITE_Maps_API_KEY;
 
 // --- 響應式狀態 ---
 const isLoading = ref(false); // 用於本地數據或其他非地圖載入
