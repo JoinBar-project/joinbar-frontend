@@ -213,16 +213,11 @@ const popularTags = [
   "約會小酌",
   "現場表演",
   "高空美景",
-  "餐點美味",
-  "多種啤酒",
-  "輕鬆氛圍",
-  "獨特調酒",
-  "品味之選",
   "大型螢幕",
   "觀賽熱點",
+  "居酒屋",
+  "爵士樂",
   "復古",
-  "主題",
-  "小酌",
 ];
 
 // ----------------------------------------------------------------------
@@ -279,11 +274,10 @@ const appliedFiltersForDisplay = computed(() => {
     filters.value.maxOpenMinute !== 0
   ) {
     const formatTime = (h, m) => {
-      const hour = String(h).padStart(2, "0");
-      const minute = String(m).padStart(2, "0");
-      return `<span class="math-inline">\{hour\}\:</span>{minute}`;
-    };
-
+    const hour = String(h).padStart(2, "0");
+    const minute = String(m).padStart(2, "0");
+    return `${hour}:${minute}`; // 只返回純文本的時間字串
+};
     const minTime = formatTime(
       filters.value.minOpenHour,
       filters.value.minOpenMinute
