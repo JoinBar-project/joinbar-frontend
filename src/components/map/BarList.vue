@@ -106,6 +106,10 @@ const props = defineProps({
   },
 });
 
+watch(() => props.bars, (newBars) => {
+  console.log("BarList 接收到的 bars prop:", newBars);
+}, { immediate: true });
+
 const emit = defineEmits(["bar-selected", "toggle-wishlist"]); // 新增 toggle-wishlist 事件
 
 // --- 響應式狀態 ---

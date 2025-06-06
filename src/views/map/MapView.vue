@@ -64,7 +64,7 @@
       :initial-filters="currentFilters"
     />
 
-    <div v-if="isLoading || googleMapsLoading" class="loading-overlay">
+    <div v-if="googleMapsLoading || isLoading" class="loading-overlay">
       <div class="loader"></div>
       <p class="loading-message">載入中，請稍候...</p>
     </div>
@@ -73,50 +73,56 @@
 
 <script setup>
 import { ref, onMounted, computed, watch } from "vue";
-import debounce from "lodash/debounce";
+import debounce from "lodash/debounce"; // 確保 lodash/debounce 已安裝
 
 // --- 引入組件與 Google Maps Composable ---
 import FilterPanel from "../../components/map/FilterPanel.vue";
 import BarList from "../../components/map/BarList.vue";
-import { useGoogleMaps } from "@/composable/useGoogleMaps";
+import { useGoogleMaps } from "@/composable/useGoogleMaps"; // 檢查路徑是否正確
 
+// 環境變數中的 Google Maps API Key
+// **重要：請確保 .env 檔案中是 VITE_Maps_API_KEY="你的Key"**
 const googleMapsApiKey = import.meta.env.VITE_MAPS_API_KEY;
 
 // --- 響應式狀態 ---
-const isLoading = ref(false);
-const mapContainer = ref(null);
+const isLoading = ref(false); // 用於本地數據或其他非地圖載入
+const mapContainer = ref(null); // 地圖 DOM 元素的引用
 
+// --- 引入 useGoogleMaps Composable ---
+// 這裡將 mapContainer ref 直接傳入，而不是 mapContainer.value
+// 因為 useGoogleMaps 內部會 watch 這個 ref 的變化
 const {
-  map,
-  markers,
-  infoWindow,
-  loading: googleMapsLoading,
-  loadGoogleMapsAPI,
-  initMap,
-  showInfoWindow,
-  closeInfoWindow,
-  panTo,
-  setZoom,
-  displayBarsOnMap,
-  requestGeolocationPermission,
-  getCurrentLocation: getMapCurrentLocation,
-  getPlacePredictions,
-  searchAndDisplayPlaces,
-  panToAndShowBarInfo,
+  map, // Google Map 實例
+  markers, // 地圖標記數組
+  infoWindow, // 資訊視窗實例
+  loading: googleMapsLoading, // 地圖 API 載入狀態 (來自 useGoogleMaps)
+  loadGoogleMapsAPI, // 載入 API 腳本
+  initMap, // 初始化地圖
+  showInfoWindow, // 顯示資訊視窗
+  closeInfoWindow, // 關閉資訊視窗
+  panTo, // 平移地圖到指定位置
+  setZoom, // 設定地圖縮放等級
+  displayBarsOnMap, // 在地圖上顯示酒吧標記
+  requestGeolocationPermission, // 請求地理定位權限
+  getCurrentLocation: getMapCurrentLocation, // 獲取當前地理位置
+  getPlacePredictions, // 獲取地點預測（用於搜尋建議）
+  searchAndDisplayPlaces, // 搜尋地點並顯示在地圖上
+  panToAndShowBarInfo, // 平移到酒吧位置並顯示其資訊
 } = useGoogleMaps(mapContainer, {
   googleMapsApiKey: googleMapsApiKey,
-  onLoading: () => (isLoading.value = true),
-  onLoaded: () => (isLoading.value = false),
+  // 透過這裡的回調來更新 MapView 的 loading 狀態
+  onLoading: () => console.log("Google Maps API 載入中..."),
+  onLoaded: () => console.log("Google Maps API 載入完成。"),
   onError: (msg) => {
-    console.error("useGoogleMaps error:", msg);
-    isLoading.value = false;
+    console.error("useGoogleMaps 錯誤:", msg);
+    alert(`地圖載入失敗：${msg}，請檢查API Key或網路。`);
   },
 });
 
 const isFilterPanelOpen = ref(false);
 const searchQuery = ref("");
 const suggestions = ref([]);
-const allBars = ref([]);
+const allBars = ref([]); // 儲存所有酒吧數據
 const currentFilters = ref({
   address: "any",
   ratingSort: "any",
@@ -138,7 +144,7 @@ const selectedBar = ref(null);
 const filteredBars = computed(() => {
   let barsToFilter = [...allBars.value];
 
-  // 1. 地址篩選
+  // 1. 地址篩選 (假設 address 是篩選 tags 裡的區域)
   if (currentFilters.value.address !== "any") {
     barsToFilter = barsToFilter.filter((bar) =>
       bar.tags.includes(currentFilters.value.address)
@@ -146,32 +152,38 @@ const filteredBars = computed(() => {
   }
 
   // 2. 距離篩選 (需 Google Maps 的 geometry 庫計算距離)
-  const mapCenter = map.value?.getCenter();
-  if (mapCenter && window.google?.maps?.geometry?.spherical) {
-    const centerLatLng = new window.google.maps.LatLng(
-      mapCenter.lat(),
-      mapCenter.lng()
-    );
-    barsToFilter = barsToFilter
-      .map((bar) => {
-        const barLatLng = new window.google.maps.LatLng(
-          bar.location.lat,
-          bar.location.lng
-        );
-        bar.distance =
-          window.google.maps.geometry.spherical.computeDistanceBetween(
+  // 確保 map 實例和 geometry 庫都已載入
+  if (map.value && window.google?.maps?.geometry?.spherical) {
+    const mapCenter = map.value.getCenter();
+    if (mapCenter) {
+      const centerLatLng = new window.google.maps.LatLng(
+        mapCenter.lat(),
+        mapCenter.lng()
+      );
+      barsToFilter = barsToFilter
+        .map((bar) => {
+          const barLatLng = new window.google.maps.LatLng(
+            bar.location.lat,
+            bar.location.lng
+          );
+          // computeDistanceBetween 返回的是米，需要轉換為公里或保持一致
+          bar.distance = window.google.maps.geometry.spherical.computeDistanceBetween(
             centerLatLng,
             barLatLng
           );
-        return bar;
-      })
-      .filter((bar) => {
-        return (
-          bar.distance !== undefined &&
-          bar.distance >= currentFilters.value.minDistance &&
-          bar.distance <= currentFilters.value.maxDistance
-        );
-      });
+          return bar;
+        })
+        .filter((bar) => {
+          // 注意：您的篩選條件 minDistance, maxDistance 單位是什麼？
+          // 如果是公里，bar.distance / 1000
+          // 這裡假設 min/maxDistance 單位與 bar.distance (米) 一致
+          return (
+            bar.distance !== undefined &&
+            bar.distance >= currentFilters.value.minDistance &&
+            bar.distance <= currentFilters.value.maxDistance
+          );
+        });
+    }
   }
 
   // 3. 營業時間篩選 (處理跨日邏輯)
@@ -203,13 +215,14 @@ const filteredBars = computed(() => {
         currentFilters.value.maxOpenHour === 24 &&
         currentFilters.value.maxOpenMinute === 0
       ) {
-        filterMaxMinutes = 24 * 60;
+        filterMaxMinutes = 24 * 60; // 24:00 應視為當天結束
       }
       if (filterMaxMinutes < filterMinMinutes) {
         filterMaxMinutes += 24 * 60; // 處理篩選條件的跨日
       }
 
       // 檢查時間區間是否有重疊
+      // (barOpen, barClose) 與 (filterMin, filterMax) 重疊
       return (
         Math.max(barOpenMinutes, filterMinMinutes) <
         Math.min(barCloseMinutes, filterMaxMinutes)
@@ -257,24 +270,28 @@ async function handleSearch() {
     alert("請輸入搜尋關鍵字");
     return;
   }
+  // searchAndDisplayPlaces 應該會處理地圖移動和標記顯示
   await searchAndDisplayPlaces(searchQuery.value);
 }
 
 async function handleGetCurrentLocation() {
-  isLoading.value = true;
+  isLoading.value = true; // 設置本地加載狀態
   try {
+    // 傳遞 sidebar 寬度以調整地圖中心點
     await getMapCurrentLocation(
       document.querySelector(".bar-list-sidebar")?.offsetWidth || 0
     );
   } catch (err) {
     console.error("獲取目前位置失敗:", err);
+    alert("無法獲取您的目前位置，請檢查瀏覽器權限設定。");
   } finally {
-    isLoading.value = false;
+    isLoading.value = false; // 清除本地加載狀態
   }
 }
 
 function handleFilterChanged(filters) {
   currentFilters.value = filters;
+  // 篩選條件改變後，filteredBars 會自動重新計算，並觸發 watch 顯示地圖標記
 }
 
 function handleRemoveAppliedFilter(payload) {
@@ -310,20 +327,22 @@ function toggleFilterPanel() {
 
 function handleBarSelected(bar) {
   selectedBar.value = bar;
+  // panToAndShowBarInfo 應該會自動處理地圖移動和資訊視窗顯示
   panToAndShowBarInfo(bar);
 }
 
 function handleToggleWishlist(barId) {
   const barIndex = allBars.value.findIndex((b) => b.id === barId);
   if (barIndex > -1) {
-    allBars.value[barIndex].isWishlisted =
-      !allBars.value[barIndex].isWishlisted;
+    allBars.value[barIndex].isWishlisted = !allBars.value[barIndex].isWishlisted;
   }
 }
 
 // 模擬獲取酒吧數據 (實際專案應替換為 API 請求)
-function fetchBars() {
-  isLoading.value = true;
+// **此函數現在只負責填充 allBars，不負責載入狀態**
+function fetchBarsData() {
+  // 這裡只負責獲取數據，isLoading 由 MapView 負責管理
+  // 假設數據是同步返回，如果異步則需要 await
   allBars.value = [
     {
       id: "b001",
@@ -358,7 +377,7 @@ function fetchBars() {
       name: "大安運動酒吧",
       rating: 4.2,
       reviews: 200,
-      priceRange: "NT$ 400-900",
+      priceRange: "400-900",
       openingHours: { weekday_text: ["每日 17:00 - 03:00"] },
       description: "提供多台大型螢幕轉播運動賽事，氛圍熱烈，適合與朋友一起看球",
       tags: ["運動酒吧", "大型螢幕", "觀賽熱點", "美式", "大安區"],
@@ -437,7 +456,7 @@ function fetchBars() {
       isWishlisted: false,
     },
   ];
-  isLoading.value = false;
+  // 這裡不設置 isLoading.value = false; 因為地圖的載入狀態由 useGoogleMaps 管理
 }
 
 // ----------------------------------------------------------------------
@@ -445,16 +464,32 @@ function fetchBars() {
 // ----------------------------------------------------------------------
 
 onMounted(async () => {
-  isLoading.value = true;
+  isLoading.value = true; // 開始載入所有非地圖相關數據
   try {
+    // 步驟 1: 載入 Google Maps API 腳本
     await loadGoogleMapsAPI();
-    initMap();
-    fetchBars();
-    requestGeolocationPermission();
+    console.log("Google Maps API 載入完成，準備初始化地圖...");
+
+    // 步驟 2: 初始化地圖 (確保 mapContainer 已綁定)
+    if (mapContainer.value) {
+      initMap();
+      console.log("地圖初始化完成。");
+
+      // 步驟 3: 獲取酒吧數據
+      fetchBarsData(); // 僅獲取數據
+      console.log("所有酒吧數據已載入:", allBars.value);
+
+      // 步驟 4: 請求地理定位權限
+      // 可以在地圖和數據都準備好後才嘗試獲取用戶位置
+      requestGeolocationPermission();
+    } else {
+      console.error("錯誤：地圖容器 ref 未綁定，無法初始化地圖。");
+    }
   } catch (err) {
-    console.error("地圖或數據載入失敗：", err);
+    console.error("地圖或數據載入失敗:", err);
+    alert("初始化失敗，請檢查控制台錯誤。");
   } finally {
-    isLoading.value = false;
+    isLoading.value = false; // 結束本地載入狀態
   }
 });
 
@@ -462,29 +497,24 @@ onMounted(async () => {
 watch(
   filteredBars,
   (newBars) => {
+    console.log("filteredBars 變化，準備在地圖上顯示標記:", newBars);
+    // 確保地圖實例存在，才執行標記顯示
     if (map.value) {
       displayBarsOnMap(newBars);
+    } else {
+      // 可以在這裡加載狀態或提示
+      console.warn("地圖實例尚未準備好，無法顯示酒吧標記。");
     }
   },
-  { immediate: true }
+  { immediate: true } // 立即執行一次，確保初始數據的標記顯示
 );
 
 // 監聽選中的酒吧，並在地圖上顯示其資訊視窗
 watch(selectedBar, (newVal) => {
   if (newVal && map.value) {
-    const targetMarker = markers.value.find(
-      (marker) =>
-        marker.getPosition()?.lat() === newVal.location.lat &&
-        marker.getPosition()?.lng() === newVal.location.lng
-    );
-    if (targetMarker) {
-      closeInfoWindow();
-      showInfoWindow(targetMarker, targetMarker.getContent());
-    } else {
-      panTo(newVal.location);
-      setZoom(15);
-      closeInfoWindow();
-    }
+    // 這裡的邏輯是通過經緯度匹配 marker，但更好的方式是將 bar.id 儲存在 marker 上
+    // 或者直接通過 panToAndShowBarInfo 處理
+    panToAndShowBarInfo(newVal); // useGoogleMaps 內部應處理標記查找和資訊視窗顯示
   } else {
     closeInfoWindow();
   }
@@ -495,7 +525,7 @@ watch(selectedBar, (newVal) => {
 /* 頁面整體佈局 */
 .map-view-container {
   display: flex;
-  height: 100vh;
+  height: 100vh; /* 確保容器有高度 */
   width: 100vw;
   overflow: hidden;
   position: relative;
@@ -505,7 +535,7 @@ watch(selectedBar, (newVal) => {
 .top-left-controls {
   position: absolute;
   top: 20px;
-  left: calc(380px + 20px);
+  left: calc(380px + 20px); /* 考慮到 sidebar 的寬度 */
   z-index: 100;
   display: flex;
   flex-direction: row;
@@ -530,7 +560,7 @@ watch(selectedBar, (newVal) => {
   transition: transform 0.3s ease-in-out;
 }
 
-/* 隱藏側邊欄的狀態 */
+/* 隱藏側邊欄的狀態 (如果您有這個功能，請確保樣式生效) */
 .bar-list-sidebar.sidebar-hidden {
   transform: translateX(-100%);
   position: absolute;
@@ -699,6 +729,7 @@ watch(selectedBar, (newVal) => {
 }
 
 /* 資訊視窗內容樣式 */
+/* 這些樣式通常是在 useGoogleMaps 內部渲染的，但放在這裡作為通用樣式也無妨 */
 .info-window-content {
   padding: 15px;
   font-family: "Noto Sans TC", sans-serif;
@@ -763,8 +794,8 @@ watch(selectedBar, (newVal) => {
 /* 地圖容器 */
 .map-container {
   flex-grow: 1;
-  height: 100%;
-  background-color: #e0e0e0;
+  height: 100%; /* 確保地圖容器填滿父元素的高度 */
+  background-color: #e0e0e0; /* 可選的背景色，在地圖載入前顯示 */
 }
 
 /* 載入中遮罩 */
@@ -791,20 +822,33 @@ watch(selectedBar, (newVal) => {
   border-radius: 50%;
   padding: 1px;
   background: conic-gradient(#0000 10%, #afb18c) content-box;
-  -webkit-mask:
-    repeating-conic-gradient(#0000 0deg, #000 1deg 20deg, #0000 21deg 36deg),
-    radial-gradient(
-      farthest-side,
-      #0000 calc(100% - var(--b) - 1px),
-      #000 calc(100% - var(--b))
-    );
+  -webkit-mask: repeating-conic-gradient(#0000 0deg, #000 1deg 20deg, #0000 21deg 36deg),
+    radial-gradient(farthest-side, #0000 calc(100% - var(--b) - 1px), #000 calc(100% - var(--b)));
   -webkit-mask-composite: destination-in;
   mask-composite: intersect;
   animation: l4 1s infinite;
 }
 
-/* 移除篩選按鈕的懸停效果 */
+@keyframes l4 {
+  to {
+    transform: rotate(1turn);
+  }
+}
+
+/* 移除篩選按鈕的懸停效果 (這可能與其他樣式衝突，請確認用途) */
 .remove-filter-button:hover {
   opacity: 1;
+}
+
+/* 如果你的側邊欄是響應式，可能需要調整 top-left-controls 的 left 值 */
+@media (max-width: 768px) {
+  .top-left-controls {
+    left: 20px; /* 在小螢幕上調整位置 */
+    width: calc(100% - 40px); /* 佔滿寬度 */
+    flex-direction: column; /* 垂直排列 */
+  }
+  .search-panel-map {
+    width: 100%;
+  }
 }
 </style>
