@@ -44,7 +44,7 @@
               >⭐️ {{ bar.rating || "N/A" }}</span
             >
             <span class="ml-1 text-gray-700 bar-reviews">
-              ({{ bar.user_ratings_total || "0" }} 評論)</span
+              ({{ bar.reviews || "0" }} 評論)</span
             >
             <span class="text-orange-700 bar-price"
               >NT$ {{ bar.priceRange || "???" }}</span
@@ -80,26 +80,25 @@
 import { ref, onMounted, watch } from "vue";
 import type { PropType } from "vue";
 
-// 定義 Bar 介面，明確屬性，特別是 place_id
+// --- 類型定義 ---
 interface Bar {
-  id?: string; // 如果 place_id 不存在，可以用 id 作為 fallback
-  place_id?: string; // 這是識別地點的唯一 ID，Google Places API 返回，使其可選
+  id?: string;
+  place_id?: string;
   name: string;
   imageUrl?: string;
   rating?: number;
-  reviews?: number; // 添加 reviews 屬性以匹配您的數據
-  user_ratings_total?: number; // Google Places API 的評論總數
-  priceRange?: string; // 這需要您自己處理或定義
-  tags?: string[]; // 從您的模擬數據中看到 tags 屬性
-  types?: string[]; // Google Places API 的類型列表 (例如 'bar', 'restaurant') - 用於標籤
-  openingHours?: google.maps.places.OpeningHours | { weekday_text?: string[] }; // Google Places API 的營業時間物件
-  location?: { lat: number; lng: number }; // 添加 location 屬性以匹配您的數據
-  description?: string; // 添加 description 屬性以匹配您的數據
-  isWishlisted?: boolean; // 添加 isWishlisted 屬性以匹配您的數據
-  distance?: number; // 添加 distance 屬性以匹配您的篩選邏輯
-  // 其他您可能從 Google Places API 獲取的屬性...
+  reviews?: number;
+  priceRange?: string;
+  tags?: string[];
+  types?: string[];
+  openingHours?: google.maps.places.OpeningHours | { weekday_text?: string[] };
+  location?: { lat: number; lng: number };
+  description?: string;
+  isWishlisted?: boolean;
+  distance?: number;
 }
 
+// --- Props 與 Emits ---
 const props = defineProps({
   bars: {
     type: Array as PropType<Bar[]>,
@@ -107,67 +106,72 @@ const props = defineProps({
   },
 });
 
-const emit = defineEmits(["bar-selected"]);
+const emit = defineEmits(["bar-selected", "toggle-wishlist"]); // 新增 toggle-wishlist 事件
 
+// --- 響應式狀態 ---
+// 使用 Set 存儲收藏的 place_id，便於快速查找和增刪
+const favoritePlaceIds = ref<Set<string>>(new Set());
+
+// ----------------------------------------------------------------------
+// 事件處理函式
+// ----------------------------------------------------------------------
+
+// 選中酒吧並發送事件給父組件
 const selectBar = (bar: Bar) => {
   emit("bar-selected", bar);
 };
 
-// --- 收藏功能相關的狀態和邏輯 ---
-// 使用 Set 來存儲收藏的 place_id，方便快速查找和增刪
-const favoritePlaceIds = ref<Set<string>>(new Set());
-
-// 組件加載時從 localStorage 讀取收藏數據
-onMounted(() => {
-  const storedFavorites = localStorage.getItem("favorites");
-  if (storedFavorites) {
-    try {
-      const parsedFavorites = JSON.parse(storedFavorites);
-      // 確保從 localStorage 讀取的是陣列，並轉換為 Set
-      if (Array.isArray(parsedFavorites)) {
-        favoritePlaceIds.value = new Set(parsedFavorites);
-      }
-    } catch (e) {
-      console.error("Failed to parse favorites from localStorage", e);
-      // 如果解析失敗，清空無效數據，避免後續問題
-      localStorage.removeItem("favorites");
-    }
-  }
-});
-
-// 監聽 favoritePlaceIds 變化，並同步到 localStorage
-// deep: true 對於 Set 來說是必要的，因為 Set 內部元素的增刪不改變 Set 本身的引用
-watch(
-  favoritePlaceIds,
-  (newVal) => {
-    localStorage.setItem("favorites", JSON.stringify(Array.from(newVal)));
-  },
-  { deep: true }
-);
-
-// 檢查某個酒吧是否已收藏
-const isFavorite = (placeId: string | undefined): boolean => {
-  if (!placeId) return false; // 如果 placeId 不存在，則不可能是收藏的
-  return favoritePlaceIds.value.has(placeId);
-};
-
-// 切換收藏狀態
+// 切換酒吧的收藏狀態
 const toggleFavorite = (placeId: string | undefined) => {
   if (!placeId) {
     console.warn("無法收藏/取消收藏，因為 place_id 不存在。");
     return;
   }
   if (favoritePlaceIds.value.has(placeId)) {
-    // 已經收藏，取消收藏
     favoritePlaceIds.value.delete(placeId);
     console.log(`取消收藏: ${placeId}`);
   } else {
-    // 未收藏，添加收藏
     favoritePlaceIds.value.add(placeId);
     console.log(`收藏: ${placeId}`);
   }
-  // favoritePlaceIds 是 ref，Vue 會自動追蹤其變化並更新模板
+  // 通知父組件收藏狀態已改變 (可選，如果 MapView 需要實時更新 bar 數據)
+  emit("toggle-wishlist", placeId);
 };
+
+// 檢查酒吧是否已收藏
+const isFavorite = (placeId: string | undefined): boolean => {
+  if (!placeId) return false;
+  return favoritePlaceIds.value.has(placeId);
+};
+
+// ----------------------------------------------------------------------
+// Vue 生命週期與監聽器
+// ----------------------------------------------------------------------
+
+// 組件掛載時，從 localStorage 讀取收藏數據
+onMounted(() => {
+  const storedFavorites = localStorage.getItem("favorites");
+  if (storedFavorites) {
+    try {
+      const parsedFavorites = JSON.parse(storedFavorites);
+      if (Array.isArray(parsedFavorites)) {
+        favoritePlaceIds.value = new Set(parsedFavorites);
+      }
+    } catch (e) {
+      console.error("從 localStorage 解析收藏數據失敗", e);
+      localStorage.removeItem("favorites"); // 清除無效數據
+    }
+  }
+});
+
+// 監聽收藏 Set 的變化，並同步到 localStorage
+watch(
+  favoritePlaceIds,
+  (newVal) => {
+    localStorage.setItem("favorites", JSON.stringify(Array.from(newVal)));
+  },
+  { deep: true } // 深度監聽 Set 內部元素的增刪
+);
 </script>
 
 <style scoped>
@@ -198,7 +202,8 @@ const toggleFavorite = (placeId: string | undefined) => {
 
 .bar-card {
   background-color: #ffffff;
-  border-radius: 12px; x rgba(0, 0, 0, 0.1);
+  border-radius: 12px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
   overflow: hidden; /* 為了圓角，保留 */
   cursor: pointer;
   transition:
@@ -212,7 +217,7 @@ const toggleFavorite = (placeId: string | undefined) => {
 
 .bar-card:hover {
   transform: translateY(-5px);
-  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+  box-shadow: 0 0 0 2px rgba(184, 162, 142, 0.2);
 }
 
 .bar-card-image {
@@ -301,7 +306,7 @@ const toggleFavorite = (placeId: string | undefined) => {
 .bar-price {
   font-size: 16px;
   font-weight: 600;
-  /* color: #b8a28e;  */
+  /* color: #b8a28e;  */
 }
 
 .bar-tags {
@@ -322,7 +327,7 @@ const toggleFavorite = (placeId: string | undefined) => {
 
 .bar-hours {
   font-size: 14px;
-  /* color: #888;  */
+  /* color: #888;  */
   margin-top: auto;
 }
 </style>

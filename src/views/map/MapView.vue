@@ -5,7 +5,7 @@
         class="filter-toggle-button map-control-button"
         @click="toggleFilterPanel"
       >
-        篩選 ⚙️
+        <i class="fas fa-filter"></i>
       </button>
 
       <div class="search-panel-map">
@@ -27,12 +27,14 @@
               🔍 {{ suggestion.description }}
             </li>
           </ul>
+          <button
+            @click="handleSearch"
+            class="btn search-bt map-control-button"
+          >
+            <b>🔍 搜尋</b>
+          </button>
         </div>
       </div>
-
-      <button @click="handleSearch" class="btn search-bt map-control-button">
-        <b>🔍 搜尋</b>
-      </button>
 
       <button
         @click="handleGetCurrentLocation"
@@ -70,53 +72,41 @@
 </template>
 
 <script setup>
-import { ref, onMounted, computed, watch, shallowRef } from "vue";
+import { ref, onMounted, computed, watch } from "vue";
 import debounce from "lodash/debounce";
 
-// 1. 引入你的組件
-import FilterPanel from "@/components/FilterPanel.vue";
-import BarList from "@/components/BarList.vue";
-
+// --- 引入組件與 Google Maps Composable ---
+import FilterPanel from "../../components/map/FilterPanel.vue";
+import BarList from "../../components/map/BarList.vue";
 import { useGoogleMaps } from "@/composable/useGoogleMaps";
 
-// 確保 API Key 存在
 const googleMapsApiKey = import.meta.env.VITE_MAPS_API_KEY;
-if (!googleMapsApiKey) {
-  console.error("VITE_MAPS_API_KEY is not defined in environment variables.");
-}
 
+// --- 響應式狀態 ---
 const isLoading = ref(false);
 const mapContainer = ref(null);
 
 const {
   map,
-  markers, // 雖然現在不直接操作 markers，但如果未來需要，仍然可以取得
-  searchMarkers, // 新增的搜尋結果標記列表
+  markers,
   infoWindow,
-  currentMarker,
-  loading: googleMapsLoading, // 從 Composable 取得的 loading 狀態
-  error: googleMapsError, // 從 Composable 取得的 error 狀態
+  loading: googleMapsLoading,
   loadGoogleMapsAPI,
   initMap,
-  clearMarkers, // 現在 Composable 內部會判斷清除哪種標記
   showInfoWindow,
   closeInfoWindow,
   panTo,
   setZoom,
-  fitBounds,
-  displayBarsOnMap, // 新增：用來顯示酒吧標記的函式
+  displayBarsOnMap,
   requestGeolocationPermission,
-  getCurrentLocation: getMapCurrentLocation, // 為了避免命名衝突，這裡重新命名
+  getCurrentLocation: getMapCurrentLocation,
   getPlacePredictions,
-  searchAndDisplayPlaces, // 新增：用來搜尋並顯示地點的函式
+  searchAndDisplayPlaces,
+  panToAndShowBarInfo,
 } = useGoogleMaps(mapContainer, {
   googleMapsApiKey: googleMapsApiKey,
-  onLoading: () => {
-    isLoading.value = true;
-  },
-  onLoaded: () => {
-    isLoading.value = false;
-  },
+  onLoading: () => (isLoading.value = true),
+  onLoaded: () => (isLoading.value = false),
   onError: (msg) => {
     console.error("useGoogleMaps error:", msg);
     isLoading.value = false;
@@ -126,7 +116,6 @@ const {
 const isFilterPanelOpen = ref(false);
 const searchQuery = ref("");
 const suggestions = ref([]);
-
 const allBars = ref([]);
 const currentFilters = ref({
   address: "any",
@@ -134,29 +123,29 @@ const currentFilters = ref({
   minDistance: 0,
   maxDistance: 5000,
   minOpenHour: 0,
-  minOpenMinute: 0, // 新增
+  minOpenMinute: 0,
   maxOpenHour: 24,
-  maxOpenMinute: 0, // 新增
+  maxOpenMinute: 0,
   tags: [],
 });
-
 const selectedBar = ref(null);
 
 // ----------------------------------------------------------------------
-// Computed Properties
+// 計算屬性
 // ----------------------------------------------------------------------
 
+// 根據篩選條件過濾酒吧列表
 const filteredBars = computed(() => {
   let barsToFilter = [...allBars.value];
 
-  // 地址篩選 (如果 'address' 指的是標籤)
+  // 1. 地址篩選
   if (currentFilters.value.address !== "any") {
     barsToFilter = barsToFilter.filter((bar) =>
       bar.tags.includes(currentFilters.value.address)
     );
   }
 
-  // 距離篩選
+  // 2. 距離篩選 (需 Google Maps 的 geometry 庫計算距離)
   const mapCenter = map.value?.getCenter();
   if (mapCenter && window.google?.maps?.geometry?.spherical) {
     const centerLatLng = new window.google.maps.LatLng(
@@ -185,7 +174,7 @@ const filteredBars = computed(() => {
       });
   }
 
-  // 營業時間篩選
+  // 3. 營業時間篩選 (處理跨日邏輯)
   if (
     currentFilters.value.minOpenHour !== 0 ||
     currentFilters.value.minOpenMinute !== 0 ||
@@ -193,44 +182,34 @@ const filteredBars = computed(() => {
     currentFilters.value.maxOpenMinute !== 0
   ) {
     barsToFilter = barsToFilter.filter((bar) => {
-      // 確保 bar.openingHours 是一個物件，並從 weekday_text 中獲取字串
-      const openHoursStr = bar.openingHours?.weekday_text?.[0] || ""; // <-- 關鍵修改點
+      const openHoursStr = bar.openingHours?.weekday_text?.[0] || "";
       const match = openHoursStr.match(/(\d{2}):(\d{2})\s*-\s*(\d{2}):(\d{2})/);
 
       if (!match) return false;
 
-      // 解析酒吧的營業時間 (總分鐘數)
       let barOpenMinutes = parseInt(match[1]) * 60 + parseInt(match[2]);
       let barCloseMinutes = parseInt(match[3]) * 60 + parseInt(match[4]);
-
-      // 處理酒吧的跨日營業
       if (barCloseMinutes < barOpenMinutes) {
-        barCloseMinutes += 24 * 60; // 跨日加上 24 小時的分鐘數
+        barCloseMinutes += 24 * 60; // 處理酒吧跨日營業
       }
 
-      // 解析篩選條件的時間 (總分鐘數)
       const filterMinMinutes =
         currentFilters.value.minOpenHour * 60 +
         currentFilters.value.minOpenMinute;
       let filterMaxMinutes =
         currentFilters.value.maxOpenHour * 60 +
         currentFilters.value.maxOpenMinute;
-
-      // 特殊處理篩選條件為 24:00 的情況 (視為次日 00:00，但篩選範圍包含 23:59)
       if (
         currentFilters.value.maxOpenHour === 24 &&
         currentFilters.value.maxOpenMinute === 0
       ) {
-        filterMaxMinutes = 24 * 60; // 24:00 就是 1440 分鐘
+        filterMaxMinutes = 24 * 60;
       }
-
-      // 處理篩選條件的跨日
       if (filterMaxMinutes < filterMinMinutes) {
-        filterMaxMinutes += 24 * 60; // 跨日篩選加上 24 小時的分鐘數
+        filterMaxMinutes += 24 * 60; // 處理篩選條件的跨日
       }
 
-      // 檢查營業時間與篩選區間是否有重疊
-      // 邏輯：兩個區間 [A, B] 和 [C, D] 重疊的條件是 Math.max(A, C) < Math.min(B, D)
+      // 檢查時間區間是否有重疊
       return (
         Math.max(barOpenMinutes, filterMinMinutes) <
         Math.min(barCloseMinutes, filterMaxMinutes)
@@ -238,14 +217,14 @@ const filteredBars = computed(() => {
     });
   }
 
-  // 評分排序
-  if (currentFilters.value.ratingSort === "highest") {
+  // 4. 評分排序
+  if (currentFilters.value.ratingSort === "highToLow") {
     barsToFilter.sort((a, b) => b.rating - a.rating);
-  } else if (currentFilters.value.ratingSort === "lowest") {
+  } else if (currentFilters.value.ratingSort === "lowToHigh") {
     barsToFilter.sort((a, b) => a.rating - b.rating);
   }
 
-  // 標籤篩選
+  // 5. 標籤篩選 (所有選中的標籤都必須存在於酒吧的 tags 中)
   if (currentFilters.value.tags && currentFilters.value.tags.length > 0) {
     barsToFilter = barsToFilter.filter((bar) =>
       currentFilters.value.tags.every((tag) => bar.tags.includes(tag))
@@ -270,7 +249,7 @@ const debouncedSearchSuggestions = debounce(async () => {
 async function selectSuggestion(suggestion) {
   searchQuery.value = suggestion.description;
   suggestions.value = [];
-  await handleSearch(); // 選擇建議後直接執行搜尋
+  await handleSearch();
 }
 
 async function handleSearch() {
@@ -278,14 +257,12 @@ async function handleSearch() {
     alert("請輸入搜尋關鍵字");
     return;
   }
-  // 直接呼叫 Composable 內的高階搜尋函式
   await searchAndDisplayPlaces(searchQuery.value);
 }
 
 async function handleGetCurrentLocation() {
   isLoading.value = true;
   try {
-    // 呼叫 Composable 中的 getCurrentLocation，並傳入側邊欄寬度
     await getMapCurrentLocation(
       document.querySelector(".bar-list-sidebar")?.offsetWidth || 0
     );
@@ -296,12 +273,10 @@ async function handleGetCurrentLocation() {
   }
 }
 
-// 處理 FilterPanel 發出的 'filter-changed' 事件
 function handleFilterChanged(filters) {
-  console.log("接收到篩選條件:", filters);
   currentFilters.value = filters;
 }
-// 在這裡新增 handleRemoveAppliedFilter 方法
+
 function handleRemoveAppliedFilter(payload) {
   const { type, value } = payload;
   switch (type) {
@@ -326,65 +301,27 @@ function handleRemoveAppliedFilter(payload) {
         (tag) => tag !== value
       );
       break;
-    default:
-      console.warn("未知篩選類型:", type);
   }
-  // 因為直接修改了 currentFilters.value，watch 會自動觸發 filteredBars 的更新
-  // FilterPanel 會通過 watch(props.initialFilters) 自動同步其狀態
 }
 
-// 切換 FilterPanel 的顯示狀態
 function toggleFilterPanel() {
   isFilterPanelOpen.value = !isFilterPanelOpen.value;
 }
 
-// 處理 BarList 發出的 'bar-selected' 事件
 function handleBarSelected(bar) {
-  console.log("列表選中酒吧:", bar.name);
-  selectedBar.value = bar; // 設定選中的酒吧
-
-  // 清除搜尋標記（如果有的話），確保只顯示酒吧
-  clearMarkers("search");
-  if (currentMarker.value) {
-    // 隱藏目前位置標記
-    currentMarker.value.setMap(null);
-  }
-
-  // 找到對應的標記並操作地圖
-  const targetMarker = markers.value.find(
-    // 這裡仍需從 markers 找到對應的標記
-    (marker) =>
-      marker.getPosition()?.lat() === bar.location.lat &&
-      marker.getPosition()?.lng() === bar.location.lng
-  );
-
-  if (map.value && targetMarker) {
-    panTo(targetMarker.getPosition());
-    setZoom(15);
-    // 直接呼叫 Composable 的 showInfoWindow，傳入標記和組件處理後的內容
-    showInfoWindow(targetMarker, targetMarker.getContent()); // 假設 marker 已經有內容，或我們重新格式化
-  } else if (map.value) {
-    // 如果沒找到現有標記 (例如，地圖上的標記是篩選前的)，也可以直接移動地圖並顯示一個臨時資訊視窗
-    panTo(bar.location);
-    setZoom(15);
-    // 這裡我們需要手動格式化內容，因為這個 bar 不一定有對應的地圖標記
-    showInfoWindow(null, formatBarInfoWindowContent(bar)); // 傳入 null 標記，InfoWindow 會在中心打開
-  }
+  selectedBar.value = bar;
+  panToAndShowBarInfo(bar);
 }
 
-// 處理 BarList 發出的 'toggle-wishlist' 事件
 function handleToggleWishlist(barId) {
   const barIndex = allBars.value.findIndex((b) => b.id === barId);
   if (barIndex > -1) {
     allBars.value[barIndex].isWishlisted =
       !allBars.value[barIndex].isWishlisted;
-    console.log(
-      `酒吧 ${allBars.value[barIndex].name} 收藏狀態變更為: ${allBars.value[barIndex].isWishlisted}`
-    );
   }
 }
 
-// 模擬從後端獲取酒吧數據
+// 模擬獲取酒吧數據 (實際專案應替換為 API 請求)
 function fetchBars() {
   isLoading.value = true;
   allBars.value = [
@@ -508,16 +445,16 @@ function fetchBars() {
 // ----------------------------------------------------------------------
 
 onMounted(async () => {
-  isLoading.value = true; // 整體應用程式開始載入
+  isLoading.value = true;
   try {
-    await loadGoogleMapsAPI(); // 載入 Google Maps API
-    initMap(); // 初始化地圖實例和服務
-    fetchBars(); // 獲取酒吧數據
-    requestGeolocationPermission(); // 請求地理定位權限
+    await loadGoogleMapsAPI();
+    initMap();
+    fetchBars();
+    requestGeolocationPermission();
   } catch (err) {
     console.error("地圖或數據載入失敗：", err);
   } finally {
-    isLoading.value = false; // 整體應用程式載入完成
+    isLoading.value = false;
   }
 });
 
@@ -526,14 +463,13 @@ watch(
   filteredBars,
   (newBars) => {
     if (map.value) {
-      displayBarsOnMap(newBars); // 呼叫 Composable 新增的函式
+      displayBarsOnMap(newBars);
     }
   },
-  { immediate: true } // 在組件載入後立即執行一次
+  { immediate: true }
 );
 
-// 監聽選中的酒吧，在地圖上顯示其資訊視窗
-// 注意：現在資訊視窗的內容格式化在 Composable 內部處理
+// 監聽選中的酒吧，並在地圖上顯示其資訊視窗
 watch(selectedBar, (newVal) => {
   if (newVal && map.value) {
     const targetMarker = markers.value.find(
@@ -542,26 +478,21 @@ watch(selectedBar, (newVal) => {
         marker.getPosition()?.lng() === newVal.location.lng
     );
     if (targetMarker) {
-      closeInfoWindow(); // 先關閉可能已有的資訊視窗
-      // 直接讓 Composable 負責顯示資訊視窗，內容由 Composable 內部的 formatBarInfoWindowContent 處理
-      targetMarker.addListener("click", () =>
-        showInfoWindow(targetMarker, targetMarker.getContent())
-      ); // 重新綁定點擊事件，或在 displayBarsOnMap 中處理
-      showInfoWindow(targetMarker, targetMarker.getContent()); // 嘗試顯示已渲染標記的內容
+      closeInfoWindow();
+      showInfoWindow(targetMarker, targetMarker.getContent());
     } else {
-      // 如果 selectedBar 不在地圖上的當前標記中（例如，來自列表點擊但未在篩選結果中），
-      // 則直接平移地圖並顯示資訊視窗。Composable 內部會處理內容格式。
       panTo(newVal.location);
       setZoom(15);
-      closeInfoWindow(); // 確保關閉舊的 infoWindow
+      closeInfoWindow();
     }
   } else {
-    closeInfoWindow(); // 如果沒有選中的酒吧，關閉資訊視窗
+    closeInfoWindow();
   }
 });
 </script>
 
 <style scoped>
+/* 頁面整體佈局 */
 .map-view-container {
   display: flex;
   height: 100vh;
@@ -570,18 +501,17 @@ watch(selectedBar, (newVal) => {
   position: relative;
 }
 
+/* 地圖左上角的控制區塊 */
 .top-left-controls {
   position: absolute;
   top: 20px;
   left: calc(380px + 20px);
   z-index: 100;
-
   display: flex;
   flex-direction: row;
   align-items: center;
   flex-wrap: wrap;
-  gap: 10px; /* 保持一致性 */
-
+  gap: 10px;
   padding: 15px;
   background-color: rgba(255, 255, 255, 0.9);
   border-radius: 8px;
@@ -589,6 +519,7 @@ watch(selectedBar, (newVal) => {
   transition: left 0.3s ease-in-out;
 }
 
+/* 酒吧列表側邊欄 */
 .bar-list-sidebar {
   width: 380px;
   background-color: #f7f7f7;
@@ -599,29 +530,13 @@ watch(selectedBar, (newVal) => {
   transition: transform 0.3s ease-in-out;
 }
 
+/* 隱藏側邊欄的狀態 */
 .bar-list-sidebar.sidebar-hidden {
   transform: translateX(-100%);
   position: absolute;
 }
 
-.sidebar-header {
-  padding: 24px 16px 16px;
-  background-color: #fff;
-  border-bottom: 1px solid #eee;
-  display: flex;
-  justify-content: flex-start;
-  align-items: center;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
-  z-index: 10;
-}
-
-.app-title {
-  font-size: 29px;
-  font-weight: bold;
-  color: #860914;
-  margin: 0;
-}
-
+/* 通用地圖控制按鈕樣式 */
 .map-control-button {
   padding: 12px 20px;
   border: none;
@@ -636,29 +551,66 @@ watch(selectedBar, (newVal) => {
     background-color 0.2s,
     transform 0.2s;
   box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+  outline: none;
 }
 
 .map-control-button:hover {
   background-color: #a08d7a;
   transform: translateY(-2px);
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
 }
 
+.map-control-button:focus {
+  outline: none;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+}
+
+/* 篩選按鈕的特定樣式 */
 .filter-toggle-button {
   order: 1;
+  padding: 0;
+  background-color: transparent;
+  box-shadow: none;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  font-size: 24px;
+  color: #3a3435;
 }
 
+.filter-toggle-button:hover {
+  background-color: rgba(0, 0, 0, 0.1);
+  transform: translateY(0);
+  box-shadow: none;
+}
+
+.filter-toggle-button:focus {
+  outline: none;
+  box-shadow: none;
+}
+
+.filter-toggle-button .fas {
+  color: #3a3435;
+}
+
+/* 搜尋面板佈局 */
 .search-panel-map {
   order: 2;
   display: flex;
   position: relative;
   width: 300px;
   flex-shrink: 1;
+  align-items: center;
 }
 
 .input-group {
   display: flex;
   position: relative;
   width: 100%;
+  gap: 0;
 }
 
 .search-input {
@@ -666,23 +618,58 @@ watch(selectedBar, (newVal) => {
   padding: 8px 12px;
   font-size: 16px;
   border: 1px solid #decdd5;
-  border-radius: 8px;
+  border-right: 0;
+  border-radius: 8px 0 0 8px;
   outline: none;
   flex: 1;
+  margin: 0;
 }
+
+.search-bt {
+  background-color: #decdd5;
+  color: #3a3435;
+  padding: 8px 12px;
+  margin: 0;
+  border: 1px solid #decdd5;
+  border-left: 0;
+  border-radius: 0px 5px 5px 0px;
+  cursor: pointer;
+  order: 3;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+  outline: none;
+}
+
+.search-bt:hover {
+  background-color: #860914;
+  color: #ffffff;
+}
+
 .search-input:focus {
   border-color: #b8a28e;
   box-shadow: 0 0 0 2px rgba(184, 162, 142, 0.2);
 }
 
-.search-bt {
-  order: 3;
-}
-
+/* 顯示目前位置按鈕樣式 */
 .place-now-map {
+  padding: 8px 12px;
+  margin: 0;
+  border: none;
+  background-color: #decdd5;
+  color: #3a3435;
+  border-radius: 5px;
+  cursor: pointer;
+  white-space: nowrap;
   order: 4;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+  outline: none;
 }
 
+.place-now-map:hover {
+  background-color: #860914;
+  color: #ffffff;
+}
+
+/* 搜尋建議列表樣式 */
 .suggestions-list {
   position: absolute;
   top: calc(100% + 5px);
@@ -711,6 +698,7 @@ watch(selectedBar, (newVal) => {
   background: #f0f0f0;
 }
 
+/* 資訊視窗內容樣式 */
 .info-window-content {
   padding: 15px;
   font-family: "Noto Sans TC", sans-serif;
@@ -728,7 +716,7 @@ watch(selectedBar, (newVal) => {
 
 .info-window-meta {
   font-size: 15px;
-  color: #555; /* */
+  color: #555;
   margin-bottom: 5px;
 }
 
@@ -765,18 +753,21 @@ watch(selectedBar, (newVal) => {
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
+/* 酒吧列表可滾動區域 */
 .bar-list-scroll-area {
   flex-grow: 1;
   overflow-y: auto;
   padding: 16px;
 }
 
+/* 地圖容器 */
 .map-container {
   flex-grow: 1;
   height: 100%;
   background-color: #e0e0e0;
 }
 
+/* 載入中遮罩 */
 .loading-overlay {
   position: fixed;
   top: 0;
@@ -791,6 +782,7 @@ watch(selectedBar, (newVal) => {
   z-index: 9999;
 }
 
+/* 載入動畫樣式 */
 .loader {
   width: 60px;
   height: 60px;
@@ -811,6 +803,7 @@ watch(selectedBar, (newVal) => {
   animation: l4 1s infinite;
 }
 
+/* 移除篩選按鈕的懸停效果 */
 .remove-filter-button:hover {
   opacity: 1;
 }

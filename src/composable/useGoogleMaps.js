@@ -211,7 +211,7 @@ export function useGoogleMaps(mapContainerRef, options) {
     }
   };
 
-  // 新增：格式化酒吧資訊視窗內容
+  // 格式化酒吧資訊視窗內容
   const formatBarInfoWindowContent = (bar) => {
     const div = document.createElement("div");
     div.className = "info-window-content";
@@ -229,7 +229,7 @@ export function useGoogleMaps(mapContainerRef, options) {
     return div;
   };
 
-  // 新增：格式化地點搜尋結果的資訊視窗內容
+  // 格式化地點搜尋結果的資訊視窗內容
   const formatPlaceInfoWindowContent = (place) => {
     const placeOpeningHoursText =
       place.opening_hours?.weekday_text?.[0] || "未提供營業時間";
@@ -261,7 +261,7 @@ export function useGoogleMaps(mapContainerRef, options) {
     }
   };
 
-  // 新增：顯示酒吧在地圖上
+  // 顯示酒吧在地圖上
   const displayBarsOnMap = (barsToMark) => {
     if (!map.value) return;
 
@@ -280,8 +280,6 @@ export function useGoogleMaps(mapContainerRef, options) {
         // 點擊標記時的回調函式，直接使用內部的格式化函式
         (marker) => {
           showInfoWindow(marker, formatBarInfoWindowContent(bar));
-          // 如果需要，可以在這裡觸發一個事件，讓外部知道哪個酒吧被選中了
-          // 例如：emit('barMarkerSelected', bar.id); (Composable 不直接 emit 事件，但可以回調)
         },
         null, // 沒有自定義圖標，使用預設
         "bars" // 標記類型為酒吧
@@ -495,7 +493,7 @@ export function useGoogleMaps(mapContainerRef, options) {
     });
   };
 
-  // 新增：搜尋地點並在地圖上顯示結果
+  // 搜尋地點並在地圖上顯示結果
   const searchAndDisplayPlaces = async (query) => {
     if (!map.value) {
       onError?.("地圖未初始化，無法搜尋地點。");
@@ -572,6 +570,44 @@ export function useGoogleMaps(mapContainerRef, options) {
     }
   };
 
+  // 平移地圖到指定酒吧並顯示其資訊視窗
+  const panToAndShowBarInfo = (bar) => {
+    if (!map.value) {
+      onError?.("地圖未初始化，無法顯示酒吧資訊。");
+      return;
+    }
+
+    clearMarkers("search"); // 清除搜尋標記
+    if (currentMarker.value) {
+      currentMarker.value.setMap(null); // 隱藏目前位置標記
+    }
+    closeInfoWindow(); // 確保關閉舊的資訊視窗
+
+    const position = new window.google.maps.LatLng(
+      bar.location.lat,
+      bar.location.lng
+    );
+
+    panTo(position); // 平移地圖到酒吧位置
+    setZoom(15); // 設定合適的縮放級別
+
+    window.google.maps.event.addListenerOnce(map.value, "idle", () => {
+      const targetMarker = markers.value.find(
+        (marker) =>
+          marker.getPosition()?.lat() === bar.location.lat &&
+          marker.getPosition()?.lng() === bar.location.lng
+      );
+
+      if (targetMarker) {
+        showInfoWindow(targetMarker, formatBarInfoWindowContent(bar));
+      } else {
+        infoWindow.value.setPosition(position);
+        infoWindow.value.setContent(formatBarInfoWindowContent(bar));
+        infoWindow.value.open(map.value);
+      }
+    });
+  };
+
   // 8. 組件卸載時清理
   onUnmounted(() => {
     clearMarkers();
@@ -588,8 +624,8 @@ export function useGoogleMaps(mapContainerRef, options) {
   // 返回暴露給外部使用的狀態和方法
   return {
     map,
-    markers, // 原本的酒吧標記
-    searchMarkers, // 新增的搜尋結果標記
+    markers,
+    searchMarkers,
     infoWindow,
     autocompleteService,
     placesService,
@@ -606,11 +642,12 @@ export function useGoogleMaps(mapContainerRef, options) {
     panTo,
     setZoom,
     fitBounds,
-    displayBarsOnMap, // 新增：用於顯示酒吧列表的函式
+    displayBarsOnMap,
     requestGeolocationPermission,
     getCurrentLocation,
     getPlacePredictions,
     textSearch,
-    searchAndDisplayPlaces, // 新增：用於搜尋並顯示地點的函式
+    searchAndDisplayPlaces,
+    panToAndShowBarInfo,
   };
 }

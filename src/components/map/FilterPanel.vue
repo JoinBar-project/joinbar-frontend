@@ -23,6 +23,7 @@
         </button>
       </div>
     </div>
+
     <div class="filter-section">
       <label for="addressFilter" class="filter-label">地點</label>
       <select
@@ -180,121 +181,26 @@ const props = defineProps({
       minDistance: 0,
       maxDistance: 5000,
       minOpenHour: 0,
-      minOpenMinute: 0, // 新增分鐘預設值
+      minOpenMinute: 0,
       maxOpenHour: 24,
-      maxOpenMinute: 0, // 新增分鐘預設值
+      maxOpenMinute: 0,
       tags: [],
     }),
   },
 });
 
+// --- 響應式狀態 ---
 const filters = ref({
   address: "any",
   ratingSort: "any",
   minDistance: 0,
   maxDistance: 5000,
   minOpenHour: 0,
-  minOpenMinute: 0, // 初始化
+  minOpenMinute: 0,
   maxOpenHour: 24,
-  maxOpenMinute: 0, // 初始化
+  maxOpenMinute: 0,
   tags: [],
 });
-
-const appliedFiltersForDisplay = computed(() => {
-  const displayFilters = [];
-
-  // 地點篩選
-  if (filters.value.address !== "any") {
-    displayFilters.push({
-      label: `地點: ${filters.value.address}`,
-      type: "address",
-      value: filters.value.address,
-    });
-  }
-
-  // 評價排序
-  if (filters.value.ratingSort !== "any") {
-    let ratingLabel = "";
-    switch (filters.value.ratingSort) {
-      case "highToLow":
-        ratingLabel = "由高到低";
-        break;
-      case "lowToHigh":
-        ratingLabel = "由低到高";
-        break;
-      case "mostPopular":
-        ratingLabel = "近期最受歡迎";
-        break;
-    }
-    displayFilters.push({
-      label: `評價: ${ratingLabel}`,
-      type: "ratingSort",
-      value: filters.value.ratingSort,
-    });
-  }
-
-  // 距離篩選
-  if (filters.value.minDistance !== 0 || filters.value.maxDistance !== 5000) {
-    const min = filters.value.minDistance;
-    const max = filters.value.maxDistance;
-    displayFilters.push({
-      label: `距離: ${min} - ${max} 公尺`,
-      type: "distance",
-      value: { min, max },
-    });
-  }
-
-  // 營業時間篩選 (更新此處的顯示邏輯，以適應分鐘)
-  if (
-    filters.value.minOpenHour !== 0 ||
-    filters.value.minOpenMinute !== 0 ||
-    filters.value.maxOpenHour !== 24 ||
-    filters.value.maxOpenMinute !== 0
-  ) {
-    const formatTime = (h, m) => {
-      const hour = String(h).padStart(2, "0");
-      const minute = String(m).padStart(2, "0");
-      return `${hour}:${minute}`;
-    };
-
-    const minTime = formatTime(
-      filters.value.minOpenHour,
-      filters.value.minOpenMinute
-    );
-    const maxTime = formatTime(
-      filters.value.maxOpenHour,
-      filters.value.maxOpenMinute
-    );
-
-    displayFilters.push({
-      label: `營業時間: ${minTime} - ${maxTime}`,
-      type: "openHour", // 類型仍為 openHour，但 value 包含更多信息
-      value: {
-        minHour: filters.value.minOpenHour,
-        minMinute: filters.value.minOpenMinute,
-        maxHour: filters.value.maxOpenHour,
-        maxMinute: filters.value.maxOpenMinute,
-      },
-    });
-  }
-
-  // 標籤篩選
-  if (Array.isArray(filters.value.tags)) {
-    filters.value.tags.forEach((tag) => {
-      displayFilters.push({
-        label: `標籤: ${tag}`,
-        type: "tag",
-        value: tag,
-      });
-    });
-  }
-
-  return displayFilters;
-});
-
-const removeAppliedFilter = (type, value) => {
-  emit("remove-applied-filter", { type, value });
-};
 
 const popularTags = [
   "信義區",
@@ -319,15 +225,118 @@ const popularTags = [
   "小酌",
 ];
 
-// --- 輔助函數 ---
+// ----------------------------------------------------------------------
+// 計算屬性
+// ----------------------------------------------------------------------
 
+// 格式化已套用篩選條件以供顯示
+const appliedFiltersForDisplay = computed(() => {
+  const displayFilters = [];
+
+  if (filters.value.address !== "any") {
+    displayFilters.push({
+      label: `地點: ${filters.value.address}`,
+      type: "address",
+      value: filters.value.address,
+    });
+  }
+
+  if (filters.value.ratingSort !== "any") {
+    let ratingLabel = "";
+    switch (filters.value.ratingSort) {
+      case "highToLow":
+        ratingLabel = "由高到低";
+        break;
+      case "lowToHigh":
+        ratingLabel = "由低到高";
+        break;
+      case "mostPopular":
+        ratingLabel = "近期最受歡迎";
+        break;
+    }
+    displayFilters.push({
+      label: `評價: ${ratingLabel}`,
+      type: "ratingSort",
+      value: filters.value.ratingSort,
+    });
+  }
+
+  if (filters.value.minDistance !== 0 || filters.value.maxDistance !== 5000) {
+    const min = filters.value.minDistance;
+    const max = filters.value.maxDistance;
+    displayFilters.push({
+      label: `距離: ${min} - ${max} 公尺`,
+      type: "distance",
+      value: { min, max },
+    });
+  }
+
+  // 營業時間顯示格式化
+  if (
+    filters.value.minOpenHour !== 0 ||
+    filters.value.minOpenMinute !== 0 ||
+    filters.value.maxOpenHour !== 24 ||
+    filters.value.maxOpenMinute !== 0
+  ) {
+    const formatTime = (h, m) => {
+      const hour = String(h).padStart(2, "0");
+      const minute = String(m).padStart(2, "0");
+      return `<span class="math-inline">\{hour\}\:</span>{minute}`;
+    };
+
+    const minTime = formatTime(
+      filters.value.minOpenHour,
+      filters.value.minOpenMinute
+    );
+    const maxTime = formatTime(
+      filters.value.maxOpenHour,
+      filters.value.maxOpenMinute
+    );
+
+    displayFilters.push({
+      label: `營業時間: ${minTime} - ${maxTime}`,
+      type: "openHour",
+      value: {
+        minHour: filters.value.minOpenHour,
+        minMinute: filters.value.minOpenMinute,
+        maxHour: filters.value.maxOpenHour,
+        maxMinute: filters.value.maxOpenMinute,
+      },
+    });
+  }
+
+  if (Array.isArray(filters.value.tags)) {
+    filters.value.tags.forEach((tag) => {
+      displayFilters.push({
+        label: `標籤: ${tag}`,
+        type: "tag",
+        value: tag,
+      });
+    });
+  }
+
+  return displayFilters;
+});
+
+// ----------------------------------------------------------------------
+// 事件處理函式
+// ----------------------------------------------------------------------
+
+// 移除已套用的單一篩選條件
+const removeAppliedFilter = (type, value) => {
+  emit("remove-applied-filter", { type, value });
+};
+
+// 更新距離數值輸入框，並同步篩選
 const updateDistance = () => {
   filters.value.minDistance = Number(filters.value.minDistance);
   filters.value.maxDistance = Number(filters.value.maxDistance);
 
+  // 確保 min <= max
   if (filters.value.minDistance > filters.value.maxDistance) {
     filters.value.minDistance = filters.value.maxDistance;
   }
+  // 限制數值在有效範圍內
   filters.value.minDistance = Math.max(
     0,
     Math.min(filters.value.minDistance, 5000)
@@ -340,16 +349,18 @@ const updateDistance = () => {
   applyFilters();
 };
 
+// 更新距離滑動條，並同步篩選
 const updateDistanceRange = () => {
+  // 確保 min <= max
   if (filters.value.minDistance > filters.value.maxDistance) {
     filters.value.minDistance = filters.value.maxDistance;
   }
   applyFilters();
 };
 
-// 針對營業時間輸入的更新邏輯
+// 更新營業時間輸入框，並同步篩選
 const updateOpenHours = () => {
-  // 確保小時數在 0-23/24 之間，分鐘數在 0-59 之間
+  // 確保小時和分鐘在有效範圍內
   filters.value.minOpenHour = Math.max(
     0,
     Math.min(Number(filters.value.minOpenHour), 23)
@@ -367,17 +378,15 @@ const updateOpenHours = () => {
     Math.min(Number(filters.value.maxOpenMinute), 59)
   );
 
-  // 特殊處理 24:00 (如果 maxOpenHour 是 24，則 maxOpenMinute 必須是 0)
+  // 處理 24:00 (如果 maxOpenHour 是 24，則 maxOpenMinute 必須是 0)
   if (filters.value.maxOpenHour === 24 && filters.value.maxOpenMinute !== 0) {
     filters.value.maxOpenMinute = 0;
   }
 
-  // 跨日邏輯仍然完全交給 MapView 處理
-  // FilterPanel 僅負責確保輸入值在有效範圍內
-
   applyFilters();
 };
 
+// 切換標籤選中狀態
 const toggleTag = (tag) => {
   if (!Array.isArray(filters.value.tags)) {
     filters.value.tags = [];
@@ -391,11 +400,12 @@ const toggleTag = (tag) => {
   applyFilters();
 };
 
+// 觸發篩選條件變更事件
 const applyFilters = () => {
-  // 發送包含小時和分鐘的完整篩選物件
   emit("filter-changed", { ...filters.value });
 };
 
+// 重設所有篩選條件為預設值
 const resetFilters = () => {
   filters.value = {
     address: "any",
@@ -411,30 +421,31 @@ const resetFilters = () => {
   applyFilters();
 };
 
+// 關閉篩選面板
 const closePanel = () => {
   emit("close-panel");
 };
 
+// ----------------------------------------------------------------------
+// Vue 生命週期與監聽器
+// ----------------------------------------------------------------------
+
+// 監聽父組件傳入的 initialFilters，並更新本地篩選狀態
 watch(
   () => props.initialFilters,
   (newFilters) => {
-    // 這裡的深層比較需要更仔細，因為 now filters.value 是一個包含更多屬性的物件
-    // 簡單的 JSON.stringify 可能足夠，但最好逐個屬性比較或使用 Lodash 的 isEqual
-    // 或者只在 `initialFilters` 的屬性發生變化時才更新
-    if (newFilters) {
-      // 使用一個更穩健的比較方式，避免無限循環或不必要的更新
-      let needsUpdate = false;
-      for (const key in newFilters) {
-        if (
-          JSON.stringify(newFilters[key]) !== JSON.stringify(filters.value[key])
-        ) {
-          needsUpdate = true;
-          break;
-        }
+    // 執行深度比較以避免不必要的更新
+    let needsUpdate = false;
+    for (const key in newFilters) {
+      if (
+        JSON.stringify(newFilters[key]) !== JSON.stringify(filters.value[key])
+      ) {
+        needsUpdate = true;
+        break;
       }
-      if (needsUpdate) {
-        filters.value = { ...newFilters };
-      }
+    }
+    if (needsUpdate) {
+      filters.value = { ...newFilters };
     }
   },
   { deep: true, immediate: true }
