@@ -1,4 +1,4 @@
-<template>
+<!-- <template>
   <div class="bar-list-wrapper">
     <div v-if="bars.length === 0" class="text-gray-600 no-results">
       目前沒有符合條件的酒吧。
@@ -330,4 +330,4 @@ watch(
   /* color: #888;  */
   margin-top: auto;
 }
-</style>
+</style> -->
