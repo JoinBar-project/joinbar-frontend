@@ -66,9 +66,8 @@ import { ref, onMounted, computed, watch } from "vue";
 import debounce from "lodash/debounce"; // 確保 lodash/debounce 已安裝
 
 // --- 引入組件與 Google Maps Composable ---
-import FilterPanel from "../../components/map/FilterPanel.vue";
-// import BarList from "../../components/map/BarList.vue"; // 移除 BarList import
-import { useGoogleMaps } from "@/composable/useGoogleMaps"; // 檢查路徑是否正確
+import FilterPanel from "../../components/map/FilterPanel.vue"; // 確保路徑正確
+import { useGoogleMaps } from "@/composable/useGoogleMaps"; // 確保路徑正確
 
 // 環境變數中的 Google Maps API Key
 // **重要：請確保 .env 檔案中是 VITE_Maps_API_KEY=你的Key**
@@ -96,13 +95,15 @@ const {
   getPlacePredictions, // 獲取地點預測（用於搜尋建議）
   searchAndDisplayPlaces, // 搜尋地點並顯示在地圖上
   panToAndShowBarInfo, // 平移到酒吧位置並顯示其資訊
+  error: googleMapsError, // 接收 useGoogleMaps 內部錯誤
 } = useGoogleMaps(mapContainer, {
   googleMapsApiKey: googleMapsApiKey,
-  // 透過這裡的回調來更新 MapView 的 loading 狀態
+  // 透過這裡的回調來更新 MapView 的 loading 狀態，雖然我們已經有 googleMapsLoading 了
   onLoading: () => console.log("Google Maps API 載入中..."),
   onLoaded: () => console.log("Google Maps API 載入完成。"),
   onError: (msg) => {
     console.error("useGoogleMaps 錯誤:", msg);
+    // 這裡可以使用一個 alert 或者在 UI 上顯示錯誤訊息
     alert(`地圖載入失敗：${msg}，請檢查API Key或網路。`);
   },
 });
@@ -122,7 +123,6 @@ const currentFilters = ref({
   maxOpenMinute: 0,
   tags: [],
 });
-// const selectedBar = ref(null); // 移除 selectedBar ref
 
 // ----------------------------------------------------------------------
 // 計算屬性
@@ -154,7 +154,7 @@ const filteredBars = computed(() => {
             bar.location.lat,
             bar.location.lng
           );
-          // computeDistanceBetween 返回的是米，需要轉換為公里或保持一致
+          // computeDistanceBetween 返回的是米
           bar.distance = window.google.maps.geometry.spherical.computeDistanceBetween(
             centerLatLng,
             barLatLng
@@ -162,8 +162,6 @@ const filteredBars = computed(() => {
           return bar;
         })
         .filter((bar) => {
-          // 注意：您的篩選條件 minDistance, maxDistance 單位是什麼？
-          // 如果是公里，bar.distance / 1000
           // 這裡假設 min/maxDistance 單位與 bar.distance (米) 一致
           return (
             bar.distance !== undefined &&
@@ -266,10 +264,11 @@ async function handleGetCurrentLocation() {
   isLoading.value = true; // 設置本地加載狀態
   try {
     // 這裡不再需要傳遞 sidebar 寬度，因為 sidebar 已移除
-    await getMapCurrentLocation(0); // 傳遞 0 或其他合適值，表示沒有側邊欄偏移
+    // 如果未來側邊欄需要重新引入，這裡可能需要動態獲取寬度
+    await getMapCurrentLocation(0);
   } catch (err) {
     console.error("獲取目前位置失敗:", err);
-    alert("無法獲取您的目前位置，請檢查瀏覽器權限設定。");
+    // 錯誤訊息會通過 useGoogleMaps 的 onError 回調處理
   } finally {
     isLoading.value = false; // 清除本地加載狀態
   }
@@ -310,21 +309,6 @@ function handleRemoveAppliedFilter(payload) {
 function toggleFilterPanel() {
   isFilterPanelOpen.value = !isFilterPanelOpen.value;
 }
-
-// 移除 handleBarSelected 函數
-// function handleBarSelected(bar) {
-//   selectedBar.value = bar;
-//   panToAndShowBarInfo(bar);
-// }
-
-// 移除 handleToggleWishlist 函數
-// function handleToggleWishlist(barId) {
-//   const barIndex = allBars.value.findIndex((b) => b.id === barId);
-//   if (barIndex > -1) {
-//     allBars.value[barIndex].isWishlisted =
-//       !allBars.value[barIndex].isWishlisted;
-//   }
-// }
 
 // 模擬獲取酒吧數據 (實際專案應替換為 API 請求)
 // 此函數僅負責填充 allBars，不負責載入狀態
@@ -449,7 +433,7 @@ function fetchBarsData() {
 // ----------------------------------------------------------------------
 
 onMounted(async () => {
-  isLoading.value = true; // 開始載入所有非地圖相關數據
+  isLoading.value = true; // 開始載入本地數據或其他非地圖相關數據
   try {
     // 步驟 1: 載入 Google Maps API 腳本
     await loadGoogleMapsAPI();
@@ -460,19 +444,18 @@ onMounted(async () => {
       initMap();
       console.log("地圖初始化完成。");
 
-      // 步驟 3: 獲取酒吧數據
+      // 步驟 3: 獲取酒吧數據 (非 Google Maps API 數據)
       fetchBarsData(); // 僅獲取數據
       console.log("所有酒吧數據已載入:", allBars.value);
 
-      // 步驟 4: 請求地理定位權限
-      // 可以在地圖和數據都準備好後才嘗試獲取用戶位置
+      // 步驟 4: 請求地理定位權限 (可選，但建議在地圖準備好後再請求)
       requestGeolocationPermission();
     } else {
       console.error("錯誤：地圖容器 ref 未綁定，無法初始化地圖。");
     }
   } catch (err) {
     console.error("地圖或數據載入失敗:", err);
-    alert("初始化失敗，請檢查控制台錯誤。");
+    // 錯誤會被 useGoogleMaps 內部處理並通過 onError 回調
   } finally {
     isLoading.value = false; // 結束本地載入狀態
   }
@@ -487,21 +470,11 @@ watch(
     if (map.value) {
       displayBarsOnMap(newBars);
     } else {
-      // 可以在這裡加載狀態或提示
       console.warn("地圖實例尚未準備好，無法顯示酒吧標記。");
     }
   },
   { immediate: true } // 立即執行一次，確保初始數據的標記顯示
 );
-
-// 移除 selectedBar 監聽器
-// watch(selectedBar, (newVal) => {
-//   if (newVal && map.value) {
-//     panToAndShowBarInfo(newVal);
-//   } else {
-//     closeInfoWindow();
-//   }
-// });
 </script>
 
 <style scoped>
@@ -518,8 +491,7 @@ watch(
 .top-left-controls {
   position: absolute;
   top: 20px;
-  /* 這裡不再需要考慮 sidebar 的寬度，因為已移除 */
-  left: 20px; 
+  left: 20px;
   z-index: 100;
   display: flex;
   flex-direction: row;
@@ -530,26 +502,7 @@ watch(
   background-color: rgba(255, 255, 255, 0.9);
   border-radius: 8px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
-  /* transition: left 0.3s ease-in-out; 移除與 sidebar 聯動的過渡效果 */
 }
-
-/* 移除 BarList 側邊欄相關樣式 */
-/*
-.bar-list-sidebar {
-  width: 380px;
-  background-color: #f7f7f7;
-  display: flex;
-  flex-direction: column;
-  box-shadow: 2px 0 8px rgba(0, 0, 0, 0.1);
-  z-index: 50;
-  transition: transform 0.3s ease-in-out;
-}
-
-.bar-list-sidebar.sidebar-hidden {
-  transform: translateX(-100%);
-  position: absolute;
-}
-*/
 
 /* 通用地圖控制按鈕樣式 */
 .map-control-button {
@@ -769,15 +722,6 @@ watch(
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
-/* 移除 BarList 相關的滾動區域樣式 */
-/*
-.bar-list-scroll-area {
-  flex-grow: 1;
-  overflow-y: auto;
-  padding: 16px;
-}
-*/
-
 /* 地圖容器 */
 .map-container {
   flex-grow: 1;
@@ -820,11 +764,6 @@ watch(
   to {
     transform: rotate(1turn);
   }
-}
-
-/* 移除篩選按鈕的懸停效果 (這可能與其他樣式衝突，請確認用途) */
-.remove-filter-button:hover {
-  opacity: 1;
 }
 
 /* 如果你的側邊欄是響應式，可能需要調整 top-left-controls 的 left 值 */

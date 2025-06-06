@@ -25,8 +25,8 @@
         <h3 class="section-title">評價</h3>
         <select v-model="filters.ratingSort" class="filter-select">
           <option value="any">任何</option>
-          <option value="highToLow">評分高到低</option>
-          <option value="lowToHigh">評分低到高</option>
+          <option value="highToLow">評分由高至低</option>
+          <option value="lowToHigh">評分由低至高</option>
         </select>
       </div>
 
