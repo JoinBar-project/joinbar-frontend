@@ -338,7 +338,7 @@ function toggleTag(tag) {
   width: 20px;
   height: 20px;
   border-radius: 50%;
-  background: #a08d7a;
+  background: #f4dad9;
   cursor: grab;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
 }
@@ -347,7 +347,7 @@ function toggleTag(tag) {
   width: 20px;
   height: 20px;
   border-radius: 50%;
-  background: #a08d7a;
+  background: #f4dad9;
   cursor: grab;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
 }
@@ -391,9 +391,9 @@ function toggleTag(tag) {
 }
 
 .tag-button {
-  background-color: #eee;
-  color: #555;
-  border: 1px solid #ddd;
+  background-color: #f4dad9;
+  color: #333;
+  border: 1px solid #d9c7c6;
   padding: 8px 15px;
   border-radius: 20px;
   cursor: pointer;
@@ -405,7 +405,7 @@ function toggleTag(tag) {
 }
 
 .tag-button:hover {
-  background-color: #e0e0e0;
+  background-color: #dfc2c0;
 }
 
 .tag-button.active {
