@@ -563,7 +563,7 @@ watch(selectedBar, (newVal) => {
   font-size: 16px;
   cursor: pointer;
   white-space: nowrap;
-  font-weight: bold;
+  font-weight: 200;
   transition:
     background-color 0.2s,
     transform 0.2s;
