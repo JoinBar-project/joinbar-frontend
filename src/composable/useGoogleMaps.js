@@ -2,14 +2,14 @@ import { ref, watch, onMounted, onUnmounted } from 'vue';
 
 export function useGoogleMaps(mapContainerRef, options = {}) {
   const map = ref(null);
-  const markers = ref([]); // 用於存放所有地圖上的標記
+  const markers = ref([]);
   const searchMarkers = ref([]); // 用於存放搜尋結果的標記 (與酒吧標記分開)
   const infoWindow = ref(null);
-  const loading = ref(false); // 地圖 API 載入狀態
-  const error = ref(null); // 地圖 API 載入錯誤訊息
+  const loading = ref(false);
+  const error = ref(null);
   const currentMarker = ref(null); // 用於存放目前位置標記
 
-  let placesService = null; // Google PlacesService
+  let placesService = null;
   let resizeObserver = null;
 
   const defaultOptions = {
@@ -94,10 +94,9 @@ export function useGoogleMaps(mapContainerRef, options = {}) {
 
   // 檢查 Google Maps API 是否已載入並初始化地圖
   const checkAndInitMap = async () => {
-    // 這裡不再負責載入 API 腳本，而是檢查是否已載入
+    // 檢查是否已載入
     if (typeof window === 'undefined' || !window.google || !window.google.maps) {
       // API 腳本尚未載入，或者不在瀏覽器環境
-      // 這裡應該是預期外部調用 loadGoogleMapsAPI
       const msg = "Google Maps API 未載入。請確認已調用 loadGoogleMapsAPI 且 API 已準備就緒。";
       console.warn(msg);
       error.value = msg; // 設定錯誤訊息，但不再觸發 onError
@@ -114,8 +113,6 @@ export function useGoogleMaps(mapContainerRef, options = {}) {
           streetViewControl: false,
           fullscreenControl: false,
           gestureHandling: 'greedy',
-          // 可以考慮在這裡設定 Map ID，如果您在 GCP 中有創建
-          // mapId: 'YOUR_MAP_ID',
         });
         placesService = new google.maps.places.PlacesService(map.value);
         console.log("Google Maps 地圖初始化成功。");
@@ -161,7 +158,6 @@ export function useGoogleMaps(mapContainerRef, options = {}) {
     if (resizeObserver) {
       resizeObserver.disconnect();
     }
-    // 清理所有標記
     clearAllMarkers();
     if (infoWindow.value) {
       infoWindow.value.close();
@@ -169,7 +165,7 @@ export function useGoogleMaps(mapContainerRef, options = {}) {
     }
     map.value = null; // 釋放地圖實例
     placesService = null;
-    // 移除全局的回調函數，以防萬一
+    // 移除全局的回調函數
     if (window.initMapCallback) {
       delete window.initMapCallback;
     }
@@ -218,7 +214,6 @@ export function useGoogleMaps(mapContainerRef, options = {}) {
         position: position,
         map: map.value,
         title: bar.name,
-        // icon: 'path/to/your/custom_icon.png', // 可以自定義圖標
       });
 
       marker.addListener("click", () => {
@@ -242,8 +237,7 @@ export function useGoogleMaps(mapContainerRef, options = {}) {
           bounds.extend(currentMarker.value.getPosition());
         }
         map.value.fitBounds(bounds);
-        // 如果 fitBounds 後縮放級別過高，可以限制一下
-        if (map.value.getZoom() > 15) { // 允許更高縮放級別
+        if (map.value.getZoom() > 15) {
             map.value.setZoom(15);
         }
       }
@@ -258,7 +252,7 @@ export function useGoogleMaps(mapContainerRef, options = {}) {
 
     if (panelWidth > 0) {
       const mapDiv = mapContainerRef.value;
-      if (mapDiv) { // 確保 mapDiv 存在
+      if (mapDiv) {
         const mapWidth = mapDiv.clientWidth;
         const offsetPx = panelWidth / 2; // 將面板寬度的一半作為偏移量
 
@@ -327,7 +321,7 @@ export function useGoogleMaps(mapContainerRef, options = {}) {
     const service = new google.maps.places.AutocompleteService();
     return new Promise((resolve) => {
       service.getPlacePredictions(
-        { input: input, componentRestrictions: { country: 'tw' } }, // 限制台灣地區
+        { input: input, componentRestrictions: { country: 'tw' } },
         (predictions, status) => {
           if (status === google.maps.places.PlacesServiceStatus.OK && predictions) {
             resolve(predictions);
@@ -433,7 +427,7 @@ export function useGoogleMaps(mapContainerRef, options = {}) {
         icon: {
           path: google.maps.SymbolPath.CIRCLE,
           scale: 10,
-          fillColor: '#4285F4', // Google Blue
+          fillColor: '#4285F4',
           fillOpacity: 1,
           strokeWeight: 2,
           strokeColor: 'white',
@@ -492,7 +486,7 @@ export function useGoogleMaps(mapContainerRef, options = {}) {
     let address = '';
     let phone = '';
     let website = '';
-    let url = ''; // Google Place URL
+    let url = '';
 
     if (isPlaceResult(data)) {
       name = data.name || '';
@@ -518,7 +512,7 @@ export function useGoogleMaps(mapContainerRef, options = {}) {
       url = data.url || ''; // Google Maps URL
 
       if (data.opening_hours && data.opening_hours.weekday_text && data.opening_hours.weekday_text.length > 0) {
-        // 為了通用性，這裡直接顯示所有營業時間，如果需要顯示當天，需要額外邏輯
+        // 為了通用性，這裡直接顯示所有營業時間
         openingHoursText = data.opening_hours.weekday_text.join('<br>') || '營業時間待提供';
       }
       if (data.photos && data.photos.length > 0) {
@@ -593,8 +587,8 @@ export function useGoogleMaps(mapContainerRef, options = {}) {
     loading,
     error,
     currentMarker,
-    loadGoogleMapsAPI, // 新增這個函數的暴露
-    initMap: checkAndInitMap, // 重新命名為 initMap 以符合 MapView 的調用習慣
+    loadGoogleMapsAPI,
+    initMap: checkAndInitMap,
     displayBarsOnMap,
     clearMarkers,
     showInfoWindow,
@@ -606,6 +600,6 @@ export function useGoogleMaps(mapContainerRef, options = {}) {
     searchAndDisplayPlaces,
     getCurrentLocation,
     calculateDistance,
-    formatInfoWindowContent, // 暴露給外部可以訪問或覆寫
+    formatInfoWindowContent,
   };
 }

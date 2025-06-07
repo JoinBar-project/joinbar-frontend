@@ -183,12 +183,8 @@ const updateDistance = () => {
     0,
     Math.min(filters.value.maxDistance, 5000)
   );
-
-  // 由於 watch 已經深度監聽 filters，這裡不需要額外呼叫 applyFilters()
-  // 但如果您希望更即時地觸發，可以選擇性地加上 applyFilters()
-  // applyFilters();
+  //  watch 深度監聽 filters
 };
-
 
 function toggleTag(tag) {
   const index = filters.value.tags.indexOf(tag);
@@ -206,7 +202,7 @@ function toggleTag(tag) {
   position: fixed;
   top: 0;
   right: -400px; /* 初始狀態：隱藏在右側 */
-  width: 350px; /* 面板寬度 */
+  width: 350px;
   height: 100vh;
   background-color: #fff;
   box-shadow: -4px 0 15px rgba(0, 0, 0, 0.1);

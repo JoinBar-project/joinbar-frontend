@@ -63,42 +63,43 @@
 
 <script setup>
 import { ref, onMounted, computed, watch } from "vue";
-import debounce from "lodash/debounce"; // 確保 lodash/debounce 已安裝
+import debounce from "lodash/debounce";
 
 // --- 引入組件與 Google Maps Composable ---
-import FilterPanel from "../../components/map/FilterPanel.vue"; // 確保路徑正確
-import { useGoogleMaps } from "@/composable/useGoogleMaps"; // 確保路徑正確
+import FilterPanel from "../../components/map/FilterPanel.vue";
+
+import { useGoogleMaps } from "@/composable/useGoogleMaps";
+
 
 // 環境變數中的 Google Maps API Key
-// **重要：請確保 .env 檔案中是 VITE_Maps_API_KEY=你的Key**
 const googleMapsApiKey = import.meta.env.VITE_Maps_API_KEY;
 
 // --- 響應式狀態 ---
-const isLoading = ref(false); // 用於本地數據或其他非地圖載入
+const isLoading = ref(false);
 const mapContainer = ref(null); // 地圖 DOM 元素的引用
 
 // --- 引入 useGoogleMaps Composable ---
 const {
-  map, // Google Map 實例
-  markers, // 地圖標記數組
-  infoWindow, // 資訊視窗實例
+  map,
+  markers,
+  infoWindow,
   loading: googleMapsLoading, // 地圖 API 載入狀態 (來自 useGoogleMaps)
   loadGoogleMapsAPI, // 載入 API 腳本
-  initMap, // 初始化地圖
-  showInfoWindow, // 顯示資訊視窗
-  closeInfoWindow, // 關閉資訊視窗
-  panTo, // 平移地圖到指定位置
-  setZoom, // 設定地圖縮放等級
-  displayBarsOnMap, // 在地圖上顯示酒吧標記
-  requestGeolocationPermission, // 請求地理定位權限
-  getCurrentLocation: getMapCurrentLocation, // 獲取當前地理位置
-  getPlacePredictions, // 獲取地點預測（用於搜尋建議）
-  searchAndDisplayPlaces, // 搜尋地點並顯示在地圖上
-  panToAndShowBarInfo, // 平移到酒吧位置並顯示其資訊
-  error: googleMapsError, // 接收 useGoogleMaps 內部錯誤
+  initMap,
+  showInfoWindow,
+  closeInfoWindow,
+  panTo,
+  setZoom,
+  displayBarsOnMap,
+  requestGeolocationPermission,
+  getCurrentLocation: getMapCurrentLocation,
+  getPlacePredictions,
+  searchAndDisplayPlaces,
+  panToAndShowBarInfo,
+  error: googleMapsError,
 } = useGoogleMaps(mapContainer, {
   googleMapsApiKey: googleMapsApiKey,
-  // 透過這裡的回調來更新 MapView 的 loading 狀態，雖然我們已經有 googleMapsLoading 了
+  // 透過這裡的回調來更新 MapView 的 loading 狀態
   onLoading: () => console.log("Google Maps API 載入中..."),
   onLoaded: () => console.log("Google Maps API 載入完成。"),
   onError: (msg) => {
@@ -263,8 +264,6 @@ async function handleSearch() {
 async function handleGetCurrentLocation() {
   isLoading.value = true; // 設置本地加載狀態
   try {
-    // 這裡不再需要傳遞 sidebar 寬度，因為 sidebar 已移除
-    // 如果未來側邊欄需要重新引入，這裡可能需要動態獲取寬度
     await getMapCurrentLocation(0);
   } catch (err) {
     console.error("獲取目前位置失敗:", err);
@@ -310,8 +309,7 @@ function toggleFilterPanel() {
   isFilterPanelOpen.value = !isFilterPanelOpen.value;
 }
 
-// 模擬獲取酒吧數據 (實際專案應替換為 API 請求)
-// 此函數僅負責填充 allBars，不負責載入狀態
+// 模擬獲取酒吧數據
 function fetchBarsData() {
   allBars.value = [
     {
@@ -435,20 +433,20 @@ function fetchBarsData() {
 onMounted(async () => {
   isLoading.value = true; // 開始載入本地數據或其他非地圖相關數據
   try {
-    // 步驟 1: 載入 Google Maps API 腳本
+    // 載入 Google Maps API 腳本
     await loadGoogleMapsAPI();
     console.log("Google Maps API 載入完成，準備初始化地圖...");
 
-    // 步驟 2: 初始化地圖 (確保 mapContainer 已綁定)
+    // 初始化地圖 (確保 mapContainer 已綁定)
     if (mapContainer.value) {
       initMap();
       console.log("地圖初始化完成。");
 
-      // 步驟 3: 獲取酒吧數據 (非 Google Maps API 數據)
-      fetchBarsData(); // 僅獲取數據
+    // 獲取酒吧數據
+      fetchBarsData(); 
       console.log("所有酒吧數據已載入:", allBars.value);
 
-      // 步驟 4: 請求地理定位權限 (可選，但建議在地圖準備好後再請求)
+    // 請求地理定位權限 
       requestGeolocationPermission();
     } else {
       console.error("錯誤：地圖容器 ref 未綁定，無法初始化地圖。");
@@ -481,7 +479,7 @@ watch(
 /* 頁面整體佈局 */
 .map-view-container {
   display: flex;
-  height: 100vh; /* 確保容器有高度 */
+  height: 100vh;
   width: 100vw;
   overflow: hidden;
   position: relative;
@@ -667,7 +665,6 @@ watch(
 }
 
 /* 資訊視窗內容樣式 */
-/* 這些樣式通常是在 useGoogleMaps 內部渲染的，但放在這裡作為通用樣式也無妨 */
 .info-window-content {
   padding: 15px;
   font-family: "Noto Sans TC", sans-serif;
@@ -725,8 +722,8 @@ watch(
 /* 地圖容器 */
 .map-container {
   flex-grow: 1;
-  height: 100%; /* 確保地圖容器填滿父元素的高度 */
-  background-color: #e0e0e0; /* 可選的背景色，在地圖載入前顯示 */
+  height: 100%;
+  background-color: #e0e0e0;
 }
 
 /* 載入中遮罩 */
@@ -766,12 +763,12 @@ watch(
   }
 }
 
-/* 如果你的側邊欄是響應式，可能需要調整 top-left-controls 的 left 值 */
+/* 響應式調整*/
 @media (max-width: 768px) {
   .top-left-controls {
-    left: 20px; /* 在小螢幕上調整位置 */
-    width: calc(100% - 40px); /* 佔滿寬度 */
-    flex-direction: column; /* 垂直排列 */
+    left: 20px;
+    width: calc(100% - 40px);
+    flex-direction: column;
   }
   .search-panel-map {
     width: 100%;
