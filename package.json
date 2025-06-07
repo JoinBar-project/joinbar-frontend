@@ -12,6 +12,7 @@
   },
   "dependencies": {
     "@tailwindcss/vite": "^4.1.8",
+    "lodash": "^4.17.21",
     "pinia": "^3.0.1",
     "pinia-plugin-persistedstate": "^4.3.0",
     "tailwindcss": "^4.1.8",

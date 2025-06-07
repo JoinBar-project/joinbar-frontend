@@ -504,8 +504,8 @@ onMounted(() => {
 .applied-filter-tag {
   display: flex;
   align-items: center;
-  background-color: #b8a28e;
-  color: white;
+  background-color: #f4dad9;
+  color: black;
   padding: 5px 12px;
   border-radius: 20px;
   font-size: 14px;
@@ -516,7 +516,7 @@ onMounted(() => {
 .remove-filter-button {
   background: none;
   border: none;
-  color: white;
+  color: black;
   margin-left: 8px;
   font-size: 14px;
   font-weight: bold;
@@ -609,8 +609,8 @@ onMounted(() => {
 
 .filter-select:focus {
   outline: none;
-  border-color: #decdd5;
-  box-shadow: 0 0 0 3px rgba(222, 205, 213, 0.3);
+  border-color: #f4dad9;
+  box-shadow: 0 0 0 3px rgba(213, 181, 178, 0.3);
 }
 
 .range-inputs {
@@ -652,7 +652,7 @@ onMounted(() => {
   appearance: none;
   width: 20px;
   height: 20px;
-  background: #b8a28e;
+  background: #f4dad9;
   border-radius: 50%;
   cursor: pointer;
   border: 2px solid #fff;
@@ -699,26 +699,26 @@ onMounted(() => {
 }
 
 .tag-button {
-  background-color: #f5f5f5;
+  background-color: #f4dad9;
   color: #555;
   border: 1px solid #e0e0e0;
 }
 
 .tag-button:hover {
-  background-color: #e0e0e0;
+  background-color: #dfc2c0;
   border-color: #ccc;
 }
 
 .tag-button-active {
-  background-color: #b8a28e;
+  background-color: #f4dad9;
   color: white;
-  border-color: #b8a28e;
-  box-shadow: 0 2px 5px rgba(184, 162, 142, 0.4);
+  border-color: #f4dad9;
+  box-shadow: 0 2px 5px rgba(223, 194, 192, 0.4);
 }
 
 .tag-button-active:hover {
-  background-color: #a08d7a;
-  border-color: #a08d7a;
+  background-color: #dfc2c0;
+  border-color: #dfc2c0;
 }
 
 .filter-actions {
@@ -742,13 +742,13 @@ onMounted(() => {
 }
 
 .reset-button {
-  background-color: #f0f0f0;
+  background-color: #f4dad9;
   color: #555;
-  border: 1px solid #e0e0e0;
+  border: 1px solid #dfc2c0;
 }
 
 .reset-button:hover {
-  background-color: #e5e5e5;
+  background-color: #dfc2c0;
   color: #333;
 }
 
@@ -757,7 +757,7 @@ onMounted(() => {
     width: 100vw;
     right: 0;
     left: 0;
-    padding: 16px; /* 1rem = 16px */
+    padding: 16px;
   }
 }
 </style>

@@ -64,6 +64,13 @@
       :initial-filters="currentFilters"
     />
 
+    <BarDetailModal
+      v-if="isBarDetailModalOpen"
+      :bar="selectedBarForDetail"
+      @close="closeBarDetailModal"
+      @toggle-wishlist="handleToggleWishlistFromDetail"
+    />
+
     <div v-if="googleMapsLoading || isLoading" class="loading-overlay">
       <div class="loader"></div>
       <p class="loading-message">載入中，請稍候...</p>
@@ -73,41 +80,39 @@
 
 <script setup>
 import { ref, onMounted, computed, watch } from "vue";
-import debounce from "lodash/debounce"; // 確保 lodash/debounce 已安裝
+import debounce from "lodash/debounce";
 
 // --- 引入組件與 Google Maps Composable ---
 import FilterPanel from "../../components/map/FilterPanel.vue";
 import BarList from "../../components/map/BarList.vue";
-import { useGoogleMaps } from "@/composable/useGoogleMaps"; // 檢查路徑是否正確
+import BarDetailModal from "../../components/map/BarDetailModal.vue"; // 新增引入
+import { useGoogleMaps } from "@/composable/useGoogleMaps";
 
 // 環境變數中的 Google Maps API Key
-// **重要：請確保 .env 檔案中是 VITE_Maps_API_KEY="你的Key"**
 const googleMapsApiKey = import.meta.env.VITE_Maps_API_KEY;
 
 // --- 響應式狀態 ---
-const isLoading = ref(false); // 用於本地數據或其他非地圖載入
-const mapContainer = ref(null); // 地圖 DOM 元素的引用
+const isLoading = ref(false);
+const mapContainer = ref(null);
 
 // --- 引入 useGoogleMaps Composable ---
-// 這裡將 mapContainer ref 直接傳入，而不是 mapContainer.value
-// 因為 useGoogleMaps 內部會 watch 這個 ref 的變化
 const {
-  map, // Google Map 實例
-  markers, // 地圖標記數組
-  infoWindow, // 資訊視窗實例
-  loading: googleMapsLoading, // 地圖 API 載入狀態 (來自 useGoogleMaps)
-  loadGoogleMapsAPI, // 載入 API 腳本
-  initMap, // 初始化地圖
-  showInfoWindow, // 顯示資訊視窗
-  closeInfoWindow, // 關閉資訊視窗
-  panTo, // 平移地圖到指定位置
-  setZoom, // 設定地圖縮放等級
-  displayBarsOnMap, // 在地圖上顯示酒吧標記
-  requestGeolocationPermission, // 請求地理定位權限
-  getCurrentLocation: getMapCurrentLocation, // 獲取當前地理位置
-  getPlacePredictions, // 獲取地點預測（用於搜尋建議）
-  searchAndDisplayPlaces, // 搜尋地點並顯示在地圖上
-  panToAndShowBarInfo, // 平移到酒吧位置並顯示其資訊
+  map,
+  markers,
+  infoWindow,
+  loading: googleMapsLoading,
+  loadGoogleMapsAPI,
+  initMap,
+  showInfoWindow,
+  closeInfoWindow,
+  panTo,
+  setZoom,
+  displayBarsOnMap,
+  requestGeolocationPermission,
+  getCurrentLocation: getMapCurrentLocation,
+  getPlacePredictions,
+  searchAndDisplayPlaces,
+  panToAndShowBarInfo,
 } = useGoogleMaps(mapContainer, {
   googleMapsApiKey: googleMapsApiKey,
   // 透過這裡的回調來更新 MapView 的 loading 狀態
@@ -122,7 +127,7 @@ const {
 const isFilterPanelOpen = ref(false);
 const searchQuery = ref("");
 const suggestions = ref([]);
-const allBars = ref([]); // 儲存所有酒吧數據
+const allBars = ref([]);
 const currentFilters = ref({
   address: "any",
   ratingSort: "any",
@@ -134,7 +139,9 @@ const currentFilters = ref({
   maxOpenMinute: 0,
   tags: [],
 });
-const selectedBar = ref(null);
+const selectedBar = ref(null); // 這用於地圖上的 infoWindow
+const isBarDetailModalOpen = ref(false); // 新增：控制酒吧詳細頁面的顯示
+const selectedBarForDetail = ref(null); // 新增：儲存要顯示在詳細頁面的酒吧數據
 
 // ----------------------------------------------------------------------
 // 計算屬性
@@ -167,16 +174,14 @@ const filteredBars = computed(() => {
             bar.location.lng
           );
           // computeDistanceBetween 返回的是米，需要轉換為公里或保持一致
-          bar.distance = window.google.maps.geometry.spherical.computeDistanceBetween(
-            centerLatLng,
-            barLatLng
-          );
+          bar.distance =
+            window.google.maps.geometry.spherical.computeDistanceBetween(
+              centerLatLng,
+              barLatLng
+            );
           return bar;
         })
         .filter((bar) => {
-          // 注意：您的篩選條件 minDistance, maxDistance 單位是什麼？
-          // 如果是公里，bar.distance / 1000
-          // 這裡假設 min/maxDistance 單位與 bar.distance (米) 一致
           return (
             bar.distance !== undefined &&
             bar.distance >= currentFilters.value.minDistance &&
@@ -277,7 +282,6 @@ async function handleSearch() {
 async function handleGetCurrentLocation() {
   isLoading.value = true; // 設置本地加載狀態
   try {
-    // 傳遞 sidebar 寬度以調整地圖中心點
     await getMapCurrentLocation(
       document.querySelector(".bar-list-sidebar")?.offsetWidth || 0
     );
@@ -285,7 +289,7 @@ async function handleGetCurrentLocation() {
     console.error("獲取目前位置失敗:", err);
     alert("無法獲取您的目前位置，請檢查瀏覽器權限設定。");
   } finally {
-    isLoading.value = false; // 清除本地加載狀態
+    isLoading.value = false;
   }
 }
 
@@ -325,18 +329,37 @@ function toggleFilterPanel() {
   isFilterPanelOpen.value = !isFilterPanelOpen.value;
 }
 
+// 修改 handleBarSelected，現在它會打開詳細頁面
 function handleBarSelected(bar) {
-  selectedBar.value = bar;
-  // panToAndShowBarInfo 應該會自動處理地圖移動和資訊視窗顯示
+  selectedBar.value = bar; // 這個是給地圖 infoWindow 用的
+  selectedBarForDetail.value = bar; // 這個是給詳細頁面用的
+  isBarDetailModalOpen.value = true; // 開啟詳細頁面
   panToAndShowBarInfo(bar);
 }
 
+// 關閉酒吧詳細頁面
+function closeBarDetailModal() {
+  isBarDetailModalOpen.value = false;
+  selectedBarForDetail.value = null;
+  closeInfoWindow(); // 關閉地圖上的資訊視窗
+}
+
+// 處理來自 BarList 或 BarDetailModal 的收藏切換事件
 function handleToggleWishlist(barId) {
   const barIndex = allBars.value.findIndex((b) => b.id === barId);
   if (barIndex > -1) {
     allBars.value[barIndex].isWishlisted = !allBars.value[barIndex].isWishlisted;
   }
+  // 確保如果詳細頁面打開，它的收藏狀態也能同步更新
+  if (selectedBarForDetail.value && selectedBarForDetail.value.id === barId) {
+    selectedBarForDetail.value.isWishlisted = !selectedBarForDetail.value.isWishlisted;
+  }
 }
+
+// BarDetailModal 也可能觸發收藏，讓它調用同一個處理函數
+const handleToggleWishlistFromDetail = (barId) => {
+  handleToggleWishlist(barId);
+};
 
 // 模擬獲取酒吧數據 (實際專案應替換為 API 請求)
 // **此函數現在只負責填充 allBars，不負責載入狀態**
@@ -346,6 +369,7 @@ function fetchBarsData() {
   allBars.value = [
     {
       id: "b001",
+      place_id: "ChIJ7-02o96jQjQR6c8b9j01314", // 為了收藏功能，需要一個 place_id
       name: "微醺角落",
       location: { lat: 25.0478, lng: 121.5172 },
       rating: 4.5,
@@ -357,9 +381,18 @@ function fetchBarsData() {
         "https://images.unsplash.com/photo-1543007137-b715ee51102b?q=80&w=2070&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
       description: "隱身巷弄中的小酒館，提供多款精釀啤酒，適合下班小酌。",
       isWishlisted: false,
+      images: [ // 新增多張圖片
+        "https://images.unsplash.com/photo-1543007137-b715ee51102b?q=80&w=2070&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
+        "https://images.unsplash.com/photo-1543007137-b715ee51102b?q=80&w=2070&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
+        "https://images.unsplash.com/photo-1543007137-b715ee51102b?q=80&w=2070&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
+      ],
+      address: "台北市中山區某某街123號",
+      phone: "02-1234-5678",
+      website: "https://www.example.com/bar001",
     },
     {
       id: "b002",
+      place_id: "ChIJY52JzdyjQjQR6c8b9j01314",
       name: "信義夜景酒吧",
       location: { lat: 25.0336, lng: 121.5644 },
       rating: 4.8,
@@ -371,9 +404,17 @@ function fetchBarsData() {
         "https://images.unsplash.com/photo-1582855171120-6d80f837e2c9?q=80&w=2070&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
       description: "俯瞰台北市夜景的絕佳地點，提供精緻調酒與餐點，是約會首選。",
       isWishlisted: true,
+      images: [
+        "https://images.unsplash.com/photo-1582855171120-6d80f837e2c9?q=80&w=2070&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
+        "https://images.unsplash.com/photo-1582855171120-6d80f837e2c9?q=80&w=2070&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
+      ],
+      address: "台北市信義區某某路456號",
+      phone: "02-9876-5432",
+      website: "https://www.example.com/bar002",
     },
     {
       id: "b003",
+      place_id: "ChIJX52JzdyjQjQR6c8b9j01314",
       name: "大安運動酒吧",
       rating: 4.2,
       reviews: 200,
@@ -384,9 +425,17 @@ function fetchBarsData() {
       imageUrl:
         "https://images.unsplash.com/photo-1543007137-b715ee51102b?q=80&w=2070&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
       location: { lat: 25.038, lng: 121.543 },
+      isWishlisted: false,
+      images: [
+        "https://images.unsplash.com/photo-1543007137-b715ee51102b?q=80&w=2070&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
+      ],
+      address: "台北市大安區某某街789號",
+      phone: "02-1122-3344",
+      website: "",
     },
     {
       id: "b004",
+      place_id: "ChIJR52JzdyjQjQR6c8b9j01314",
       name: "松山爵士吧",
       location: { lat: 25.0505, lng: 121.5501 },
       rating: 4.7,
@@ -398,9 +447,16 @@ function fetchBarsData() {
         "https://images.unsplash.com/photo-1620857106093-6c7e39a3f25c?q=80&w=2070&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
       description: "每晚有現場爵士樂表演，提供多款經典調酒，適合品味人士。",
       isWishlisted: false,
+      images: [
+        "https://images.unsplash.com/photo-1620857106093-6c7e39a3f25c?q=80&w=2070&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
+      ],
+      address: "台北市松山區某某路100號",
+      phone: "02-5566-7788",
+      website: "https://www.example.com/bar004",
     },
     {
       id: "b005",
+      place_id: "ChIJQ52JzdyjQjQR6c8b9j01314",
       name: "萬華老屋酒吧",
       location: { lat: 25.0375, lng: 121.5036 },
       rating: 4.3,
@@ -412,9 +468,16 @@ function fetchBarsData() {
         "https://images.unsplash.com/photo-1567119054760-449e6d0a794c?q=80&w=2070&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
       description: "由老屋改造的特色酒吧，保留復古元素，提供獨特調酒。",
       isWishlisted: false,
+      images: [
+        "https://images.unsplash.com/photo-1567119054760-449e6d0a794c?q=80&w=2070&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
+      ],
+      address: "台北市萬華區某某街1號",
+      phone: "",
+      website: "",
     },
     {
       id: "b006",
+      place_id: "ChIJL52JzdyjQjQR6c8b9j01314",
       name: "士林文青酒吧",
       location: { lat: 25.0935, lng: 121.5235 },
       rating: 4.6,
@@ -426,9 +489,16 @@ function fetchBarsData() {
         "https://images.unsplash.com/photo-1624467362791-0391d84e4f58?q=80&w=2070&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
       description: "結合咖啡與酒精，氛圍輕鬆，適合閱讀或安靜小酌。",
       isWishlisted: false,
+      images: [
+        "https://images.unsplash.com/photo-1624467362791-0391d84e4f58?q=80&w=2070&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
+      ],
+      address: "台北市士林區某某街20號",
+      phone: "02-1234-9876",
+      website: "https://www.example.com/bar006",
     },
     {
       id: "b007",
+      place_id: "ChIJZ52JzdyjQjQR6c8b9j01314",
       name: "信義秘境",
       location: { lat: 25.041, lng: 121.567 },
       rating: 4.9,
@@ -440,9 +510,16 @@ function fetchBarsData() {
         "https://images.unsplash.com/photo-1517409259508-3331b262a048?q=80&w=2070&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
       description: "隱藏在城市中的秘密酒吧，需要預約才能進入，提供客製化調酒。",
       isWishlisted: false,
+      images: [
+        "https://images.unsplash.com/photo-1517409259508-3331b262a048?q=80&w=2070&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
+      ],
+      address: "台北市信義區某某街33號",
+      phone: "0912-345-678",
+      website: "",
     },
     {
       id: "b008",
+      place_id: "ChIJG52JzdyjQjQR6c8b9j01314",
       name: "大安居酒屋",
       location: { lat: 25.037, lng: 121.545 },
       rating: 4.4,
@@ -454,6 +531,12 @@ function fetchBarsData() {
         "https://images.unsplash.com/photo-1549429402-d96201e523f4?q=80&w=2070&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
       description: "提供地道日式居酒屋氛圍，美味串燒與多種清酒。",
       isWishlisted: false,
+      images: [
+        "https://images.unsplash.com/photo-1549429402-d96201e523f4?q=80&w=2070&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
+      ],
+      address: "台北市大安區某某路88號",
+      phone: "02-7788-9900",
+      website: "https://www.example.com/bar008",
     },
   ];
   // 這裡不設置 isLoading.value = false; 因為地圖的載入狀態由 useGoogleMaps 管理
@@ -466,21 +549,17 @@ function fetchBarsData() {
 onMounted(async () => {
   isLoading.value = true; // 開始載入所有非地圖相關數據
   try {
-    // 步驟 1: 載入 Google Maps API 腳本
     await loadGoogleMapsAPI();
     console.log("Google Maps API 載入完成，準備初始化地圖...");
 
-    // 步驟 2: 初始化地圖 (確保 mapContainer 已綁定)
     if (mapContainer.value) {
       initMap();
       console.log("地圖初始化完成。");
 
-      // 步驟 3: 獲取酒吧數據
-      fetchBarsData(); // 僅獲取數據
+      fetchBarsData();
       console.log("所有酒吧數據已載入:", allBars.value);
 
-      // 步驟 4: 請求地理定位權限
-      // 可以在地圖和數據都準備好後才嘗試獲取用戶位置
+      // 請求地理定位權限
       requestGeolocationPermission();
     } else {
       console.error("錯誤：地圖容器 ref 未綁定，無法初始化地圖。");
@@ -489,7 +568,7 @@ onMounted(async () => {
     console.error("地圖或數據載入失敗:", err);
     alert("初始化失敗，請檢查控制台錯誤。");
   } finally {
-    isLoading.value = false; // 結束本地載入狀態
+    isLoading.value = false;
   }
 });
 
@@ -510,22 +589,23 @@ watch(
 );
 
 // 監聽選中的酒吧，並在地圖上顯示其資訊視窗
+// 此 watch 現在只負責地圖上的 infoWindow，不直接控制詳細頁面
 watch(selectedBar, (newVal) => {
-  if (newVal && map.value) {
-    // 這裡的邏輯是通過經緯度匹配 marker，但更好的方式是將 bar.id 儲存在 marker 上
-    // 或者直接通過 panToAndShowBarInfo 處理
-    panToAndShowBarInfo(newVal); // useGoogleMaps 內部應處理標記查找和資訊視窗顯示
-  } else {
+  if (newVal && map.value && !isBarDetailModalOpen.value) {
+    // 只有當詳細頁面沒有打開時，才顯示地圖上的 infoWindow
+    // panToAndShowBarInfo(newVal); // 這裡由 handleBarSelected 調用
+  } else if (!isBarDetailModalOpen.value) {
     closeInfoWindow();
   }
 });
 </script>
 
 <style scoped>
+/* 您的現有樣式保持不變 */
 /* 頁面整體佈局 */
 .map-view-container {
   display: flex;
-  height: 100vh; /* 確保容器有高度 */
+  height: 100vh;
   width: 100vw;
   overflow: hidden;
   position: relative;
@@ -535,7 +615,7 @@ watch(selectedBar, (newVal) => {
 .top-left-controls {
   position: absolute;
   top: 20px;
-  left: calc(380px + 20px); /* 考慮到 sidebar 的寬度 */
+  left: calc(380px + 20px);
   z-index: 100;
   display: flex;
   flex-direction: row;
@@ -576,7 +656,7 @@ watch(selectedBar, (newVal) => {
   font-size: 16px;
   cursor: pointer;
   white-space: nowrap;
-  font-weight: bold;
+  font-weight: 200;
   transition:
     background-color 0.2s,
     transform 0.2s;
@@ -729,7 +809,6 @@ watch(selectedBar, (newVal) => {
 }
 
 /* 資訊視窗內容樣式 */
-/* 這些樣式通常是在 useGoogleMaps 內部渲染的，但放在這裡作為通用樣式也無妨 */
 .info-window-content {
   padding: 15px;
   font-family: "Noto Sans TC", sans-serif;
@@ -843,9 +922,9 @@ watch(selectedBar, (newVal) => {
 /* 如果你的側邊欄是響應式，可能需要調整 top-left-controls 的 left 值 */
 @media (max-width: 768px) {
   .top-left-controls {
-    left: 20px; /* 在小螢幕上調整位置 */
-    width: calc(100% - 40px); /* 佔滿寬度 */
-    flex-direction: column; /* 垂直排列 */
+    left: 20px;
+    width: calc(100% - 40px);
+    flex-direction: column;
   }
   .search-panel-map {
     width: 100%;
