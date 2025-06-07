@@ -1,156 +1,605 @@
-// src/composables/useGoogleMaps.js
-import { ref, onUnmounted } from 'vue'
+import { ref, watch, onMounted, onUnmounted } from 'vue';
 
-let isLoading = false
-let isLoaded = false
-let loadPromise = null
+export function useGoogleMaps(mapContainerRef, options = {}) {
+  const map = ref(null);
+  const markers = ref([]);
+  const searchMarkers = ref([]); // 用於存放搜尋結果的標記 (與酒吧標記分開)
+  const infoWindow = ref(null);
+  const loading = ref(false);
+  const error = ref(null);
+  const currentMarker = ref(null); // 用於存放目前位置標記
 
-export function useGoogleMaps() {
-  const loading = ref(false)
-  const error = ref(null)
-  const map = ref(null)
-  const markers = ref([])
+  let placesService = null;
+  let resizeObserver = null;
 
-  const loadGoogleMapsAPI = () => {
-    if (isLoaded && window.google && window.google.maps) {
-      return Promise.resolve(window.google)
+  const defaultOptions = {
+    center: { lat: 25.0336, lng: 121.5654 }, // 預設台北市中心
+    zoom: 13,
+    googleMapsApiKey: '', // 預設為空，必須由外部傳入或 .env 取得
+    libraries: ['places', 'geometry'], // 預設載入的 libraries
+    onLoaded: () => {}, // API 載入成功後的回調
+    onError: () => {}, // API 載入失敗後的回調
+  };
+
+  const mergedOptions = { ...defaultOptions, ...options };
+
+  /**
+   * 載入 Google Maps API 腳本
+   * @returns {Promise<void>}
+   */
+  const loadGoogleMapsAPI = async () => {
+    if (window.google && window.google.maps) {
+      console.log('Google Maps API 已載入。');
+      mergedOptions.onLoaded();
+      return Promise.resolve(); // 如果已經載入，直接解決 Promise
     }
 
-    if (isLoading && loadPromise) {
-      return loadPromise
+    if (!mergedOptions.googleMapsApiKey) {
+      const msg = "Google Maps API Key 未設定。請在 .env 或 options 中提供 VITE_Maps_API_KEY。";
+      console.error(msg);
+      error.value = msg;
+      loading.value = false;
+      mergedOptions.onError(msg);
+      return Promise.reject(new Error(msg));
     }
 
-    isLoading = true
-    loading.value = true
+    loading.value = true;
+    error.value = null;
 
-    loadPromise = new Promise((resolve, reject) => {
-      const existingScript = document.querySelector('script[src*="maps.googleapis.com"]')
-      if (existingScript) {
-        if (window.google && window.google.maps) {
-          isLoaded = true
-          isLoading = false
-          loading.value = false
-          resolve(window.google)
-          return
-        }
-        
-        existingScript.addEventListener('load', () => {
-          isLoaded = true
-          isLoading = false
-          loading.value = false
-          resolve(window.google)
-        })
-        return
+    return new Promise((resolve, reject) => {
+      const scriptId = 'google-maps-script';
+      if (document.getElementById(scriptId)) {
+        // 如果腳本已經存在但尚未載入完成 (例如，正在載入中)
+        // 這裡可以選擇等待，或者假設它會通過 window.initMapCallback 處理
+        console.warn("Google Maps API 腳本已存在，等待其載入完成...");
+        // 為了避免重複載入導致的 callback 問題，我們直接嘗試檢查 window.google
+        let checkInterval = setInterval(() => {
+          if (window.google && window.google.maps) {
+            clearInterval(checkInterval);
+            loading.value = false;
+            mergedOptions.onLoaded();
+            resolve();
+          }
+        }, 100);
+        return;
       }
 
-      const script = document.createElement('script')
-      const apiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY
-      
-      if (!apiKey) {
-        const errorMsg = 'Google Maps API Key 未設定'
-        error.value = errorMsg
-        loading.value = false
-        isLoading = false
-        reject(new Error(errorMsg))
-        return
-      }
+      const script = document.createElement('script');
+      script.id = scriptId;
+      script.src = `https://maps.googleapis.com/maps/api/js?key=${mergedOptions.googleMapsApiKey}&libraries=${mergedOptions.libraries.join(',')}&callback=initMapCallback`;
+      script.async = true;
+      script.defer = true;
+      script.onerror = (e) => {
+        const msg = `Google Maps API 載入失敗: ${e.message || '網路錯誤或 API Key 無效'}`;
+        console.error(msg, e);
+        error.value = msg;
+        loading.value = false;
+        mergedOptions.onError(msg);
+        reject(new Error(msg));
+      };
 
-      script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&libraries=places`
-      script.async = true
-      script.defer = true
-      
-      script.onload = () => {
-        isLoaded = true
-        isLoading = false
-        loading.value = false
-        resolve(window.google)
-      }
-      
-      script.onerror = () => {
-        const errorMsg = 'Google Maps API 載入失敗'
-        error.value = errorMsg
-        loading.value = false
-        isLoading = false
-        reject(new Error(errorMsg))
-      }
-      document.head.appendChild(script)
-    })
+      // 設置全域 callback 函數，當 Google Maps API 載入完成後會調用此函數
+      window.initMapCallback = () => {
+        console.log("Google Maps API script loaded and callback executed.");
+        loading.value = false;
+        mergedOptions.onLoaded();
+        resolve();
+        // 清理全域 callback，避免潛在的洩漏或衝突
+        delete window.initMapCallback;
+      };
 
-    return loadPromise
-  }
+      document.head.appendChild(script);
+    });
+  };
 
-  const initMap = async (element, options = {}) => {
+  // 檢查 Google Maps API 是否已載入並初始化地圖
+  const checkAndInitMap = async () => {
+    // 檢查是否已載入
+    if (typeof window === 'undefined' || !window.google || !window.google.maps) {
+      // API 腳本尚未載入，或者不在瀏覽器環境
+      const msg = "Google Maps API 未載入。請確認已調用 loadGoogleMapsAPI 且 API 已準備就緒。";
+      console.warn(msg);
+      error.value = msg; // 設定錯誤訊息，但不再觸發 onError
+      loading.value = false;
+      return;
+    }
+
     try {
-      error.value = null
-      await loadGoogleMapsAPI()
-
-      const defaultOptions = {
-        center: { lat: 25.0330, lng: 121.5654 }, // 台北
-        zoom: 13,
-        mapTypeControl: true,
-        streetViewControl: true,
-        fullscreenControl: true
+      if (!map.value && mapContainerRef.value) {
+        map.value = new google.maps.Map(mapContainerRef.value, {
+          center: mergedOptions.center,
+          zoom: mergedOptions.zoom,
+          mapTypeControl: false,
+          streetViewControl: false,
+          fullscreenControl: false,
+          gestureHandling: 'greedy',
+        });
+        placesService = new google.maps.places.PlacesService(map.value);
+        console.log("Google Maps 地圖初始化成功。");
+        // mergedOptions.onLoaded(); // 這裡不再觸發 onLoaded，因為 onLoaded 在 loadGoogleMapsAPI 中已經觸發
       }
-
-      map.value = new window.google.maps.Map(element, {
-        ...defaultOptions,
-        ...options
-      })
-
-      return map.value
-    } catch (err) {
-      console.error('地圖初始化失敗:', err)
-      error.value = err.message
-      throw err
+    } catch (e) {
+      console.error("地圖初始化失敗:", e);
+      const errMsg = `地圖初始化失敗: ${e.message || '未知錯誤'}`;
+      error.value = errMsg;
+      mergedOptions.onError(errMsg);
+    } finally {
+      loading.value = false;
     }
-  }
+  };
 
-  const addMarker = (position, options = {}) => {
-    if (!map.value) return null
+  // 在組件掛載時，一旦 mapContainerRef 準備好，就嘗試初始化地圖
+  onMounted(() => {
+    // 首次掛載時嘗試載入 API 和初始化地圖
+    loadGoogleMapsAPI().then(() => {
+      watch(mapContainerRef, (newVal) => {
+        if (newVal) {
+          checkAndInitMap();
+        }
+      }, { immediate: true });
+    }).catch(err => {
+      // 處理載入 API 的錯誤
+      console.error("載入 Google Maps API 失敗:", err);
+    });
 
-    const marker = new window.google.maps.Marker({
-      position,
-      map: map.value,
-      ...options
-    })
 
-    markers.value.push(marker)
-    return marker
-  }
-
-  const addInfoWindow = (marker, content) => {
-    const infoWindow = new window.google.maps.InfoWindow({
-      content
-    })
-
-    marker.addListener('click', () => {
-      infoWindow.open(map.value, marker)
-    })
-
-    return infoWindow
-  }
-
-  const clearMarkers = () => {
-    markers.value.forEach(marker => {
-      marker.setMap(null)
-    })
-    markers.value = []
-  }
+    // 處理地圖容器大小變化
+    if (mapContainerRef.value) {
+      resizeObserver = new ResizeObserver(() => {
+        if (map.value) {
+          google.maps.event.trigger(map.value, 'resize');
+        }
+      });
+      resizeObserver.observe(mapContainerRef.value);
+    }
+  });
 
   onUnmounted(() => {
-    clearMarkers()
-    map.value = null
-  })
+    if (resizeObserver) {
+      resizeObserver.disconnect();
+    }
+    clearAllMarkers();
+    if (infoWindow.value) {
+      infoWindow.value.close();
+      infoWindow.value = null;
+    }
+    map.value = null; // 釋放地圖實例
+    placesService = null;
+    // 移除全局的回調函數
+    if (window.initMapCallback) {
+      delete window.initMapCallback;
+    }
+  });
+
+  // 清除所有標記
+  const clearAllMarkers = () => {
+    markers.value.forEach(marker => marker.setMap(null));
+    markers.value = [];
+    searchMarkers.value.forEach(marker => marker.setMap(null));
+    searchMarkers.value = [];
+    if (currentMarker.value) {
+      currentMarker.value.setMap(null);
+      currentMarker.value = null;
+    }
+  };
+
+  const clearMarkers = (type = 'all') => {
+    if (type === 'search') {
+      searchMarkers.value.forEach(marker => marker.setMap(null));
+      searchMarkers.value = [];
+    } else if (type === 'bars') {
+      markers.value.forEach(marker => marker.setMap(null));
+      markers.value = [];
+    } else { // 'all'
+      clearAllMarkers();
+    }
+  }
+
+
+  // 在地圖上顯示酒吧
+  const displayBarsOnMap = (bars) => {
+    if (!map.value) {
+      console.warn("地圖尚未初始化，無法顯示酒吧。");
+      return;
+    }
+
+    clearMarkers('bars'); // 清除舊的酒吧標記
+
+    const newMarkers = [];
+    const bounds = new google.maps.LatLngBounds();
+
+    bars.forEach((bar) => {
+      const position = new google.maps.LatLng(bar.location.lat, bar.location.lng);
+      const marker = new google.maps.Marker({
+        position: position,
+        map: map.value,
+        title: bar.name,
+      });
+
+      marker.addListener("click", () => {
+        showInfoWindow(marker, formatInfoWindowContent(bar), position);
+      });
+
+      newMarkers.push(marker);
+      bounds.extend(position);
+    });
+
+    markers.value = newMarkers;
+
+    if (newMarkers.length > 0) {
+      // 如果只有一個點，直接移動到該點並設定較大的縮放
+      if (newMarkers.length === 1 && !currentMarker.value) { // 如果只有一個酒吧且沒有用戶定位點
+        map.value.setCenter(newMarkers[0].getPosition());
+        map.value.setZoom(15); // 單點時較高的縮放
+      } else if (newMarkers.length > 0) {
+        // 如果有用戶定位點，則將其也考慮在內
+        if (currentMarker.value) {
+          bounds.extend(currentMarker.value.getPosition());
+        }
+        map.value.fitBounds(bounds);
+        if (map.value.getZoom() > 15) {
+            map.value.setZoom(15);
+        }
+      }
+    }
+  };
+
+  const panTo = (lat, lng, panelWidth = 0) => {
+    if (!map.value) return;
+
+    const center = new google.maps.LatLng(lat, lng);
+    let offset = 0;
+
+    if (panelWidth > 0) {
+      const mapDiv = mapContainerRef.value;
+      if (mapDiv) {
+        const mapWidth = mapDiv.clientWidth;
+        const offsetPx = panelWidth / 2; // 將面板寬度的一半作為偏移量
+
+        // 計算地圖中心偏移量，使其標記在面板不遮擋的區域居中
+        // 如果面板在右側，則向左偏移，使其在左半邊地圖居中
+        // 如果面板在左側，則向右偏移
+        offset = offsetPx; // 假設面板在右側，需要向左偏移
+
+        const projection = map.value.getProjection();
+        if (projection) {
+          const scale = 1 << map.value.getZoom(); // 計算當前縮放級別的像素比例尺
+          const point = projection.fromLatLngToPoint(center);
+          point.x -= offset / scale; // 偏移量會隨縮放級別變化
+          const newCenter = projection.fromPointToLatLng(point);
+          map.value.panTo(newCenter);
+          return; // 使用 panTo 帶偏移，直接返回
+        }
+      }
+    }
+    map.value.panTo(center); // 無偏移或無法計算偏移時使用
+  };
+
+
+  const setZoom = (zoomLevel) => {
+    if (map.value) {
+      map.value.setZoom(zoomLevel);
+    }
+  };
+
+  const fitBounds = (bounds) => {
+    if (map.value && bounds) {
+      map.value.fitBounds(bounds);
+    }
+  };
+
+
+  // 顯示 InfoWindow
+  const showInfoWindow = (marker, content, position) => {
+    if (!map.value || !window.google || !window.google.maps) {
+      console.warn("地圖或 Google Maps API 未準備好。");
+      return;
+    }
+    if (!infoWindow.value) {
+      infoWindow.value = new google.maps.InfoWindow();
+    }
+    infoWindow.value.setContent(content);
+    infoWindow.value.open(map.value, marker || null); // 如果沒有 marker，則傳遞 null 並只用 position
+    if (!marker && position) { // 如果沒有 marker 但有位置，直接設定位置
+      infoWindow.value.setPosition(position);
+    }
+  };
+
+  // 關閉 InfoWindow
+  const closeInfoWindow = () => {
+    if (infoWindow.value) {
+      infoWindow.value.close();
+    }
+  };
+
+  // 獲取地點預測 (自動完成)
+  const getPlacePredictions = async (input) => {
+    if (!placesService || !window.google || !window.google.maps || !window.google.maps.places || !window.google.maps.places.AutocompleteService) {
+      console.warn("PlacesService 或 AutocompleteService 未準備好。");
+      return [];
+    }
+    const service = new google.maps.places.AutocompleteService();
+    return new Promise((resolve) => {
+      service.getPlacePredictions(
+        { input: input, componentRestrictions: { country: 'tw' } },
+        (predictions, status) => {
+          if (status === google.maps.places.PlacesServiceStatus.OK && predictions) {
+            resolve(predictions);
+          } else {
+            // console.error("地點預測失敗:", status);
+            resolve([]); // 返回空陣列而不是錯誤，讓調用者處理
+          }
+        }
+      );
+    });
+  };
+
+  // 搜尋並顯示地點 (使用 Places API)
+  const searchAndDisplayPlaces = (query) => {
+    if (!map.value || !placesService) {
+      console.warn("地圖或 PlacesService 未準備好，無法執行搜尋。");
+      return;
+    }
+
+    clearMarkers('search'); // 清除舊的搜尋標記
+
+    const request = {
+      query: query,
+      fields: ['name', 'geometry', 'place_id'],
+    };
+
+    placesService.findPlaceFromQuery(request, (results, status) => {
+      if (status === google.maps.places.PlacesServiceStatus.OK && results && results.length > 0) {
+        const place = results[0]; // 只顯示第一個結果
+
+        const marker = new google.maps.Marker({
+          map: map.value,
+          position: place.geometry.location,
+          title: place.name,
+          icon: { // 可以使用不同的圖標來區分搜尋結果
+            url: "http://maps.google.com/mapfiles/ms/icons/blue-dot.png", // 更清晰的藍點
+            scaledSize: new google.maps.Size(32, 32)
+          }
+        });
+
+        searchMarkers.value.push(marker);
+        map.value.setCenter(place.geometry.location);
+        map.value.setZoom(16); // 搜尋結果放大顯示
+
+        // 點擊搜尋標記顯示詳細資訊
+        marker.addListener("click", () => {
+          closeInfoWindow(); // 關閉所有現有 InfoWindow
+          placesService.getDetails(
+            { placeId: place.place_id },
+            (details, detailsStatus) => {
+              if (detailsStatus === google.maps.places.PlacesServiceStatus.OK && details) {
+                showInfoWindow(marker, formatInfoWindowContent(details), place.geometry.location);
+              } else {
+                console.error("獲取地點詳細信息失敗:", detailsStatus);
+                showInfoWindow(marker, `<h3>無法載入詳細資訊</h3><p>地點名稱: ${place.name}</p>`, place.geometry.location);
+              }
+            }
+          );
+        });
+
+      } else {
+        console.error("搜尋失敗:", status);
+        alert(`搜尋「${query}」無結果。`);
+      }
+    });
+  };
+
+
+  // 獲取目前位置
+  const getCurrentLocation = async (panelWidth = 0) => {
+    if (!map.value || !window.google || !window.google.maps) {
+      throw new Error("地圖或 Google Maps API 未準備好。");
+    }
+
+    // 請求地理定位權限
+    try {
+      const position = await new Promise((resolve, reject) => {
+        if (navigator.geolocation) {
+          navigator.geolocation.getCurrentPosition(
+            (pos) => resolve(pos),
+            (err) => reject(new Error(`地理定位錯誤: ${err.message}`)),
+            { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+          );
+        } else {
+          reject(new Error("瀏覽器不支持地理定位。"));
+        }
+      });
+
+      const userLocation = {
+        lat: position.coords.latitude,
+        lng: position.coords.longitude,
+      };
+
+      // 移除舊的目前位置標記
+      if (currentMarker.value) {
+        currentMarker.value.setMap(null);
+      }
+
+      // 添加新的目前位置標記
+      currentMarker.value = new google.maps.Marker({
+        position: userLocation,
+        map: map.value,
+        icon: {
+          path: google.maps.SymbolPath.CIRCLE,
+          scale: 10,
+          fillColor: '#4285F4',
+          fillOpacity: 1,
+          strokeWeight: 2,
+          strokeColor: 'white',
+        },
+        title: '我的位置',
+        zIndex: 9999, // 確保在其他標記上方
+      });
+
+      // 將地圖中心移動到目前位置，並考慮篩選面板的寬度
+      panTo(userLocation.lat, userLocation.lng, panelWidth);
+      setZoom(15); // 放大到一個合適的級別
+
+      // 可以在這裡顯示一個 InfoWindow 提示用戶
+      showInfoWindow(currentMarker.value, '您目前的位置', userLocation);
+
+      return userLocation;
+
+    } catch (error) {
+      console.error("獲取目前位置失敗:", error);
+      throw error; // 重新拋出錯誤，讓調用者處理
+    }
+  };
+
+  // 計算兩點之間的距離 (公尺)
+  const calculateDistance = (point1, point2) => {
+    if (!window.google || !window.google.maps || !window.google.maps.geometry) {
+      console.warn("Google Maps Geometry 庫未載入，無法計算距離。");
+      return 0; // 返回 0 或拋出錯誤
+    }
+    const latLng1 = new google.maps.LatLng(point1.lat, point1.lng);
+    const latLng2 = new google.maps.LatLng(point2.lat, point2.lng);
+    return google.maps.geometry.spherical.computeDistanceBetween(latLng1, latLng2);
+  };
+
+  // 格式化 InfoWindow 內容 (這個函數將在內部被調用，也可以暴露給外部覆寫)
+  const formatInfoWindowContent = (data) => {
+    // 檢查 data 是否為 null 或 undefined
+    if (!data) {
+      return `<div class="info-window-content"><h3>資訊不可用</h3><p>無法載入地點詳細資訊。</p></div>`;
+    }
+
+    // 判斷傳入的是否為 Google PlaceResult 類型 (檢查 place_id 屬性)
+    const isPlaceResult = (obj) => {
+      return obj && typeof obj === 'object' && obj.place_id !== undefined;
+    };
+
+    let name = '';
+    let rating = 'N/A';
+    let reviews = '0';
+    let priceLevel = '???'; // 變更為 priceLevel，與 Google Places API 一致
+    let openingHoursText = '未提供營業時間';
+    let imageUrl = '';
+    let description = '無描述';
+    let tagsHtml = '';
+    let distanceHtml = '';
+    let address = '';
+    let phone = '';
+    let website = '';
+    let url = '';
+
+    if (isPlaceResult(data)) {
+      name = data.name || '';
+      rating = data.rating ? `⭐️ ${data.rating}` : 'N/A';
+      reviews = data.user_ratings_total ? ` (${data.user_ratings_total} 評論)` : ' (0 評論)';
+      // Google Maps price_level 是數字 0-4，我們需要轉換它
+      if (data.price_level !== undefined) {
+        switch (data.price_level) {
+          case 0: priceLevel = '免費'; break;
+          case 1: priceLevel = 'NT$'; break;
+          case 2: priceLevel = 'NT$$'; break;
+          case 3: priceLevel = 'NT$$$'; break;
+          case 4: priceLevel = 'NT$$$$'; break;
+          default: priceLevel = '???';
+        }
+      } else {
+        priceLevel = '???';
+      }
+
+      address = data.formatted_address || data.vicinity || '';
+      phone = data.international_phone_number || '';
+      website = data.website || '';
+      url = data.url || ''; // Google Maps URL
+
+      if (data.opening_hours && data.opening_hours.weekday_text && data.opening_hours.weekday_text.length > 0) {
+        // 為了通用性，這裡直接顯示所有營業時間
+        openingHoursText = data.opening_hours.weekday_text.join('<br>') || '營業時間待提供';
+      }
+      if (data.photos && data.photos.length > 0) {
+        imageUrl = data.photos[0].getUrl({ maxWidth: 300, maxHeight: 200 });
+      }
+      // 使用選鏈操作符安全訪問 editorial_summary
+      description = data.editorial_summary?.overview || data.vicinity || data.formatted_address || '無描述';
+
+      if (data.types && data.types.length > 0) {
+        // 過濾掉不相關的類型，並格式化顯示
+        const relevantTypes = data.types.filter(type =>
+          !['point_of_interest', 'establishment', 'lodging', 'food', 'plus_code', 'locality', 'geocode'].includes(type)
+        );
+        tagsHtml = `<div class="info-window-tags-container">${relevantTypes
+          .map((type) => `<span class="info-window-tag">${type.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase())}</span>`)
+          .join("")}</div>`;
+      }
+
+    } else { // 假定是我們的 Bar 類型 (從模擬數據或其他來源)
+      name = data.name || '';
+      rating = data.rating ? `⭐️ ${data.rating}` : 'N/A';
+      reviews = data.user_ratings_total ? ` (${data.user_ratings_total} 評論)` : ' (0 評論)';
+      priceLevel = data.priceRange || '???'; // 假設我們的數據中 priceRange 是已經格式化好的
+      address = data.address || '';
+      phone = data.phone || '';
+      website = data.website || '';
+      url = data.url || ''; // 如果您的酒吧數據有 Google Maps URL 欄位
+
+      if (data.openingHours && data.openingHours.weekday_text && data.openingHours.weekday_text.length > 0) {
+        openingHoursText = data.openingHours.weekday_text.join('<br>'); // 假設也提供類似格式
+      } else if (data.openingHoursText) { // 如果有單獨的營業時間文字
+        openingHoursText = data.openingHoursText;
+      }
+      imageUrl = data.imageUrl || '';
+      description = data.description || '無描述';
+
+      if (data.tags && data.tags.length > 0) {
+        tagsHtml = `<div class="info-window-tags-container">${data.tags
+          .map((tag) => `<span class="info-window-tag">${tag}</span>`)
+          .join("")}</div>`;
+      }
+      if (data.distance !== undefined) {
+        distanceHtml = `<p class="info-window-meta"><strong>距離:</strong> ${data.distance.toFixed(0)} 公尺</p>`;
+      }
+    }
+
+    // 生成 HTML 內容
+    return `
+      <div class="info-window-content">
+        <h3 class="info-window-title">${name}</h3>
+        ${imageUrl ? `<img src="${imageUrl}" class="info-window-image" alt="${name}" />` : ''}
+        <p class="info-window-meta"><strong>評價:</strong> ${rating}${reviews}</p>
+        <p class="info-window-meta"><strong>價位:</strong> ${priceLevel}</p>
+        ${address ? `<p class="info-window-meta"><strong>地址:</strong> ${address}</p>` : ''}
+        ${phone ? `<p class="info-window-meta"><strong>電話:</strong> <a href="tel:${phone}">${phone}</a></p>` : ''}
+        ${website ? `<p class="info-window-meta"><strong>網站:</strong> <a href="${website}" target="_blank">${website}</a></p>` : ''}
+        <p class="info-window-meta"><strong>營業時間:</strong> ${openingHoursText}</p>
+        ${distanceHtml}
+        <p class="info-window-meta info-window-description"><strong>描述:</strong> ${description}</p>
+        ${tagsHtml}
+        ${url ? `<a href="${url}" target="_blank" class="info-window-more-info">查看 Google Maps</a>` : ''}
+      </div>
+    `;
+  };
+
 
   return {
-    loading,
-    error,
     map,
     markers,
+    searchMarkers,
+    infoWindow,
+    loading,
+    error,
+    currentMarker,
     loadGoogleMapsAPI,
-    initMap,
-    addMarker,
-    addInfoWindow,
-    clearMarkers
-  }
+    initMap: checkAndInitMap,
+    displayBarsOnMap,
+    clearMarkers,
+    showInfoWindow,
+    closeInfoWindow,
+    panTo,
+    setZoom,
+    fitBounds,
+    getPlacePredictions,
+    searchAndDisplayPlaces,
+    getCurrentLocation,
+    calculateDistance,
+    formatInfoWindowContent,
+  };
 }
