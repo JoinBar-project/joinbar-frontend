@@ -5,6 +5,7 @@ import weekday from 'dayjs/plugin/weekday'
 import localizedFormat from 'dayjs/plugin/localizedFormat'
 import updateLocale from 'dayjs/plugin/updateLocale'
 import ModalEdit from '@/components/events/ModalEdit.vue'
+import { useTagStore } from '@/stores/tag'
 dayjs.extend(localizedFormat)
 dayjs.extend(weekday)
 dayjs.extend(updateLocale)
@@ -13,6 +14,12 @@ dayjs.locale('zh-tw')
 defineProps({
   event: Object,
 })
+
+const tagStore = useTagStore()
+// 轉 id → name
+function getTagName(id) {
+  return tagStore.tagsMap[id] || '未知標籤'
+}
 
 // 輔助函數，根據日期字串輸出想要的格式
 function formatEventDate(dateStr) {
@@ -39,8 +46,10 @@ function sliceChinese(str, n) {
     <div class="event-info">
       <p class="time">{{ formatEventDate(event.startDate) }} ~ {{ formatEventDate(event.endDate) }}</p>
       <h3 class="title">{{ event.name }}</h3>
-      <div v-if="event.tags && event.tags.length" class="tags">
-        <span v-for="tag in event.tags" :key="tag.id" class="tag">{{ tag.name }}</span>
+      <div>
+        <span v-for="tagId in event.tagIds" :key="tagId">
+        {{ getTagName(tagId) }}
+        </span>
       </div>
       <p><span class="location">📍{{ sliceChinese(event.location, 6) }}</span>｜<span class="bar-name">{{ event.barName }}</span>
       </p>
@@ -73,6 +82,24 @@ function sliceChinese(str, n) {
   font-size: 24px;
   font-weight: 700;
 }
+/* new */
+.tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 10px 0;
+}
+
+.tag {
+  display: inline-block;
+  background-color: #007bff;
+  color: white;
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 500;
+}
+/* new */
 .location {
   color: rgb(0, 0, 0);
   font-size: 14px;
