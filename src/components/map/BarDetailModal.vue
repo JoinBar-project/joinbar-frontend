@@ -740,7 +740,7 @@ const handleFileUpload = (event: Event) => {
 }
 
 .add-to-trip-button {
-  background-color: #ff9800;
+  background-color: #d4624e;
   color: white;
   border: none;
   border-radius: 25px;
@@ -755,7 +755,7 @@ const handleFileUpload = (event: Event) => {
 }
 
 .add-to-trip-button:hover {
-  background-color: #fb8c00;
+  background-color: #860914;
 }
 
 .icon-dropdown,
