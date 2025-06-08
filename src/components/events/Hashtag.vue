@@ -41,6 +41,7 @@ function toggleTag(tag) {
     selectedTags.value.splice(idx, 1)
     warning.value = ''
   }
+  emit('update:modelValue', selectedTags.value.map(tag => tag.id))
 }
 function confirmTags() {
   emit('update:modelValue', selectedTags.value.map(tag => tag.id))
