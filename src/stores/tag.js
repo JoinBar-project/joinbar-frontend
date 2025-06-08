@@ -1,4 +1,5 @@
 import { defineStore } from 'pinia'
+import axios from 'axios'
 
 export const useTagStore = defineStore('tag', {
   state: () => ({
@@ -12,8 +13,8 @@ export const useTagStore = defineStore('tag', {
   },
   actions: {
     async fetchTags() {
-      const res = await fetch('/tags/list')
-      this.tags = await res.json()
+      const res = await axios.get('/tags/list')
+      this.tags = res.data
     }
   }
 })

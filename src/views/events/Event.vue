@@ -1,15 +1,18 @@
 <script setup>
 import { onMounted, computed } from 'vue'
 import { useEventStore } from '@/stores/event'
+import { useTagStore } from '@/stores/tag'
 import { storeToRefs } from 'pinia'
 import ModalCreate from '@/components/events/ModalCreate.vue'
 import EventCard from '@/components/events/EventCard.vue'
 
 const eventStore = useEventStore()
 const { events } = storeToRefs(eventStore)
+const tagStore = useTagStore()
 
 onMounted(() => {
   eventStore.fetchEvents()
+  tagStore.fetchTags()
 })
 
 const sortedEvents = computed(() => {
