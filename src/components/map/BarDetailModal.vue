@@ -576,7 +576,7 @@ const handleFileUpload = (event: Event) => {
 }
 .price-range {
   font-weight: 600;
-  color: #d9534f;
+  color: #daa258;
 }
 
 .contact-info p {
@@ -740,7 +740,7 @@ const handleFileUpload = (event: Event) => {
 }
 
 .start-event-button {
-  background-color: #d4624e;
+  background-color: #daa258;
   color: white;
   border: none;
   border-radius: 25px;
@@ -755,7 +755,7 @@ const handleFileUpload = (event: Event) => {
 }
 
 .start-event-button:hover {
-  background-color: #860914;
+  background-color: #c37b1c;
 }
 
 .icon-dropdown,
