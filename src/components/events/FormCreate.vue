@@ -47,8 +47,8 @@ function handleSubmit() {
     maxPeople: Number(eventPeople.value),
     imageUrl: eventImageUrl.value,
     price: Number(eventPrice.value),
-    hostUser: 888,
-    // hostUser: hostUser.value, 等會員系統建置完成
+    hostUser: 1, // 暫時寫死測試帳號，等會員系統建置完成
+    // 等會員系統建置完成，hostUser: hostUser.value
     tags: [...eventHashtags.value]
   }
   console.log(payload)

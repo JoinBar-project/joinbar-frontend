@@ -77,7 +77,7 @@ function handleUpdate() {
     maxPeople: Number(eventPeople.value),
     imageUrl: eventImageUrl.value,
     price: Number(eventPrice.value),
-    hostUser: 888, // 與 FormCreate 一致，等會員系統
+    hostUser: 1, // 與 FormCreate 一致，等會員系統
     tags: [...eventHashtags.value]
   }
   console.log(payload)
