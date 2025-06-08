@@ -46,14 +46,16 @@ function sliceChinese(str, n) {
     <div class="event-info">
       <p class="time">{{ formatEventDate(event.startDate) }} ~ {{ formatEventDate(event.endDate) }}</p>
       <h3 class="title">{{ event.name }}</h3>
-      <div>
-        <span v-for="tagId in event.tagIds" :key="tagId">
-        {{ getTagName(tagId) }}
-        </span>
-      </div>
       <p><span class="location">📍{{ sliceChinese(event.location, 6) }}</span>｜<span class="bar-name">{{ event.barName }}</span>
       </p>
-      <ModalEdit :event-id="event.id" @update="$emit('update')"/>
+      <div class="bottom-row">
+        <div class="tags">
+          <span class="tag" v-for="tagId in event.tagIds" :key="tagId">
+            #{{ getTagName(tagId) }}
+          </span>
+        </div>
+        <ModalEdit :event-id="event.id" @update="$emit('update')"/>
+      </div>
     </div>
   </div>
 </template>
@@ -82,24 +84,24 @@ function sliceChinese(str, n) {
   font-size: 24px;
   font-weight: 700;
 }
-/* new */
+
 .tags {
   display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
+  flex-wrap: nowrap;
+  gap: 5px;
   margin: 10px 0;
 }
 
 .tag {
   display: inline-block;
-  background-color: #007bff;
-  color: white;
-  padding: 4px 12px;
+  border:2px solid var(--color-secondary-green);
+  color: var(--color-secondary-green);
+  padding: 3px 10px;
   border-radius: 20px;
   font-size: 12px;
   font-weight: 500;
 }
-/* new */
+
 .location {
   color: rgb(0, 0, 0);
   font-size: 14px;
@@ -110,5 +112,11 @@ function sliceChinese(str, n) {
 .bar-name{
   font-weight: 700;
 }
-
+.bottom-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 8px;
+}
 </style>
