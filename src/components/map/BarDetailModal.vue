@@ -68,7 +68,7 @@
 
             <div class="rating-price-info">
               <span class="rating-text"
-                >⭐️ {{ bar.rating || "N/A" }} ({{ bar.reviews || 0 }} 評論)</span
+                >⭐️ {{ bar.rating || "N/A" }} ({{ bar.reviews || 0 }})</span
               >
               <span class="price-range">NT$ {{ bar.priceRange || "???" }}</span>
             </div>

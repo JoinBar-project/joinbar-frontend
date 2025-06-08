@@ -85,7 +85,7 @@ import debounce from "lodash/debounce";
 // --- 引入組件與 Google Maps Composable ---
 import FilterPanel from "../../components/map/FilterPanel.vue";
 import BarList from "../../components/map/BarList.vue";
-import BarDetailModal from "../../components/map/BarDetailModal.vue"; // 新增引入
+import BarDetailModal from "../../components/map/BarDetailModal.vue";
 import { useGoogleMaps } from "@/composable/useGoogleMaps";
 
 // 環境變數中的 Google Maps API Key
