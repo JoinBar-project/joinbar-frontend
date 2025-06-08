@@ -1,4 +1,5 @@
 <script setup>
+
 import dayjs from 'dayjs'
 import 'dayjs/locale/zh-tw'
 import weekday from 'dayjs/plugin/weekday'
@@ -17,6 +18,8 @@ defineProps({
 
 const tagStore = useTagStore()
 // 轉 id → name
+console.log('tagStore.tags:', tagStore.tags)
+console.log('tagStore.tagsMap:', tagStore.tagsMap)
 function getTagName(id) {
   return tagStore.tagsMap[id] || '未知標籤'
 }
@@ -96,7 +99,7 @@ function sliceChinese(str, n) {
   display: inline-block;
   border:2px solid var(--color-secondary-green);
   color: var(--color-secondary-green);
-  padding: 3px 10px;
+  padding: 3px 8px;
   border-radius: 20px;
   font-size: 12px;
   font-weight: 500;
