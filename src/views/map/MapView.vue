@@ -499,7 +499,7 @@ function fetchBarsData() {
     {
       id: "b007",
       place_id: "ChIJZ52JzdyjQjQR6c8b9j01314",
-      name: "信義秘境",
+      name: "信義秘境餐酒館",
       location: { lat: 25.041, lng: 121.567 },
       rating: 4.9,
       reviews: 90,
