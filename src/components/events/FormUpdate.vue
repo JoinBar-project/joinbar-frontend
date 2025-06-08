@@ -40,6 +40,7 @@ onMounted(async () => {
     await eventStore.fetchEvent(props.eventId)
     console.log(eventStore.event)
     const data = eventStore.event
+
     if (data && data.stringModel) {
       eventName.value = data.stringModel.name || ''
       barName.value = data.stringModel.barName || ''
