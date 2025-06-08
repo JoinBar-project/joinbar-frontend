@@ -228,7 +228,7 @@
               />
             </button>
           </div>
-          <button class="add-to-trip-button" @click="goToBarActivities">
+          <button class="start-event-button" @click="goToBarActivities">
             發起活動
             <img
               src="@/assets/icons/mapicons/dropdown-arrow-icon.svg"
@@ -739,7 +739,7 @@ const handleFileUpload = (event: Event) => {
   height: 24px;
 }
 
-.add-to-trip-button {
+.start-event-button {
   background-color: #d4624e;
   color: white;
   border: none;
@@ -754,7 +754,7 @@ const handleFileUpload = (event: Event) => {
   transition: background-color 0.2s;
 }
 
-.add-to-trip-button:hover {
+.start-event-button:hover {
   background-color: #860914;
 }
 
@@ -844,7 +844,7 @@ const handleFileUpload = (event: Event) => {
     width: 20px;
     height: 20px;
   }
-  .add-to-trip-button {
+  .start-event-button {
     padding: 8px 15px;
     font-size: 15px;
   }
