@@ -4,7 +4,6 @@ import { useEventStore } from '@/stores/event'
 import { storeToRefs } from 'pinia'
 import ModalCreate from '@/components/events/ModalCreate.vue'
 import EventCard from '@/components/events/EventCard.vue'
-import FormModal from '@/components/events/FormModal.vue'
 
 const eventStore = useEventStore()
 const { events } = storeToRefs(eventStore)
@@ -27,7 +26,6 @@ const sortedEvents = computed(() => {
     <h1>酒吧活動</h1>
     <p>探索附近的酒吧活動。</p>
     <ModalCreate />
-    <!-- <FormModal /> -->
     <div class="event-list">
       <EventCard
         v-for="event in sortedEvents"
