@@ -5,13 +5,15 @@ import EventHoster from './EventHoster.vue';
 import MessageBoard from './MessageBoard.vue';
 
 const props = defineProps({
-  event: Object
+  event: Object,
+  tags: Array,
 }) 
 
 const eventRef = toRef(props, 'event')
 
 const {
   isJoin,
+  joinedNum,
   toggleJoin,
   isOver24hr,
   showModal,
@@ -20,7 +22,6 @@ const {
   closeModal,
   handleConfirmCancel
 } = useEvent(eventRef)
-
 
 </script>
 
@@ -53,15 +54,14 @@ const {
             </div>
             <div class="event-content">
               <div class="event-tags">
-                <div>免費活動</div>
-                <div>下班來喝</div>
+                <div v-for="tag in props.tags" :key="tag.id">{{ tag.name }}</div>
               </div>
               <div>
                 <h3 class="event-title">{{ props.event.name }}
                 </h3>
-                <div class="event-content-info">
+                <div v-if="formattedEventTime" class="event-content-info">
                   <i class="fa-solid fa-calendar"></i>
-                  <p v-if="formattedEventTime">活動時間：{{ formattedEventTime }}</p>
+                  <p>活動時間：{{ formattedEventTime }}</p>
                 </div>
                 <div class="event-content-info">
                   <i class="fa-solid fa-wine-glass"></i>
@@ -74,7 +74,7 @@ const {
                 </div>
                 <div class="event-content-info">
                   <i class="fa-solid fa-user"></i>
-                  <p>目前報名人數： <span>12</span> ｜ 報名人數上限：<span>{{ props.event.maxPeople || '無報名人數限制' }}</span></p>
+                  <p>目前報名人數： <span>{{ joinedNum }}</span> ｜ 報名人數上限：<span>{{ props.event.maxPeople || '無報名人數限制' }}</span></p>
                 </div>
               </div>
               <button @click="toggleJoin()" :disabled = "isJoin" :class="{ 'opacity-50 cursor-not-allowed': isJoin }" type="button" class="event-btn event-btn-free" >{{ isJoin ? '已報名' : '參加活動' }}</button>
@@ -84,8 +84,8 @@ const {
           </div>
         </div>
       </div>
-      <!-- <EventHoster /> -->
-      <!-- <MessageBoard v-if="isJoin" /> -->
+      <EventHoster />
+      <MessageBoard v-if="isJoin" />
   </div>  
 </template>
 
