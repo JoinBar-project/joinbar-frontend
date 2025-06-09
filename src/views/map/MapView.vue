@@ -85,11 +85,11 @@ import debounce from "lodash/debounce";
 // --- 引入組件與 Google Maps Composable ---
 import FilterPanel from "../../components/map/FilterPanel.vue";
 import BarList from "../../components/map/BarList.vue";
-import BarDetailModal from "../../components/map/BarDetailModal.vue"; // 新增引入
+import BarDetailModal from "../../components/map/BarDetailModal.vue";
 import { useGoogleMaps } from "@/composable/useGoogleMaps";
 
 // 環境變數中的 Google Maps API Key
-const googleMapsApiKey = import.meta.env.VITE_Maps_API_KEY;
+const googleMapsApiKey = import.meta.env.VITE_MAPS_API_KEY;
 
 // --- 響應式狀態 ---
 const isLoading = ref(false);
@@ -348,11 +348,13 @@ function closeBarDetailModal() {
 function handleToggleWishlist(barId) {
   const barIndex = allBars.value.findIndex((b) => b.id === barId);
   if (barIndex > -1) {
-    allBars.value[barIndex].isWishlisted = !allBars.value[barIndex].isWishlisted;
+    allBars.value[barIndex].isWishlisted =
+      !allBars.value[barIndex].isWishlisted;
   }
   // 確保如果詳細頁面打開，它的收藏狀態也能同步更新
   if (selectedBarForDetail.value && selectedBarForDetail.value.id === barId) {
-    selectedBarForDetail.value.isWishlisted = !selectedBarForDetail.value.isWishlisted;
+    selectedBarForDetail.value.isWishlisted =
+      !selectedBarForDetail.value.isWishlisted;
   }
 }
 
@@ -380,7 +382,7 @@ function fetchBarsData() {
       imageUrl:
         "https://images.unsplash.com/photo-1543007137-b715ee51102b?q=80&w=2070&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
       description: "隱身巷弄中的小酒館，提供多款精釀啤酒，適合下班小酌。",
-      isWishlisted: true,
+      isWishlisted: false,
       images: [
         "https://images.unsplash.com/photo-1543007137-b715ee51102b?q=80&w=2070&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
         "https://images.unsplash.com/photo-1543007137-b715ee51102b?q=80&w=2070&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
@@ -403,7 +405,7 @@ function fetchBarsData() {
       imageUrl:
         "https://images.unsplash.com/photo-1582855171120-6d80f837e2c9?q=80&w=2070&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
       description: "俯瞰台北市夜景的絕佳地點，提供精緻調酒與餐點，是約會首選。",
-      isWishlisted: true,
+      isWishlisted: false,
       images: [
         "https://images.unsplash.com/photo-1582855171120-6d80f837e2c9?q=80&w=2070&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
         "https://images.unsplash.com/photo-1582855171120-6d80f837e2c9?q=80&w=2070&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
@@ -499,7 +501,7 @@ function fetchBarsData() {
     {
       id: "b007",
       place_id: "ChIJZ52JzdyjQjQR6c8b9j01314",
-      name: "信義秘境",
+      name: "信義餐酒館",
       location: { lat: 25.041, lng: 121.567 },
       rating: 4.9,
       reviews: 90,
@@ -901,8 +903,13 @@ watch(selectedBar, (newVal) => {
   border-radius: 50%;
   padding: 1px;
   background: conic-gradient(#0000 10%, #afb18c) content-box;
-  -webkit-mask: repeating-conic-gradient(#0000 0deg, #000 1deg 20deg, #0000 21deg 36deg),
-    radial-gradient(farthest-side, #0000 calc(100% - var(--b) - 1px), #000 calc(100% - var(--b)));
+  -webkit-mask:
+    repeating-conic-gradient(#0000 0deg, #000 1deg 20deg, #0000 21deg 36deg),
+    radial-gradient(
+      farthest-side,
+      #0000 calc(100% - var(--b) - 1px),
+      #000 calc(100% - var(--b))
+    );
   -webkit-mask-composite: destination-in;
   mask-composite: intersect;
   animation: l4 1s infinite;
