@@ -12,21 +12,20 @@ const isLoading = ref(true)
 const errorMsg = ref('')
 const event = ref(null)
 const notFound = ref(false)
-
-// 設定axios
+const eventTags = ref([])
 
 
 onMounted( async() => {
   try{
       const res = await axios.get(`/api/event/${eventId}`)
-      const { stringModel, tagIds } = res.data
+      const data = res.data
 
-      event.value = stringModel
-      // eventTagIds.value = tagIds
+      event.value = data.event
+      eventTags.value = data.tags
 
-      console.log('活動資料:', stringModel)
-      console.log('活動標籤 IDs:', tagIds)
-      // console.log(`=========================${res.data.stringModel}`)
+      console.log('活動資料:', data.event)
+      console.log('活動標籤:', data.tags)
+
   }catch(err){
     if( err.response && err.response.status == 404){
       notFound.value = true
@@ -51,8 +50,8 @@ const isFree = computed(() => {
     <p v-else-if="notFound">找不到活動</p>
     <p v-else-if="errorMsg">{{ errorMsg }}</p>
 
-    <EventInfoFree v-else-if="isFree" :event="event" />
-    <EventInfoPay v-else :event="event" />
+    <EventInfoFree v-else-if="isFree" :event="event" :tags="eventTags" />
+    <EventInfoPay v-else :event="event" :tags="eventTags" />
 
 
   </div>
