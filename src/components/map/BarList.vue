@@ -21,13 +21,13 @@
           />
           <button
             class="wishlist-button"
-            @click.stop="toggleFavorite(bar.place_id)"
-            :aria-label="isFavorite(bar.place_id) ? '取消收藏' : '加入收藏'"
+            @click.stop="emitToggleWishlist(bar.place_id)"
+            :aria-label="bar.isWishlisted ? '取消收藏' : '加入收藏'"
           >
             <svg
               xmlns="http://www.w3.org/2000/svg"
               class="w-6 h-6"
-              :fill="isFavorite(bar.place_id) ? 'red' : 'white'"
+              :fill="bar.isWishlisted ? 'red' : 'white'"
               viewBox="0 0 24 24"
               stroke="none"
             >
@@ -77,44 +77,23 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, watch } from "vue";
+import { watch } from "vue";
 import type { PropType } from "vue";
-
-// --- 類型定義 ---
-interface Bar {
-  id?: string;
-  place_id?: string;
-  name: string;
-  imageUrl?: string;
-  rating?: number;
-  reviews?: number;
-  priceRange?: string;
-  tags?: string[];
-  types?: string[];
-  openingHours?: google.maps.places.OpeningHours | { weekday_text?: string[] };
-  location?: { lat: number; lng: number };
-  description?: string;
-  isWishlisted?: boolean;
-  distance?: number;
-}
+import { Bar } from "@/types"; // 假設你定義了 Bar 介面，並統一引入
 
 // --- Props 與 Emits ---
-const props = defineProps({
-  bars: {
-    type: Array as PropType<Bar[]>,
-    default: () => [],
-  },
+interface BarListProps {
+  bars: Bar[]; // 從父組件接收的酒吧數據列表，現在 Bar 類型包含了 isWishlisted
+}
+const props = withDefaults(defineProps<BarListProps>(), {
+  bars: () => [],
 });
 
-watch(() => props.bars, (newBars) => {
-  console.log("BarList 接收到的 bars prop:", newBars);
-}, { immediate: true });
-
-const emit = defineEmits(["bar-selected", "toggle-wishlist"]); // 新增 toggle-wishlist 事件
-
-// --- 響應式狀態 ---
-// 使用 Set 存儲收藏的 place_id，便於快速查找和增刪
-const favoritePlaceIds = ref<Set<string>>(new Set());
+interface BarListEmits {
+  (e: "bar-selected", bar: Bar): void; // 當點擊酒吧卡片時，發出事件並帶上酒吧數據
+  (e: "toggle-wishlist", placeId: string): void; // 當點擊收藏按鈕時，發出事件並帶上 place_id
+}
+const emit = defineEmits<BarListEmits>();
 
 // ----------------------------------------------------------------------
 // 事件處理函式
@@ -125,56 +104,25 @@ const selectBar = (bar: Bar) => {
   emit("bar-selected", bar);
 };
 
-// 切換酒吧的收藏狀態
-const toggleFavorite = (placeId: string | undefined) => {
+// 切換酒吧的收藏狀態，現在直接發出事件
+const emitToggleWishlist = (placeId: string | undefined) => {
   if (!placeId) {
     console.warn("無法收藏/取消收藏，因為 place_id 不存在。");
     return;
   }
-  if (favoritePlaceIds.value.has(placeId)) {
-    favoritePlaceIds.value.delete(placeId);
-    console.log(`取消收藏: ${placeId}`);
-  } else {
-    favoritePlaceIds.value.add(placeId);
-    console.log(`收藏: ${placeId}`);
-  }
-  // 通知父組件收藏狀態已改變 (可選，如果 MapView 需要實時更新 bar 數據)
   emit("toggle-wishlist", placeId);
 };
 
-// 檢查酒吧是否已收藏
-const isFavorite = (placeId: string | undefined): boolean => {
-  if (!placeId) return false;
-  return favoritePlaceIds.value.has(placeId);
-};
-
 // ----------------------------------------------------------------------
-// Vue 生命週期與監聽器
+// Vue 生命週期與監聽器 (僅用於偵錯，實際應用可能移除)
 // ----------------------------------------------------------------------
 
-// 組件掛載時，從 localStorage 讀取收藏數據
-onMounted(() => {
-  const storedFavorites = localStorage.getItem("favorites");
-  if (storedFavorites) {
-    try {
-      const parsedFavorites = JSON.parse(storedFavorites);
-      if (Array.isArray(parsedFavorites)) {
-        favoritePlaceIds.value = new Set(parsedFavorites);
-      }
-    } catch (e) {
-      console.error("從 localStorage 解析收藏數據失敗", e);
-      localStorage.removeItem("favorites"); // 清除無效數據
-    }
-  }
-});
-
-// 監聽收藏 Set 的變化，並同步到 localStorage
 watch(
-  favoritePlaceIds,
-  (newVal) => {
-    localStorage.setItem("favorites", JSON.stringify(Array.from(newVal)));
+  () => props.bars,
+  (newBars) => {
+    console.log("BarList 接收到的 bars prop 並更新列表:", newBars.length);
   },
-  { deep: true } // 深度監聽 Set 內部元素的增刪
+  { immediate: true }
 );
 </script>
 
@@ -269,7 +217,7 @@ watch(
   fill: #f87171; /* Tailwind's red-400 */
 }
 
-/* 收藏狀態的愛心顏色由模板中的 :fill="isFavorite(...) ? 'red' : 'white'" 控制 */
+/* 收藏狀態的愛心顏色由模板中的 :fill="bar.isWishlisted ? 'red' : 'white'" 控制 */
 /* 所以不需要額外的 .favorite class 或複雜的 CSS 規則來控制紅色狀態 */
 
 .bar-card-content {
@@ -310,7 +258,7 @@ watch(
 .bar-price {
   font-size: 16px;
   font-weight: 600;
-  /* color: #b8a28e;  */
+  /* color: #b8a28e;  */
 }
 
 .bar-tags {
@@ -331,7 +279,7 @@ watch(
 
 .bar-hours {
   font-size: 14px;
-  /* color: #888;  */
+  /* color: #888;  */
   margin-top: auto;
 }
 </style>

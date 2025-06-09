@@ -2,7 +2,6 @@
   <transition name="modal-fade">
     <div class="bar-detail-modal-overlay" @click.self="closeModal">
       <div class="bar-detail-modal-content">
-
         <button class="close-button" @click="closeModal">
           <svg
             xmlns="http://www.w3.org/2000/svg"
@@ -56,7 +55,8 @@
                   xmlns="http://www.w3.org/2000/svg"
                   viewBox="0 0 24 24"
                   :fill="bar.isWishlisted ? 'red' : 'white'"
-                  :stroke="bar.isWishlisted ? 'red' : '#7f7f7f'" stroke-width="1.5"
+                  :stroke="bar.isWishlisted ? 'red' : '#7f7f7f'"
+                  stroke-width="1.5"
                   class="heart-icon"
                 >
                   <path
@@ -68,7 +68,10 @@
 
             <div class="rating-price-info">
               <span class="rating-text"
-                >⭐️ {{ bar.rating || "N/A" }} ({{ bar.reviews || 0 }} 評論)</span
+                >⭐️ {{ bar.rating || "N/A" }} ({{
+                  bar.reviews || 0
+                }}
+                評論)</span
               >
               <span class="price-range">NT$ {{ bar.priceRange || "???" }}</span>
             </div>
@@ -199,7 +202,10 @@
 
         <div class="footer-actions">
           <div class="icon-buttons">
-            <button class="action-icon-button upload-photo-button" @click="triggerFileUpload">
+            <button
+              class="action-icon-button upload-photo-button"
+              @click="triggerFileUpload"
+            >
               <img
                 src="@/assets/icons/mapicons/add-photo-icon.svg"
                 alt="新增照片"
@@ -223,7 +229,8 @@
             </button>
             <button class="action-icon-button navigate-button">
               <img
-                src="@/assets/icons/mapicons/navigation-icon.svg" alt="導航"
+                src="@/assets/icons/mapicons/navigation-icon.svg"
+                alt="導航"
                 class="icon"
               />
             </button>
@@ -250,7 +257,7 @@
 <script setup lang="ts">
 import { ref, watch, computed } from "vue";
 import type { PropType } from "vue";
-import { useRouter } from 'vue-router';
+import { useRouter } from "vue-router";
 
 interface Bar {
   id?: string;
@@ -284,7 +291,8 @@ const emit = defineEmits(["close", "toggle-wishlist"]);
 const router = useRouter();
 
 const currentImageIndex = ref(0);
-const defaultImage = "https://placehold.co/800x600/decdd5/860914?text=No+Image+Available";
+const defaultImage =
+  "https://placehold.co/800x600/decdd5/860914?text=No+Image+Available";
 
 const currentImage = computed(() => {
   if (props.bar.images && props.bar.images.length > 0) {
@@ -298,7 +306,7 @@ watch(
   () => {
     currentImageIndex.value = 0;
   },
-  { immediate: true },
+  { immediate: true }
 );
 
 const prevImage = () => {
@@ -340,7 +348,7 @@ const toggleFavorite = () => {
 
 const goToBarActivities = () => {
   closeModal();
-  router.push('/events');
+  router.push("/events");
 };
 
 const fileInput = ref<HTMLInputElement | null>(null);
@@ -357,10 +365,12 @@ const handleFileUpload = (event: Event) => {
     const selectedFile = files[0];
     console.log("Selected file for upload:", selectedFile);
 
-    alert(`選取了檔案：${selectedFile.name} (大小: ${selectedFile.size} bytes)\n此處僅為前端選取示範，實際圖片上傳需連接後端。`);
+    alert(
+      `選取了檔案：${selectedFile.name} (大小: ${selectedFile.size} bytes)\n此處僅為前端選取示範，實際圖片上傳需連接後端。`
+    );
 
     if (fileInput.value) {
-      fileInput.value.value = '';
+      fileInput.value.value = "";
     }
   }
 };
@@ -492,7 +502,9 @@ const handleFileUpload = (event: Event) => {
   background-color: rgba(255, 255, 255, 0.6);
   border-radius: 50%;
   cursor: pointer;
-  transition: background-color 0.2s, transform 0.2s;
+  transition:
+    background-color 0.2s,
+    transform 0.2s;
 }
 .dot.active {
   background-color: #fff;
@@ -507,7 +519,9 @@ const handleFileUpload = (event: Event) => {
   flex-grow: 1; /* 讓此區塊在 content-flex-wrapper 中佔用剩餘的所有垂直空間 */
   display: flex;
   flex-direction: column;
-  padding-bottom: calc(20px + 60px + 15px); /* 增加底部內邊距，為固定在 Modal 底部的 footer-actions 留出空間 */
+  padding-bottom: calc(
+    20px + 60px + 15px
+  ); /* 增加底部內邊距，為固定在 Modal 底部的 footer-actions 留出空間 */
 }
 
 /* 標題與愛心按鈕的 flex 容器 */
@@ -551,17 +565,18 @@ const handleFileUpload = (event: Event) => {
   width: 32px; /* 確保 SVG 尺寸與按鈕一致 */
   height: 32px;
   /* 過渡效果讓愛心顏色切換更平滑 */
-  transition: fill 0.3s ease, stroke 0.3s ease;
+  transition:
+    fill 0.3s ease,
+    stroke 0.3s ease;
 }
 
 /* 當滑鼠懸停在按鈕上且未收藏時，SVG 的顏色變為 red-400 的效果 */
-.wishlist-detail-button:not([fill='red']):hover .heart-icon {
-/* 假設現在是未收藏狀態，我們會看到白底黑邊。
+.wishlist-detail-button:not([fill="red"]):hover .heart-icon {
+  /* 假設現在是未收藏狀態，我們會看到白底黑邊。
      Hover 時我們希望看到淺紅底紅邊。 */
-     fill: #ffebeb; /* 淺紅色背景效果 */
-     stroke: red; /* 懸停時邊框變紅 */
+  fill: #ffebeb; /* 淺紅色背景效果 */
+  stroke: red; /* 懸停時邊框變紅 */
 }
-
 
 .rating-price-info {
   display: flex;
@@ -725,7 +740,9 @@ const handleFileUpload = (event: Event) => {
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  transition: background-color 0.2s, border-color 0.2s;
+  transition:
+    background-color 0.2s,
+    border-color 0.2s;
   padding: 0;
 }
 
