@@ -110,7 +110,6 @@ const {
   border-radius: 20px;
   overflow: hidden;
   position: relative;
-
 }
 
 .apply-tag{
@@ -121,7 +120,6 @@ const {
   position: absolute;
   top: 0;
   right: 80px;
-
 }
 
 .event-img > img{
@@ -182,6 +180,10 @@ const {
 .fa-solid{
   padding: 0 30px 0 0;
   margin-top: 13px;
+}
+
+.fa-calendar{
+  padding-right: 26px;
 }
 
 .event-title{

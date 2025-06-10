@@ -176,7 +176,6 @@ const {
   padding: 1px 0;
 }
 
-
 .event-content-info p{
   font-size: 20px;
   line-height: 2.5;
@@ -185,6 +184,10 @@ const {
 
 .fa-solid{
   padding: 0 30px 0 0;
+}
+
+.fa-calendar{
+  padding-right: 26px;
 }
 
 .event-title{
