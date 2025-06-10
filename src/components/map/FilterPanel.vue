@@ -2,7 +2,13 @@
   <div class="text-gray-800 filter-panel-container">
     <div class="filter-header">
       <h2 class="filter-title">篩選</h2>
-      <button @click="closePanel" class="close-button">X</button>
+      <button @click="closePanel" class="close-button">
+        <img
+          src="@/assets/icons/mapicons/close-button.svg"
+          alt="關閉"
+          class="icon close-icon"
+        />
+      </button>
     </div>
 
     <div
@@ -18,9 +24,7 @@
         <button
           @click="removeAppliedFilter(filterItem.type, filterItem.value)"
           class="remove-filter-button"
-        >
-          X
-        </button>
+        ></button>
       </div>
     </div>
 
@@ -621,6 +625,11 @@ onMounted(() => {
   color: #555;
 }
 
+.close-button .close-icon {
+  width: 100%;
+  height: 100%;
+}
+
 .filter-section {
   margin-bottom: 32px;
 }
@@ -773,7 +782,7 @@ onMounted(() => {
 }
 
 .action-button {
-  padding: 14px 20px;
+  padding: 11px 9px;
   border-radius: 8px;
   font-size: 16px;
   font-weight: 600;

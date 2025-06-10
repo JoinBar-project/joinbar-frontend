@@ -3,18 +3,11 @@
     <div class="bar-detail-modal-overlay" @click.self="closeModal">
       <div class="bar-detail-modal-content">
         <button class="close-button" @click="closeModal">
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            viewBox="0 0 24 24"
-            fill="currentColor"
-            class="w-6 h-6"
-          >
-            <path
-              fill-rule="evenodd"
-              d="M5.47 5.47a.75.75 0 0 1 1.06 0L12 10.94l5.47-5.47a.75.75 0 1 1 1.06 1.06L13.06 12l5.47 5.47a.75.70 1 1-1.06 1.06L12 13.06l-5.47 5.47a.75.75 0 0 1-1.06-1.06L10.94 12 5.47 6.53a.75.75 0 0 1 0-1.06Z"
-              clip-rule="evenodd"
-            />
-          </svg>
+          <img
+            src="@/assets/icons/mapicons/close-button.svg"
+            alt="關閉"
+            class="icon close-icon"
+          />
         </button>
 
         <div class="content-flex-wrapper">
@@ -46,24 +39,6 @@
           <div class="detail-info-section">
             <div class="header-main">
               <h2 class="bar-detail-name">{{ bar.name }}</h2>
-              <button
-                class="wishlist-detail-button"
-                @click.stop="toggleFavorite"
-                :aria-label="bar.isWishlisted ? '取消收藏' : '加入收藏'"
-              >
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  viewBox="0 0 24 24"
-                  :fill="bar.isWishlisted ? 'red' : 'white'"
-                  :stroke="bar.isWishlisted ? 'red' : '#7f7f7f'"
-                  stroke-width="1.5"
-                  class="heart-icon"
-                >
-                  <path
-                    d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"
-                  />
-                </svg>
-              </button>
             </div>
 
             <div class="rating-price-info">
@@ -234,6 +209,24 @@
                 class="icon"
               />
             </button>
+            <button
+              class="action-icon-button wishlist-detail-button"
+              @click.stop="toggleFavorite"
+              :aria-label="bar.isWishlisted ? '取消收藏' : '加入收藏'"
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 24 24"
+                :fill="bar.isWishlisted ? 'red' : 'white'"
+                :stroke="bar.isWishlisted ? 'red' : '#7f7f7f'"
+                stroke-width="1.5"
+                class="heart-icon"
+              >
+                <path
+                  d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"
+                />
+              </svg>
+            </button>
           </div>
           <button class="start-event-button" @click="goToBarActivities">
             發起活動
@@ -254,34 +247,13 @@
   </transition>
 </template>
 
-<script setup lang="ts">
+<script setup>
 import { ref, watch, computed } from "vue";
-import type { PropType } from "vue";
 import { useRouter } from "vue-router";
-
-interface Bar {
-  id?: string;
-  place_id?: string;
-  name: string;
-  imageUrl?: string;
-  images?: string[];
-  rating?: number;
-  reviews?: number;
-  priceRange?: string;
-  tags?: string[];
-  types?: string[];
-  openingHours?: google.maps.places.OpeningHours | { weekday_text?: string[] };
-  location?: { lat: number; lng: number };
-  description?: string;
-  isWishlisted?: boolean; // 確保此屬性存在並能被外部更新
-  address?: string;
-  phone?: string;
-  website?: string;
-}
 
 const props = defineProps({
   bar: {
-    type: Object as PropType<Bar>,
+    type: Object,
     required: true,
   },
 });
@@ -322,14 +294,14 @@ const nextImage = () => {
     (currentImageIndex.value + 1) % props.bar.images.length;
 };
 
-const setCurrentImage = (index: number) => {
+const setCurrentImage = (index) => {
   if (props.bar.images && index >= 0 && index < props.bar.images.length) {
     currentImageIndex.value = index;
   }
 };
 
-const handleImageError = (event: Event) => {
-  const target = event.target as HTMLImageElement;
+const handleImageError = (event) => {
+  const target = event.target;
   target.src = defaultImage;
 };
 
@@ -351,14 +323,14 @@ const goToBarActivities = () => {
   router.push("/events");
 };
 
-const fileInput = ref<HTMLInputElement | null>(null);
+const fileInput = ref(null);
 
 const triggerFileUpload = () => {
   fileInput.value?.click();
 };
 
-const handleFileUpload = (event: Event) => {
-  const target = event.target as HTMLInputElement;
+const handleFileUpload = (event) => {
+  const target = event.target;
   const files = target.files;
 
   if (files && files.length > 0) {
@@ -416,9 +388,8 @@ const handleFileUpload = (event: Event) => {
 .close-button {
   position: absolute;
   top: 15px; /* 距離 modal 容器頂部 */
-  right: 15px; /* 距離 modal 容器右側 */
-  background: rgba(0, 0, 0, 0.5);
-  color: white;
+  right: 20px; /* 距離 modal 容器右側 */
+  /* background: rgba(0, 0, 0, 0.5); */
   border: none;
   border-radius: 50%;
   width: 36px;
@@ -428,14 +399,17 @@ const handleFileUpload = (event: Event) => {
   justify-content: center;
   cursor: pointer;
   z-index: 10;
-  transition: background-color 0.2s;
 }
 .close-button:hover {
-  background-color: rgba(0, 0, 0, 0.7);
+  transform: scale(1.1);
 }
-.close-button svg {
-  width: 24px;
-  height: 24px;
+
+/* 新增的 .close-icon 樣式 */
+.close-button .close-icon {
+  width: 100%; /* 調整為您希望的圖示大小 */
+  height: 100%; /* 調整為您希望的圖示大小 */
+  /* 如果您的 SVG 圖示是單色且需要繼承顏色，可以考慮使用 fill: currentColor; */
+  /* fill: currentColor; */
 }
 
 /* 左側：圖片輪播區 */
@@ -538,42 +512,33 @@ const handleFileUpload = (event: Event) => {
   color: #333;
   margin: 0;
   line-height: 1.2;
-  margin-right: 15px; /* 為愛心按鈕留出空間 */
 }
 
 /* 愛心收藏按鈕新樣式 */
 .wishlist-detail-button {
-  background: none;
-  border: none;
   cursor: pointer;
-  padding: 0;
   z-index: 10;
   outline: none;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 32px; /* 設置固定寬高 */
-  height: 32px;
-  transition: transform 0.2s ease-in-out; /* 懸停時的縮放動畫 */
+  transition: transform 0.2s ease-in-out; /* 懸停時的縮放動畫，保持 */
 }
+
 .wishlist-detail-button:hover {
   transform: scale(1.1);
 }
 
 /* 愛心 SVG 圖標樣式 */
 .wishlist-detail-button .heart-icon {
-  width: 32px; /* 確保 SVG 尺寸與按鈕一致 */
-  height: 32px;
-  /* 過渡效果讓愛心顏色切換更平滑 */
+  width: 24px; /* 調整為與其他 action-icon-button 中的圖示大小一致 */
+  height: 24px; /* 調整為與其他 action-icon-button 中的圖示大小一致 */
   transition:
     fill 0.3s ease,
-    stroke 0.3s ease;
+    stroke 0.3s ease; /* 保持顏色過渡 */
 }
 
 /* 當滑鼠懸停在按鈕上且未收藏時，SVG 的顏色變為 red-400 的效果 */
 .wishlist-detail-button:not([fill="red"]):hover .heart-icon {
   /* 假設現在是未收藏狀態，我們會看到白底黑邊。
-     Hover 時我們希望看到淺紅底紅邊。 */
+       Hover 時我們希望看到淺紅底紅邊。 */
   fill: #ffebeb; /* 淺紅色背景效果 */
   stroke: red; /* 懸停時邊框變紅 */
 }
@@ -828,14 +793,12 @@ const handleFileUpload = (event: Event) => {
     width: 32px;
     height: 32px;
   }
-  .close-button svg {
-    width: 20px;
-    height: 20px;
+  /* 針對新的圖片式關閉圖示調整大小 */
+  .close-button .close-icon {
+    width: 100%;
+    height: 100%;
   }
   /* 手機版愛心收藏按鈕位置調整 */
-  .wishlist-detail-button {
-    margin-left: 10px;
-  }
   .wishlist-detail-button .heart-icon {
     width: 20px;
     height: 20px;
