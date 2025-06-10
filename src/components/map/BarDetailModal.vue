@@ -43,17 +43,14 @@
 
             <div class="rating-price-info">
               <span class="rating-text"
-                >⭐️ {{ bar.rating || "N/A" }} ({{
-                  bar.reviews || 0
-                }}
-                評論)</span
+                >⭐️ {{ bar.rating || "N/A" }} ({{ bar.reviews || 0 }})</span
               >
               <span class="price-range">NT$ {{ bar.priceRange || "???" }}</span>
             </div>
 
             <div class="contact-info">
-              <p v-if="bar.address">📍 {{ bar.address }}</p>
-              <p v-if="bar.phone">📞 {{ bar.phone }}</p>
+              <p v-if="bar.formatted_address || bar.address">📍 {{ bar.formatted_address || bar.address }}</p>
+              <p v-if="bar.international_phone_number || bar.phone">📞 {{ bar.international_phone_number || bar.phone }}</p>
               <p v-if="bar.website">
                 🌐
                 <a
@@ -68,7 +65,7 @@
             <div class="opening-hours-detail">
               <h3>營業時間</h3>
               <p>
-                {{ bar.openingHours?.weekday_text?.[0] || "未提供營業時間" }}
+                {{ bar.opening_hours?.weekday_text?.[0] || bar.openingHours?.weekday_text?.[0] || "未提供營業時間" }}
               </p>
             </div>
 
@@ -89,7 +86,26 @@
               <p>{{ bar.description || "暫無詳細介紹。" }}</p>
             </div>
 
-            <div class="fake-review-section">
+            <!-- 顯示 Google 評論 -->
+            <div v-if="bar.googleReviews && bar.googleReviews.length" class="google-review-section">
+              <h3>Google 熱門評論</h3>
+              <div v-for="review in bar.googleReviews" :key="review.time" class="review-card">
+                <div class="review-header">
+                  <img :src="review.profile_photo_url" alt="User Avatar" class="user-avatar" />
+                  <div class="user-info">
+                    <span class="user-name">{{ review.author_name }}</span>
+                    <span class="review-date">{{ new Date(review.time * 1000).toLocaleDateString() }}</span>
+                  </div>
+                </div>
+                <p class="review-text">{{ review.text }}</p>
+                <div class="review-actions">
+                  <span>⭐️ {{ review.rating }}</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- 保留原本假評論區塊，若無 Google 評論才顯示 -->
+            <div v-else class="fake-review-section">
               <h3>熱門評論</h3>
               <div class="review-card">
                 <div class="review-header">
@@ -249,7 +265,38 @@
 
 <script setup>
 import { ref, watch, computed } from "vue";
-import { useRouter } from "vue-router";
+import type { PropType } from "vue";
+import { useRouter } from 'vue-router';
+
+interface Bar {
+  id?: string;
+  place_id?: string;
+  name: string;
+  imageUrl?: string;
+  images?: string[];
+  rating?: number;
+  reviews?: number;
+  priceRange?: string;
+  tags?: string[];
+  types?: string[];
+  openingHours?: any | { weekday_text?: string[] };
+  location?: { lat: number; lng: number };
+  description?: string;
+  isWishlisted?: boolean; // 確保此屬性存在並能被外部更新
+  address?: string;
+  phone?: string;
+  website?: string;
+  formatted_address?: string;
+  international_phone_number?: string;
+  opening_hours?: any | { weekday_text?: string[] };
+  googleReviews?: {
+    author_name: string;
+    profile_photo_url: string;
+    text: string;
+    rating: number;
+    time: number;
+  }[];
+}
 
 const props = defineProps({
   bar: {

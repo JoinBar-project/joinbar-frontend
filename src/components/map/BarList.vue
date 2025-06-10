@@ -12,12 +12,11 @@
       >
         <div class="bar-card-image">
           <img
-            :src="
-              bar.imageUrl ||
-              'https://placehold.co/300x200/decdd5/860914?text=Bar+Image'
-            "
+            :src="bar.imageUrl || 'https://placehold.co/300x200/decdd5/860914?text=Bar+Image'"
             :alt="bar.name"
             class="object-cover w-full h-full rounded-t-lg"
+            width="300"
+            height="200"
           />
           <button
             class="wishlist-button"
@@ -79,21 +78,38 @@
 <script setup lang="ts">
 import { watch } from "vue";
 import type { PropType } from "vue";
-import { Bar } from "@/types"; // 假設你定義了 Bar 介面，並統一引入
+
+// --- 類型定義 ---
+interface Bar {
+  id?: string;
+  place_id?: string;
+  name: string;
+  imageUrl?: string;
+  rating?: number;
+  reviews?: number;
+  priceRange?: string;
+  tags?: string[];
+  types?: string[];
+  openingHours?: any | { weekday_text?: string[] };
+  location?: { lat: number; lng: number };
+  description?: string;
+  isWishlisted?: boolean;
+  distance?: number;
+}
 
 // --- Props 與 Emits ---
-interface BarListProps {
-  bars: Bar[]; // 從父組件接收的酒吧數據列表，現在 Bar 類型包含了 isWishlisted
-}
-const props = withDefaults(defineProps<BarListProps>(), {
-  bars: () => [],
+const props = defineProps({
+  bars: {
+    type: Array as PropType<Bar[]>,
+    default: () => [],
+  },
 });
 
-interface BarListEmits {
-  (e: "bar-selected", bar: Bar): void; // 當點擊酒吧卡片時，發出事件並帶上酒吧數據
-  (e: "toggle-wishlist", placeId: string): void; // 當點擊收藏按鈕時，發出事件並帶上 place_id
-}
-const emit = defineEmits<BarListEmits>();
+const emit = defineEmits(["bar-selected", "toggle-wishlist"]); // 新增 toggle-wishlist 事件
+
+// --- 響應式狀態 ---
+// 使用 Set 存儲收藏的 place_id，便於快速查找和增刪
+const favoritePlaceIds = ref<Set<string>>(new Set());
 
 // ----------------------------------------------------------------------
 // 事件處理函式
@@ -109,6 +125,13 @@ const emitToggleWishlist = (placeId: string | undefined) => {
   if (!placeId) {
     console.warn("無法收藏/取消收藏，因為 place_id 不存在。");
     return;
+  }
+  if (favoritePlaceIds.value.has(placeId)) {
+    favoritePlaceIds.value.delete(placeId);
+    console.log(`取消收藏: ${placeId}`);
+  } else {
+    favoritePlaceIds.value.add(placeId);
+    console.log(`收藏: ${placeId}`);
   }
   emit("toggle-wishlist", placeId);
 };
