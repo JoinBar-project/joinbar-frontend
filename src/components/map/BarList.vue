@@ -12,12 +12,11 @@
       >
         <div class="bar-card-image">
           <img
-            :src="
-              bar.imageUrl ||
-              'https://placehold.co/300x200/decdd5/860914?text=Bar+Image'
-            "
+            :src="bar.imageUrl || 'https://placehold.co/300x200/decdd5/860914?text=Bar+Image'"
             :alt="bar.name"
             class="object-cover w-full h-full rounded-t-lg"
+            width="300"
+            height="200"
           />
           <button
             class="wishlist-button"
@@ -91,7 +90,7 @@ interface Bar {
   priceRange?: string;
   tags?: string[];
   types?: string[];
-  openingHours?: google.maps.places.OpeningHours | { weekday_text?: string[] };
+  openingHours?: any | { weekday_text?: string[] };
   location?: { lat: number; lng: number };
   description?: string;
   isWishlisted?: boolean;
@@ -105,10 +104,6 @@ const props = defineProps({
     default: () => [],
   },
 });
-
-watch(() => props.bars, (newBars) => {
-  console.log("BarList 接收到的 bars prop:", newBars);
-}, { immediate: true });
 
 const emit = defineEmits(["bar-selected", "toggle-wishlist"]); // 新增 toggle-wishlist 事件
 
@@ -138,7 +133,6 @@ const toggleFavorite = (placeId: string | undefined) => {
     favoritePlaceIds.value.add(placeId);
     console.log(`收藏: ${placeId}`);
   }
-  // 通知父組件收藏狀態已改變 (可選，如果 MapView 需要實時更新 bar 數據)
   emit("toggle-wishlist", placeId);
 };
 
@@ -310,7 +304,7 @@ watch(
 .bar-price {
   font-size: 16px;
   font-weight: 600;
-  /* color: #b8a28e;  */
+  /* color: #b8a28e;  */
 }
 
 .bar-tags {
@@ -331,7 +325,7 @@ watch(
 
 .bar-hours {
   font-size: 14px;
-  /* color: #888;  */
+  /* color: #888;  */
   margin-top: auto;
 }
 </style>
