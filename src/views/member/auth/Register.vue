@@ -128,3 +128,18 @@ const submitRegistration = () => {
   alert('已送出註冊資料，請前往 Email 驗證帳號！')
 }
 </script>
+
+<style scoped>
+.slide-fade-enter-active,
+.slide-fade-leave-active {
+  transition: all 0.4s ease;
+}
+.slide-fade-enter-from {
+  opacity: 0;
+  transform: translateX(100px);
+}
+.slide-fade-leave-to {
+  opacity: 0;
+  transform: translateX(-100px);
+}
+</style>

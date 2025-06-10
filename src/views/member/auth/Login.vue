@@ -7,11 +7,12 @@
         :class="isLogin ? 'border-b-3 border-[#aa666c] text-[#860914]' : 'text-[#b0a89c]'"
         @click="isLogin = true">會員登入
       </button>
-      <button
-        class="flex-1 py-2 text-center font-semibold"
-        :class="!isLogin ? 'border-b-3 border-[#aa666c] text-[#860914]' : 'text-[#b0a89c]'"
-        @click="isLogin = false">註冊
-      </button>
+      <router-link
+  to="/register"
+  class="flex-1 py-2 text-center font-semibold"
+  :class="!isLogin ? 'border-b-3 border-[#aa666c] text-[#860914]' : 'text-[#b0a89c]'">
+  註冊
+</router-link>
     </div>
 
     <div v-if="isLogin" class="mt-6 space-y-4">
