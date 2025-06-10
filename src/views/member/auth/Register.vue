@@ -156,7 +156,7 @@ const submitRegistration = () => {
 <style scoped>
 .slide-fade-enter-active,
 .slide-fade-leave-active {
-  transition: all 0.4s ease;
+  transition: all 0.2s ease;
 }
 .slide-fade-enter-from {
   opacity: 0;
