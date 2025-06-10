@@ -1,5 +1,4 @@
 <script setup>
-import { defineProps, defineEmits } from 'vue'
 import dayjs from 'dayjs'
 import 'dayjs/locale/zh-tw'
 import weekday from 'dayjs/plugin/weekday'
