@@ -5,14 +5,11 @@
       <div :key="step">
         <!-- Step 1: 註冊表單 -->
         <div v-if="step === 1" class="space-y-4">
-          <h2 class="text-xl font-semibold mb-4">建立帳號</h2>
+          <h2 class="text-xl font-semibold mb-4 text-[#860914]">建立帳號</h2>
           <div v-for="(field, index) in registerFields" :key="index" class="flex items-center border border-gray-300 rounded px-3 py-2">
             <i :class="field.icon" class="text-gray-400 mr-2"></i>
-            <input
-              :type="field.type"
-              :placeholder="field.placeholder"
-              v-model="form[field.model]"
-              class="w-full outline-none placeholder-[#f9ebd5] bg-transparent text-[#f9ebd5]"
+            <input :type="field.type" :placeholder="field.placeholder" v-model="form[field.model]"
+              class="w-full outline-none text-[#860914] placeholder-[#860914]"
             />
           </div>
 
@@ -31,46 +28,50 @@
             </button>
           </div>
 
-          <button @click="goToPreferences" class="block mx-auto mt-6 px-6 py-2 rounded-lg font-semibold bg-[#860914] text-[#ffffff] hover:bg-[#f9ebd5] hover:text-[#3A3435] hover:shadow-xl transition">
+          <button @click="goToPreferences" class="block mx-auto mt-6 px-6 py-2 rounded-lg font-semibold bg-[#860914] text-[#ffffff] hover:bg-[#aa666c] hover:text-[#3A3435] hover:shadow-xl transition">
             下一步
           </button>
         </div>
 
         <!-- Step 2: 偏好選擇 -->
         <div v-else class="space-y-4">
-          <h2 class="text-xl font-semibold mb-4">選擇你的酒吧偏好</h2>
+          <h2 class="text-xl font-semibold mb-4 text-[#860914]">選擇你的酒吧偏好</h2>
 
           <div>
-            <h3 class="text-lg font-medium mb-2">類型：</h3>
-            <div class="flex flex-wrap gap-2">
-              <button
-                v-for="type in barTypes"
-                :key="type"
+            <h3 class="text-lg font-medium mb-2 text-[#aa666c]">類型</h3>
+            <div class="grid grid-cols-3 grid-rows-2 gap-3 ">
+              <button v-for="type in barTypes" :key="type" 
                 @click="toggleSelection(form.preferences.types, type)"
-                :class="selectedClass(form.preferences.types.includes(type))">
+                :class="['text-sm py-2 rounded-full border transition duration-200',
+                form.preferences.types.includes(type)
+                ? 'bg-[#860914] text-white border-[#860914]'
+                : 'bg-[#3A3435] text-[#f8ecec] border-[#3A3435]']">
                 {{ type }}
               </button>
             </div>
           </div>
 
           <div>
-            <h3 class="text-lg font-medium mb-2">氛圍：</h3>
-            <div class="flex flex-wrap gap-2">
+            <h3 class="text-lg font-medium mb-2 text-[#aa666c]">氛圍</h3>
+            <div class="grid grid-cols-3 grid-rows-2 gap-2">
               <button
                 v-for="mood in barMoods"
                 :key="mood"
                 @click="toggleSelection(form.preferences.moods, mood)"
-                :class="selectedClass(form.preferences.moods.includes(mood))">
+                :class="['text-sm py-2 rounded-full border transition duration-200',
+                form.preferences.types.includes(type)
+                ? 'bg-[#860914] text-white border-[#860914]'
+                : 'bg-[#3A3435] text-[#f8ecec] border-[#3A3435]']">
                 {{ mood }}
               </button>
             </div>
           </div>
 
           <div class="flex justify-between mt-6">
-            <button @click="step = 1" class="text-sm text-[#daa258]">返回</button>
+            <button @click="step = 1" class="text-sm text-[#aa666c]">返回</button>
             <button
               @click="submitRegistration"
-              class="px-6 py-2 rounded-lg font-semibold bg-[#daa258] text-[#3A3435] hover:bg-[#f9ebd5] hover:text-[#3A3435] hover:shadow-xl transition">
+              class="px-6 py-2 rounded-lg font-semibold bg-[#860914] text-[#ffffff] hover:bg-[#aa666c] hover:text-[#3A3435] hover:shadow-xl transition">
               完成註冊
             </button>
           </div>
@@ -105,8 +106,8 @@ const registerFields = [
   { model: 'birthday', placeholder: '生日', icon: 'fa-solid fa-cake-candles', type: 'date' },
 ]
 
-const barTypes = ['精釀酒吧', '威士忌吧', '餐酒館', '夜店', '酒廊']
-const barMoods = ['熱鬧', '浪漫', '放鬆', '時尚', '隱密']
+const barTypes = ['運動酒吧', '音樂酒吧', '學生酒吧', '餐酒館', '暢飲店']
+const barMoods = ['熱鬧歡樂', '浪漫私密', '復古懷舊', '高級精緻', '輕鬆悠閒']
 
 const goToPreferences = () => {
   step.value = 2
