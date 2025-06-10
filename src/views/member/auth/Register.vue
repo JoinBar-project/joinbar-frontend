@@ -32,6 +32,16 @@
             下一步
           </button>
         </div>
+        <!-- Step 2: 偏好選擇 -->
+        <div v-else class="space-y-4">
+            <h2 class="text-xl font-semibold mb-4">選擇你的酒吧偏好</h2>
+          <div>
+            <h3 class="text-lg font-medium mb-2">類型：</h3>
+          <div class="flex flex-wrap gap-2">
+              <button v-for="type in barTypes" :key="type" @click="toggleSelection(form.preferences.types, type)" :class="selectedClass(form.preferences.types.includes(type))"> {{ type }}
+              </button>
+          </div>
+        </div>
         
         </div>
       </div>
@@ -63,10 +73,23 @@ const registerFields = [
   { model: 'password', placeholder: '密碼', icon: 'fa-solid fa-key', type: 'password' },
   { model: 'birthday', placeholder: '生日', icon: 'fa-solid fa-cake-candles', type: 'date' },
 ]
+const barTypes = ['運動酒吧', '音樂酒吧', '學生酒吧', '餐酒館', '暢飲店']
+const barMoods = ['熱鬧歡樂', '浪漫私密', '復古懷舊', '高級精緻', '輕鬆悠閒']
 
 const goToPreferences = () => {
   step.value = 2
 }
+
+const toggleSelection = (arr, value) => {
+  const index = arr.indexOf(value)
+  if (index > -1) arr.splice(index, 1)
+  else arr.push(value)
+}
+
+const selectedClass = (selected) =>
+  `px-3 py-1 rounded-full border transition text-sm font-medium ${
+    selected ? 'bg-[#daa258] text-[#3A3435]' : 'bg-[#4a4546] text-[#f9ebd5]'
+  }`
 
 
 
