@@ -1,8 +1,8 @@
 <script setup>
 import { ref, watch } from 'vue'
-import { defineEmits } from 'vue'
 import { useEventStore } from '@/stores/event'
 import Hashtag from './Hashtag.vue'
+
 const emit = defineEmits(['submit'])
 const eventStore = useEventStore()
 
@@ -48,10 +48,8 @@ function handleSubmit() {
     imageUrl: eventImageUrl.value,
     price: Number(eventPrice.value),
     hostUser: 1, // 暫時寫死測試帳號，等會員系統建置完成
-    // 等會員系統建置完成，hostUser: hostUser.value
     tags: [...eventHashtags.value]
   }
-  console.log(payload)
   eventStore.createEvent(payload)
   emit('submit')
 }

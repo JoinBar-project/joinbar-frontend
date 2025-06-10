@@ -1,11 +1,12 @@
 <script setup>
-import { ref, onMounted, defineEmits, defineProps, watch } from 'vue'
+import { ref, onMounted, watch } from 'vue'
 import { useEventStore } from '@/stores/event'
 import Hashtag from './Hashtag.vue'
 
 const emit = defineEmits(['update', 'delete'])
-const eventStore = useEventStore()
 const props = defineProps({ eventId: String }) // 傳 id 進來
+
+const eventStore = useEventStore()
 
 const eventName = ref('')
 const barName = ref('')
@@ -15,7 +16,7 @@ const eventEndDate = ref('')
 const eventImageUrl = ref('')
 const eventPrice = ref('')
 const eventPeople = ref('')
-const hostUser = ref('') // 等會員系統建置完成
+// const hostUser = ref('') 等會員系統建置完成
 const eventHashtags = ref([])
 
 // 等加入地圖元件：暫時自動填寫地點
@@ -38,9 +39,7 @@ function toDatetimeLocal(dtString) {
 onMounted(async () => {
   if (props.eventId) {
     await eventStore.fetchEvent(props.eventId)
-    console.log(eventStore.event)
     const data = eventStore.event
-
     if (data && data.stringModel) {
       eventName.value = data.stringModel.name || ''
       barName.value = data.stringModel.barName || ''
@@ -50,7 +49,7 @@ onMounted(async () => {
       eventImageUrl.value = data.stringModel.imageUrl || ''
       eventPrice.value = data.stringModel.price || ''
       eventPeople.value = data.stringModel.maxPeople || ''
-      hostUser.value = data.stringModel.hostUser || ''
+      // hostUser.value = data.stringModel.hostUser || ''
       eventHashtags.value = data.tagIds || []
     }
   }
@@ -80,7 +79,6 @@ function handleUpdate() {
     hostUser: 1, // 與 FormCreate 一致，等會員系統
     tags: [...eventHashtags.value]
   }
-  console.log(payload)
   eventStore.updateEvent(props.eventId, payload)
   emit('update')
 }
