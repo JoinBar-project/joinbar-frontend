@@ -2,7 +2,13 @@
   <div class="text-gray-800 filter-panel-container">
     <div class="filter-header">
       <h2 class="filter-title">篩選</h2>
-      <button @click="closePanel" class="close-button">X</button>
+      <button @click="closePanel" class="close-button">
+        <img
+          src="@/assets/icons/mapicons/close-button.svg"
+          alt="關閉"
+          class="icon close-icon"
+        />
+      </button>
     </div>
 
     <div
@@ -18,9 +24,7 @@
         <button
           @click="removeAppliedFilter(filterItem.type, filterItem.value)"
           class="remove-filter-button"
-        >
-          X
-        </button>
+        ></button>
       </div>
     </div>
 
@@ -163,18 +167,32 @@
   </div>
 </template>
 
-<script setup>
+<script setup lang="ts">
+// 使用 lang="ts" 引入 TypeScript 支援
 import { ref, defineEmits, onMounted, watch, defineProps, computed } from "vue";
 
+// 定義篩選條件的介面，與你的 filters 物件結構對應
+export interface BarFilters {
+  address: string;
+  ratingSort: "any" | "highToLow" | "lowToHigh" | "mostPopular";
+  minDistance: number;
+  maxDistance: number;
+  minOpenHour: number;
+  minOpenMinute: number;
+  maxOpenHour: number;
+  maxOpenMinute: number;
+  tags: string[];
+}
+
 const emit = defineEmits([
-  "filter-changed",
-  "close-panel",
-  "remove-applied-filter",
+  "filter-changed", // 觸發篩選變更時發出
+  "close-panel", // 關閉面板時發出
 ]);
 
 const props = defineProps({
+  // 從 App.vue 接收初始篩選條件，以便在開啟面板時恢復上次的狀態
   initialFilters: {
-    type: Object,
+    type: Object as () => BarFilters, // 明確指定類型
     default: () => ({
       address: "any",
       ratingSort: "any",
@@ -189,20 +207,12 @@ const props = defineProps({
   },
 });
 
-// --- 響應式狀態 ---
-const filters = ref({
-  address: "any",
-  ratingSort: "any",
-  minDistance: 0,
-  maxDistance: 5000,
-  minOpenHour: 0,
-  minOpenMinute: 0,
-  maxOpenHour: 24,
-  maxOpenMinute: 0,
-  tags: [],
-});
+// --- 響應式狀態，用於保存當前篩選條件 ---
+// 使用 props.initialFilters 初始化本地狀態
+const filters = ref<BarFilters>({ ...props.initialFilters });
 
-const popularTags = [
+const popularTags: string[] = [
+  // 明確指定類型
   "信義區",
   "大安區",
   "中山區",
@@ -226,7 +236,11 @@ const popularTags = [
 
 // 格式化已套用篩選條件以供顯示
 const appliedFiltersForDisplay = computed(() => {
-  const displayFilters = [];
+  const displayFilters: {
+    label: string;
+    type: keyof BarFilters | "distance" | "openHour";
+    value: any;
+  }[] = []; // 明確指定類型
 
   if (filters.value.address !== "any") {
     displayFilters.push({
@@ -256,28 +270,31 @@ const appliedFiltersForDisplay = computed(() => {
     });
   }
 
+  // 距離篩選只在 minDistance 不為 0 或 maxDistance 不為 5000 時顯示
   if (filters.value.minDistance !== 0 || filters.value.maxDistance !== 5000) {
     const min = filters.value.minDistance;
     const max = filters.value.maxDistance;
     displayFilters.push({
       label: `距離: ${min} - ${max} 公尺`,
-      type: "distance",
+      type: "distance", // 自定義類型，用於移除邏輯
       value: { min, max },
     });
   }
 
   // 營業時間顯示格式化
+  // 只有當營業時間篩選條件不為預設值時才顯示
   if (
     filters.value.minOpenHour !== 0 ||
     filters.value.minOpenMinute !== 0 ||
     filters.value.maxOpenHour !== 24 ||
     filters.value.maxOpenMinute !== 0
   ) {
-    const formatTime = (h, m) => {
-    const hour = String(h).padStart(2, "0");
-    const minute = String(m).padStart(2, "0");
-    return `${hour}:${minute}`; // 只返回純文本的時間字串
-};
+    const formatTime = (h: number, m: number): string => {
+      // 明確指定類型
+      const hour = String(h).padStart(2, "0");
+      const minute = String(m).padStart(2, "0");
+      return `${hour}:${minute}`;
+    };
     const minTime = formatTime(
       filters.value.minOpenHour,
       filters.value.minOpenMinute
@@ -289,8 +306,9 @@ const appliedFiltersForDisplay = computed(() => {
 
     displayFilters.push({
       label: `營業時間: ${minTime} - ${maxTime}`,
-      type: "openHour",
+      type: "openHour", // 自定義類型，用於移除邏輯
       value: {
+        // 儲存完整的時間數值，方便移除時還原
         minHour: filters.value.minOpenHour,
         minMinute: filters.value.minOpenMinute,
         maxHour: filters.value.maxOpenHour,
@@ -299,11 +317,12 @@ const appliedFiltersForDisplay = computed(() => {
     });
   }
 
+  // 標籤篩選
   if (Array.isArray(filters.value.tags)) {
     filters.value.tags.forEach((tag) => {
       displayFilters.push({
         label: `標籤: ${tag}`,
-        type: "tag",
+        type: "tag", // 自定義類型
         value: tag,
       });
     });
@@ -317,15 +336,38 @@ const appliedFiltersForDisplay = computed(() => {
 // ----------------------------------------------------------------------
 
 // 移除已套用的單一篩選條件
-const removeAppliedFilter = (type, value) => {
-  emit("remove-applied-filter", { type, value });
+const removeAppliedFilter = (
+  type: keyof BarFilters | "distance" | "openHour" | "tag",
+  value: any
+) => {
+  // 明確指定類型
+  // 根據 type 和 value 來重置 filters 中的對應屬性
+  switch (type) {
+    case "address":
+      filters.value.address = "any";
+      break;
+    case "ratingSort":
+      filters.value.ratingSort = "any";
+      break;
+    case "distance":
+      filters.value.minDistance = 0;
+      filters.value.maxDistance = 5000;
+      break;
+    case "openHour":
+      filters.value.minOpenHour = 0;
+      filters.value.minOpenMinute = 0;
+      filters.value.maxOpenHour = 24;
+      filters.value.maxOpenMinute = 0;
+      break;
+    case "tag":
+      filters.value.tags = filters.value.tags.filter((t) => t !== value);
+      break;
+  }
+  applyFilters(); // 移除後重新應用篩選
 };
 
 // 更新距離數值輸入框，並同步篩選
 const updateDistance = () => {
-  filters.value.minDistance = Number(filters.value.minDistance);
-  filters.value.maxDistance = Number(filters.value.maxDistance);
-
   // 確保 min <= max
   if (filters.value.minDistance > filters.value.maxDistance) {
     filters.value.minDistance = filters.value.maxDistance;
@@ -345,7 +387,8 @@ const updateDistance = () => {
 
 // 更新距離滑動條，並同步篩選
 const updateDistanceRange = () => {
-  // 確保 min <= max
+  // 當滑桿改變時，只需更新 maxDistance，minDistance 由 watch 確保不會超過 maxDistance
+  // 但我們也確保 minDistance 不會大於新的 maxDistance
   if (filters.value.minDistance > filters.value.maxDistance) {
     filters.value.minDistance = filters.value.maxDistance;
   }
@@ -373,15 +416,25 @@ const updateOpenHours = () => {
   );
 
   // 處理 24:00 (如果 maxOpenHour 是 24，則 maxOpenMinute 必須是 0)
-  if (filters.value.maxOpenHour === 24 && filters.value.maxOpenMinute !== 0) {
+  if (filters.value.maxOpenHour === 24) {
     filters.value.maxOpenMinute = 0;
+  }
+  // 如果 minOpenHour 和 minOpenMinute 大於 maxOpenHour 和 maxOpenMinute，進行調整
+  if (
+    filters.value.minOpenHour * 60 + filters.value.minOpenMinute >
+    filters.value.maxOpenHour * 60 + filters.value.maxOpenMinute
+  ) {
+    // 簡單的處理：將最大時間設為最小時間
+    filters.value.maxOpenHour = filters.value.minOpenHour;
+    filters.value.maxOpenMinute = filters.value.minOpenMinute;
   }
 
   applyFilters();
 };
 
 // 切換標籤選中狀態
-const toggleTag = (tag) => {
+const toggleTag = (tag: string) => {
+  // 明確指定類型
   if (!Array.isArray(filters.value.tags)) {
     filters.value.tags = [];
   }
@@ -396,6 +449,7 @@ const toggleTag = (tag) => {
 
 // 觸發篩選條件變更事件
 const applyFilters = () => {
+  // 發送一個包含所有當前篩選狀態的完整物件
   emit("filter-changed", { ...filters.value });
 };
 
@@ -412,7 +466,7 @@ const resetFilters = () => {
     maxOpenMinute: 0,
     tags: [],
   };
-  applyFilters();
+  applyFilters(); // 重設後立即應用篩選
 };
 
 // 關閉篩選面板
@@ -428,25 +482,18 @@ const closePanel = () => {
 watch(
   () => props.initialFilters,
   (newFilters) => {
-    // 執行深度比較以避免不必要的更新
-    let needsUpdate = false;
-    for (const key in newFilters) {
-      if (
-        JSON.stringify(newFilters[key]) !== JSON.stringify(filters.value[key])
-      ) {
-        needsUpdate = true;
-        break;
-      }
-    }
-    if (needsUpdate) {
-      filters.value = { ...newFilters };
-    }
+    // 這裡我們直接賦值，確保本地狀態與 prop 同步
+    // 如果你希望更精細的控制（例如只更新某些屬性），可以手動遍歷
+    filters.value = { ...newFilters };
   },
-  { deep: true, immediate: true }
+  { deep: true, immediate: true } // 深度監聽，組件初始化時也執行一次
 );
 
 onMounted(() => {
-  applyFilters();
+  // 在組件掛載時，確保 initialFilters 已經應用到本地狀態
+  // 並發出一次初始篩選事件（如果需要）
+  // 由於 watch 設置了 immediate: true，這行通常可以省略，因為 watch 會在 mount 時觸發
+  // applyFilters(); // 根據你的需求決定是否在 mount 時立即發出一次
 });
 </script>
 
@@ -576,6 +623,11 @@ onMounted(() => {
 .close-button:hover {
   background-color: #f0f0f0;
   color: #555;
+}
+
+.close-button .close-icon {
+  width: 100%;
+  height: 100%;
 }
 
 .filter-section {
@@ -730,7 +782,7 @@ onMounted(() => {
 }
 
 .action-button {
-  padding: 14px 20px;
+  padding: 11px 9px;
   border-radius: 8px;
   font-size: 16px;
   font-weight: 600;
