@@ -11,6 +11,27 @@
               class="w-full outline-none placeholder-[#f9ebd5] bg-transparent text-[#f9ebd5]"/>
           </div>
 
+          <!-- 快速加入 -->
+          <div class="text-center text-sm text-gray-300 my-4 flex items-center">
+            <div class="flex-grow h-px bg-gray-400"></div>
+            <span class="mx-2">或</span>
+            <div class="flex-grow h-px bg-gray-400"></div>
+          </div>
+          <div class="flex space-x-2 justify-center">
+            <button class="btn bg-white text-black border-[#e5e5e5] border-2 flex items-center">
+              <img src="/google.svg" alt="Google" class="w-5 h-5 mr-2" /> Google 加入
+            </button>
+            <button class="btn bg-[#03C755] text-white border-[#00b544] flex items-center">
+              <img src="/line.svg" alt="LINE" class="w-5 h-5 mr-2" /> LINE 加入
+            </button>
+          </div>
+          <!-- 快速加入會員 -->
+          <button
+            @click="goToPreferences"
+            class="block mx-auto mt-6 px-6 py-2 rounded-lg font-semibold bg-[#daa258] text-[#3A3435] hover:bg-[#f9ebd5] hover:text-[#3A3435] hover:shadow-xl transition">
+            下一步
+          </button>
+        </div>
         
         </div>
       </div>
@@ -42,4 +63,11 @@ const registerFields = [
   { model: 'password', placeholder: '密碼', icon: 'fa-solid fa-key', type: 'password' },
   { model: 'birthday', placeholder: '生日', icon: 'fa-solid fa-cake-candles', type: 'date' },
 ]
+
+const goToPreferences = () => {
+  step.value = 2
+}
+
+
+
 </script>
