@@ -1,5 +1,5 @@
 <script setup>
-import { ref, watch, defineEmits } from 'vue'
+import { ref, watch } from 'vue'
 const emit = defineEmits(['update:modelValue'])
 
 // 定義props：從上層給我一包資料，如果沒給，我自己用一份新的
