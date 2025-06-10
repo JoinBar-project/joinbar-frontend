@@ -38,8 +38,18 @@
           <div>
             <h3 class="text-lg font-medium mb-2">類型：</h3>
           <div class="flex flex-wrap gap-2">
-              <button v-for="type in barTypes" :key="type" @click="toggleSelection(form.preferences.types, type)" :class="selectedClass(form.preferences.types.includes(type))"> {{ type }}
+              <button v-for="type in barTypes" :key="type" @click="toggleSelection(form.preferences.types, type)" :class="selectedClass(form.preferences.types.includes(type))"> 
+                {{ type }}
               </button>
+          </div>
+        </div>
+
+        <div>
+          <h3 class="text-lg font-medium mb-2">氛圍：</h3>
+          <div class="flex flex-wrap gap-2">
+            <button v-for="mood in barMoods" :key="mood" @click="toggleSelection(form.preferences.moods, mood)" :class="selectedClass(form.preferences.moods.includes(mood))">
+              {{ mood }}
+            </button>
           </div>
         </div>
         
