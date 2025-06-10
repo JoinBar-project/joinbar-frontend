@@ -17,11 +17,6 @@
     <div v-if="isLogin" class="mt-6 space-y-4">
         <div class="space-y-4">
       <div class="flex items-center border border-gray-300 rounded px-3 py-2">
-        <i class="fa-solid fa-phone text-gray-400 mr-2"></i>
-        <input v-model="phone" type="tel" :placeholder="phonePlaceholder" class="w-full outline-none placeholder-[#860914] text-sm text-[#860914] ml-2"/>
-      </div>
-
-      <div class="flex items-center border border-gray-300 rounded px-3 py-2">
         <i class="fa-solid fa-envelope text-gray-400 mr-2"></i>
         <input type="email" placeholder="電子郵件" class="w-full outline-none placeholder-[#860914] text-sm text-[#860914] ml-2"/>
       </div>
