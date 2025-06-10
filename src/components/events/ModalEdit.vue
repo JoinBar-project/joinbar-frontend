@@ -1,5 +1,5 @@
 <script setup>
-import { ref } from 'vue'
+import { useEventForm } from '@/composable/useEventForm'
 import FormUpdate from './FormUpdate.vue'
 import AlertModal from '@/components/AlertModal.vue'
 
@@ -11,29 +11,21 @@ const props = defineProps({
   }
 })
 
-const showForm = ref(false)
-const showAlert = ref(false)
+const {
+  showForm,
+  showAlert,
+  openForm,
+  closeForm,
+  handleAlertAccept,
+  handleAlertDeny,
+  overlayClick
+} = useEventForm()
 
-function openForm() {
-  showForm.value = true
-}
-function closeForm() {
-  showAlert.value = true
-}
-function handleAlertAccept() {
-  showForm.value = false
-  showAlert.value = false
-}
-function handleAlertDeny() {
-  showAlert.value = false
-}
-function overlayClick(event) {
-  if (event.target === event.currentTarget) closeForm()
-}
 function handleUpdate() {
   showForm.value = false
   emit('update')
 }
+
 function handleDelete() {
   showForm.value = false
 }
@@ -135,4 +127,3 @@ function handleDelete() {
   color: #d4624e;
 }
 </style>
-

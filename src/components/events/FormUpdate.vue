@@ -1,94 +1,37 @@
 <script setup>
-import { ref, onMounted, watch } from 'vue'
-import { useEventStore } from '@/stores/event'
+import { useEventForm } from '@/composable/useEventForm'
 import Hashtag from './Hashtag.vue'
 
 const emit = defineEmits(['update', 'delete'])
-const props = defineProps({ eventId: String }) // 傳 id 進來
+const props = defineProps({ eventId: String })
 
-const eventStore = useEventStore()
+const {
+  eventName,
+  barName,
+  eventLocation,
+  eventStartDate,
+  eventEndDate,
+  eventImageUrl,
+  eventPrice,
+  eventPeople,
+  eventHashtags,
+  handleUpdate,
+  handleDelete
+} = useEventForm(props.eventId)
 
-const eventName = ref('')
-const barName = ref('')
-const eventLocation = ref('')
-const eventStartDate = ref('')
-const eventEndDate = ref('')
-const eventImageUrl = ref('')
-const eventPrice = ref('')
-const eventPeople = ref('')
-// const hostUser = ref('') 等會員系統建置完成
-const eventHashtags = ref([])
-
-// 等加入地圖元件：暫時自動填寫地點
-watch(barName, (newVal) => {
-  if (newVal) {
-    eventLocation.value = '台北市中正區中正路100號'
-  } else {
-    eventLocation.value = ''
+function onUpdate() {
+  const success = handleUpdate(props.eventId)
+  if (success) {
+    emit('update')
   }
-})
-
-function toDatetimeLocal(dtString) {
-  if (!dtString) return '';
-  // 直接 new Date 解析，再 format
-  const d = new Date(dtString);
-  const pad = n => n.toString().padStart(2, '0');
-  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
 }
 
-onMounted(async () => {
-  if (props.eventId) {
-    await eventStore.fetchEvent(props.eventId)
-    const data = eventStore.event
-    if (data && data.stringModel) {
-      eventName.value = data.stringModel.name || ''
-      barName.value = data.stringModel.barName || ''
-      eventLocation.value = data.stringModel.location || ''
-      eventStartDate.value = toDatetimeLocal(data.stringModel.startDate)
-      eventEndDate.value = toDatetimeLocal(data.stringModel.endDate)
-      eventImageUrl.value = data.stringModel.imageUrl || ''
-      eventPrice.value = data.stringModel.price || ''
-      eventPeople.value = data.stringModel.maxPeople || ''
-      // hostUser.value = data.stringModel.hostUser || ''
-      eventHashtags.value = data.tagIds || []
-    }
-  }
-})
-
-function handleUpdate() {
-  if (
-    !eventName.value ||
-    !barName.value ||
-    !eventStartDate.value ||
-    !eventEndDate.value ||
-    !eventPrice.value ||
-    !eventPeople.value
-  ) {
-    alert('請完整填寫所有欄位！')
-    return
-  }
-  const payload = {
-    name: eventName.value,
-    barName: barName.value,
-    location: eventLocation.value,
-    startDate: eventStartDate.value,
-    endDate: eventEndDate.value,
-    maxPeople: Number(eventPeople.value),
-    imageUrl: eventImageUrl.value,
-    price: Number(eventPrice.value),
-    hostUser: 1, // 與 FormCreate 一致，等會員系統
-    tags: [...eventHashtags.value]
-  }
-  eventStore.updateEvent(props.eventId, payload)
-  emit('update')
-}
-
-function handleDelete() {
-  eventStore.deleteEvent(props.eventId)
+function onDelete() {
+  handleDelete(props.eventId)
   emit('delete')
 }
 
-function handleCancel() {
+function onCancel() {
   emit('update')
 }
 </script>
@@ -134,9 +77,9 @@ function handleCancel() {
         <div class="form-right"></div>
       </div>
       <div class="form-bottom">
-        <button type="button" class="btn-delete" @click="handleDelete">刪除活動</button>
-        <button type="button" class="btn-cancle" @click="handleCancel">取消修改</button>
-        <button type="button" class="btn-confirm" @click="handleUpdate">完成發佈</button>
+        <button type="button" class="btn-delete" @click="onDelete">刪除活動</button>
+        <button type="button" class="btn-cancle" @click="onCancel">取消修改</button>
+        <button type="button" class="btn-confirm" @click="onUpdate">完成發佈</button>
       </div>
     </div>
   </section>

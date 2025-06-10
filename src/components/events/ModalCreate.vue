@@ -1,27 +1,18 @@
 <script setup>
-import { ref } from 'vue'
+import { useEventForm } from '@/composable/useEventForm'
 import FormCreate from './FormCreate.vue'
 import AlertModal from '@/components/AlertModal.vue'
 
-const showForm = ref(false)
-const showAlert = ref(false)
+const {
+  showForm,
+  showAlert,
+  openForm,
+  closeForm,
+  handleAlertAccept,
+  handleAlertDeny,
+  overlayClick
+} = useEventForm()
 
-function openForm() {
-  showForm.value = true
-}
-function closeForm() {
-  showAlert.value = true
-}
-function handleAlertAccept() {
-  showForm.value = false
-  showAlert.value = false
-}
-function handleAlertDeny() {
-  showAlert.value = false
-}
-function overlayClick(event) {
-  if (event.target === event.currentTarget) closeForm()
-}
 function handleCreate() {
   showForm.value = false
 }

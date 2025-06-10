@@ -1,59 +1,28 @@
 <script setup>
-import { ref, watch } from 'vue'
-import { useEventStore } from '@/stores/event'
+import { useEventForm } from '@/composable/useEventForm'
 import Hashtag from './Hashtag.vue'
 
 const emit = defineEmits(['submit'])
-const eventStore = useEventStore()
 
-const eventName = ref('')
-const barName = ref('')
-const eventLocation = ref('')
-const eventStartDate = ref('')
-const eventEndDate = ref('')
-const eventImageUrl = ref('')
-const eventPrice = ref('')
-const eventPeople = ref('')
-// const hostUser = ref('') 等會員系統建置完成
-const eventHashtags = ref([])
+const {
+  eventName,
+  barName,
+  eventLocation,
+  eventStartDate,
+  eventEndDate,
+  eventImageUrl,
+  eventPrice,
+  eventPeople,
+  eventHashtags,
+  handleCreate
+} = useEventForm()
 
-// 等加入地圖元件：暫時自動填寫地點
-watch(barName, (newVal) => {
-  if (newVal) {
-    eventLocation.value = '台北市中正區中正路100號'
-  } else {
-    eventLocation.value = ''
+function onSubmit() {
+  const success = handleCreate()
+  if (success) {
+    emit('submit')
   }
-})
-
-function handleSubmit() {
-  if (
-    !eventName.value ||
-    !barName.value ||
-    !eventStartDate.value ||
-    !eventEndDate.value ||
-    !eventPrice.value ||
-    !eventPeople.value
-  ) {
-    alert('請完整填寫所有欄位！')
-    return
-  }
-  const payload = {
-    name: eventName.value,
-    barName: barName.value,
-    location: eventLocation.value,
-    startDate: eventStartDate.value,
-    endDate: eventEndDate.value,
-    maxPeople: Number(eventPeople.value),
-    imageUrl: eventImageUrl.value,
-    price: Number(eventPrice.value),
-    hostUser: 1, // 暫時寫死測試帳號，等會員系統建置完成
-    tags: [...eventHashtags.value]
-  }
-  eventStore.createEvent(payload)
-  emit('submit')
 }
-
 </script>
 
 <template>
@@ -98,7 +67,7 @@ function handleSubmit() {
         <div class="form-right"></div>
       </div>
       <div class="form-bottom">
-        <button type="button" @click="handleSubmit">發佈</button>
+        <button type="button" @click="onSubmit">發佈</button>
       </div>
     </div>
   </section>
