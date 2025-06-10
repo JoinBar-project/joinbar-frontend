@@ -13,6 +13,7 @@ import Register from "@/views/member/auth/Register.vue";
 
 const routes = [
   { path: '/home', name: 'Home', component: Home },
+  { path: '/register', name: 'register', component: Register },
   { path: '/login', name: 'Login', component: Login },
   { path: '/register', name: 'Register', component: Register },
   { path: '/events', name: 'Event', component: Event },
