@@ -24,7 +24,13 @@
         <button
           @click="removeAppliedFilter(filterItem.type, filterItem.value)"
           class="remove-filter-button"
-        ></button>
+        >
+          <img
+            src="@/assets/icons/mapicons/tag-close-icon.svg"
+            alt="移除篩選"
+            class="remove-filter-icon"
+          />
+        </button>
       </div>
     </div>
 
@@ -534,17 +540,29 @@ onMounted(() => {
 .remove-filter-button {
   background: none;
   border: none;
-  color: black;
   margin-left: 8px;
-  font-size: 14px;
-  font-weight: bold;
   cursor: pointer;
   opacity: 0.8;
   transition: opacity 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background-color: rgba(0, 0, 0, 0.05);
 }
 
 .remove-filter-button:hover {
   opacity: 1;
+  background-color: rgba(0, 0, 0, 0.1);
+}
+
+.remove-filter-icon {
+  width: 12px;
+  height: 12px;
+  color: #333;
 }
 
 .filter-panel-container {
@@ -817,6 +835,4 @@ onMounted(() => {
   background: #fff;
   text-align: left;
 }
-
-/* 移除隱藏時鐘 icon 的 CSS，恢復原生功能 */
 </style>

@@ -81,7 +81,7 @@
 <script setup>
 import { ref, onMounted, computed, watch } from "vue";
 import debounce from "lodash/debounce";
-import dayjs from 'dayjs';
+import dayjs from "dayjs";
 
 // --- 引入組件與 Google Maps Composable ---
 import FilterPanel from "../../components/map/FilterPanel.vue";
@@ -203,16 +203,20 @@ const filteredBars = computed(() => {
       const openHoursStr = bar.openingHours?.weekday_text?.[0] || "";
       const match = openHoursStr.match(/(\d{2}):(\d{2})\s*-\s*(\d{2}):(\d{2})/);
       if (!match) return false;
-      const format = 'HH:mm';
+      const format = "HH:mm";
       let barOpen = dayjs(`${match[1]}:${match[2]}`, format);
       let barClose = dayjs(`${match[3]}:${match[4]}`, format);
       if (barClose.isBefore(barOpen)) {
-        barClose = barClose.add(1, 'day'); // 跨日
+        barClose = barClose.add(1, "day"); // 跨日
       }
-      let filterOpen = dayjs().hour(currentFilters.value.minOpenHour).minute(currentFilters.value.minOpenMinute);
-      let filterClose = dayjs().hour(currentFilters.value.maxOpenHour).minute(currentFilters.value.maxOpenMinute);
+      let filterOpen = dayjs()
+        .hour(currentFilters.value.minOpenHour)
+        .minute(currentFilters.value.minOpenMinute);
+      let filterClose = dayjs()
+        .hour(currentFilters.value.maxOpenHour)
+        .minute(currentFilters.value.maxOpenMinute);
       if (filterClose.isBefore(filterOpen)) {
-        filterClose = filterClose.add(1, 'day');
+        filterClose = filterClose.add(1, "day");
       }
       // 判斷時間區間是否有重疊
       return barOpen.isBefore(filterClose) && barClose.isAfter(filterOpen);

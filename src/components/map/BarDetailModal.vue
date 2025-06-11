@@ -231,11 +231,6 @@
           <button class="start-event-button" @click="goToBarActivities">
             發起活動
             <img
-              src="@/assets/icons/mapicons/dropdown-arrow-icon.svg"
-              alt="下拉"
-              class="icon-dropdown"
-            />
-            <img
               src="@/assets/icons/mapicons/plus-icon.svg"
               alt="加號"
               class="icon-plus"
@@ -740,7 +735,6 @@ const handleFileUpload = (event) => {
   background-color: #c37b1c;
 }
 
-.icon-dropdown,
 .icon-plus {
   width: 20px;
   height: 20px;
@@ -828,7 +822,7 @@ const handleFileUpload = (event) => {
     padding: 8px 15px;
     font-size: 15px;
   }
-  .icon-dropdown,
+
   .icon-plus {
     width: 18px;
     height: 18px;
