@@ -75,13 +75,19 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref } from 'vue';
+import Swal from 'sweetalert2';
 
 const isLogin = ref(true)
 const showPassword = ref(false)
 
-const phone = ref('')
-const phonePlaceholder = ref('手機號碼')
+export default {
+  methods: {
+    showAlert() {
+      Swal.fire('Hello world!')
+    }
+  }
+}
 </script>
 
 <style scoped>
