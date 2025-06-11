@@ -112,7 +112,6 @@ const step = ref(1)
 const form = ref({
   name: '',
   nickname: '',
-  phone: '',
   password: '',
   birthday: '',
   preferences: {
