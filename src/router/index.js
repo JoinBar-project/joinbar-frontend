@@ -12,6 +12,7 @@ import Login from "@/views/member/auth/Login.vue"
 // import Register from '@/views/member/auth/Register.vue';
 
 const routes = [
+  { path: '/', redirect: '/home' },
   { path: '/home', name: 'Home', component: Home },
   // { path: '/register', name: 'register', component: Register },
   { path: '/login', name: 'Login', component: Login },
