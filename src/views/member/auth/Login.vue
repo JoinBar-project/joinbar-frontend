@@ -55,10 +55,15 @@
         <button class="btn bg-white text-black border-[#e5e5e5] border-2  ">
           <img src="/google.svg" alt="Google logo" class="w-5 h-5 mr-2" />
         Login with Google
-      </button>
-        <button class="btn bg-[#03C755] text-white border-[#00b544]">
+        </button>
+        <button 
+          @click="lineLogin"
+          :disabled="isLoading"
+          class="btn bg-[#03C755] text-white border-[#00b544] hover:bg-[#00b544] transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+        >
           <img src="/line.svg" alt="Line logo" class="w-5 h-5 mr-2" />
-          Login with LINE
+          <span v-if="isLineLoading">載入中...</span>
+          <span v-else>Login with LINE</span>
         </button>
       </div>
 
@@ -95,13 +100,12 @@ import axios from 'axios';
 import { useRouter } from 'vue-router';
 
 const router = useRouter();
-
 const isLogin = ref(true);
 const showPassword = ref(false);
 const isLoading = ref(false);
 const isEmailLoading = ref(false);
+const errorMessage = ref('');
 const isLineLoading = ref(false);
-const errorMessage = ref('')
 
 const loginForm = ref({
   email: '',
@@ -114,10 +118,9 @@ const clearError = () => {
 
 const ACCESS_TOKEN_NAME = 'access_token';
 const REFRESH_TOKEN_NAME = 'refresh_token';
-
 const API_BASE_URL = 'http://localhost:3000/api';
 
-axios.defaults.withCredentials = true
+axios.defaults.withCredentials = true;
 
 // 一般 Email 登入
 const emailLogin = async () => {
@@ -206,11 +209,96 @@ const emailLogin = async () => {
   }
 };
 
+// LINE 登入
+const lineLogin = async () => {
+  isLineLoading.value = true;
+  isLoading.value = true;
+  errorMessage.value = '';
+
+  try {
+    // 1. 取得 LINE 授權 URL
+    const resp = await axios.get(`${API_BASE_URL}/auth/line/url`)
+    console.log('LINE 授權 URL 取得成功:', resp.data)
+
+    if (resp.data.authUrl) {
+      // 2. 跳轉到 LINE 授權頁面
+      window.location.href = resp.data.authUrl
+    } else {
+      throw new Error('無法取得 LINE 授權連結')
+    }
+  } catch(err) {
+    console.error('LINE 登入失敗:', err)
+
+    if(err.response) {
+      errorMessage.value = err.response.data.error || 'LINE 登入失敗'
+      Swal.fire({
+        title: '發生未知錯誤!',
+        text: errorMessage.value,
+        icon: 'error',
+        confirmButtonText: '確認'
+      });
+    } else if(err.request) {
+      errorMessage.value = '網路連線失敗，請檢查網路狀態'
+      Swal.fire({
+        title: '網路發生錯誤!',
+        text: errorMessage.value,
+        icon: 'error',
+        confirmButtonText: '確認'
+      });
+    } else {
+      errorMessage.value = 'LINE 登入發生錯誤，請稍後再試'
+      Swal.fire({
+        title: '發生未知錯誤!',
+        text: errorMessage.value,
+        icon: 'error',
+        confirmButtonText: '確認'
+      });
+    }
+  } finally {
+    isLineLoading.value = false;
+    isLoading.value = false;
+  }
+}
+
+// 檢查是否從 LINE 登入回調返回
+const checkLineCallback = async () => {
+  const urlParams = new URLSearchParams(window.location.search)
+  const success = urlParams.get('success')
+  const error = urlParams.get('error')
+  
+  if (success === 'true') {
+    // LINE 登入成功
+    await Swal.fire({
+      title: 'LINE 登入成功!',
+      text: '歡迎使用 LINE 登入',
+      icon: 'success',
+      confirmButtonText: '開始使用'
+    })
+    // 清除 URL 參數並跳轉到首頁
+    window.history.replaceState({}, document.title, window.location.pathname)
+    router.push('/home')
+  } else if(error) {
+    // LINE 登入失敗
+    const errorMsg = decodeURIComponent(error);
+    errorMessage.value = errorMsg;
+    // 加入錯誤彈窗
+    await Swal.fire({
+      title: 'LINE 登入失敗',
+      text: errorMsg,
+      icon: 'error',
+      confirmButtonText: '確認'
+    });
+    // 清除 URL 參數
+    window.history.replaceState({}, document.title, window.location.pathname)
+  }
+}
+
+// 組件掛載時檢查 LINE 登入狀態
+onMounted(() => {
+  checkLineCallback()
+});
 </script>
 
 <style scoped>
 
 </style>
-
-
-
