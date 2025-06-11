@@ -1,5 +1,7 @@
 <script setup>
 import FormModal from '@/components/events/FormModal.vue'
+
+
 </script>
 
 <template>
@@ -10,6 +12,7 @@ import FormModal from '@/components/events/FormModal.vue'
   </div>
 
   <FormModal />
+
 
 </template>
 
