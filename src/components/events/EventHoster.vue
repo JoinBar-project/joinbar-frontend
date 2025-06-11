@@ -24,25 +24,25 @@
           <div>
             <img class="badge-img" src="@/components/events/picture/榮譽icon.png" alt="新人登場">
           </div>
-          <p>新人登場</p>
+          <p class="badge-title">新人登場</p>
         </div>
         <div class="badge badge-card-2">
           <div>
             <img class="badge-img" src="@/components/events/picture/榮譽icon.png" alt="新人登場">
           </div>
-          <p>新人登場</p>
+          <p class="badge-title">新人登場</p>
         </div>
         <div class="badge badge-card-3">
           <div>
             <img class="badge-img" src="@/components/events/picture/榮譽icon.png" alt="新人登場">
           </div>
-          <p>新人登場</p>
+          <p class="badge-title">新人登場</p>
         </div>
         <div class="badge badge-card-4">
           <div>
             <img class="badge-img" src="@/components/events/picture/榮譽icon.png" alt="新人登場">
           </div>
-          <p>新人登場</p>
+          <p class="badge-title">新人登場</p>
         </div>
       </div>      
     </div>
@@ -182,15 +182,22 @@
   height: 14px;
   clip-path: polygon(100% 0, 0 50%, 100% 100%);
   background-color: #fff;
-  flex-shrink: 0;
 }
 
 .badge{
+  display: block;
   text-align: center;
+  width: 80px;
+  height: 80px;
+}
+
+.badge-title{
+  padding-top: 50px;
 }
 
 .badge-card-1{
   grid-column: 6 / span 1; grid-row: 3;
+  align-items: center;
 }
 
 .badge-card-2{
@@ -207,6 +214,8 @@
 
 .badge-img{
   width: 100%;
+  aspect-ratio: 1 / 1; 
+  object-fit: cover; 
 }
 
 </style>

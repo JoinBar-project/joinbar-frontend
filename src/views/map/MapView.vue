@@ -30,6 +30,7 @@
 
 <script setup>
 import { ref, onMounted, onBeforeUnmount } from 'vue'
+
 import debounce from 'lodash/debounce'
 
 const searchQuery = ref('')
@@ -38,6 +39,7 @@ const mapContainer = ref(null)
 
 // 列表消失
 const inputArea = ref(null)
+
 
 // 定義 loading 狀態
 const isSearching = ref(false)
@@ -84,6 +86,7 @@ onMounted(async () => {
     initMap(defaultCenter)
 
     navigator.geolocation.getCurrentPosition(
+
       (position) => {
         const userLocation = {
           lat: position.coords.latitude,
@@ -287,12 +290,13 @@ function handleSearch() {
     alert('請輸入搜尋關鍵字')
     return
   }
+
   searchPlaceByText(searchQuery.value, map.getCenter(), 5000)
 }
 
 function searchPlaceByText(query) {
   isSearching.value = true
-  
+
   placesService.textSearch(
     {
       query,
@@ -348,6 +352,7 @@ function searchPlaceByText(query) {
 
               marker.addListener('click', () => {
                 const content = `
+>>>>>>> dev
                   <strong>${details.name}</strong><br/>
                   地址：${details.formatted_address}<br/>
                   評分：${details.rating}<br/>
@@ -563,7 +568,5 @@ function getCurrentLocation() {
   font-size: 20px;
   color: #333;
 }
-
-
 
 </style>
