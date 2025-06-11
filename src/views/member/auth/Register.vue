@@ -123,7 +123,6 @@ const form = ref({
 const registerFields = [
   { model: 'name', placeholder: '姓名', icon: 'fa-solid fa-user', type: 'text' },
   { model: 'nickname', placeholder: '暱稱', icon: 'fa-solid fa-user-pen', type: 'text' },
-  { model: 'phone', placeholder: '手機號碼', icon: 'fa-solid fa-phone', type: 'tel' },
   { model: 'password', placeholder: '密碼', icon: 'fa-solid fa-key', type: 'password' },
   { model: 'birthday', placeholder: '生日', icon: 'fa-solid fa-cake-candles', type: 'date' },
 ]
