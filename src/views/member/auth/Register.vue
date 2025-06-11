@@ -132,7 +132,7 @@ const barMoods = ['熱鬧歡樂', '浪漫私密', '復古懷舊', '高級精緻'
 
 const goToPreferences = () => {
   // 簡單驗證
-  if (!form.value.name || !form.value.phone || !form.value.password) {
+  if (!form.value.name || !form.value.password) {
     alert('請填寫完整資訊')
     return
   }
