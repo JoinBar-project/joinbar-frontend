@@ -81,6 +81,7 @@
 <script setup>
 import { ref, onMounted, computed, watch } from "vue";
 import debounce from "lodash/debounce";
+import dayjs from 'dayjs';
 
 // --- 引入組件與 Google Maps Composable ---
 import FilterPanel from "../../components/map/FilterPanel.vue";
@@ -89,7 +90,7 @@ import BarDetailModal from "../../components/map/BarDetailModal.vue";
 import { useGoogleMaps } from "@/composable/useGoogleMaps";
 
 // 環境變數中的 Google Maps API Key
-const googleMapsApiKey = import.meta.env.VITE_MAPS_API_KEY;
+const googleMapsApiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
 
 // --- 響應式狀態 ---
 const isLoading = ref(false);
@@ -201,37 +202,20 @@ const filteredBars = computed(() => {
     barsToFilter = barsToFilter.filter((bar) => {
       const openHoursStr = bar.openingHours?.weekday_text?.[0] || "";
       const match = openHoursStr.match(/(\d{2}):(\d{2})\s*-\s*(\d{2}):(\d{2})/);
-
       if (!match) return false;
-
-      let barOpenMinutes = parseInt(match[1]) * 60 + parseInt(match[2]);
-      let barCloseMinutes = parseInt(match[3]) * 60 + parseInt(match[4]);
-      if (barCloseMinutes < barOpenMinutes) {
-        barCloseMinutes += 24 * 60; // 處理酒吧跨日營業
+      const format = 'HH:mm';
+      let barOpen = dayjs(`${match[1]}:${match[2]}`, format);
+      let barClose = dayjs(`${match[3]}:${match[4]}`, format);
+      if (barClose.isBefore(barOpen)) {
+        barClose = barClose.add(1, 'day'); // 跨日
       }
-
-      const filterMinMinutes =
-        currentFilters.value.minOpenHour * 60 +
-        currentFilters.value.minOpenMinute;
-      let filterMaxMinutes =
-        currentFilters.value.maxOpenHour * 60 +
-        currentFilters.value.maxOpenMinute;
-      if (
-        currentFilters.value.maxOpenHour === 24 &&
-        currentFilters.value.maxOpenMinute === 0
-      ) {
-        filterMaxMinutes = 24 * 60; // 24:00 應視為當天結束
+      let filterOpen = dayjs().hour(currentFilters.value.minOpenHour).minute(currentFilters.value.minOpenMinute);
+      let filterClose = dayjs().hour(currentFilters.value.maxOpenHour).minute(currentFilters.value.maxOpenMinute);
+      if (filterClose.isBefore(filterOpen)) {
+        filterClose = filterClose.add(1, 'day');
       }
-      if (filterMaxMinutes < filterMinMinutes) {
-        filterMaxMinutes += 24 * 60; // 處理篩選條件的跨日
-      }
-
-      // 檢查時間區間是否有重疊
-      // (barOpen, barClose) 與 (filterMin, filterMax) 重疊
-      return (
-        Math.max(barOpenMinutes, filterMinMinutes) <
-        Math.min(barCloseMinutes, filterMaxMinutes)
-      );
+      // 判斷時間區間是否有重疊
+      return barOpen.isBefore(filterClose) && barClose.isAfter(filterOpen);
     });
   }
 

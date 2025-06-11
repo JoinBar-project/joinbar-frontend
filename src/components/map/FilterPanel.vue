@@ -98,45 +98,32 @@
     </div>
 
     <div class="filter-section">
-      <label class="text-gray-800 filter-label">營業時間</label>
-      <div class="time-inputs-container">
-        <div class="time-input-group">
+      <label class="filter-label">營業時間</label>
+      <div class="time-picker-vertical">
+        <div class="time-picker-row-single">
+          <label class="time-label"></label>
           <input
-            type="number"
-            v-model.number="filters.minOpenHour"
-            @input="updateOpenHours"
-            class="time-number-input"
-            min="0"
-            max="23"
-          />
-          <span>:</span>
-          <input
-            type="number"
-            v-model.number="filters.minOpenMinute"
-            @input="updateOpenHours"
-            class="time-number-input"
-            min="0"
-            max="59"
+            type="time"
+            lang="en-GB"
+            v-model="openTime"
+            @change="updateOpenHours"
+            class="time-picker-input"
+            step="900"
+            min="00:00"
+            max="23:59"
           />
         </div>
-        <span>-</span>
-        <div class="time-input-group">
+        <div class="time-picker-row-single">
+          <label class="time-label"></label>
           <input
-            type="number"
-            v-model.number="filters.maxOpenHour"
-            @input="updateOpenHours"
-            class="time-number-input"
-            min="0"
-            max="24"
-          />
-          <span>:</span>
-          <input
-            type="number"
-            v-model.number="filters.maxOpenMinute"
-            @input="updateOpenHours"
-            class="time-number-input"
-            min="0"
-            max="59"
+            type="time"
+            lang="en-GB"
+            v-model="closeTime"
+            @change="updateOpenHours"
+            class="time-picker-input"
+            step="900"
+            min="00:00"
+            max="23:59"
           />
         </div>
       </div>
@@ -230,6 +217,10 @@ const popularTags: string[] = [
   "復古",
 ];
 
+// --- 響應式狀態 ---
+const openTime = ref("00:00");
+const closeTime = ref("24:00");
+
 // ----------------------------------------------------------------------
 // 計算屬性
 // ----------------------------------------------------------------------
@@ -238,9 +229,9 @@ const popularTags: string[] = [
 const appliedFiltersForDisplay = computed(() => {
   const displayFilters: {
     label: string;
-    type: keyof BarFilters | "distance" | "openHour";
+    type: keyof BarFilters | "distance" | "openHour" | "tags";
     value: any;
-  }[] = []; // 明確指定類型
+  }[] = [];
 
   if (filters.value.address !== "any") {
     displayFilters.push({
@@ -322,7 +313,7 @@ const appliedFiltersForDisplay = computed(() => {
     filters.value.tags.forEach((tag) => {
       displayFilters.push({
         label: `標籤: ${tag}`,
-        type: "tag", // 自定義類型
+        type: "tags", // 改為複數
         value: tag,
       });
     });
@@ -337,7 +328,7 @@ const appliedFiltersForDisplay = computed(() => {
 
 // 移除已套用的單一篩選條件
 const removeAppliedFilter = (
-  type: keyof BarFilters | "distance" | "openHour" | "tag",
+  type: keyof BarFilters | "distance" | "openHour" | "tags",
   value: any
 ) => {
   // 明確指定類型
@@ -359,7 +350,7 @@ const removeAppliedFilter = (
       filters.value.maxOpenHour = 24;
       filters.value.maxOpenMinute = 0;
       break;
-    case "tag":
+    case "tags":
       filters.value.tags = filters.value.tags.filter((t) => t !== value);
       break;
   }
@@ -397,38 +388,12 @@ const updateDistanceRange = () => {
 
 // 更新營業時間輸入框，並同步篩選
 const updateOpenHours = () => {
-  // 確保小時和分鐘在有效範圍內
-  filters.value.minOpenHour = Math.max(
-    0,
-    Math.min(Number(filters.value.minOpenHour), 23)
-  );
-  filters.value.minOpenMinute = Math.max(
-    0,
-    Math.min(Number(filters.value.minOpenMinute), 59)
-  );
-  filters.value.maxOpenHour = Math.max(
-    0,
-    Math.min(Number(filters.value.maxOpenHour), 24)
-  );
-  filters.value.maxOpenMinute = Math.max(
-    0,
-    Math.min(Number(filters.value.maxOpenMinute), 59)
-  );
-
-  // 處理 24:00 (如果 maxOpenHour 是 24，則 maxOpenMinute 必須是 0)
-  if (filters.value.maxOpenHour === 24) {
-    filters.value.maxOpenMinute = 0;
-  }
-  // 如果 minOpenHour 和 minOpenMinute 大於 maxOpenHour 和 maxOpenMinute，進行調整
-  if (
-    filters.value.minOpenHour * 60 + filters.value.minOpenMinute >
-    filters.value.maxOpenHour * 60 + filters.value.maxOpenMinute
-  ) {
-    // 簡單的處理：將最大時間設為最小時間
-    filters.value.maxOpenHour = filters.value.minOpenHour;
-    filters.value.maxOpenMinute = filters.value.minOpenMinute;
-  }
-
+  const [minOpenHour, minOpenMinute] = openTime.value.split(":").map(Number);
+  const [maxOpenHour, maxOpenMinute] = closeTime.value.split(":").map(Number);
+  filters.value.minOpenHour = minOpenHour;
+  filters.value.minOpenMinute = minOpenMinute;
+  filters.value.maxOpenHour = maxOpenHour;
+  filters.value.maxOpenMinute = maxOpenMinute;
   applyFilters();
 };
 
@@ -482,11 +447,12 @@ const closePanel = () => {
 watch(
   () => props.initialFilters,
   (newFilters) => {
-    // 這裡我們直接賦值，確保本地狀態與 prop 同步
-    // 如果你希望更精細的控制（例如只更新某些屬性），可以手動遍歷
     filters.value = { ...newFilters };
+    // 同步時間選擇器
+    openTime.value = `${String(newFilters.minOpenHour).padStart(2, "0")}:${String(newFilters.minOpenMinute).padStart(2, "0")}`;
+    closeTime.value = `${String(newFilters.maxOpenHour).padStart(2, "0")}:${String(newFilters.maxOpenMinute).padStart(2, "0")}`;
   },
-  { deep: true, immediate: true } // 深度監聽，組件初始化時也執行一次
+  { deep: true, immediate: true }
 );
 
 onMounted(() => {
@@ -546,6 +512,8 @@ onMounted(() => {
   flex-wrap: wrap;
   gap: 8px;
   padding: 0 5px;
+  max-width: 100%;
+  word-break: break-all;
 }
 
 .applied-filter-tag {
@@ -558,6 +526,9 @@ onMounted(() => {
   font-size: 14px;
   white-space: nowrap;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .remove-filter-button {
@@ -730,15 +701,19 @@ onMounted(() => {
 }
 
 .tags-grid {
-  display: flex;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, 120px);
   gap: 12px;
 }
 
 .tag-button,
 .tag-button-active {
-  padding: 10px 16px;
-  border-radius: 24px;
+  width: 100%;
+  min-width: 0;
+  justify-content: center;
+  text-align: center;
+  padding: 10px 0;
+  border-radius: 14px;
   cursor: pointer;
   font-size: 14px;
   font-weight: 500;
@@ -812,4 +787,36 @@ onMounted(() => {
     padding: 16px;
   }
 }
+
+.time-picker-vertical {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  align-items: center;
+}
+.time-picker-row-single {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+.time-label {
+  font-size: 14px;
+  color: #555;
+  margin-bottom: 2px;
+}
+.time-picker-input {
+  min-width: 150px;
+  width: 150px;
+  height: 40px;
+  padding: 6px 16px;
+  border-radius: 8px;
+  border: 1px solid #e0e0e0;
+  font-size: 16px;
+  box-sizing: border-box;
+  background: #fff;
+  text-align: left;
+}
+
+/* 移除隱藏時鐘 icon 的 CSS，恢復原生功能 */
 </style>

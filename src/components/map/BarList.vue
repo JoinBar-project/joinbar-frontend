@@ -46,9 +46,9 @@
 
           <div v-if="bar.tags && bar.tags.length" class="bar-tags">
             <span v-for="tag in bar.tags" :key="tag" class="bar-tag">{{
-              tag
-            }}</span>
-          </div>
+                  tag
+                }}</span>
+                </div>
 
           <div class="bar-hours">
             {{ getOpeningHourText(bar) }}
@@ -84,8 +84,8 @@ const handleImageError = (event) => {
 // 營業時間格式化函式
 
 const getOpeningHourText = (bar) => {
-  if (bar.openingHours?.weekday_text?.length > 0) {
-    return bar.openingHours.weekday_text[0];
+  if (bar.openingHours?.weekdayText?.length > 0) {
+    return bar.openingHours.weekdayText[0];
   } else if (bar.openingHours) {
     return "營業時間待提供";
   } else {
@@ -105,7 +105,7 @@ const emitToggleWishlist = (placeId) => {
     console.warn("無法收藏/取消收藏，因為 place_id 不存在。");
     return;
   }
-  emit("toggle-wishlist", placeId);
+  emit("toggle-wishlist", { placeId, isFavorite: isFavorite(placeId) });
 };
 
 // Vue 生命週期與監聽器 (僅用於偵錯，實際應用可能移除)
@@ -166,7 +166,7 @@ watch(
 .bar-image {
   width: 100%;
   height: 100%;
-  object-fit: cover;
+  aspect-ratio: 1 / 1;
   border-top-left-radius: 12px;
   border-top-right-radius: 12px;
 }
