@@ -21,11 +21,10 @@ const sortedEvents = computed(() => {
     .sort((a, b) => new Date(b.startDate) - new Date(a.startDate))
 })
 
-// 改善更新處理
+
 async function handleEventUpdate() {
   try {
     await eventStore.fetchEvents()
-    // 確保 DOM 更新完成
     await nextTick()
   } catch (error) {
     console.error('更新事件列表失敗:', error)
