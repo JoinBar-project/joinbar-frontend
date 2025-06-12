@@ -445,7 +445,7 @@ export function useGoogleMaps(mapContainerRef, options) {
                   `<strong>你現在的位置</strong><br/>（無法取得地址資訊）`
                 );
                 infoWindow.value.open(map.value, currentMarker.value);
-              });
+              }
             }
           });
           loading.value = false;

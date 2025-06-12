@@ -76,7 +76,7 @@
 </template>
 
 <script setup lang="ts">
-import { watch } from "vue";
+import { ref, watch } from "vue";
 import type { PropType } from "vue";
 
 // --- 類型定義 ---

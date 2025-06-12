@@ -89,7 +89,7 @@ import BarDetailModal from "../../components/map/BarDetailModal.vue";
 import { useGoogleMaps } from "@/composable/useGoogleMaps";
 
 // 環境變數中的 Google Maps API Key
-const googleMapsApiKey = import.meta.env.VITE_MAPS_API_KEY;
+const googleMapsApiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
 
 // --- 響應式狀態 ---
 const isLoading = ref(false);

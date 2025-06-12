@@ -265,38 +265,7 @@
 
 <script setup>
 import { ref, watch, computed } from "vue";
-import type { PropType } from "vue";
 import { useRouter } from 'vue-router';
-
-interface Bar {
-  id?: string;
-  place_id?: string;
-  name: string;
-  imageUrl?: string;
-  images?: string[];
-  rating?: number;
-  reviews?: number;
-  priceRange?: string;
-  tags?: string[];
-  types?: string[];
-  openingHours?: any | { weekday_text?: string[] };
-  location?: { lat: number; lng: number };
-  description?: string;
-  isWishlisted?: boolean; // 確保此屬性存在並能被外部更新
-  address?: string;
-  phone?: string;
-  website?: string;
-  formatted_address?: string;
-  international_phone_number?: string;
-  opening_hours?: any | { weekday_text?: string[] };
-  googleReviews?: {
-    author_name: string;
-    profile_photo_url: string;
-    text: string;
-    rating: number;
-    time: number;
-  }[];
-}
 
 const props = defineProps({
   bar: {

@@ -322,7 +322,7 @@ const appliedFiltersForDisplay = computed(() => {
     filters.value.tags.forEach((tag) => {
       displayFilters.push({
         label: `標籤: ${tag}`,
-        type: "tag", // 自定義類型
+        type: "tags", // 修正：改為 "tags" 以符合 BarFilters 介面
         value: tag,
       });
     });
@@ -337,7 +337,7 @@ const appliedFiltersForDisplay = computed(() => {
 
 // 移除已套用的單一篩選條件
 const removeAppliedFilter = (
-  type: keyof BarFilters | "distance" | "openHour" | "tag",
+  type: keyof BarFilters | "distance" | "openHour" | "tags",
   value: any
 ) => {
   // 明確指定類型
@@ -359,7 +359,7 @@ const removeAppliedFilter = (
       filters.value.maxOpenHour = 24;
       filters.value.maxOpenMinute = 0;
       break;
-    case "tag":
+    case "tags":
       filters.value.tags = filters.value.tags.filter((t) => t !== value);
       break;
   }
