@@ -160,21 +160,8 @@
   </div>
 </template>
 
-<script setup lang="ts">
+<script setup>
 import { ref, defineEmits, onMounted, watch, defineProps, computed } from "vue";
-
-// 篩選條件介面定義
-export interface BarFilters {
-  address: string;
-  ratingSort: "any" | "highToLow" | "lowToHigh" | "mostPopular";
-  minDistance: number;
-  maxDistance: number;
-  minOpenHour: number;
-  minOpenMinute: number;
-  maxOpenHour: number;
-  maxOpenMinute: number;
-  tags: string[];
-}
 
 // 事件發射定義
 const emit = defineEmits(["filter-changed", "close-panel"]);
@@ -182,7 +169,7 @@ const emit = defineEmits(["filter-changed", "close-panel"]);
 // Props 定義
 const props = defineProps({
   initialFilters: {
-    type: Object as () => BarFilters,
+    type: Object,
     default: () => ({
       address: "any",
       ratingSort: "any",
@@ -198,8 +185,8 @@ const props = defineProps({
 });
 
 // 響應式狀態
-const filters = ref<BarFilters>({ ...props.initialFilters });
-const popularTags: string[] = [
+const filters = ref({ ...props.initialFilters });
+const popularTags = [
   "信義區",
   "大安區",
   "中山區",
@@ -221,11 +208,7 @@ const closeTime = ref("24:00");
 
 // 計算屬性：格式化已套用篩選條件以供顯示
 const appliedFiltersForDisplay = computed(() => {
-  const displayFilters: {
-    label: string;
-    type: keyof BarFilters | "distance" | "openHour" | "tags";
-    value: any;
-  }[] = [];
+  const displayFilters = [];
 
   // 地點篩選
   if (filters.value.address !== "any") {
@@ -275,7 +258,7 @@ const appliedFiltersForDisplay = computed(() => {
     filters.value.maxOpenHour !== 24 ||
     filters.value.maxOpenMinute !== 0
   ) {
-    const formatTime = (h: number, m: number): string => {
+    const formatTime = (h, m) => {
       const hour = String(h).padStart(2, "0");
       const minute = String(m).padStart(2, "0");
       return `${hour}:${minute}`;
@@ -316,10 +299,7 @@ const appliedFiltersForDisplay = computed(() => {
 });
 
 // 事件處理函式：移除已套用的單一篩選條件
-const removeAppliedFilter = (
-  type: keyof BarFilters | "distance" | "openHour" | "tags",
-  value: any
-) => {
+const removeAppliedFilter = (type, value) => {
   switch (type) {
     case "address":
       filters.value.address = "any";
@@ -380,7 +360,7 @@ const updateOpenHours = () => {
 };
 
 // 事件處理函式：切換標籤選中狀態
-const toggleTag = (tag: string) => {
+const toggleTag = (tag) => {
   if (!Array.isArray(filters.value.tags)) {
     filters.value.tags = [];
   }
@@ -423,7 +403,14 @@ const closePanel = () => {
 watch(
   () => props.initialFilters,
   (newFilters) => {
-    filters.value = { ...newFilters };
+    // 確保 newFilters 和 filters.value 都有 tags 屬性且為陣列，以防萬一
+    if (newFilters.tags && Array.isArray(newFilters.tags)) {
+      filters.value = { ...newFilters };
+    } else {
+      // 如果 tags 不存在或不是陣列，則使用預設空陣列，避免錯誤
+      filters.value = { ...newFilters, tags: [] };
+    }
+
     openTime.value = `${String(newFilters.minOpenHour).padStart(2, "0")}:${String(newFilters.minOpenMinute).padStart(2, "0")}`;
     closeTime.value = `${String(newFilters.maxOpenHour).padStart(2, "0")}:${String(newFilters.maxOpenMinute).padStart(2, "0")}`;
   },

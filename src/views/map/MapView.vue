@@ -482,7 +482,6 @@ function fetchBarsData() {
   ];
 }
 
-// --- Vue 生命週期與監聽器 ---
 onMounted(async () => {
   isLoading.value = true;
   try {
@@ -842,12 +841,10 @@ watch(selectedBar, (newVal) => {
   }
 }
 
-/* 移除篩選按鈕懸停效果 (請確認是否需要) */
 .remove-filter-button:hover {
   opacity: 1;
 }
 
-/* --- RWD 響應式設計 --- */
 @media (max-width: 768px) {
   .top-left-controls {
     left: 20px;
