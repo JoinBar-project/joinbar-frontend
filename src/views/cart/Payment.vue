@@ -105,6 +105,10 @@
           </button>
         </div>
  
+        <div v-if="paymentMethodError" class="payment-error">
+          {{ paymentMethodError }}
+        </div>
+ 
         <div class="total-bar section-spacing">
           <p class="total-label">
             總金額：<strong>${{ totalPrice }}</strong>
@@ -121,12 +125,12 @@
         </div>
       </div>
  
-      <div v-if="orderError" class="error-message">
+      <div v-if="errorMessage || orderError" class="error-message">
         <div class="error-content">
           <span class="error-icon">⚠️</span>
-          <span>{{ orderError }}</span>
+          <span>{{ errorMessage || orderError }}</span>
         </div>
-        <button @click="clearOrderError" class="error-close">✕</button>
+        <button @click="clearAllErrors" class="error-close">✕</button>
       </div>
     </div>
   </div>
@@ -134,7 +138,7 @@
  
  <script setup>
  import { useCartStore } from '@/stores/cartStore'
- import { useOrder } from '@/composables/useOrder'
+ import { useOrder } from '@/composable/useOrder'
  import { computed, ref, onMounted, watch } from 'vue'
  import { useRouter } from 'vue-router'
  
@@ -156,6 +160,9 @@
  const paymentMethod = ref('')
  const isLoading = ref(true)
  const isSubmitting = ref(false)
+ 
+ const errorMessage = ref('')
+ const paymentMethodError = ref('')
  
  const customerInfo = ref({
   name: '',
@@ -220,6 +227,10 @@
  
  watch(() => customerInfo.value.email, () => {
   if (formErrors.value.email) delete formErrors.value.email
+ })
+ 
+ watch(() => paymentMethod.value, () => {
+  paymentMethodError.value = ''
  })
  
  function loadUserInfo() {
@@ -307,7 +318,7 @@
   }
   
   if (!paymentMethod.value) {
-    setError('請選擇付款方式')
+    paymentMethodError.value = '請選擇付款方式'
     return false
   }
   
@@ -354,13 +365,14 @@
  }
  
  function setError(message) {
-  console.error('設置錯誤:', message)
-  alert(message)
+  errorMessage.value = message
  }
  
  function clearAllErrors() {
+  errorMessage.value = ''
   clearOrderError()
   formErrors.value = {}
+  paymentMethodError.value = ''
  }
  
  const goBack = () => {
@@ -613,6 +625,16 @@
   color: #dc2626;
   font-size: 12px;
   margin-top: 4px;
+ }
+ 
+ .payment-error {
+  color: #dc2626;
+  font-size: 14px;
+  margin-top: 12px;
+  padding: 8px 12px;
+  background: #fee2e2;
+  border-radius: 6px;
+  border: 1px solid #fecaca;
  }
  
  .section-spacing {
