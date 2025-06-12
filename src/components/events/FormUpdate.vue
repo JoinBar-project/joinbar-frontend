@@ -1,5 +1,6 @@
 <script setup>
 import { useEventForm } from '@/composable/useEventForm'
+import { watch } from 'vue'
 import Hashtag from './Hashtag.vue'
 
 const emit = defineEmits(['update', 'delete' ,'cancel'])
@@ -15,19 +16,36 @@ const {
   eventPeople,
   eventHashtags,
   handleUpdate,
-  handleDelete
+  handleDelete,
+  loadEvent 
 } = useEventForm(props.eventId)
 
-function onUpdate() {
-  const success = handleUpdate(props.eventId)
-  if (success) {
-    emit('update')
+watch(
+  () => props.eventId,
+  (newId) => {
+    if (newId) loadEvent(newId)
+  },
+  { immediate: true }
+)
+
+async function onUpdate() {
+  try {
+    const success = await handleUpdate(props.eventId)
+    if (success) {
+      emit('update')
+    }
+  } catch (error) {
+    console.error('更新失敗:', error)
   }
 }
 
-function onDelete() {
-  handleDelete(props.eventId)
-  emit('delete')
+async function onDelete() {
+  try {
+    await handleDelete(props.eventId)
+    emit('delete')
+  } catch (error) {
+    console.error('刪除失敗:', error)
+  }
 }
 
 function onCancel() {

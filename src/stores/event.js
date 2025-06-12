@@ -5,13 +5,11 @@ import axios from 'axios'
 axios.defaults.baseURL = 'http://localhost:3000'
 
 export const useEventStore = defineStore('event', () => {
-  // state
-  const event = ref(null)        // 單一活動資訊
-  const events = ref([])         // 活動列表
+  const event = ref(null)
+  const events = ref([])
   const loading = ref(false)
   const error = ref(null)
 
-  // actions
   const createEvent = async (payload) => {
     loading.value = true
     try {
@@ -43,7 +41,10 @@ export const useEventStore = defineStore('event', () => {
     loading.value = true
     try {
       const res = await axios.put(`/event/update/${id}`, payload)
-      event.value = res.data
+      const index = events.value.findIndex(e => e.id == id)
+      if (index !== -1) {
+        events.value[index] = res.data
+      }
       error.value = null
     } catch (e) {
       error.value = e.response?.data?.message || e.message
@@ -56,7 +57,13 @@ export const useEventStore = defineStore('event', () => {
     loading.value = true
     try {
       await axios.delete(`/event/delete/${id}`)
-      events.value = events.value.filter(e => e.id !== id)
+      // events.value = events.value.filter(e => e.id !== id)
+
+      const index = events.value.findIndex(e => e.id == id)
+      if (index !== -1) {
+        events.value[index].status = 2
+      }
+
       event.value = null
       error.value = null
     } catch (e) {
@@ -70,7 +77,7 @@ export const useEventStore = defineStore('event', () => {
     loading.value = true
     try {
       const res = await axios.get(`/event/${id}`)
-      events.value = res.data.filter(e => e.status !== 2) // 過濾軟刪除的活動
+      event.value = res.data
       error.value = null
     } catch (e) {
       error.value = e.response?.data?.message || e.message

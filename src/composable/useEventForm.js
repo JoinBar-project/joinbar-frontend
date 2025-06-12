@@ -99,19 +99,19 @@ export function useEventForm(eventId = null) {
     return true
   }
   
-  function handleUpdate(id) {
+  async function handleUpdate(id) {
     if (!validateForm()) {
       alert('請完整填寫所有欄位！')
       return false
     }
     
     const payload = createPayload()
-    eventStore.updateEvent(id, payload)
+    await eventStore.updateEvent(id, payload)
     return true
   }
   
-  function handleDelete(id) {
-    eventStore.deleteEvent(id)
+  async function handleDelete(id) {
+    await eventStore.deleteEvent(id)
   }
   
   function openForm() {
