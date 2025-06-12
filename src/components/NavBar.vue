@@ -2,7 +2,7 @@
   <nav class="navbar">
     <div class="logo">
       <RouterLink to="/home">
-        <img src="/join-bar-logo.png" alt="JoinBar Logo" />
+        <img src="/joinbar-logo.png" alt="JoinBar Logo" />
       </RouterLink>
     </div>
     <ul class="nav-links">
@@ -17,46 +17,30 @@
 </template>
 
 <style scoped>
+@reference "tailwindcss";
+
 .navbar {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 16px 32px;
-  background-color: #bbbbbb;
-  color: white;
-  height: 100px;
+  @apply flex justify-between items-center px-8 py-4 text-white h-24;
+  background-color: var(--color-black);
 }
 
 .logo img {
-  height: 50px;
-  width: auto;
+  @apply h-12 w-auto;
 }
 
 .nav-links {
-  list-style: none;
-  display: flex;
-  gap: 24px;
-  align-items: center;
-  height: 100%;
+  @apply list-none flex gap-6 items-center h-full;
 }
 
 .nav-links li {
-  display: flex;
-  align-items: center;
-  height: 100%;
+  @apply flex items-center h-full;
 }
 
 .nav-links a {
-  color: white;
-  text-decoration: none;
-  display: flex;
-  align-items: center;
-  height: 100%;
+  @apply text-white no-underline flex items-center h-full;
 }
 
 .cart-icon {
-  height: 55%;
-  width: auto;
-  display: block;
+  @apply h-[55%] w-auto block;
 }
 </style>
