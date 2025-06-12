@@ -70,62 +70,47 @@ function sliceChinese(str, n) {
 </template>
 
 <style scoped>
+@reference "tailwindcss";
+
 .event-card {
-  background: #f3f3f3;
-  border-radius: 15px;
-  margin: 0.5rem;
+  @apply bg-gray-100 rounded-2xl m-2;
 }
+
 .event-img {
-  width: 100%;
-  height: 180px;
-  object-fit: cover;
-  border-radius: 10px 10px 0 0 ;
-  background-color: rgb(211, 211, 211);
+  @apply w-full h-44 object-cover rounded-t-2xl bg-gray-300;
 }
+
 .event-info {
-  padding: 10px;
+  @apply p-2;
 }
+
 .time {
-  font-size: 14px;
+  @apply text-sm;
 }
+
 .title {
-  padding: 10px 0;
-  font-size: 24px;
-  font-weight: 700;
+  @apply py-2 text-2xl font-bold;
 }
 
 .tags {
-  display: flex;
-  flex-wrap: nowrap;
-  gap: 5px;
-  margin: 10px 0;
+  @apply flex flex-nowrap gap-1 my-2;
 }
 
 .tag {
-  display: inline-block;
-  border:2px solid var(--color-secondary-green);
-  color: var(--color-secondary-green);
-  padding: 3px 8px;
-  border-radius: 20px;
-  font-size: 12px;
-  font-weight: 500;
+  @apply inline-block border-2 px-2 py-1 rounded-2xl text-xs font-medium;
+  border-color: #8B7355;
+  color: #8B7355;
 }
 
 .location {
-  color: rgb(0, 0, 0);
-  font-size: 14px;
-  background-color: rgb(212, 212, 212);
-  padding: 8px 10px;
-  border-radius: 15px ;
+  @apply text-black text-sm bg-gray-300 px-2 py-2 rounded-2xl;
 }
-.bar-name{
-  font-weight: 700;
+
+.bar-name {
+  @apply font-bold;
 }
+
 .bottom-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-  margin-top: 8px;
+  @apply flex items-center justify-between gap-2 mt-2;
 }
 </style>

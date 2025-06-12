@@ -65,20 +65,14 @@ function handleDelete() {
 </template>
 
 <style scoped>
+@reference "tailwindcss";
+
 .edit-btn-container {
-  display: flex;
-  justify-content: flex-end;
+  @apply flex justify-end;
 }
 
 .btn-open-form {
-  display: flex;
-  justify-content: center;
-  margin-top:10px;
-  width: 120px;
-  padding: 8px 0;
-  color: white;
-  border-radius: 20px;
-  cursor: pointer;
+  @apply flex justify-center mt-2 w-32 py-2 text-white rounded-2xl cursor-pointer;
 }
 
 .btn-create {
@@ -90,40 +84,19 @@ function handleDelete() {
 }
 
 .popup-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  z-index: 100;
-  width: 100%;
-  height: 100%;
+  @apply fixed top-0 left-0 z-[100] w-full h-full flex justify-center items-center;
   background-color: rgba(0, 0, 0, 0.6);
-  display: flex;
-  justify-content: center;
-  align-items: center;
 }
 
 .modal-content {
-  position: relative;
-  border-radius: 20px;
-  padding: 0;
-  max-height: 90vh;
-  overflow-y: auto;
+  @apply relative rounded-2xl p-0 max-h-[90vh] overflow-y-auto;
 }
 
 .popup-close-btn {
-  position: absolute;
-  top: 50px;
-  right: 15px;
-  font-size: 30px;
-  background: none;
-  border: none;
-  color: #000000;
-  cursor: pointer;
-  z-index: 101;
-  transition: color 0.2s;
+  @apply absolute top-12 right-4 text-[30px] bg-transparent border-none text-black cursor-pointer z-[101] transition-colors duration-200;
 }
 
 .popup-close-btn:hover {
-  color: #d4624e;
+  @apply text-orange-600;
 }
 </style>
