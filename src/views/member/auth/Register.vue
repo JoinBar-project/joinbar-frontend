@@ -22,11 +22,32 @@
         <div v-if="step === 1" class="space-y-4 mt-6">
           <h2 class="text-xl font-semibold mb-4 text-[#860914]">建立帳號</h2>
           
-          <div v-for="(field, index) in registerFields" :key="index" class="flex items-center border border-gray-300 rounded px-3 py-2">
-            <i :class="field.icon" class="text-gray-400 mr-2"></i>
-            <input :type="field.type" :placeholder="field.placeholder" v-model="form[field.model]"
-              class="w-full outline-none text-[#860914] placeholder-[#860914]"
-            />
+          <div v-for="(field, index) in registerFields" :key="index" class="space-y-1">
+            <div 
+              :class="[
+                'flex items-center border rounded px-3 py-2 transition-colors',
+                errors[field.model] 
+                  ? 'border-red-500 ' 
+                  : 'border-gray-300 border-2'
+              ]">
+              <i :class="[field.icon, 'mr-2', errors[field.model] ? 'text-red-500' : 'text-gray-400']"></i>
+              <input 
+                :type="field.type" 
+                :placeholder="field.placeholder" 
+                v-model="form[field.model]"
+                @input="clearError(field.model)"
+                :class="[
+                  'w-full outline-none placeholder-opacity-70 transition-colors',
+                  errors[field.model] 
+                    ? 'text-red-600 placeholder-red-400' 
+                    : 'text-[#860914] placeholder-[#860914]'
+                ]"
+              />
+            </div>
+            <!-- 錯誤提示文字 -->
+            <div v-if="errors[field.model]" class="text-red-500 text-xs ml-1">
+              {{ field.placeholder }}為必填欄位
+            </div>
           </div>
 
           <!-- 快速加入 -->
@@ -49,7 +70,7 @@
           </button>
 
           <!-- 登入提示 -->
-          <div class="text-center mt-4 pt-4 border-t border-gray-300">
+          <div class="text-center mt-4 pt-4 border-t-2 border-gray-300">
             <span class="text-sm text-gray-600">已有帳號？</span>
             <router-link to="/login" class="text-sm text-[#860914] hover:underline ml-1">
               立即登入
@@ -130,15 +151,6 @@ const registerFields = [
 const barTypes = ['運動酒吧', '音樂酒吧', '學生酒吧', '餐酒館', '暢飲店']
 const barMoods = ['熱鬧歡樂', '浪漫私密', '復古懷舊', '高級精緻', '輕鬆悠閒']
 
-const goToPreferences = () => {
-  // 簡單驗證
-  if (!form.value.name || !form.value.password) {
-    alert('請填寫完整資訊')
-    return
-  }
-  step.value = 2
-}
-
 // 紀錄每個欄位是否有錯誤
 const errors = ref({
   name: false,
@@ -146,6 +158,34 @@ const errors = ref({
   password: false,
   birthday: false
 })
+
+// 清除單一欄位的錯誤狀態
+const clearError = (fieldName) => {
+  if (errors.value[fieldName]) {
+    errors.value[fieldName] = false
+  }
+}
+
+const goToPreferences = () => {
+  let valid = true
+  
+  // 檢查每個必填欄位
+  registerFields.forEach(field => {
+    if (!form.value[field.model] || form.value[field.model].trim() === '') {
+      errors.value[field.model] = true
+      valid = false
+    } else {
+      errors.value[field.model] = false
+    }
+  })
+  
+  // 如果有錯誤就不進入下一步
+  if (!valid) {
+    return
+  }
+  
+  step.value = 2
+}
 
 const toggleSelection = (arr, value) => {
   const index = arr.indexOf(value)
