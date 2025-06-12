@@ -1,572 +1,891 @@
 <template>
-  <div class="search-panel">
-    <div ref="inputArea" class="input-group">
-      <input
-        type="text"
-        id="searchInput" 
-        class="input search-input"
-        v-model="searchQuery"
-        placeholder="輸入地點名稱"
-        @input="onInputChange"
-      />
-      <button @click="handleSearch"  class="btn bg-[#decdd5] hover:bg-[#860914] text-white rounded-r-lg font-normal search-bt">🔍 搜尋</button>
-      <ul v-if="suggestions.length" class="suggestions-list">
-        <li v-for="(suggestion, index) in suggestions" :key="index" @click="selectSuggestion(suggestion)">
-          🔍 {{ suggestion.description }}
-        </li>
-      </ul>
+  <div class="map-view-container">
+    <div class="top-left-controls">
+      <button
+        class="filter-toggle-button map-control-button"
+        @click="toggleFilterPanel"
+      >
+        <i class="fas fa-filter"></i>
+      </button>
+
+      <div class="search-panel-map">
+        <div class="input-group">
+          <input
+            type="text"
+            id="searchInput"
+            class="search-input"
+            v-model="searchQuery"
+            placeholder="輸入地點名稱或關鍵字"
+            @input="debouncedSearchSuggestions"
+          />
+          <ul v-if="suggestions.length" class="suggestions-list">
+            <li
+              v-for="(suggestion, index) in suggestions"
+              :key="index"
+              @click="selectSuggestion(suggestion)"
+            >
+              🔍 {{ suggestion.description }}
+            </li>
+          </ul>
+          <button
+            @click="handleSearch"
+            class="btn search-bt map-control-button"
+          >
+            <b>🔍 搜尋</b>
+          </button>
+        </div>
+      </div>
+
+      <button
+        @click="handleGetCurrentLocation"
+        class="place-now-map map-control-button"
+      >
+        <b>📍 顯示我目前位置</b>
+      </button>
     </div>
-      <button @click="getCurrentLocation" class="btn font-normal place-now">📍 顯示我目前位置</button>
-  </div>
 
-  <!-- loading -->
-  <div v-if="isSearching" class="custom-loading">
-    <div class="loader"></div>
-    <p class="loading-message">Loading ...</p>
-  </div>
+    <aside class="bar-list-sidebar">
+      <div class="bar-list-scroll-area">
+        <BarList
+          :bars="filteredBars"
+          @bar-selected="handleBarSelected"
+          @toggle-wishlist="handleToggleWishlist"
+        />
+      </div>
+    </aside>
 
-  <div ref="mapContainer" class="map-container"></div>
+    <div ref="mapContainer" class="map-container"></div>
+
+    <FilterPanel
+      v-if="isFilterPanelOpen"
+      @filter-changed="handleFilterChanged"
+      @close-panel="toggleFilterPanel"
+      @remove-applied-filter="handleRemoveAppliedFilter"
+      :initial-filters="currentFilters"
+    />
+
+    <BarDetailModal
+      v-if="isBarDetailModalOpen"
+      :bar="selectedBarForDetail"
+      @close="closeBarDetailModal"
+      @toggle-wishlist="handleToggleWishlistFromDetail"
+    />
+
+    <div v-if="googleMapsLoading || isLoading" class="loading-overlay">
+      <div class="loader"></div>
+      <p class="loading-message">載入中，請稍候...</p>
+    </div>
+  </div>
 </template>
 
 <script setup>
-import { ref, onMounted, onBeforeUnmount } from 'vue'
+import { ref, onMounted, computed, watch } from "vue";
+import debounce from "lodash/debounce";
+import dayjs from "dayjs";
 
-import debounce from 'lodash/debounce'
+// --- 引入組件與 Google Maps Composable ---
+import FilterPanel from "@/components/map/FilterPanel.vue";
+import BarList from "@/components/map/BarList.vue";
+import BarDetailModal from "@/components/map/BarDetailModal.vue";
+import { useGoogleMaps } from "@/composable/useGoogleMaps.js";
 
-const searchQuery = ref('')
-const suggestions = ref([])
-const mapContainer = ref(null)
+const googleMapsApiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
 
-// 列表消失
-const inputArea = ref(null)
+// --- 響應式狀態 ---
+const isLoading = ref(false);
+const mapContainer = ref(null);
 
+// --- 引入 useGoogleMaps Composable ---
+const {
+  map,
+  markers,
+  infoWindow,
+  loading: googleMapsLoading,
+  loadGoogleMapsAPI,
+  initMap,
+  showInfoWindow,
+  closeInfoWindow,
+  panTo,
+  setZoom,
+  displayBarsOnMap,
+  requestGeolocationPermission,
+  getCurrentLocation: getMapCurrentLocation,
+  getPlacePredictions,
+  searchAndDisplayPlaces,
+  panToAndShowBarInfo,
+} = useGoogleMaps(mapContainer, {
+  googleMapsApiKey: googleMapsApiKey,
+  onLoading: () => console.log("Google Maps API 載入中..."),
+  onLoaded: () => console.log("Google Maps API 載入完成。"),
+  onError: (msg) => {
+    console.error("useGoogleMaps 錯誤:", msg);
+    alert(`地圖載入失敗：${msg}，請檢查API Key或網路。`);
+  },
+});
 
-// 定義 loading 狀態
-const isSearching = ref(false)
+const isFilterPanelOpen = ref(false);
+const searchQuery = ref("");
+const suggestions = ref([]);
+const allBars = ref([]);
+const currentFilters = ref({
+  address: "any",
+  ratingSort: "any",
+  minDistance: 0,
+  maxDistance: 5000,
+  minOpenHour: 0,
+  minOpenMinute: 0,
+  maxOpenHour: 24,
+  maxOpenMinute: 0,
+  tags: [],
+});
+const selectedBar = ref(null);
+const isBarDetailModalOpen = ref(false);
+const selectedBarForDetail = ref(null);
 
-let map
-// 儲存所有地圖上的 marker 的陣列
-let markers = []
-let infoWindow
-let autocompleteService = null
-let placesService
-let currentMarker
+// ----------------------------------------------------------------------
+// 計算屬性
+// ----------------------------------------------------------------------
 
-const defaultCenter = { lat: 25.0375, lng: 121.5637 }
+const filteredBars = computed(() => {
+  let barsToFilter = [...allBars.value];
 
-// 新增：動態載入 Google Maps 相關 script
-function loadGoogleMapsScript() {
-  return new Promise((resolve, reject) => {
-    if (window.google && window.google.maps) {
-      resolve()
-      return
+  if (currentFilters.value.address !== "any") {
+    barsToFilter = barsToFilter.filter((bar) =>
+      bar.tags.includes(currentFilters.value.address)
+    );
+  }
+
+  if (
+    map.value &&
+    window.google &&
+    window.google.maps &&
+    window.google.maps.geometry &&
+    window.google.maps.geometry.spherical
+  ) {
+    const mapCenter = map.value.getCenter();
+    if (mapCenter) {
+      const centerLatLng = new window.google.maps.LatLng(
+        mapCenter.lat(),
+        mapCenter.lng()
+      );
+      barsToFilter = barsToFilter
+        .map((bar) => {
+          if (
+            !bar.location ||
+            typeof bar.location.lat === "undefined" ||
+            typeof bar.location.lng === "undefined"
+          ) {
+            console.warn(
+              `Bar ${bar.name} (${bar.id}) 缺少有效的地理位置資訊，無法計算距離。`
+            );
+            return { ...bar, distance: undefined };
+          }
+          bar.distance =
+            window.google.maps.geometry.spherical.computeDistanceBetween(
+              centerLatLng,
+              new window.google.maps.LatLng(bar.location.lat, bar.location.lng)
+            );
+          return bar;
+        })
+        .filter((bar) => {
+          return (
+            bar.distance !== undefined &&
+            bar.distance >= currentFilters.value.minDistance &&
+            bar.distance <= currentFilters.value.maxDistance
+          );
+        });
     }
+  } else if (
+    map.value &&
+    (!window.google ||
+      !window.google.maps.geometry ||
+      !window.google.maps.geometry.spherical)
+  ) {
+    console.warn("Google Maps Geometry 庫未載入，距離篩選將不會生效。");
+  }
 
-    const script = document.createElement('script')
-    script.src = `https://maps.googleapis.com/maps/api/js?key=${import.meta.env.VITE_GOOGLE_MAPS_API_KEY}&libraries=places,marker&v=beta&solution_channel=GMP_CCS_complexmarkers_v3`
-    script.async = true
-    script.defer = true
-    script.onload = () => {
-      const extScript = document.createElement('script')
-      extScript.type = 'module'
-      extScript.src = 'https://ajax.googleapis.com/ajax/libs/@googlemaps/extended-component-library/0.6.11/index.min.js'
-      extScript.onload = resolve
-      extScript.onerror = reject
-      document.head.appendChild(extScript)
-    }
-    script.onerror = reject
-    document.head.appendChild(script)
-  })
+  if (
+    currentFilters.value.minOpenHour !== 0 ||
+    currentFilters.value.minOpenMinute !== 0 ||
+    currentFilters.value.maxOpenHour !== 24 ||
+    currentFilters.value.maxOpenMinute !== 0
+  ) {
+    barsToFilter = barsToFilter.filter((bar) => {
+      const openHoursStr = bar.openingHours?.weekday_text?.[0] || "";
+      const match = openHoursStr.match(/(\d{2}):(\d{2})\s*-\s*(\d{2}):(\d{2})/);
+      if (!match) return false;
+      const format = "HH:mm";
+      let barOpen = dayjs(`${match[1]}:${match[2]}`, format);
+      let barClose = dayjs(`${match[3]}:${match[4]}`, format);
+      if (barClose.isBefore(barOpen)) {
+        barClose = barClose.add(1, "day");
+      }
+      let filterOpen = dayjs()
+        .hour(currentFilters.value.minOpenHour)
+        .minute(currentFilters.value.minOpenMinute);
+      let filterClose = dayjs()
+        .hour(currentFilters.value.maxOpenHour)
+        .minute(currentFilters.value.maxOpenMinute);
+      if (filterClose.isBefore(filterOpen)) {
+        filterClose = filterClose.add(1, "day");
+      }
+      return barOpen.isBefore(filterClose) && barClose.isAfter(filterOpen);
+    });
+  }
+
+  if (currentFilters.value.ratingSort === "highToLow") {
+    barsToFilter.sort((a, b) => b.rating - a.rating);
+  } else if (currentFilters.value.ratingSort === "lowToHigh") {
+    barsToFilter.sort((a, b) => a.rating - b.rating);
+  }
+
+  if (currentFilters.value.tags && currentFilters.value.tags.length > 0) {
+    barsToFilter = barsToFilter.filter((bar) =>
+      currentFilters.value.tags.every((tag) => bar.tags.includes(tag))
+    );
+  }
+
+  return barsToFilter;
+});
+
+// ----------------------------------------------------------------------
+// 事件處理函式
+// ----------------------------------------------------------------------
+
+const debouncedSearchSuggestions = debounce(async () => {
+  if (!searchQuery.value) {
+    suggestions.value = [];
+    return;
+  }
+  suggestions.value = await getPlacePredictions(searchQuery.value);
+}, 300);
+
+async function selectSuggestion(suggestion) {
+  searchQuery.value = suggestion.description;
+  suggestions.value = [];
+  await handleSearch();
 }
+
+async function handleSearch() {
+  if (!searchQuery.value) {
+    alert("請輸入搜尋關鍵字");
+    return;
+  }
+  await searchAndDisplayPlaces(searchQuery.value);
+}
+
+async function handleGetCurrentLocation() {
+  isLoading.value = true;
+  try {
+    const sidebarWidth =
+      document.querySelector(".bar-list-sidebar")?.offsetWidth || 0;
+    await getMapCurrentLocation(sidebarWidth);
+  } catch (err) {
+    console.error("獲取目前位置失敗:", err);
+    alert("無法獲取您的目前位置，請檢查瀏覽器權限設定。");
+  } finally {
+    isLoading.value = false;
+  }
+}
+
+function handleFilterChanged(filters) {
+  currentFilters.value = filters;
+}
+
+function handleRemoveAppliedFilter(payload) {
+  const { type, value } = payload;
+  const filterResets = {
+    address: { address: "any" },
+    ratingSort: { ratingSort: "any" },
+    distance: { minDistance: 0, maxDistance: 5000 },
+    openHour: {
+      minOpenHour: 0,
+      minOpenMinute: 0,
+      maxOpenHour: 24,
+      maxOpenMinute: 0,
+    },
+  };
+
+  if (filterResets[type]) {
+    currentFilters.value = { ...currentFilters.value, ...filterResets[type] };
+  } else if (type === "tag") {
+    currentFilters.value.tags = currentFilters.value.tags.filter(
+      (tag) => tag !== value
+    );
+  }
+}
+
+function toggleFilterPanel() {
+  isFilterPanelOpen.value = !isFilterPanelOpen.value;
+}
+
+function handleBarSelected(bar) {
+  selectedBar.value = bar;
+  selectedBarForDetail.value = bar;
+  isBarDetailModalOpen.value = true;
+  panToAndShowBarInfo(bar);
+}
+
+function closeBarDetailModal() {
+  isBarDetailModalOpen.value = false;
+  selectedBarForDetail.value = null;
+  closeInfoWindow();
+}
+
+function handleToggleWishlist(barId) {
+  const barIndex = allBars.value.findIndex((b) => b.id === barId);
+  if (barIndex > -1) {
+    allBars.value[barIndex].isWishlisted =
+      !allBars.value[barIndex].isWishlisted;
+  }
+  if (selectedBarForDetail.value && selectedBarForDetail.value.id === barId) {
+    selectedBarForDetail.value.isWishlisted =
+      !selectedBarForDetail.value.isWishlisted;
+  }
+}
+
+const handleToggleWishlistFromDetail = (barId) => {
+  handleToggleWishlist(barId);
+};
+
+async function fetchBarsData() {
+  await new Promise((resolve) => setTimeout(resolve, 500));
+
+  allBars.value = [
+    {
+      id: "b001",
+      place_id: "ChIJ7-02o96jQjQR6c8b9j01314",
+      name: "微醺角落",
+      location: { lat: 25.0478, lng: 121.5172 },
+      rating: 4.5,
+      reviews: 120,
+      priceRange: "300-600",
+      tags: ["精釀啤酒", "放鬆氛圍", "平價", "中山區"],
+      openingHours: { weekday_text: ["週二至週日 18:00 - 01:00"] },
+      imageUrl:
+        "https://images.unsplash.com/photo-1543007137-b715ee51102b?q=80&w=2070&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
+      description: "隱身巷弄中的小酒館，提供多款精釀啤酒，適合下班小酌。",
+      isWishlisted: false,
+      images: [
+        "https://images.unsplash.com/photo-1543007137-b715ee51102b?q=80&w=2070&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
+        "https://images.unsplash.com/photo-1543007137-b715ee51102b?q=80&w=2070&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
+        "https://images.unsplash.com/photo-1543007137-b715ee51102b?q=80&w=2070&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
+      ],
+      address: "台北市中山區某某街123號",
+      phone: "02-1234-5678",
+      website: "https://www.example.com/bar001",
+    },
+    {
+      id: "b002",
+      place_id: "ChIJY52JzdyjQjQR6c8b9j01314",
+      name: "信義夜景酒吧",
+      location: { lat: 25.0336, lng: 121.5644 },
+      rating: 4.8,
+      reviews: 350,
+      priceRange: "800-1500",
+      tags: ["高空美景", "創意調酒", "約會小酌", "信義區"],
+      openingHours: { weekday_text: ["每日 20:00 - 02:00"] },
+      imageUrl:
+        "https://images.unsplash.com/photo-1582855171120-6d80f837e2c9?q=80&w=2070&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
+      description: "俯瞰台北市夜景的絕佳地點，提供精緻調酒與餐點，是約會首選。",
+      isWishlisted: false,
+      images: [
+        "https://images.unsplash.com/photo-1582855171120-6d80f837e2c9?q=80&w=2070&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
+        "https://images.unsplash.com/photo-1582855171120-6d80f837e2c9?q=80&w=2070&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
+      ],
+      address: "台北市信義區某某路456號",
+      phone: "02-9876-5432",
+      website: "https://www.example.com/bar002",
+    },
+    {
+      id: "b003",
+      place_id: "ChIJX52JzdyjQjQR6c8b9j01314",
+      name: "大安運動酒吧",
+      rating: 4.2,
+      reviews: 200,
+      priceRange: "400-900",
+      openingHours: { weekday_text: ["每日 17:00 - 03:00"] },
+      description: "提供多台大型螢幕轉播運動賽事，氛圍熱烈，適合與朋友一起看球",
+      tags: ["運動酒吧", "大型螢幕", "觀賽熱點", "美式", "大安區"],
+      imageUrl:
+        "https://images.unsplash.com/photo-1543007137-b715ee51102b?q=80&w=2070&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
+      location: { lat: 25.038, lng: 121.543 },
+      isWishlisted: false,
+      images: [
+        "https://images.unsplash.com/photo-1543007137-b715ee51102b?q=80&w=2070&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
+      ],
+      address: "台北市大安區某某街789號",
+      phone: "02-1122-3344",
+      website: "",
+    },
+    {
+      id: "b004",
+      place_id: "ChIJR52JzdyjQjQR6c8b9j01314",
+      name: "松山爵士吧",
+      location: { lat: 25.0505, lng: 121.5501 },
+      rating: 4.7,
+      reviews: 80,
+      priceRange: "600-1200",
+      tags: ["爵士樂", "現場表演", "復古", "調酒", "松山區"],
+      openingHours: { weekday_text: ["週三至週日 20:30 - 01:30"] },
+      imageUrl:
+        "https://images.unsplash.com/photo-1620857106093-6c7e39a3f25c?q=80&w=2070&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
+      description: "每晚有現場爵士樂表演，提供多款經典調酒，適合品味人士。",
+      isWishlisted: false,
+      images: [
+        "https://images.unsplash.com/photo-1620857106093-6c7e39a3f25c?q=80&w=2070&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
+      ],
+      address: "台北市松山區某某路100號",
+      phone: "02-5566-7788",
+      website: "https://www.example.com/bar004",
+    },
+    {
+      id: "b005",
+      place_id: "ChIJQ52JzdyjQjQR6c8b9j01314",
+      name: "萬華老屋酒吧",
+      location: { lat: 25.0375, lng: 121.5036 },
+      rating: 4.3,
+      reviews: 95,
+      priceRange: "350-700",
+      tags: ["老屋改造", "復古", "特色", "小酌", "萬華區"],
+      openingHours: { weekday_text: ["週一至週六 19:00 - 00:00"] },
+      imageUrl:
+        "https://images.unsplash.com/photo-1567119054760-449e6d0a794c?q=80&w=2070&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
+      description: "由老屋改造的特色酒吧，保留復古元素，提供獨特調酒。",
+      isWishlisted: false,
+      images: [
+        "https://images.unsplash.com/photo-1567119054760-449e6d0a794c?q=80&w=2070&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
+      ],
+      address: "台北市萬華區某某街1號",
+      phone: "",
+      website: "",
+    },
+    {
+      id: "b006",
+      place_id: "ChIJL52JzdyjQjQR6c8b9j01314",
+      name: "士林文青酒吧",
+      location: { lat: 25.0935, lng: 121.5235 },
+      rating: 4.6,
+      reviews: 150,
+      priceRange: "450-800",
+      tags: ["文青", "咖啡", "輕食", "獨立", "士林區"],
+      openingHours: { weekday_text: ["週二至週日 14:00 - 23:00"] },
+      imageUrl:
+        "https://images.unsplash.com/photo-1624467362791-0391d84e4f58?q=80&w=2070&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
+      description: "結合咖啡與酒精，氛圍輕鬆，適合閱讀或安靜小酌。",
+      isWishlisted: false,
+      images: [
+        "https://images.unsplash.com/photo-1624467362791-0391d84e4f58?q=80&w=2070&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
+      ],
+      address: "台北市士林區某某街20號",
+      phone: "02-1234-9876",
+      website: "https://www.example.com/bar006",
+    },
+    {
+      id: "b007",
+      place_id: "ChIJZ52JzdyjQjQR6c8b9j01314",
+      name: "信義餐酒館",
+      location: { lat: 25.041, lng: 121.567 },
+      rating: 4.9,
+      reviews: 90,
+      priceRange: "700-1300",
+      tags: ["秘密基地", "私密空間", "預約制", "信義區"],
+      openingHours: { weekday_text: ["週三至週六 21:00 - 03:00"] },
+      imageUrl:
+        "https://images.unsplash.com/photo-1517409259508-3331b262a048?q=80&w=2070&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
+      description: "隱藏在城市中的秘密酒吧，需要預約才能進入，提供客製化調酒。",
+      isWishlisted: false,
+      images: [
+        "https://images.unsplash.com/photo-1517409259508-3331b262a048?q=80&w=2070&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
+      ],
+      address: "台北市信義區某某街33號",
+      phone: "0912-345-678",
+      website: "",
+    },
+    {
+      id: "b008",
+      place_id: "ChIJG52JzdyjQjQR6c8b9j01314",
+      name: "大安居酒屋",
+      location: { lat: 25.037, lng: 121.545 },
+      rating: 4.4,
+      reviews: 250,
+      priceRange: "500-1000",
+      tags: ["居酒屋", "日式", "燒烤", "深夜食堂", "大安區"],
+      openingHours: { weekday_text: ["每日 18:00 - 00:00"] },
+      imageUrl:
+        "https://images.unsplash.com/photo-1549429402-d96201e523f4?q=80&w=2070&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
+      description: "提供地道日式居酒屋氛圍，美味串燒與多種清酒。",
+      isWishlisted: false,
+      images: [
+        "https://images.unsplash.com/photo-1549429402-d96201e523f4?q=80&w=2070&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
+      ],
+      address: "台北市大安區某某路88號",
+      phone: "02-7788-9900",
+      website: "https://www.example.com/bar008",
+    },
+  ];
+}
+
+// ----------------------------------------------------------------------
+// Vue 生命週期與監聽器
+// ----------------------------------------------------------------------
 
 onMounted(async () => {
+  isLoading.value = true;
   try {
-    await loadGoogleMapsScript()
-
-    initMap(defaultCenter)
-
-    navigator.geolocation.getCurrentPosition(
-
-      (position) => {
-        const userLocation = {
-          lat: position.coords.latitude,
-          lng: position.coords.longitude
-        }
-        initMap(userLocation)
-        searchNearbyBars('酒吧', userLocation, 2000);
-      },
-      () => {
-        initMap(defaultCenter)
-        searchNearbyBars('酒吧', defaultCenter, 2000);
-      }
-    )
-  } catch (err) {
-    console.error('地圖載入失敗：', err)
-  }
-})
-
-function initMap(center) {
-  map = new google.maps.Map(mapContainer.value, {
-    center,
-    zoom: 12,
-
-    // 改成我的 Map ID
-    mapId:'de9836f814a14783c63e9078',
-
-    // 允許直接滾輪縮放、不顯示提示
-    gestureHandling: 'greedy',
-    restriction: {
-      latLngBounds: {
-        north: 25.5,
-        south: 21.5,
-        east: 122.2,
-        west: 119.3
-      },
-      strictBounds: false
-    },
-    mapTypeControl: false,
-    zoomControl: false,
-    scaleControl: false,
-    streetViewControl: false,
-    rotateControl: false,
-    fullscreenControl: false,
-
-    // 把地圖上預設的商家、餐廳、學校、醫院等圖示 (poi, Point of Interest) 都隱藏掉
-    styles: [
-      {
-        featureType: 'poi',
-        elementType: 'labels',
-        stylers: [{ visibility: 'off' }]
-      }
-    ]
-  })
-
-  infoWindow = new google.maps.InfoWindow()
-  placesService = new google.maps.places.PlacesService(map)
-  autocompleteService = new google.maps.places.AutocompleteService()
-}
-
-// 搜尋附近的「酒吧」並加上 marker
-function searchNearbyBars(query, location, radius = 2000) {
-  if (!location || typeof location.lat !== 'number' || typeof location.lng !== 'number') {
-    console.error('searchNearbyBars: 無效的位置', location)
-    return
-  }
-
-  if (currentMarker && (location.lat !== currentMarker.getPosition().lat || location.lng !== currentMarker.getPosition().lng)) { 
-    clearAllMarkers(); 
-  } else if (!currentMarker) {
-    clearAllMarkers();
-  }
-
-  const request = {
-    location,
-    radius: 1500,
-    type: (query.includes('酒吧') || query.includes('bar')) ? ['bar', 'liquor_store'] : undefined, 
-    keyword: query
-  }
-
-  placesService.nearbySearch(request, (results, status) => {
-    if (status !== google.maps.places.PlacesServiceStatus.OK || results.length === 0) {
-      console.warn('附近找不到酒吧，狀態：', status)
-      return
-    }
-
-    const bounds = new google.maps.LatLngBounds()
-
-    results.forEach(place => {
-      if (!place.geometry || !place.geometry.location) return
-
-      const marker = new google.maps.Marker({
-        map,
-        position: place.geometry.location,
-        title: place.name,
-    })
-
-    // 延伸：取得詳細資料（含評論）
-    placesService.getDetails(
-      {
-        placeId: place.place_id,
-        fields: ['name', 'rating', 'website', 'reviews','types']
-      },
-      (details, status) => {
-          if (status !== google.maps.places.PlacesServiceStatus.OK) {
-            console.warn('getDetails 失敗：', status, place.name)
-            return
-          }
-
-          const isBarType = details.types && (details.types.includes('bar') || details.types.includes('liquor_store'));
-          const nameMatches = /酒|bar|pub|雞尾酒|lounge/i.test(details.name); 
-          const reviewMatches = Array.isArray(details.reviews)
-            ? details.reviews.some(r => /酒|bar|pub|雞尾酒|lounge/i.test(r.text))
-            : false
-
-          const isBarLike = isBarType || nameMatches || reviewMatches
-
-          if (isBarLike) {
-            marker.setIcon({
-              url: '/wine.png',
-              scaledSize: new google.maps.Size(32, 32)
-            })
-          }
-        }
-      )
-
-      marker.addListener('click', () => {
-        placesService.getDetails(
-          {
-            placeId: place.place_id,
-            fields: ['name', 'formatted_address', 'rating', 'website']
-          },
-          (details, status) => {
-            if (status === google.maps.places.PlacesServiceStatus.OK) {
-              const content = `
-                <strong>${details.name}</strong><br/>
-                地址：${details.formatted_address}<br/>
-                評分：${details.rating}<br/>
-                ${details.website ? `<a href="${details.website}" target="_blank">網站</a>` : ''}
-              `
-              infoWindow.setContent(content)
-              infoWindow.open(map, marker)
-            }
-          }
-        )
-      })
-
-      markers.push(marker)
-      bounds.extend(place.geometry.location)
-    })
-
-    map.fitBounds(bounds)
-  })
-}
-
-function handleClickOutside(event) {
-  if (inputArea.value && !inputArea.value.contains(event.target)) {
-    suggestions.value = []
-  }
-}
-
-onMounted(() => {
-  document.addEventListener('click', handleClickOutside)
-})
-
-onBeforeUnmount(() => {
-  document.removeEventListener('click', handleClickOutside)
-})
-
-// 搜尋 - 防抖機制
-const onInputChange= debounce(() =>{
-  if (!autocompleteService || !searchQuery.value) {
-    suggestions.value = []
-    return
-  }
-
-  autocompleteService.getPlacePredictions(
-    {
-      input: searchQuery.value,
-      componentRestrictions: { country: 'tw' },
-      location: map.getCenter(), 
-      radius: 20000
-    },
-    (predictions, status) => {
-      if (status === google.maps.places.PlacesServiceStatus.OK && predictions) {
-        suggestions.value = predictions
-      } else {
-        suggestions.value = []
-      }
-    }
-  )
-}, 300)
-
-function selectSuggestion(suggestion) {
-  searchQuery.value = suggestion.description
-  suggestions.value = []
-  searchPlaceByText(suggestion.description)
-}
-
-function handleSearch() {
-  if (!searchQuery.value) {
-    alert('請輸入搜尋關鍵字')
-    return
-  }
-
-  searchPlaceByText(searchQuery.value, map.getCenter(), 5000)
-}
-
-function searchPlaceByText(query) {
-  isSearching.value = true
-
-  placesService.textSearch(
-    {
-      query,
-      location: map.getCenter(),
-      radius: 50000,
-      region: 'tw',
-    },
-    (results, status) => {
-      setTimeout(() => {
-        isSearching.value = false
-      }, 200) // 人為 delay 0.2 秒讓 loading 看得見
-
-      if (status !== google.maps.places.PlacesServiceStatus.OK || !results.length) {
-        alert('找不到地點')
-        return
-      }
-
-      clearMarkers()
-
-      const bounds = new google.maps.LatLngBounds()
-
-      results.forEach((place) => {
-        if (!place.geometry || !place.geometry.location) return
-
-        const marker = new google.maps.Marker({
-          map,
-          position: place.geometry.location,
-          title: place.name,
-        })
-
-        // 取得詳細資訊（包含評論）
-        placesService.getDetails(
-          {
-            placeId: place.place_id,
-            fields: ['name', 'formatted_address', 'rating', 'website', 'reviews'],
-          },
-          (details, status) => {
-            if (status === google.maps.places.PlacesServiceStatus.OK && details) {
-              const isBarType = details.types && details.types.includes('bar')
-              const nameMatches = /酒|bar/i.test(details.name)
-              const reviewMatches = Array.isArray(details.reviews)
-                ? details.reviews.some((review) => /酒|bar/i.test(review.text))
-                : false
-
-              const isBarLike = isBarType ||nameMatches || reviewMatches
-
-              if (isBarLike) {
-                marker.setIcon({
-                  url: '/wine.png',
-                  scaledSize: new google.maps.Size(32, 32),
-                })
-              }
-
-              marker.addListener('click', () => {
-                const content = `
->>>>>>> dev
-                  <strong>${details.name}</strong><br/>
-                  地址：${details.formatted_address}<br/>
-                  評分：${details.rating}<br/>
-                  ${details.website ? `<a href="${details.website}" target="_blank">網站</a>` : ''}
-                `
-                infoWindow.setContent(content)
-                infoWindow.open(map, marker)
-              })
-            }
-          }
-        )
-
-        markers.push(marker)
-        bounds.extend(place.geometry.location)
-      })
-
-      map.fitBounds(bounds)
-       // 限制 zoom 不要放太大
-      const listener = google.maps.event.addListenerOnce(map, 'bounds_changed', () => {
-        if (map.getZoom() > 15) {
-          map.setZoom(15)
-        }
-      })
-    }
-  )
-}
-
-function clearMarkers() {
-  markers.forEach((marker) => marker.setMap(null))
-  markers = []
-}
-
-function getCurrentLocation() {
-  console.log('取得目前位置...')
-  if (!navigator.geolocation) {
-    alert('你的瀏覽器不支援定位功能')
-    return
-  }
-
-  navigator.geolocation.getCurrentPosition(
-    (position) => {
-      const location = {
-        lat: position.coords.latitude,
-        lng: position.coords.longitude
-      }
-
-      map.setCenter(location)
-      map.setZoom(15)
-
-      if (!currentMarker) {
-        currentMarker = new google.maps.Marker({
-          map,
-          position: location,
-          icon: {
-            url: '/now.png',
-              scaledSize: new google.maps.Size(32, 32)
-          }
-        })
-          currentMarker.addListener('click', () => {
-          showCurrentLocationInfo(location)
-        })
-      } else {
-        currentMarker.setPosition(location)
-      }
-  
-  function showCurrentLocationInfo(location) {
-  const geocoder = new google.maps.Geocoder()
-  geocoder.geocode({ location }, (results, status) => {
-    if (status === 'OK' && results[0]) {
-      const address = results[0].formatted_address
-      infoWindow.setContent(`<strong>你現在的位置</strong><br/>${address}`)
+    await loadGoogleMapsAPI();
+    if (mapContainer.value) {
+      initMap();
+      await fetchBarsData();
+      requestGeolocationPermission();
     } else {
-      infoWindow.setContent(`<strong>你現在的位置</strong><br/>（無法取得地址資訊）`)
+      alert("錯誤：地圖容器未準備好，無法初始化地圖。請檢查網頁元素。");
+      console.error("錯誤：地圖容器 ref 未綁定，無法初始化地圖。");
     }
-    infoWindow.open(map, currentMarker)
-  })
-}
+  } catch (err) {
+    console.error("地圖或數據載入失敗:", err);
+    alert(`初始化失敗，請檢查控制台錯誤: ${err.message || err}`);
+  } finally {
+    isLoading.value = false;
+  }
+});
 
-      // 搜尋附近酒吧 (location)
-    },
-    (error) => {
-      alert('無法取得你的位置，錯誤代碼：' + error.code)
-      console.error(error)
-      initMap(defaultCenter, false);
-    },
-    {
-      enableHighAccuracy: true,
-      timeout: 10000,
-      maximumAge: 0
+watch(
+  filteredBars,
+  (newBars) => {
+    if (map.value) {
+      displayBarsOnMap(newBars);
+    } else {
+      console.warn("地圖實例尚未準備好，無法顯示酒吧標記。");
     }
-  )
-}
+  },
+  { immediate: true }
+);
 
+watch(selectedBar, (newVal) => {
+  if (!newVal && !isBarDetailModalOpen.value) {
+    closeInfoWindow();
+  }
+});
 </script>
 
 <style scoped>
-.map-container {
-  width: 100%;
-  height: 600px;
+/* 您的現有樣式保持不變 */
+.map-view-container {
+  display: flex;
+  height: 100vh;
+  width: 100vw;
+  overflow: hidden;
   position: relative;
 }
-.search-panel{
-  display: flex;
-  align-items: flex-start;
-  gap: 10px;
+
+.top-left-controls {
   position: absolute;
-  top: 120px;
-  left: 30px;
-  background-color: rgba(255, 255, 255,0.5);
-  z-index: 10;
-  padding: 10px;
+  top: 20px;
+  left: calc(380px + 20px);
+  z-index: 100;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  padding: 15px;
+  background-color: rgba(255, 255, 255, 0.9);
   border-radius: 8px;
-  box-shadow: 0 2px 6px rgba(48, 21, 21, 0.2);
-} 
-.input-group{
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  transition: left 0.3s ease-in-out;
+}
+
+.bar-list-sidebar {
+  width: 380px;
+  background-color: #f7f7f7;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 2px 0 8px rgba(0, 0, 0, 0.1);
+  z-index: 50;
+  transition: transform 0.3s ease-in-out;
+}
+
+.bar-list-sidebar.sidebar-hidden {
+  transform: translateX(-100%);
+  position: absolute;
+}
+
+.map-control-button {
+  padding: 12px 20px;
+  border: none;
+  background-color: #decdd5;
+  color: black;
+  border-radius: 8px;
+  font-size: 16px;
+  cursor: pointer;
+  white-space: nowrap;
+  font-weight: 200;
+  transition:
+    background-color 0.2s,
+    transform 0.2s;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+  outline: none;
+}
+
+.map-control-button:hover {
+  background-color: #a08d7a;
+  transform: translateY(-2px);
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+}
+
+.map-control-button:focus {
+  outline: none;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+}
+
+.filter-toggle-button {
+  order: 1;
+  padding: 0;
+  background-color: transparent;
+  box-shadow: none;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  font-size: 24px;
+  color: #3a3435;
+}
+
+.filter-toggle-button:hover {
+  background-color: rgba(0, 0, 0, 0.1);
+  transform: translateY(0);
+  box-shadow: none;
+}
+
+.filter-toggle-button:focus {
+  outline: none;
+  box-shadow: none;
+}
+
+.filter-toggle-button .fas {
+  color: #3a3435;
+}
+
+.search-panel-map {
+  order: 2;
   display: flex;
   position: relative;
-  margin-left: 10px;
+  width: 300px;
+  flex-shrink: 1;
+  align-items: center;
 }
-.search-input{
-  /* height: 40px; */
+
+.input-group {
+  display: flex;
+  position: relative;
+  width: 100%;
+  gap: 0;
+}
+
+.search-input {
+  height: 40px;
   padding: 8px 12px;
-  margin-top: 10px;
+  font-size: 16px;
   border: 1px solid #decdd5;
-  border-right: none;
-  border-radius: 5px 0 0 5px;
+  border-right: 0;
+  border-radius: 8px 0 0 8px;
   outline: none;
   flex: 1;
+  margin: 0;
 }
-.search-bt{
+
+.search-bt {
   background-color: #decdd5;
-  color: #3A3435;
+  color: #3a3435;
   padding: 8px 12px;
-  margin: 10px 0 5px 0px;
+  margin: 0;
+  border: 1px solid #decdd5;
+  border-left: 0;
   border-radius: 0px 5px 5px 0px;
-  border: 0px;
   cursor: pointer;
+  order: 3;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+  outline: none;
 }
-.search-bt:hover{
+
+.search-bt:hover {
   background-color: #860914;
   color: #ffffff;
 }
-.place-now {
+
+.search-input:focus {
+  border-color: #b8a28e;
+  box-shadow: 0 0 0 2px rgba(184, 162, 142, 0.2);
+}
+
+.place-now-map {
   padding: 8px 12px;
-  margin: 10px;
+  margin: 0;
   border: none;
   background-color: #decdd5;
-  color: #3A3435;
+  color: #3a3435;
   border-radius: 5px;
   cursor: pointer;
   white-space: nowrap;
+  order: 4;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+  outline: none;
 }
-.place-now:hover {
+
+.place-now-map:hover {
   background-color: #860914;
   color: #ffffff;
 }
+
 .suggestions-list {
   position: absolute;
-  top:100%;
+  top: calc(100% + 5px);
   left: 0;
   right: 0;
-  z-index: 10;
+  z-index: 20;
   list-style: none;
   margin: 0;
   padding: 0;
   background: white;
   border: 1px solid #ddd;
+  border-radius: 8px;
   max-height: 200px;
   overflow-y: auto;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
 }
 .suggestions-list li {
-  padding: 8px;
+  padding: 10px 12px;
   cursor: pointer;
+  border-bottom: 1px solid #f0f0f0;
+}
+.suggestions-list li:last-child {
+  border-bottom: none;
 }
 .suggestions-list li:hover {
   background: #f0f0f0;
 }
-.custom-loading{
+
+.info-window-content {
+  padding: 15px;
+  font-family: "Noto Sans TC", sans-serif;
+  color: #333;
+  max-width: 300px;
+}
+
+.info-window-title {
+  font-size: 22px;
+  font-weight: bold;
+  margin-bottom: 8px;
+  color: #2c3e50;
+  line-height: 1.3;
+}
+
+.info-window-meta {
+  font-size: 15px;
+  color: #555;
+  margin-bottom: 5px;
+}
+
+.info-window-description {
+  font-size: 14px;
+  color: #777;
+  margin-top: 10px;
+  line-height: 1.5;
+}
+
+.info-window-tags-container {
+  margin-top: 10px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.info-window-tag {
+  display: inline-block;
+  background-color: #e9ecef;
+  color: #495057;
+  padding: 5px 10px;
+  border-radius: 15px;
+  font-size: 13px;
+  white-space: nowrap;
+}
+
+.info-window-image {
+  max-width: 100%;
+  height: auto;
+  margin-top: 10px;
+  margin-bottom: 10px;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.bar-list-scroll-area {
+  flex-grow: 1;
+  overflow-y: auto;
+  padding: 16px;
+}
+
+.map-container {
+  flex-grow: 1;
+  height: 100%;
+  background-color: #e0e0e0;
+}
+
+.loading-overlay {
   position: fixed;
   top: 0;
   left: 0;
   width: 100vw;
   height: 100vh;
-  background-color: rgba(255, 255, 255, 0.8); 
+  background-color: rgba(255, 255, 255, 0.85);
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   z-index: 9999;
 }
+
 .loader {
-  width: 50px;
-  --b: 6px;
+  width: 60px;
+  height: 60px;
+  --b: 8px;
   aspect-ratio: 1;
   border-radius: 50%;
   padding: 1px;
   background: conic-gradient(#0000 10%, #afb18c) content-box;
   -webkit-mask:
     repeating-conic-gradient(#0000 0deg, #000 1deg 20deg, #0000 21deg 36deg),
-    radial-gradient(farthest-side, #0000 calc(100% - var(--b) - 1px), #000 calc(100% - var(--b)));
+    radial-gradient(
+      farthest-side,
+      #0000 calc(100% - var(--b) - 1px),
+      #000 calc(100% - var(--b))
+    );
   -webkit-mask-composite: destination-in;
-          mask-composite: intersect;
-  animation: l4 1s infinite steps(10);
+  mask-composite: intersect;
+  animation: l4 1s infinite;
 }
+
 @keyframes l4 {
   to {
     transform: rotate(1turn);
   }
 }
-.loading-message {
-  margin-top: 12px;
-  font-weight: bold;
-  font-size: 20px;
-  color: #333;
+
+.remove-filter-button:hover {
+  opacity: 1;
 }
 
+@media (max-width: 768px) {
+  .top-left-controls {
+    left: 20px;
+    width: calc(100% - 40px);
+    flex-direction: column;
+  }
+  .search-panel-map {
+    width: 100%;
+  }
+}
 </style>
