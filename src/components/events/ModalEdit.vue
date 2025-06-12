@@ -28,6 +28,7 @@ function handleUpdate() {
 
 function handleDelete() {
   showForm.value = false
+  emit('update')
 }
 </script>
 

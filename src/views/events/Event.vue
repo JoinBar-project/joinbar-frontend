@@ -16,10 +16,9 @@ onMounted(() => {
 })
 
 const sortedEvents = computed(() => {
-  // 依照 startDate 新→舊排序
-  return [...events.value].sort((a, b) => {
-    return new Date(b.startDate) - new Date(a.startDate)
-  })
+  return [...events.value]
+    .filter(event => event.status !== 2) // 過濾刪除活動
+    .sort((a, b) => new Date(b.startDate) - new Date(a.startDate))
 })
 
 </script>

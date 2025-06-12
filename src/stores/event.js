@@ -56,6 +56,7 @@ export const useEventStore = defineStore('event', () => {
     loading.value = true
     try {
       await axios.delete(`/event/delete/${id}`)
+      events.value = events.value.filter(e => e.id !== id)
       event.value = null
       error.value = null
     } catch (e) {
@@ -69,7 +70,7 @@ export const useEventStore = defineStore('event', () => {
     loading.value = true
     try {
       const res = await axios.get(`/event/${id}`)
-      event.value = res.data
+      events.value = res.data.filter(e => e.status !== 2) // 過濾軟刪除的活動
       error.value = null
     } catch (e) {
       error.value = e.response?.data?.message || e.message
