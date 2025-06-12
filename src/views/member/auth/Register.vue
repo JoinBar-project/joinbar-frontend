@@ -5,13 +5,12 @@
     <div class="flex border-b border-[#f3c4cc]">
       <router-link
         to="/login"
-        class="flex-1 py-2 text-center font-semibold text-[#b0a89c] transition"
-        style="color: #b0a89c;"
+        class="flex-1 py-2 text-center font-semibold text-[#bbbbbb] transition"
+        style="color: #bbbbbb;"
         @mouseover="$event.target.style.color = 'var(--color-primary-red)'"
-        @mouseleave="$event.target.style.color = '#b0a89c'">
+        @mouseleave="$event.target.style.color = '#bbbbbb'">
         會員登入
       </router-link>
-      
       <button
         class="flex-1 py-2 text-center font-semibold border-b-3 border-[#aa666c]"
         style="color: var(--color-primary-red);">
@@ -32,22 +31,31 @@
                 'flex items-center border rounded px-3 py-2 transition-colors',
                 errors[field.model] 
                   ? 'border-red-500 bg-red-50' 
-                  : 'border-gray-300'
+                  : 'border-gray-400',
+                field.type === 'password' ? 'relative' : ''
               ]">
               <i :class="field.icon" class="mr-2" style="color: var(--color-black)"></i>
               <input 
-                :type="field.type" 
+                :type="field.type === 'password' ? (showPassword ? 'text' : 'password') : field.type" 
                 :placeholder="field.placeholder" 
                 v-model="form[field.model]"
                 @input="clearError(field.model)"
                 :class="[
-                  'w-full outline-none placeholder-opacity-70 transition-colors',
+                  'w-full outline-none placeholder-opacity-70 transition-colors text-sm',
                   errors[field.model] 
                     ? 'text-red-600 placeholder-red-400' 
-                    : ''
+                    : 'text-[var(--color-primary-red)] placeholder-[var(--color-primary-red)]'
                 ]"
-                :style="!errors[field.model] ? 'color: var(--color-primary-red);' : ''"
+                :style="!errors[field.model] ? 'text-[var(--color-primary-red)]' : ''"
               />
+              <!-- 密碼眼睛圖示 -->
+              <button 
+                v-if="field.type === 'password'" 
+                type="button" 
+                class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500" 
+                @click="showPassword = !showPassword">
+                <i :class="showPassword ? 'fa-regular fa-eye' : 'fa-regular fa-eye-slash'"></i>
+              </button>
             </div>
             <!-- 錯誤提示文字 -->
             <div v-if="errors[field.model]" class="text-red-500 text-xs ml-1">
@@ -70,12 +78,11 @@
             </button>
           </div>
 
-          <button @click="goToPreferences" class="block mx-auto mt-6 px-6 py-2 rounded-lg font-semibold text-[#ffffff] hover:bg-[#aa666c] hover:shadow-xl transition"
-                  style="background-color: var(--color-primary-red);"
-                  @mouseover="$event.target.style.color = 'var(--color-black)'"
-                  @mouseleave="$event.target.style.color = '#ffffff'">
-            下一步
-          </button>
+        <button
+          @click="goToPreferences"
+          class="block mx-auto mt-6 px-6 py-2 rounded-lg font-semibold text-white bg-[var(--color-primary-red)] hover:bg-[#aa666c] hover:text-[var(--color-black)] hover:shadow-xl transition">
+          下一步
+        </button>
 
           <!-- 登入提示 -->
           <div class="text-center mt-4 pt-4 border-t border-gray-300">
@@ -126,10 +133,7 @@
             </button>
             <button
               @click="submitRegistration"
-              class="px-6 py-2 rounded-lg font-semibold text-[#ffffff] hover:bg-[#aa666c] hover:shadow-xl transition"
-              style="background-color: var(--color-primary-red);"
-              @mouseover="$event.target.style.color = 'var(--color-black)'"
-              @mouseleave="$event.target.style.color = '#ffffff'">
+              class="px-6 py-2 rounded-lg font-semibold text-white bg-[var(--color-primary-red)] hover:bg-[#aa666c] hover:text-[var(--color-black)] hover:shadow-xl transition">
               完成註冊
             </button>
           </div>
@@ -142,6 +146,7 @@
 <script setup>
 import { ref } from 'vue'
 const step = ref(1)
+const showPassword = ref(false)
 
 const form = ref({
   name: '',
@@ -155,10 +160,10 @@ const form = ref({
 })
 
 const registerFields = [
-  { model: 'name', placeholder: '姓名', icon: 'fa-solid fa-user', type: 'text' },
+  { model: 'name', placeholder: ' 姓名', icon: 'fa-solid fa-user', type: 'text' },
   { model: 'nickname', placeholder: '暱稱', icon: 'fa-solid fa-user-pen', type: 'text' },
-  { model: 'password', placeholder: '密碼', icon: 'fa-solid fa-key', type: 'password' },
-  { model: 'birthday', placeholder: '生日', icon: 'fa-solid fa-cake-candles', type: 'date' },
+  { model: 'password', placeholder: ' 密碼', icon: 'fa-solid fa-key', type: 'password' },
+  { model: 'birthday', placeholder: ' 生日', icon: 'fa-solid fa-cake-candles', type: 'date' },
 ]
 
 const barTypes = ['運動酒吧', '音樂酒吧', '學生酒吧', '餐酒館', '暢飲店']
