@@ -83,19 +83,18 @@ import { ref, onMounted, computed, watch } from "vue";
 import debounce from "lodash/debounce";
 import dayjs from "dayjs";
 
-// --- 引入組件與 Google Maps Composable ---
-import FilterPanel from "@/components/map/FilterPanel.vue";
-import BarList from "@/components/map/BarList.vue";
-import BarDetailModal from "@/components/map/BarDetailModal.vue";
-import { useGoogleMaps } from "@/composable/useGoogleMaps.js";
+import FilterPanel from "../../components/map/FilterPanel.vue";
+import BarList from "../../components/map/BarList.vue";
+import BarDetailModal from "../../components/map/BarDetailModal.vue";
+import { useGoogleMaps } from "@/composable/useGoogleMaps";
 
 const googleMapsApiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
 
-// --- 響應式狀態 ---
+// --- 響應式狀態定義 ---
 const isLoading = ref(false);
 const mapContainer = ref(null);
 
-// --- 引入 useGoogleMaps Composable ---
+// 引入 useGoogleMaps Composable
 const {
   map,
   markers,
@@ -128,6 +127,7 @@ const searchQuery = ref("");
 const suggestions = ref([]);
 const allBars = ref([]);
 const currentFilters = ref({
+  // 當前篩選條件
   address: "any",
   ratingSort: "any",
   minDistance: 0,
@@ -142,26 +142,19 @@ const selectedBar = ref(null);
 const isBarDetailModalOpen = ref(false);
 const selectedBarForDetail = ref(null);
 
-// ----------------------------------------------------------------------
-// 計算屬性
-// ----------------------------------------------------------------------
-
+// --- 計算屬性 ---
 const filteredBars = computed(() => {
   let barsToFilter = [...allBars.value];
 
+  // 1. 地址篩選
   if (currentFilters.value.address !== "any") {
     barsToFilter = barsToFilter.filter((bar) =>
       bar.tags.includes(currentFilters.value.address)
     );
   }
 
-  if (
-    map.value &&
-    window.google &&
-    window.google.maps &&
-    window.google.maps.geometry &&
-    window.google.maps.geometry.spherical
-  ) {
+  // 2. 距離篩選
+  if (map.value && window.google?.maps?.geometry?.spherical) {
     const mapCenter = map.value.getCenter();
     if (mapCenter) {
       const centerLatLng = new window.google.maps.LatLng(
@@ -170,20 +163,14 @@ const filteredBars = computed(() => {
       );
       barsToFilter = barsToFilter
         .map((bar) => {
-          if (
-            !bar.location ||
-            typeof bar.location.lat === "undefined" ||
-            typeof bar.location.lng === "undefined"
-          ) {
-            console.warn(
-              `Bar ${bar.name} (${bar.id}) 缺少有效的地理位置資訊，無法計算距離。`
-            );
-            return { ...bar, distance: undefined };
-          }
+          const barLatLng = new window.google.maps.LatLng(
+            bar.location.lat,
+            bar.location.lng
+          );
           bar.distance =
             window.google.maps.geometry.spherical.computeDistanceBetween(
               centerLatLng,
-              new window.google.maps.LatLng(bar.location.lat, bar.location.lng)
+              barLatLng
             );
           return bar;
         })
@@ -195,15 +182,9 @@ const filteredBars = computed(() => {
           );
         });
     }
-  } else if (
-    map.value &&
-    (!window.google ||
-      !window.google.maps.geometry ||
-      !window.google.maps.geometry.spherical)
-  ) {
-    console.warn("Google Maps Geometry 庫未載入，距離篩選將不會生效。");
   }
 
+  // 3. 營業時間篩選 (處理跨日邏輯)
   if (
     currentFilters.value.minOpenHour !== 0 ||
     currentFilters.value.minOpenMinute !== 0 ||
@@ -233,12 +214,14 @@ const filteredBars = computed(() => {
     });
   }
 
+  // 4. 評分排序
   if (currentFilters.value.ratingSort === "highToLow") {
     barsToFilter.sort((a, b) => b.rating - a.rating);
   } else if (currentFilters.value.ratingSort === "lowToHigh") {
     barsToFilter.sort((a, b) => a.rating - b.rating);
   }
 
+  // 5. 標籤篩選
   if (currentFilters.value.tags && currentFilters.value.tags.length > 0) {
     barsToFilter = barsToFilter.filter((bar) =>
       currentFilters.value.tags.every((tag) => bar.tags.includes(tag))
@@ -248,10 +231,7 @@ const filteredBars = computed(() => {
   return barsToFilter;
 });
 
-// ----------------------------------------------------------------------
-// 事件處理函式
-// ----------------------------------------------------------------------
-
+// --- 事件處理函式 ---
 const debouncedSearchSuggestions = debounce(async () => {
   if (!searchQuery.value) {
     suggestions.value = [];
@@ -277,9 +257,9 @@ async function handleSearch() {
 async function handleGetCurrentLocation() {
   isLoading.value = true;
   try {
-    const sidebarWidth =
-      document.querySelector(".bar-list-sidebar")?.offsetWidth || 0;
-    await getMapCurrentLocation(sidebarWidth);
+    await getMapCurrentLocation(
+      document.querySelector(".bar-list-sidebar")?.offsetWidth || 0
+    );
   } catch (err) {
     console.error("獲取目前位置失敗:", err);
     alert("無法獲取您的目前位置，請檢查瀏覽器權限設定。");
@@ -294,24 +274,28 @@ function handleFilterChanged(filters) {
 
 function handleRemoveAppliedFilter(payload) {
   const { type, value } = payload;
-  const filterResets = {
-    address: { address: "any" },
-    ratingSort: { ratingSort: "any" },
-    distance: { minDistance: 0, maxDistance: 5000 },
-    openHour: {
-      minOpenHour: 0,
-      minOpenMinute: 0,
-      maxOpenHour: 24,
-      maxOpenMinute: 0,
-    },
-  };
-
-  if (filterResets[type]) {
-    currentFilters.value = { ...currentFilters.value, ...filterResets[type] };
-  } else if (type === "tag") {
-    currentFilters.value.tags = currentFilters.value.tags.filter(
-      (tag) => tag !== value
-    );
+  switch (type) {
+    case "address":
+      currentFilters.value.address = "any";
+      break;
+    case "ratingSort":
+      currentFilters.value.ratingSort = "any";
+      break;
+    case "distance":
+      currentFilters.value.minDistance = 0;
+      currentFilters.value.maxDistance = 5000;
+      break;
+    case "openHour":
+      currentFilters.value.minOpenHour = 0;
+      currentFilters.value.minOpenMinute = 0;
+      currentFilters.value.maxOpenHour = 24;
+      currentFilters.value.maxOpenMinute = 0;
+      break;
+    case "tag":
+      currentFilters.value.tags = currentFilters.value.tags.filter(
+        (tag) => tag !== value
+      );
+      break;
   }
 }
 
@@ -348,9 +332,8 @@ const handleToggleWishlistFromDetail = (barId) => {
   handleToggleWishlist(barId);
 };
 
-async function fetchBarsData() {
-  await new Promise((resolve) => setTimeout(resolve, 500));
-
+// 模擬獲取酒吧數據
+function fetchBarsData() {
   allBars.value = [
     {
       id: "b001",
@@ -362,15 +345,10 @@ async function fetchBarsData() {
       priceRange: "300-600",
       tags: ["精釀啤酒", "放鬆氛圍", "平價", "中山區"],
       openingHours: { weekday_text: ["週二至週日 18:00 - 01:00"] },
-      imageUrl:
-        "https://images.unsplash.com/photo-1543007137-b715ee51102b?q=80&w=2070&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
+      imageUrl: "",
       description: "隱身巷弄中的小酒館，提供多款精釀啤酒，適合下班小酌。",
       isWishlisted: false,
-      images: [
-        "https://images.unsplash.com/photo-1543007137-b715ee51102b?q=80&w=2070&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
-        "https://images.unsplash.com/photo-1543007137-b715ee51102b?q=80&w=2070&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
-        "https://images.unsplash.com/photo-1543007137-b715ee51102b?q=80&w=2070&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
-      ],
+      images: [],
       address: "台北市中山區某某街123號",
       phone: "02-1234-5678",
       website: "https://www.example.com/bar001",
@@ -385,14 +363,10 @@ async function fetchBarsData() {
       priceRange: "800-1500",
       tags: ["高空美景", "創意調酒", "約會小酌", "信義區"],
       openingHours: { weekday_text: ["每日 20:00 - 02:00"] },
-      imageUrl:
-        "https://images.unsplash.com/photo-1582855171120-6d80f837e2c9?q=80&w=2070&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
+      imageUrl: "",
       description: "俯瞰台北市夜景的絕佳地點，提供精緻調酒與餐點，是約會首選。",
       isWishlisted: false,
-      images: [
-        "https://images.unsplash.com/photo-1582855171120-6d80f837e2c9?q=80&w=2070&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
-        "https://images.unsplash.com/photo-1582855171120-6d80f837e2c9?q=80&w=2070&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
-      ],
+      images: [],
       address: "台北市信義區某某路456號",
       phone: "02-9876-5432",
       website: "https://www.example.com/bar002",
@@ -407,20 +381,17 @@ async function fetchBarsData() {
       openingHours: { weekday_text: ["每日 17:00 - 03:00"] },
       description: "提供多台大型螢幕轉播運動賽事，氛圍熱烈，適合與朋友一起看球",
       tags: ["運動酒吧", "大型螢幕", "觀賽熱點", "美式", "大安區"],
-      imageUrl:
-        "https://images.unsplash.com/photo-1543007137-b715ee51102b?q=80&w=2070&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
+      imageUrl: "",
       location: { lat: 25.038, lng: 121.543 },
       isWishlisted: false,
-      images: [
-        "https://images.unsplash.com/photo-1543007137-b715ee51102b?q=80&w=2070&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
-      ],
+      images: [],
       address: "台北市大安區某某街789號",
       phone: "02-1122-3344",
       website: "",
     },
     {
       id: "b004",
-      place_id: "ChIJR52JzdyjQjQR6c8b9j01314",
+      place_id: "ChIJL52JzdyjQjQR6c8b9j01314",
       name: "松山爵士吧",
       location: { lat: 25.0505, lng: 121.5501 },
       rating: 4.7,
@@ -428,13 +399,10 @@ async function fetchBarsData() {
       priceRange: "600-1200",
       tags: ["爵士樂", "現場表演", "復古", "調酒", "松山區"],
       openingHours: { weekday_text: ["週三至週日 20:30 - 01:30"] },
-      imageUrl:
-        "https://images.unsplash.com/photo-1620857106093-6c7e39a3f25c?q=80&w=2070&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
+      imageUrl: "",
       description: "每晚有現場爵士樂表演，提供多款經典調酒，適合品味人士。",
       isWishlisted: false,
-      images: [
-        "https://images.unsplash.com/photo-1620857106093-6c7e39a3f25c?q=80&w=2070&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
-      ],
+      images: [],
       address: "台北市松山區某某路100號",
       phone: "02-5566-7788",
       website: "https://www.example.com/bar004",
@@ -449,13 +417,10 @@ async function fetchBarsData() {
       priceRange: "350-700",
       tags: ["老屋改造", "復古", "特色", "小酌", "萬華區"],
       openingHours: { weekday_text: ["週一至週六 19:00 - 00:00"] },
-      imageUrl:
-        "https://images.unsplash.com/photo-1567119054760-449e6d0a794c?q=80&w=2070&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
+      imageUrl: "",
       description: "由老屋改造的特色酒吧，保留復古元素，提供獨特調酒。",
       isWishlisted: false,
-      images: [
-        "https://images.unsplash.com/photo-1567119054760-449e6d0a794c?q=80&w=2070&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
-      ],
+      images: [],
       address: "台北市萬華區某某街1號",
       phone: "",
       website: "",
@@ -470,13 +435,10 @@ async function fetchBarsData() {
       priceRange: "450-800",
       tags: ["文青", "咖啡", "輕食", "獨立", "士林區"],
       openingHours: { weekday_text: ["週二至週日 14:00 - 23:00"] },
-      imageUrl:
-        "https://images.unsplash.com/photo-1624467362791-0391d84e4f58?q=80&w=2070&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
+      imageUrl: "",
       description: "結合咖啡與酒精，氛圍輕鬆，適合閱讀或安靜小酌。",
       isWishlisted: false,
-      images: [
-        "https://images.unsplash.com/photo-1624467362791-0391d84e4f58?q=80&w=2070&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
-      ],
+      images: [],
       address: "台北市士林區某某街20號",
       phone: "02-1234-9876",
       website: "https://www.example.com/bar006",
@@ -491,13 +453,10 @@ async function fetchBarsData() {
       priceRange: "700-1300",
       tags: ["秘密基地", "私密空間", "預約制", "信義區"],
       openingHours: { weekday_text: ["週三至週六 21:00 - 03:00"] },
-      imageUrl:
-        "https://images.unsplash.com/photo-1517409259508-3331b262a048?q=80&w=2070&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
+      imageUrl: "",
       description: "隱藏在城市中的秘密酒吧，需要預約才能進入，提供客製化調酒。",
       isWishlisted: false,
-      images: [
-        "https://images.unsplash.com/photo-1517409259508-3331b262a048?q=80&w=2070&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
-      ],
+      images: [],
       address: "台北市信義區某某街33號",
       phone: "0912-345-678",
       website: "",
@@ -512,13 +471,10 @@ async function fetchBarsData() {
       priceRange: "500-1000",
       tags: ["居酒屋", "日式", "燒烤", "深夜食堂", "大安區"],
       openingHours: { weekday_text: ["每日 18:00 - 00:00"] },
-      imageUrl:
-        "https://images.unsplash.com/photo-1549429402-d96201e523f4?q=80&w=2070&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
+      imageUrl: "",
       description: "提供地道日式居酒屋氛圍，美味串燒與多種清酒。",
       isWishlisted: false,
-      images: [
-        "https://images.unsplash.com/photo-1549429402-d96201e523f4?q=80&w=2070&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
-      ],
+      images: [],
       address: "台北市大安區某某路88號",
       phone: "02-7788-9900",
       website: "https://www.example.com/bar008",
@@ -526,30 +482,27 @@ async function fetchBarsData() {
   ];
 }
 
-// ----------------------------------------------------------------------
-// Vue 生命週期與監聽器
-// ----------------------------------------------------------------------
-
+// --- Vue 生命週期與監聽器 ---
 onMounted(async () => {
   isLoading.value = true;
   try {
     await loadGoogleMapsAPI();
     if (mapContainer.value) {
       initMap();
-      await fetchBarsData();
+      fetchBarsData();
       requestGeolocationPermission();
     } else {
-      alert("錯誤：地圖容器未準備好，無法初始化地圖。請檢查網頁元素。");
       console.error("錯誤：地圖容器 ref 未綁定，無法初始化地圖。");
     }
   } catch (err) {
     console.error("地圖或數據載入失敗:", err);
-    alert(`初始化失敗，請檢查控制台錯誤: ${err.message || err}`);
+    alert("初始化失敗，請檢查控制台錯誤。");
   } finally {
     isLoading.value = false;
   }
 });
 
+// 監聽篩選後的酒吧列表，更新地圖上的標記
 watch(
   filteredBars,
   (newBars) => {
@@ -562,15 +515,17 @@ watch(
   { immediate: true }
 );
 
+// 監聽選中的酒吧，並在地圖上顯示其資訊視窗 (僅當詳細頁面未打開時)
 watch(selectedBar, (newVal) => {
-  if (!newVal && !isBarDetailModalOpen.value) {
+  if (newVal && map.value && !isBarDetailModalOpen.value) {
+  } else if (!isBarDetailModalOpen.value) {
     closeInfoWindow();
   }
 });
 </script>
 
 <style scoped>
-/* 您的現有樣式保持不變 */
+/* --- 頁面整體佈局 --- */
 .map-view-container {
   display: flex;
   height: 100vh;
@@ -579,6 +534,7 @@ watch(selectedBar, (newVal) => {
   position: relative;
 }
 
+/* --- 地圖左上控制區塊 --- */
 .top-left-controls {
   position: absolute;
   top: 20px;
@@ -596,6 +552,7 @@ watch(selectedBar, (newVal) => {
   transition: left 0.3s ease-in-out;
 }
 
+/* --- 酒吧列表側邊欄 --- */
 .bar-list-sidebar {
   width: 380px;
   background-color: #f7f7f7;
@@ -606,11 +563,13 @@ watch(selectedBar, (newVal) => {
   transition: transform 0.3s ease-in-out;
 }
 
+/* 隱藏側邊欄的狀態 */
 .bar-list-sidebar.sidebar-hidden {
   transform: translateX(-100%);
   position: absolute;
 }
 
+/* --- 通用地圖控制按鈕樣式 --- */
 .map-control-button {
   padding: 12px 20px;
   border: none;
@@ -639,6 +598,7 @@ watch(selectedBar, (newVal) => {
   box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
 }
 
+/* --- 篩選按鈕樣式 --- */
 .filter-toggle-button {
   order: 1;
   padding: 0;
@@ -669,6 +629,7 @@ watch(selectedBar, (newVal) => {
   color: #3a3435;
 }
 
+/* --- 搜尋面板樣式 --- */
 .search-panel-map {
   order: 2;
   display: flex;
@@ -721,6 +682,7 @@ watch(selectedBar, (newVal) => {
   box-shadow: 0 0 0 2px rgba(184, 162, 142, 0.2);
 }
 
+/* --- 顯示目前位置按鈕樣式 --- */
 .place-now-map {
   padding: 8px 12px;
   margin: 0;
@@ -740,6 +702,7 @@ watch(selectedBar, (newVal) => {
   color: #ffffff;
 }
 
+/* --- 搜尋建議列表樣式 --- */
 .suggestions-list {
   position: absolute;
   top: calc(100% + 5px);
@@ -768,6 +731,7 @@ watch(selectedBar, (newVal) => {
   background: #f0f0f0;
 }
 
+/* --- 資訊視窗內容樣式 --- */
 .info-window-content {
   padding: 15px;
   font-family: "Noto Sans TC", sans-serif;
@@ -822,18 +786,21 @@ watch(selectedBar, (newVal) => {
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
+/* --- 酒吧列表滾動區域 --- */
 .bar-list-scroll-area {
   flex-grow: 1;
   overflow-y: auto;
   padding: 16px;
 }
 
+/* --- 地圖容器 --- */
 .map-container {
   flex-grow: 1;
   height: 100%;
   background-color: #e0e0e0;
 }
 
+/* --- 載入中遮罩 --- */
 .loading-overlay {
   position: fixed;
   top: 0;
@@ -848,6 +815,7 @@ watch(selectedBar, (newVal) => {
   z-index: 9999;
 }
 
+/* 載入動畫樣式 */
 .loader {
   width: 60px;
   height: 60px;
@@ -874,10 +842,12 @@ watch(selectedBar, (newVal) => {
   }
 }
 
+/* 移除篩選按鈕懸停效果 (請確認是否需要) */
 .remove-filter-button:hover {
   opacity: 1;
 }
 
+/* --- RWD 響應式設計 --- */
 @media (max-width: 768px) {
   .top-left-controls {
     left: 20px;
