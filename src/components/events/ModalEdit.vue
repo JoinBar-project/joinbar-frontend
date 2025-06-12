@@ -52,6 +52,7 @@ function handleDelete() {
               :event-id="props.eventId"
               @click.stop
               @update="handleUpdate"
+              @cancel="closeForm"
               @delete="handleDelete"
             />
           </div>

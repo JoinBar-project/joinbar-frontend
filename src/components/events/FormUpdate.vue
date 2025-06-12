@@ -2,7 +2,7 @@
 import { useEventForm } from '@/composable/useEventForm'
 import Hashtag from './Hashtag.vue'
 
-const emit = defineEmits(['update', 'delete'])
+const emit = defineEmits(['update', 'delete' ,'cancel'])
 const props = defineProps({ eventId: String })
 
 const {
@@ -11,7 +11,6 @@ const {
   eventLocation,
   eventStartDate,
   eventEndDate,
-  eventImageUrl,
   eventPrice,
   eventPeople,
   eventHashtags,
@@ -32,7 +31,7 @@ function onDelete() {
 }
 
 function onCancel() {
-  emit('update')
+  emit('cancel')
 }
 </script>
 
