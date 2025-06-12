@@ -26,7 +26,6 @@ export function useEventForm(eventId = null) {
     }
   })
   
-  // 日期格式轉換函數
   function toDatetimeLocal(dtString) {
     if (!dtString) return ''
     const d = new Date(dtString)
@@ -58,7 +57,6 @@ export function useEventForm(eventId = null) {
     }
   }
   
-  // 重置表單
   function resetForm() {
     eventName.value = ''
     barName.value = ''
@@ -140,7 +138,6 @@ export function useEventForm(eventId = null) {
     }
   }
   
-  // 如果有傳入 eventId，在 mounted 時載入資料
   if (eventId) {
     onMounted(() => {
       loadEvent(eventId)

@@ -2,9 +2,7 @@
 import { ref, watch } from 'vue'
 const emit = defineEmits(['update:modelValue'])
 
-// 定義props：從上層給我一包資料，如果沒給，我自己用一份新的
 const props = defineProps({
-  // modelValue 是陣列，讓預設給空陣列
   modelValue: { type: Array, default: () => [] }
 })
 
