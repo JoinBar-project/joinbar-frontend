@@ -101,7 +101,7 @@ function onSubmit() {
 }
 
 .form-right {
-  @apply flex justify-center items-center w-full h-full rounded-2xl bg-gray-900;
+  @apply flex justify-center items-center w-full h-full rounded-2xl;
   background-color: var(--color-black);
 }
 

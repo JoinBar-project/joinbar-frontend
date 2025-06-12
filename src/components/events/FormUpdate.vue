@@ -107,16 +107,16 @@ async function onDelete() {
 }
 
 .form-header {
-  @apply w-36 text-center mx-auto text-lg p-2 rounded-t-2xl text-white;
+  @apply w-36 text-center mx-auto text-lg p-1 rounded-t-2xl text-white;
   background-color: var(--color-primary-orange);
 }
 
 .form-container {
-  @apply mx-auto w-[700px] rounded-2xl bg-gray-300;
+  @apply mx-auto w-[700px] rounded-xl bg-gray-300;
 }
 
 .form-image-upload {
-  @apply flex justify-center items-center w-full h-72 text-xl text-gray-400 rounded-t-2xl bg-gray-200;
+  @apply flex justify-center items-center w-full h-72 text-xl text-gray-400 rounded-t-xl bg-gray-200;
 }
 
 .form-layout {
@@ -154,7 +154,7 @@ async function onDelete() {
 }
 
 .form-bottom button {
-  @apply block mx-auto w-44 py-1 text-xl text-white border-none rounded-2xl cursor-pointer;
+  @apply block mx-auto w-44 py-1 text-xl text-white border-none rounded-xl cursor-pointer;
 }
 
 .btn-delete {
