@@ -171,15 +171,15 @@ const validateEmail = (email) => {
   return true
 }
 
-// 驗證密碼格式（至少6位數，包含英文和數字）
+// 驗證密碼格式
 const validatePassword = (password) => {
   if (!password || password.trim() === '') {
     passwordErrorMessage.value = '密碼為必填欄位'
     return false
   }
   
-  if (password.length < 6) {
-    passwordErrorMessage.value = '密碼至少需要6個字元'
+  if (password.length < 8) {
+    passwordErrorMessage.value = '密碼至少需要8個字元'
     return false
   }
 
