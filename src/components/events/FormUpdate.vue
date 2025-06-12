@@ -48,9 +48,6 @@ async function onDelete() {
   }
 }
 
-function onCancel() {
-  emit('cancel')
-}
 </script>
 
 <template>
@@ -95,7 +92,7 @@ function onCancel() {
       </div>
       <div class="form-bottom">
         <button type="button" class="btn-delete" @click="onDelete">刪除活動</button>
-        <button type="button" class="btn-cancle" @click="onCancel">取消修改</button>
+        <button type="button" class="btn-cancle" @click="$emit('cancel')">取消修改</button>
         <button type="button" class="btn-confirm" @click="onUpdate">完成發佈</button>
       </div>
     </div>

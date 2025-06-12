@@ -10,7 +10,6 @@ const {
   eventLocation,
   eventStartDate,
   eventEndDate,
-  eventImageUrl,
   eventPrice,
   eventPeople,
   eventHashtags,

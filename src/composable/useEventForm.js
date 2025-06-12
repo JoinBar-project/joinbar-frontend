@@ -114,14 +114,6 @@ export function useEventForm(eventId = null) {
     await eventStore.deleteEvent(id)
   }
   
-  function openForm() {
-    showForm.value = true
-  }
-  
-  function closeForm() {
-    showAlert.value = true
-  }
-  
   function handleAlertAccept() {
     showForm.value = false
     showAlert.value = false
@@ -134,7 +126,7 @@ export function useEventForm(eventId = null) {
   
   function overlayClick(event) {
     if (event.target === event.currentTarget) {
-      closeForm()
+      showAlert.value = true
     }
   }
   
@@ -163,8 +155,6 @@ export function useEventForm(eventId = null) {
     handleDelete,
     loadEvent,
     resetForm,
-    openForm,
-    closeForm,
     handleAlertAccept,
     handleAlertDeny,
     overlayClick

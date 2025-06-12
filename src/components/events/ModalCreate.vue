@@ -6,16 +6,11 @@ import AlertModal from '@/components/AlertModal.vue'
 const {
   showForm,
   showAlert,
-  openForm,
-  closeForm,
   handleAlertAccept,
   handleAlertDeny,
   overlayClick
 } = useEventForm()
 
-function handleCreate() {
-  showForm.value = false
-}
 </script>
 
 <template>
@@ -25,14 +20,14 @@ function handleCreate() {
       @accept="handleAlertAccept"
       @deny="handleAlertDeny"
     />
-    <button class="btn-open-form btn-create" @click="openForm">
+    <button class="btn-open-form btn-create" @click="showForm = true">
       建立活動
     </button>
     <transition name="popup">
       <div v-if="showForm" class="popup-overlay" @click="overlayClick">
         <div class="modal-content">
-          <button class="popup-close-btn" @click="closeForm">×</button>
-          <FormCreate @click.stop @submit="handleCreate" />
+          <button class="popup-close-btn" @click="showAlert = true">×</button>
+          <FormCreate @click.stop @submit="showForm = false" />
         </div>
       </div>
     </transition>

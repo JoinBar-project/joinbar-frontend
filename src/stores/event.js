@@ -57,8 +57,6 @@ export const useEventStore = defineStore('event', () => {
     loading.value = true
     try {
       await axios.delete(`/event/delete/${id}`)
-      // events.value = events.value.filter(e => e.id !== id)
-
       const index = events.value.findIndex(e => e.id == id)
       if (index !== -1) {
         events.value[index].status = 2

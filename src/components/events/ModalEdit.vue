@@ -14,8 +14,6 @@ const props = defineProps({
 const {
   showForm,
   showAlert,
-  openForm,
-  closeForm,
   handleAlertAccept,
   handleAlertDeny,
   overlayClick
@@ -40,20 +38,20 @@ function handleDelete() {
       @deny="handleAlertDeny"
     />
     <div class="edit-btn-container">
-      <button class="btn-open-form btn-edit" @click="openForm" :disabled="!props.eventId">
+      <button class="btn-open-form btn-edit" @click="showForm = true" :disabled="!props.eventId">
         編輯活動
       </button>
     </div>
     <transition name="popup">
       <div v-if="showForm" class="popup-overlay" @click="overlayClick">
         <div class="modal-content">
-          <button class="popup-close-btn" @click="closeForm">×</button>
+          <button class="popup-close-btn" @click="showAlert = true">×</button>
           <div v-if="props.eventId">
             <FormUpdate
               :event-id="props.eventId"
               @click.stop
               @update="handleUpdate"
-              @cancel="closeForm"
+              @cancel="showAlert = true"
               @delete="handleDelete"
             />
           </div>
