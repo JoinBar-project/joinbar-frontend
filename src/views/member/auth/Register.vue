@@ -21,6 +21,7 @@
         <!-- Step 1: 註冊表單 -->
         <div v-if="step === 1" class="space-y-4 mt-6">
           <h2 class="text-xl font-semibold mb-4 text-[#860914]">建立帳號</h2>
+          
           <div v-for="(field, index) in registerFields" :key="index" class="flex items-center border border-gray-300 rounded px-3 py-2">
             <i :class="field.icon" class="text-gray-400 mr-2"></i>
             <input :type="field.type" :placeholder="field.placeholder" v-model="form[field.model]"
@@ -106,7 +107,6 @@
 
 <script setup>
 import { ref } from 'vue'
-
 const step = ref(1)
 
 const form = ref({
@@ -138,6 +138,14 @@ const goToPreferences = () => {
   }
   step.value = 2
 }
+
+// 紀錄每個欄位是否有錯誤
+const errors = ref({
+  name: false,
+  nickname: false,
+  password: false,
+  birthday: false
+})
 
 const toggleSelection = (arr, value) => {
   const index = arr.indexOf(value)
