@@ -1,5 +1,15 @@
 <template>
-  <div class="max-w-md mx-auto mt-10 p-6 bg-[#f8ecec] rounded-xl shadow-xl">
+  <div class="relative max-w-md mx-auto mt-10 p-6 bg-[#f8ecec] rounded-xl shadow-xl">
+    
+    <transition name="alert-slide">
+      <div v-if="showLoginSuccess" role="alert" class="alert alert-success alert-soft absolute -top-8 left-0 right-0 z-10">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 shrink-0 stroke-current" fill="none" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+        </svg>
+        <span>登入成功！歡迎回來</span>
+      </div>
+    </transition>
+    
     <!-- Tabs -->
     <div class="flex border-b border-[#f3c4cc]">
       <button
@@ -119,11 +129,9 @@
 
 <script setup>
 import { ref } from 'vue'
-import { useRouter } from 'vue-router'
-
-const router = useRouter()
 
 const showPassword = ref(false)
+const showLoginSuccess = ref(false)
 
 const loginForm = ref({
   email: '',
@@ -174,15 +182,13 @@ const validatePassword = (password) => {
     passwordErrorMessage.value = '密碼至少需要6個字元'
     return false
   }
-  
-  // 檢查是否包含英文字母
+
   const hasEnglish = /[a-zA-Z]/.test(password)
   if (!hasEnglish) {
     passwordErrorMessage.value = '密碼必須包含英文字母'
     return false
   }
   
-  // 檢查是否包含數字
   const hasNumber = /\d/.test(password)
   if (!hasNumber) {
     passwordErrorMessage.value = '密碼必須包含數字'
@@ -202,7 +208,6 @@ const clearError = (fieldName) => {
 const handleLogin = () => {
   let valid = true
   
-  // 驗證電子郵件
   if (!validateEmail(loginForm.value.email)) {
     errors.value.email = true
     valid = false
@@ -210,7 +215,7 @@ const handleLogin = () => {
     errors.value.email = false
   }
   
-  // 驗證密碼
+
   if (!validatePassword(loginForm.value.password)) {
     errors.value.password = true
     valid = false
@@ -219,14 +224,15 @@ const handleLogin = () => {
   }
   
   // 如果有錯誤就不登入
-  if (!valid) {
-    return
-  }
+  if (!valid) return
   
-  console.log('登入資料：', loginForm.value)
-  // 這裡可以加入 API 呼叫
-  alert('登入成功！')
-}
+  
+  showLoginSuccess.value = true
+
+  setTimeout(() => {
+    showLoginSuccess.value = false
+    }, 3000)
+  }
 
 const useTestAccount = () => {
   loginForm.value.email = 'admin@test.com'
@@ -237,3 +243,21 @@ const useTestAccount = () => {
   alert('已填入測試帳號')
 }
 </script>
+
+<style scoped>
+/* 通知動畫 */
+.alert-slide-enter-active {
+  transition: all 0.4s ease-out;
+}
+.alert-slide-leave-active {
+  transition: all 0.2s ease-in;
+}
+.alert-slide-enter-from {
+  opacity: 0;
+  transform: translateY(-20px);
+}
+.alert-slide-leave-to {
+  opacity: 0;
+  transform: translateY(-20px);
+}
+</style>

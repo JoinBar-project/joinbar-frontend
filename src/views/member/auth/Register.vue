@@ -1,5 +1,15 @@
 <template>
-  <div class="max-w-md mx-auto mt-10 mb-10 p-6 bg-[#f8ecec] rounded-xl shadow-xl text-[#f9ebd5]">
+  <div class="max-w-md mx-auto mt-10 mb-10 p-6 bg-[#f8ecec] rounded-xl shadow-xl text-[#f9ebd5] relative">
+    
+    <!-- 成功註冊通知 -->
+    <transition name="alert-slide">
+      <div v-if="showRegisterSuccess" role="alert" class="alert alert-success absolute -top-8 left-0 right-0 z-10">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 shrink-0 stroke-current" fill="none" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+        </svg>
+        <span>註冊成功！請前往 Email 驗證帳號</span>
+      </div>
+    </transition>
     
     <!-- Tabs -->
     <div class="flex border-b border-[#f3c4cc]">
@@ -147,6 +157,7 @@
 import { ref } from 'vue'
 const step = ref(1)
 const showPassword = ref(false)
+const showRegisterSuccess = ref(false)
 
 const form = ref({
   name: '',
@@ -213,7 +224,14 @@ const toggleSelection = (arr, value) => {
 
 const submitRegistration = () => {
   console.log('送出資料：', form.value)
-  alert('已送出註冊資料，請前往 Email 驗證帳號！')
+  
+  // 顯示成功通知
+  showRegisterSuccess.value = true
+  
+  // 3秒後自動隱藏通知
+  setTimeout(() => {
+    showRegisterSuccess.value = false
+  }, 3000)
 }
 </script>
 
@@ -229,5 +247,21 @@ const submitRegistration = () => {
 .slide-fade-leave-to {
   opacity: 0;
   transform: translateX(-100px);
+}
+
+/* 通知動畫 */
+.alert-slide-enter-active {
+  transition: all 0.4s ease-out;
+}
+.alert-slide-leave-active {
+  transition: all 0.2s ease-in;
+}
+.alert-slide-enter-from {
+  opacity: 0;
+  transform: translateY(-20px);
+}
+.alert-slide-leave-to {
+  opacity: 0;
+  transform: translateY(-20px);
 }
 </style>
