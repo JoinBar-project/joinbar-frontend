@@ -1,4 +1,4 @@
-// composables/useOrder.js
+// composables/useOrder.js (修正版)
 import { ref, computed, reactive } from 'vue'
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000'
@@ -301,6 +301,75 @@ export function useOrder() {
    return result
  }
 
+ const formatAmount = (amount) => {
+   if (!amount) return '0'
+   
+   let numericAmount
+   if (typeof amount === 'bigint') {
+     numericAmount = Number(amount)
+   } else if (typeof amount === 'string') {
+     numericAmount = parseFloat(amount)
+   } else {
+     numericAmount = amount
+   }
+   
+   return numericAmount.toLocaleString()
+ }
+
+ const formatDateTime = (dateString) => {
+   if (!dateString) return '-'
+   return new Date(dateString).toLocaleString('zh-TW', {
+     year: 'numeric',
+     month: '2-digit',
+     day: '2-digit',
+     hour: '2-digit',
+     minute: '2-digit'
+   })
+ }
+
+ const formatEventDateTime = (dateString) => {
+   if (!dateString) return '-'
+   return new Date(dateString).toLocaleString('zh-TW', {
+     month: '2-digit',
+     day: '2-digit',
+     hour: '2-digit',
+     minute: '2-digit'
+   })
+ }
+
+ const getStatusText = (status) => {
+   return ORDER_STATUS_TEXT[status] || status
+ }
+
+ const getPaymentMethodText = (method) => {
+   return PAYMENT_METHOD_TEXT[method] || method
+ }
+
+ const getOrderHistory = async () => {
+   try {
+     isLoading.value = true
+     error.value = ''
+
+     const response = await request('/api/orders/history')
+     
+     if (response.orders) {
+       orderHistory.value = response.orders
+ 
+       stats.totalOrders = response.orders.length
+       stats.totalAmount = response.orders.reduce((sum, order) => sum + parseFloat(order.totalAmount || 0), 0)
+       stats.pendingCount = response.orders.filter(order => order.status === 'pending').length
+       stats.completedCount = response.orders.filter(order => ['paid', 'confirmed'].includes(order.status)).length
+     }
+
+     return response
+   } catch (err) {
+     error.value = err.message
+     throw err
+   } finally {
+     isLoading.value = false
+   }
+ }
+
  const clearError = () => {
    error.value = ''
  }
@@ -331,9 +400,15 @@ export function useOrder() {
    confirmPayment,
    cancelOrder,
    simulatePayment,
+   getOrderHistory,
    validateOrderData,
    validateItemId,
    validateOrderId,
+   formatAmount,
+   formatDateTime,
+   formatEventDateTime,
+   getStatusText,
+   getPaymentMethodText,
    clearError,
    resetOrder,
    resetStats,
