@@ -35,9 +35,9 @@
                   : 'text-[var(--color-primary-red)] placeholder-[var(--color-primary-red)]'
               ]"/>
           </div>
-          <!-- 錯誤提示文字 -->
+
           <div v-if="errors.email" class="text-red-500 text-xs ml-1">
-            電子郵件為必填欄位
+            {{ emailErrorMessage }}
           </div>
         </div>
 
@@ -65,9 +65,9 @@
               <i :class="showPassword ? 'fa-regular fa-eye' : 'fa-regular fa-eye-slash'"></i>
             </button>
           </div>
-          <!-- 錯誤提示文字 -->
+
           <div v-if="errors.password" class="text-red-500 text-xs ml-1">
-            密碼為必填欄位
+            {{ passwordErrorMessage }}
           </div>
         </div>
       </div>
@@ -82,7 +82,6 @@
         <div class="flex-grow h-px bg-gray-400"></div>
       </div>
 
-      <!-- 第三方登入 -->
       <div class="flex space-x-2 justify-center mt-4">
         <button class="btn bg-white text-black border-[#e5e5e5] border-2 flex items-center px-4 py-2 rounded-lg hover:shadow-md transition">
           <img src="/google.svg" alt="Google logo" class="w-5 h-5 mr-2" />
@@ -103,13 +102,11 @@
         </button>
       </div>
 
-      <!-- 測試帳號登入 -->
       <div class="text-center mt-2 text-sm text-[var(--color-primary-red)] underline underline-offset-4 cursor-pointer hover:text-[#aa666c] transition"
             @click="useTestAccount">
         後台管理員登入
       </div>
 
-      <!-- 註冊提示 -->
       <div class="text-center mt-4 pt-4 border-t border-gray-300">
         <span class="text-sm text-gray-600">還沒有帳號？</span>
         <router-link to="/register" class="text-sm text-[var(--color-primary-red)] hover:underline ml-1">
@@ -139,6 +136,62 @@ const errors = ref({
   password: false
 })
 
+// 錯誤訊息
+const emailErrorMessage = ref('')
+const passwordErrorMessage = ref('')
+
+// 驗證電子郵件格式（必須包含英文字母和@符號）
+const validateEmail = (email) => {
+  if (!email || email.trim() === '') {
+    emailErrorMessage.value = '電子郵件為必填欄位'
+    return false
+  }
+  
+  // 檢查是否包含@符號
+  if (!email.includes('@')) {
+    emailErrorMessage.value = '電子郵件格式不正確，必須包含@符號'
+    return false
+  }
+  
+  // 檢查是否包含英文字母
+  const hasEnglish = /[a-zA-Z]/.test(email)
+  if (!hasEnglish) {
+    emailErrorMessage.value = '電子郵件必須包含英文字母'
+    return false
+  }
+  
+  return true
+}
+
+// 驗證密碼格式（至少6位數，包含英文和數字）
+const validatePassword = (password) => {
+  if (!password || password.trim() === '') {
+    passwordErrorMessage.value = '密碼為必填欄位'
+    return false
+  }
+  
+  if (password.length < 6) {
+    passwordErrorMessage.value = '密碼至少需要6個字元'
+    return false
+  }
+  
+  // 檢查是否包含英文字母
+  const hasEnglish = /[a-zA-Z]/.test(password)
+  if (!hasEnglish) {
+    passwordErrorMessage.value = '密碼必須包含英文字母'
+    return false
+  }
+  
+  // 檢查是否包含數字
+  const hasNumber = /\d/.test(password)
+  if (!hasNumber) {
+    passwordErrorMessage.value = '密碼必須包含數字'
+    return false
+  }
+  
+  return true
+}
+
 // 清除單一欄位的錯誤狀態
 const clearError = (fieldName) => {
   if (errors.value[fieldName]) {
@@ -149,23 +202,23 @@ const clearError = (fieldName) => {
 const handleLogin = () => {
   let valid = true
   
-  // 檢查電子郵件
-  if (!loginForm.value.email || loginForm.value.email.trim() === '') {
+  // 驗證電子郵件
+  if (!validateEmail(loginForm.value.email)) {
     errors.value.email = true
     valid = false
   } else {
     errors.value.email = false
   }
   
-  // 檢查密碼
-  if (!loginForm.value.password || loginForm.value.password.trim() === '') {
+  // 驗證密碼
+  if (!validatePassword(loginForm.value.password)) {
     errors.value.password = true
     valid = false
   } else {
     errors.value.password = false
   }
   
-  // 如果有錯誤就不進行登入
+  // 如果有錯誤就不登入
   if (!valid) {
     return
   }
