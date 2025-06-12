@@ -62,7 +62,6 @@
 <script setup>
 import { watch, ref } from "vue";
 
-// --- Props 與 Emits ---
 const props = defineProps({
   bars: {
     type: Array,
@@ -82,7 +81,6 @@ const handleImageError = (event) => {
 };
 
 // 營業時間格式化函式
-
 const getOpeningHourText = (bar) => {
   if (bar.openingHours?.weekdayText?.length > 0) {
     return bar.openingHours.weekdayText[0];
@@ -108,7 +106,6 @@ const emitToggleWishlist = (placeId) => {
   emit("toggle-wishlist", { placeId, isFavorite: isFavorite(placeId) });
 };
 
-// Vue 生命週期與監聽器 (僅用於偵錯，實際應用可能移除)
 watch(
   () => props.bars,
   (newBars) => {
