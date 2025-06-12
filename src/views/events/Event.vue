@@ -1,5 +1,5 @@
 <script setup>
-import { onMounted, computed } from 'vue'
+import { onMounted, computed, nextTick } from 'vue'
 import { useEventStore } from '@/stores/event'
 import { useTagStore } from '@/stores/tag'
 import { storeToRefs } from 'pinia'
@@ -17,9 +17,20 @@ onMounted(() => {
 
 const sortedEvents = computed(() => {
   return [...events.value]
-    .filter(event => event.status !== 2) // 過濾刪除活動
+    .filter(event => event && event.status !== 2) // 過濾刪除活動
     .sort((a, b) => new Date(b.startDate) - new Date(a.startDate))
 })
+
+// 改善更新處理
+async function handleEventUpdate() {
+  try {
+    await eventStore.fetchEvents()
+    // 確保 DOM 更新完成
+    await nextTick()
+  } catch (error) {
+    console.error('更新事件列表失敗:', error)
+  }
+}
 
 </script>
 
@@ -33,7 +44,7 @@ const sortedEvents = computed(() => {
         v-for="event in sortedEvents"
         :key="event.id"
         :event="event"
-        @update="eventStore.fetchEvents()"
+        @update="handleEventUpdate()"
       />
     </div>
   </div>

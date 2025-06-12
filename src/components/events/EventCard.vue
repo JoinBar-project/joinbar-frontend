@@ -16,6 +16,9 @@ const props = defineProps({
   event: {
     type: Object,
     required: true,
+    validator(value) {
+      return value && (value.id !== undefined && value.id !== null)
+    }
   },
 })
 const emit = defineEmits(['update'])
@@ -56,7 +59,11 @@ function sliceChinese(str, n) {
             #{{ getTagName(tagId) }}
           </span>
         </div>
-        <ModalEdit :event-id="props.event.id" @update="emit('update')" />
+        <ModalEdit
+          v-if="props.event.id"
+          :event-id="props.event.id"
+          @update="emit('update')"
+        />
       </div>
     </div>
   </div>

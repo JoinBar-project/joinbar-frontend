@@ -43,8 +43,9 @@ export const useEventStore = defineStore('event', () => {
       const res = await axios.put(`/event/update/${id}`, payload)
       const index = events.value.findIndex(e => e.id == id)
       if (index !== -1) {
-        events.value[index] = res.data
+        events.value[index] = { ...events.value[index], ...res.data }
       }
+      event.value = res.data
       error.value = null
     } catch (e) {
       error.value = e.response?.data?.message || e.message
