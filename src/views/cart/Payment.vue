@@ -35,6 +35,53 @@
         <div class="subtotal">${{ calcSubtotal(item) }}</div>
       </div>
  
+      <div class="customer-section section-spacing">
+        <h3>客戶資訊</h3>
+        <div class="form-grid">
+          <div class="form-group">
+            <label for="customerName">姓名 *</label>
+            <input 
+              id="customerName"
+              v-model="customerInfo.name"
+              type="text"
+              class="form-input"
+              :class="{ 'input-error': formErrors.name }"
+              placeholder="請輸入您的姓名"
+              required
+            />
+            <span v-if="formErrors.name" class="error-text">{{ formErrors.name }}</span>
+          </div>
+          
+          <div class="form-group">
+            <label for="customerPhone">電話 *</label>
+            <input 
+              id="customerPhone"
+              v-model="customerInfo.phone"
+              type="tel"
+              class="form-input"
+              :class="{ 'input-error': formErrors.phone }"
+              placeholder="請輸入您的電話號碼"
+              required
+            />
+            <span v-if="formErrors.phone" class="error-text">{{ formErrors.phone }}</span>
+          </div>
+          
+          <div class="form-group">
+            <label for="customerEmail">電子郵件 *</label>
+            <input 
+              id="customerEmail"
+              v-model="customerInfo.email"
+              type="email"
+              class="form-input"
+              :class="{ 'input-error': formErrors.email }"
+              placeholder="請輸入您的電子郵件"
+              required
+            />
+            <span v-if="formErrors.email" class="error-text">{{ formErrors.email }}</span>
+          </div>
+        </div>
+      </div>
+ 
       <div class="payment-method section-spacing">
         <h3>選擇付款方式</h3>
         
@@ -88,7 +135,7 @@
  <script setup>
  import { useCartStore } from '@/stores/cartStore'
  import { useOrder } from '@/composables/useOrder'
- import { computed, ref, onMounted } from 'vue'
+ import { computed, ref, onMounted, watch } from 'vue'
  import { useRouter } from 'vue-router'
  
  import IconLine from '@/components/icons/IconLine.vue'
@@ -109,6 +156,14 @@
  const paymentMethod = ref('')
  const isLoading = ref(true)
  const isSubmitting = ref(false)
+ 
+ const customerInfo = ref({
+  name: '',
+  phone: '',
+  email: ''
+ })
+ 
+ const formErrors = ref({})
  
  onMounted(async () => {
   setTimeout(() => {
@@ -134,13 +189,51 @@
   return paymentMethod.value && 
          !isSubmitting.value && 
          !orderLoading.value &&
+         isCustomerInfoValid.value &&
          cartItems.value.length > 0
+ })
+ 
+ const isCustomerInfoValid = computed(() => {
+  const { name, phone, email } = customerInfo.value
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+  
+  return name.trim() && 
+         phone.trim() && 
+         email.trim() && 
+         emailRegex.test(email)
  })
  
  const getSubmitButtonText = () => {
   if (isSubmitting.value || orderLoading.value) return '處理中...'
-  if (!canSubmit.value) return '請選擇付款方式'
+  if (!paymentMethod.value) return '請選擇付款方式'
+  if (!isCustomerInfoValid.value) return '請完成客戶資訊'
   return '確認付款'
+ }
+ 
+ watch(() => customerInfo.value.name, () => {
+  if (formErrors.value.name) delete formErrors.value.name
+ })
+ 
+ watch(() => customerInfo.value.phone, () => {
+  if (formErrors.value.phone) delete formErrors.value.phone
+ })
+ 
+ watch(() => customerInfo.value.email, () => {
+  if (formErrors.value.email) delete formErrors.value.email
+ })
+ 
+ function loadUserInfo() {
+  try {
+    const userInfo = localStorage.getItem('user_info')
+    if (userInfo) {
+      const user = JSON.parse(userInfo)
+      customerInfo.value.name = user.username || user.lineDisplayName || ''
+      customerInfo.value.email = user.email || ''
+      console.log('✅ 用戶資訊已載入:', user.username || user.lineDisplayName)
+    }
+  } catch (error) {
+    console.warn('⚠️ 載入用戶資訊失敗:', error)
+  }
  }
  
  const submitOrder = async () => {
@@ -374,7 +467,64 @@
   background-color: rgba(153, 27, 27, 0.1);
  }
  
+ .customer-section h3 {
+  font-size: 18px;
+  font-weight: 600;
+  margin-bottom: 16px;
+  color: #333;
+ }
+ 
+ .form-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 16px;
+  margin-bottom: 16px;
+ }
+ 
+ .form-group {
+  display: flex;
+  flex-direction: column;
+ }
+ 
+ .form-group label {
+  font-size: 14px;
+  font-weight: 500;
+  margin-bottom: 4px;
+  color: #333;
+ }
+ 
+ .form-input {
+  padding: 10px 12px;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  font-size: 14px;
+  transition: border-color 0.2s;
+ }
+ 
+ .form-input:focus {
+  outline: none;
+  border-color: #860914;
+  box-shadow: 0 0 0 2px rgba(134, 9, 20, 0.1);
+ }
+ 
+ .form-input.input-error {
+  border-color: #dc2626;
+  box-shadow: 0 0 0 2px rgba(220, 38, 38, 0.1);
+ }
+ 
+ .error-text {
+  color: #dc2626;
+  font-size: 12px;
+  margin-top: 4px;
+ }
+ 
  .section-spacing {
   margin-top: 32px;
+ }
+ 
+ @media (max-width: 768px) {
+  .form-grid {
+    grid-template-columns: 1fr;
+  }
  }
  </style>
