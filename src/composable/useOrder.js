@@ -31,7 +31,7 @@ export function useOrder() {
  const error = ref('')
  const currentOrder = ref(null)
  const orderHistory = ref([])
- 
+
  const stats = reactive({
    totalOrders: 0,
    totalAmount: 0,
@@ -66,6 +66,7 @@ export function useOrder() {
      },
      ...options
    }
+
    try {
      console.log(`🔄 API 請求: ${config.method || 'GET'} ${url}`)
      
@@ -82,6 +83,7 @@ export function useOrder() {
        const errorMessage = errorData.message || `HTTP ${response.status}: ${response.statusText}`
        throw new Error(errorMessage)
      }
+
      const responseData = await response.json()
      console.log(`✅ API 響應:`, responseData)
      
@@ -91,6 +93,69 @@ export function useOrder() {
      console.error(`❌ API 請求失敗 [${endpoint}]:`, err)
      throw err
    }
+ }
+
+ const validateOrderData = (orderData) => {
+   const required = ['items', 'customerName', 'customerPhone', 'customerEmail', 'paymentMethod']
+   
+   for (const field of required) {
+     if (!orderData[field]) {
+       throw new Error(`缺少必要欄位: ${field}`)
+     }
+   }
+
+   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+   if (!emailRegex.test(orderData.customerEmail)) {
+     throw new Error('電子郵件格式不正確')
+   }
+
+   const phoneRegex = /^09\d{8}$|^0\d{1,2}-?\d{6,8}$/
+   if (!phoneRegex.test(orderData.customerPhone.replace(/[-\s]/g, ''))) {
+     console.warn('電話格式可能不正確:', orderData.customerPhone)
+   }
+
+   if (orderData.customerName.trim().length < 2) {
+     throw new Error('姓名至少需要2個字元')
+   }
+
+   if (!Array.isArray(orderData.items) || orderData.items.length === 0) {
+     throw new Error('訂單必須包含至少一個商品')
+   }
+
+   if (orderData.items.length > 10) {
+     throw new Error('單次訂單最多10個活動')
+   }
+
+   for (const item of orderData.items) {
+     if (!item.eventId) {
+       throw new Error('每個商品都必須有 eventId')
+     }
+     
+     item.eventId = String(item.eventId)
+     
+     if (item.quantity && (isNaN(item.quantity) || item.quantity <= 0)) {
+       throw new Error('商品數量必須是正整數')
+     }
+     
+     item.quantity = item.quantity || 1
+   }
+
+   console.log(`✅ 訂單數據驗證通過`)
+   return true
+ }
+
+ const validateItemId = (id) => {
+   if (!id) {
+     throw new Error('商品 ID 不能為空')
+   }
+   return String(id)
+ }
+
+ const validateOrderId = (orderId) => {
+   if (!orderId) {
+     throw new Error('訂單 ID 不能為空')
+   }
+   return String(orderId)
  }
 
  const clearError = () => {
@@ -118,6 +183,9 @@ export function useOrder() {
    hasActiveOrder,
    formattedTotalAmount,
    request,
+   validateOrderData,
+   validateItemId,
+   validateOrderId,
    clearError,
    resetOrder,
    resetStats,
