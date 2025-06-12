@@ -1,4 +1,7 @@
+// composables/useOrder.js
 import { ref, computed, reactive } from 'vue'
+
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000'
 
 export const ORDER_STATUS = {
  PENDING: 'pending',
@@ -46,6 +49,50 @@ export function useOrder() {
    return stats.totalAmount.toLocaleString()
  })
 
+ const clearAuth = () => {
+   localStorage.removeItem('auth_token')
+   localStorage.removeItem('user_info')
+ }
+
+ const request = async (endpoint, options = {}) => {
+   const url = `${API_BASE_URL}${endpoint}`
+   const token = localStorage.getItem('auth_token')
+   
+   const config = {
+     headers: {
+       'Content-Type': 'application/json',
+       ...(token && { Authorization: `Bearer ${token}` }),
+       ...options.headers,
+     },
+     ...options
+   }
+   try {
+     console.log(`🔄 API 請求: ${config.method || 'GET'} ${url}`)
+     
+     const response = await fetch(url, config)
+     
+     if (!response.ok) {
+       const errorData = await response.json().catch(() => ({ message: '請求失敗' }))
+       
+       if (response.status === 401) {
+         clearAuth()
+         throw new Error('登入已過期，請重新登入')
+       }
+       
+       const errorMessage = errorData.message || `HTTP ${response.status}: ${response.statusText}`
+       throw new Error(errorMessage)
+     }
+     const responseData = await response.json()
+     console.log(`✅ API 響應:`, responseData)
+     
+     return responseData
+     
+   } catch (err) {
+     console.error(`❌ API 請求失敗 [${endpoint}]:`, err)
+     throw err
+   }
+ }
+
  const clearError = () => {
    error.value = ''
  }
@@ -70,9 +117,11 @@ export function useOrder() {
    stats,
    hasActiveOrder,
    formattedTotalAmount,
+   request,
    clearError,
    resetOrder,
    resetStats,
+   clearAuth,
    ORDER_STATUS,
    ORDER_STATUS_TEXT,
    PAYMENT_METHOD_TEXT
