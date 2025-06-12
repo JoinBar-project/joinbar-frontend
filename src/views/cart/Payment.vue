@@ -241,29 +241,126 @@
  
   try {
     isSubmitting.value = true
+    clearAllErrors()
  
-    console.log('🔄 開始使用 useOrder 處理訂單...')
-    
-    await new Promise(resolve => setTimeout(resolve, 1500))
+    console.log('🔄 開始完整的訂單處理流程...')
  
-    if (paymentMethod.value === 'linepay') {
-      alert(`🟢 LINE Pay 模擬付款 (使用 useOrder)\n\n即將整合完整 API 流程`)
-    } else if (paymentMethod.value === 'creditcard') {
-      alert(`💳 信用卡模擬付款 (使用 useOrder)\n\n即將整合完整 API 流程`)
+    if (!validateForm()) {
+      console.log('❌ 表單驗證失敗')
+      return
     }
  
-    const mockOrderNumber = `ORDER-${Date.now().toString().slice(-6)}`
-    const mockOrderId = Date.now().toString()
-    
+    console.log('📦 步驟 1/5: 準備訂單數據...')
+    const orderData = cart.getOrderData(customerInfo.value, paymentMethod.value)
+    console.log('✅ 訂單數據準備完成:', orderData)
+ 
+    console.log('🔄 步驟 2/5: 創建訂單...')
+    const orderResponse = await createOrder(orderData)
+    const order = orderResponse.order
+    console.log('✅ 訂單創建成功:', order.orderNumber)
+ 
+    console.log('🔄 步驟 3/5: 處理付款...')
+    const paymentData = {
+      paymentMethod: paymentMethod.value,
+      orderData: order
+    }
+    const paymentResult = await simulatePayment(paymentData)
+    console.log('✅ 付款處理完成:', paymentResult.paymentId)
+ 
+    console.log('🔄 步驟 4/5: 確認付款...')
+    await confirmPayment(order.orderId || order.id, paymentResult)
+    console.log('✅ 付款確認成功')
+ 
+    showPaymentSuccessMessage(order, paymentResult)
+ 
+    console.log('🔄 步驟 5/5: 清空購物車並跳轉...')
     cart.clearCart()
-    router.push(`/order-success/${mockOrderNumber}?orderId=${mockOrderId}`)
+    
+    const orderId = order.orderId || order.id
+    router.push(`/order-success/${order.orderNumber}?orderId=${orderId}`)
+    
+    console.log('🎉 訂單處理完成！')
  
   } catch (error) {
-    console.error('模擬付款錯誤:', error)
-    alert('模擬付款失敗，請重新嘗試')
+    console.error('❌ 訂單提交失敗:', error)
+    handleSubmitError(error)
   } finally {
     isSubmitting.value = false
   }
+ }
+ 
+ function validateForm() {
+  formErrors.value = {}
+  
+  if (!customerInfo.value.name.trim()) {
+    formErrors.value.name = '請輸入姓名'
+  }
+  
+  if (!customerInfo.value.phone.trim()) {
+    formErrors.value.phone = '請輸入電話號碼'
+  }
+  
+  if (!customerInfo.value.email.trim()) {
+    formErrors.value.email = '請輸入電子郵件'
+  } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(customerInfo.value.email)) {
+    formErrors.value.email = '電子郵件格式不正確'
+  }
+  
+  if (!paymentMethod.value) {
+    setError('請選擇付款方式')
+    return false
+  }
+  
+  if (Object.keys(formErrors.value).length > 0) {
+    setError('請修正表單錯誤')
+    return false
+  }
+ 
+  return true
+ }
+ 
+ function showPaymentSuccessMessage(order, paymentResult) {
+  const paymentMethodName = paymentMethod.value === 'linepay' ? 'LINE Pay' : '信用卡'
+  const amount = totalPrice.value
+  
+  if (paymentMethod.value === 'linepay') {
+    alert(`🟢 ${paymentMethodName} 模擬付款成功！\n\n訂單編號：${order.orderNumber}\n金額：${amount}\n付款ID：${paymentResult.paymentId}\n\n點擊確定前往訂單詳情`)
+  } else if (paymentMethod.value === 'creditcard') {
+    alert(`💳 ${paymentMethodName} 模擬付款成功！\n\n訂單編號：${order.orderNumber}\n金額：${amount}\n付款ID：${paymentResult.paymentId}\n\n點擊確定前往訂單詳情`)
+  }
+ }
+ 
+ function handleSubmitError(error) {
+  let errorMsg = '訂單提交失敗，請重新嘗試'
+  
+  if (error.message.includes('登入已過期') || error.message.includes('認證')) {
+    errorMsg = '登入已過期，請重新登入'
+    localStorage.removeItem('auth_token')
+    localStorage.removeItem('user_info')
+    setTimeout(() => router.push('/login'), 1500)
+  } else if (error.message.includes('已滿員')) {
+    errorMsg = error.message + '，請重新選擇活動'
+  } else if (error.message.includes('已結束') || error.message.includes('過期')) {
+    errorMsg = error.message + '，請移除過期活動'
+  } else if (error.message.includes('重複')) {
+    errorMsg = error.message
+  } else if (error.message.includes('網路') || error.message.includes('請求失敗')) {
+    errorMsg = '網路連線有問題，請檢查網路後重試'
+  } else if (error.message) {
+    errorMsg = error.message
+  }
+  
+  setError(errorMsg)
+ }
+ 
+ function setError(message) {
+  console.error('設置錯誤:', message)
+  alert(message)
+ }
+ 
+ function clearAllErrors() {
+  clearOrderError()
+  formErrors.value = {}
  }
  
  const goBack = () => {
