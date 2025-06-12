@@ -116,7 +116,7 @@ const {
 } = useGoogleMaps(mapContainer, {
   googleMapsApiKey: googleMapsApiKey,
   onLoading: () => console.log("Google Maps API 載入中..."),
-  mapId: myMapId.value,
+  mapId: myMapId,
   onLoaded: () => console.log("Google Maps API 載入完成。"),
   onError: (msg) => {
     console.error("useGoogleMaps 錯誤:", msg);
