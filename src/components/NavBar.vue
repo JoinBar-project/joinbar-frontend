@@ -8,9 +8,9 @@
     <ul class="nav-links">
       <li><RouterLink to="/map">酒吧地圖</RouterLink></li>
       <li><RouterLink to="/reviews">酒吧評論</RouterLink></li>
-      <li><RouterLink to="/events">酒吧活動</RouterLink></li>
+      <li><RouterLink to="/event">酒吧活動</RouterLink></li>
       <li><RouterLink to="/subscription">訂閱優惠</RouterLink></li>
-      <li><RouterLink to="/member">會員服務</RouterLink></li>
+      <li><RouterLink to="/login">會員服務</RouterLink></li>
       <li><RouterLink to="/cart"><img class="cart-icon" src="/cart.png" alt="Cart Icon" /></RouterLink></li>
     </ul>
   </nav>
