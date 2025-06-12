@@ -277,8 +277,30 @@ async function handleSearch() {
     return;
   }
   isLoading.value = true;
-  await searchBarsInMapBounds(true);
-  isLoading.value = false;
+  try {
+    // 1. 先用 textSearch 找地點
+    const results = await textSearch(searchQuery.value);
+    if (results && results.length > 0 && results[0].geometry && results[0].geometry.location) {
+      // 2. 將地圖移動到搜尋到的地點
+      const loc = results[0].geometry.location;
+      map.value.setCenter({
+        lat: typeof loc.lat === 'function' ? loc.lat() : loc.lat,
+        lng: typeof loc.lng === 'function' ? loc.lng() : loc.lng,
+      });
+      map.value.setZoom(16);
+      // 3. 等地圖移動完成後再查詢該地點附近酒吧
+      window.google.maps.event.addListenerOnce(map.value, 'idle', async () => {
+        await searchBarsInMapBounds(true);
+        isLoading.value = false;
+      });
+    } else {
+      alert('找不到相關地點，請換個關鍵字');
+      isLoading.value = false;
+    }
+  } catch (err) {
+    alert('搜尋失敗，請稍後再試');
+    isLoading.value = false;
+  }
 }
 
 async function handleGetCurrentLocation() {
@@ -391,19 +413,23 @@ async function handleBarSelected(bar) {
     }
   }
 
-  // 合併 Google 詳細資料到 bar
+  // 合併 Google 詳細資料到 bar，所有欄位都加 fallback 預設值
   selectedBarForDetail.value = {
     ...bar,
     ...googleDetail,
-    // 合併照片
-    images: googleDetail?.photos
-      ? googleDetail.photos.map(photo =>
-          photo.getUrl({ maxWidth: 800, maxHeight: 600 })
-        )
-      : bar.images,
-    // 合併評論
+    // 圖片
+    images: (googleDetail?.photos && googleDetail.photos.length)
+      ? googleDetail.photos.map(photo => photo.getUrl({ maxWidth: 800, maxHeight: 600 }))
+      : (bar.images && bar.images.length ? bar.images : (bar.imageUrl ? [bar.imageUrl] : [])),
+    // 評論
     googleReviews: googleDetail?.reviews || [],
-    // 其他欄位...
+    // 標籤
+    tags: bar.tags || googleDetail?.types || [],
+    // 營業時間
+    openingHours: googleDetail?.opening_hours || bar.openingHours || bar.opening_hours || {},
+    opening_hours: googleDetail?.opening_hours || bar.openingHours || bar.opening_hours || {},
+    // 介紹
+    description: bar.description || googleDetail?.editorial_summary?.overview || '',
   };
 
   panToAndShowBarInfo(bar);

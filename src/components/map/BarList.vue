@@ -45,9 +45,6 @@
             <span class="ml-1 text-gray-700 bar-reviews">
               ({{ bar.reviews || "0" }} 評論)</span
             >
-            <span class="text-orange-700 bar-price"
-              >NT$ {{ bar.priceRange || "???" }}</span
-            >
           </div>
 
           <div v-if="bar.tags && bar.tags.length" class="bar-tags">
@@ -59,15 +56,7 @@
             >
           </div>
           <div class="text-gray-700 bar-hours">
-            {{
-              bar.openingHours &&
-              bar.openingHours.weekday_text &&
-              bar.openingHours.weekday_text.length > 0
-                ? bar.openingHours.weekday_text[0]
-                : bar.openingHours
-                  ? "營業時間待提供"
-                  : "未提供營業時間"
-            }}
+            {{ getOpeningHourText(bar) }}
           </div>
         </div>
       </div>
@@ -87,10 +76,10 @@ interface Bar {
   imageUrl?: string;
   rating?: number;
   reviews?: number;
-  priceRange?: string;
   tags?: string[];
   types?: string[];
   openingHours?: any | { weekday_text?: string[] };
+  opening_hours?: any | { weekday_text?: string[] };
   location?: { lat: number; lng: number };
   description?: string;
   isWishlisted?: boolean;
@@ -135,6 +124,17 @@ const emitToggleWishlist = (placeId: string | undefined) => {
   }
   emit("toggle-wishlist", placeId);
 };
+
+// 顯示營業時間
+function getOpeningHourText(bar: Bar): string {
+  if (bar.openingHours && bar.openingHours.weekday_text && bar.openingHours.weekday_text.length > 0) {
+    return bar.openingHours.weekday_text[0];
+  }
+  if (bar.opening_hours && bar.opening_hours.weekday_text && bar.opening_hours.weekday_text.length > 0) {
+    return bar.opening_hours.weekday_text[0];
+  }
+  return '未提供營業時間';
+}
 
 // ----------------------------------------------------------------------
 // Vue 生命週期與監聽器 (僅用於偵錯，實際應用可能移除)
@@ -276,12 +276,6 @@ watch(
 
 .bar-rating .star-icon {
   margin-right: 3px;
-}
-
-.bar-price {
-  font-size: 16px;
-  font-weight: 600;
-  /* color: #b8a28e;  */
 }
 
 .bar-tags {

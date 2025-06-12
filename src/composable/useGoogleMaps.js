@@ -228,7 +228,6 @@ export function useGoogleMaps(mapContainerRef, options) {
       <p class="info-window-meta text-gray-800">⭐️ ${bar.rating} (${
       bar.reviews || 0
     } 評論)</p>
-      <p class="info-window-meta text-gray-800">💰 ${bar.priceRange || "N/A"}</p>
       <p class="info-window-meta text-gray-800">⏱️ ${
       bar.openingHours?.weekday_text?.[0] || "未提供營業時間"
     }</p>
@@ -671,25 +670,41 @@ export function useGoogleMaps(mapContainerRef, options) {
     }
     if (showLoading) loading.value = true;
     const results = await textSearch('bar', center, 3000);
-    const newBars = results.map(place => ({
-      ...place,
-      location: {
-        lat: typeof place.geometry.location.lat === 'function'
-          ? place.geometry.location.lat()
-          : place.geometry.location.lat,
-        lng: typeof place.geometry.location.lng === 'function'
-          ? place.geometry.location.lng()
-          : place.geometry.location.lng,
-      },
-      rating: place.rating || 0,
-      reviews: place.user_ratings_total || 0,
-      imageUrl: place.photos && place.photos.length > 0
-        ? place.photos[0].getUrl({ maxWidth: 400, maxHeight: 300 })
-        : '',
-    }));
+
+    // 只取前 10 筆，避免 API 浪費
+    const limitedResults = results.slice(0, 10);
+
+    // 並行補齊詳細資料
+    const barsWithDetails = await Promise.all(
+      limitedResults.map(async (place) => {
+        let details = {};
+        try {
+          details = await getPlaceDetails(place.place_id);
+        } catch (e) {}
+        return {
+          ...place,
+          location: {
+            lat: typeof place.geometry.location.lat === 'function'
+              ? place.geometry.location.lat()
+              : place.geometry.location.lat,
+            lng: typeof place.geometry.location.lng === 'function'
+              ? place.geometry.location.lng()
+              : place.geometry.location.lng,
+          },
+          rating: place.rating || 0,
+          reviews: place.user_ratings_total || 0,
+          imageUrl: place.photos && place.photos.length > 0
+            ? place.photos[0].getUrl({ maxWidth: 400, maxHeight: 300 })
+            : '',
+          openingHours: details.opening_hours ?? place.opening_hours,
+          opening_hours: details.opening_hours ?? place.opening_hours,
+        };
+      })
+    );
+
     if (showLoading) loading.value = false;
     isFetching.value = false;
-    return newBars;
+    return barsWithDetails;
   }
 
   // 在地圖 idle 事件處理函式最前面加判斷 skipNextIdle

@@ -26,7 +26,7 @@
                 &gt;
               </button>
             </div>
-            <div class="image-dots">
+            <div class="image-dots" v-if="bar.images && bar.images.length > 1">
               <span
                 v-for="(img, index) in bar.images"
                 :key="index"
@@ -45,7 +45,6 @@
               <span class="rating-text"
                 >⭐️ {{ bar.rating || "N/A" }} ({{ bar.reviews || 0 }})</span
               >
-              <span class="price-range">NT$ {{ bar.priceRange || "???" }}</span>
             </div>
 
             <div class="contact-info">
@@ -286,7 +285,8 @@ const currentImage = computed(() => {
   if (props.bar.images && props.bar.images.length > 0) {
     return props.bar.images[currentImageIndex.value];
   }
-  return props.bar.imageUrl || defaultImage;
+  if (props.bar.imageUrl) return props.bar.imageUrl;
+  return defaultImage;
 });
 
 watch(
