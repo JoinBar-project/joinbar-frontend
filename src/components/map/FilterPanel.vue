@@ -24,7 +24,13 @@
         <button
           @click="removeAppliedFilter(filterItem.type, filterItem.value)"
           class="remove-filter-button"
-        ></button>
+        >
+          <img
+            src="@/assets/icons/mapicons/close-tag.svg"
+            alt="移除篩選"
+            class="remove-filter-icon"
+          />
+        </button>
       </div>
     </div>
 
@@ -531,21 +537,35 @@ onMounted(() => {
   text-overflow: ellipsis;
 }
 
+/* 修改這裡：為移除按鈕和其內部的 SVG 圖示添加樣式 */
 .remove-filter-button {
   background: none;
   border: none;
-  color: black;
-  margin-left: 8px;
-  font-size: 14px;
-  font-weight: bold;
+  margin-left: 8px; /* 與文字的間距 */
   cursor: pointer;
   opacity: 0.8;
   transition: opacity 0.2s;
+  display: flex; /* 使用 flexbox 讓 SVG 居中 */
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  width: 18px; /* 調整按鈕的尺寸，可以根據實際效果微調 */
+  height: 18px;
+  border-radius: 50%; /* 讓按鈕背景可以更圓潤 */
+  background-color: rgba(0, 0, 0, 0.05); /* 淺灰色背景 */
 }
 
 .remove-filter-button:hover {
   opacity: 1;
+  background-color: rgba(0, 0, 0, 0.1); /* hover 時加深背景色 */
 }
+
+.remove-filter-icon {
+  width: 12px; /* 調整 SVG 圖示的大小，可以根據實際效果微調 */
+  height: 12px;
+  color: #333; /* 設置 SVG 圖示的顏色，如果 SVG 內部使用了 currentColor */
+}
+/* 修改到這裡結束 */
 
 .filter-panel-container {
   padding: 24px;
@@ -757,7 +777,7 @@ onMounted(() => {
 }
 
 .action-button {
-  padding: 11px 9px;
+  padding: 12px 24px;
   border-radius: 8px;
   font-size: 16px;
   font-weight: 600;
