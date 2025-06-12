@@ -11,7 +11,7 @@ export const useTagStore = defineStore('tag', () => {
   })
 
   const fetchTags = async () => {
-    const res = await axios.get('/tags/list')
+    const res = await axios.get('/api/tags/list')
     tags.value = res.data
   }
 

@@ -13,7 +13,7 @@ export const useEventStore = defineStore('event', () => {
   const createEvent = async (payload) => {
     loading.value = true
     try {
-      const res = await axios.post('/event/create', payload)
+      const res = await axios.post('/api/event/create', payload)
       event.value = res.data.event
       events.value.push(res.data.event)
       error.value = null
@@ -27,7 +27,7 @@ export const useEventStore = defineStore('event', () => {
   const fetchEvents = async () => {
     loading.value = true
     try {
-      const res = await axios.get('/event/all')
+      const res = await axios.get('/api/event/all')
       events.value = res.data
       error.value = null
     } catch (e) {
@@ -40,7 +40,7 @@ export const useEventStore = defineStore('event', () => {
   const updateEvent = async (id, payload) => {
     loading.value = true
     try {
-      const res = await axios.put(`/event/update/${id}`, payload)
+      const res = await axios.put(`/api/event/update/${id}`, payload)
       const index = events.value.findIndex(e => e.id == id)
       if (index !== -1) {
         events.value[index] = { ...events.value[index], ...res.data }
@@ -57,7 +57,7 @@ export const useEventStore = defineStore('event', () => {
   const deleteEvent = async (id) => {
     loading.value = true
     try {
-      await axios.delete(`/event/delete/${id}`)
+      await axios.delete(`/api/event/delete/${id}`)
       const index = events.value.findIndex(e => e.id == id)
       if (index !== -1) {
         events.value[index].status = 2
@@ -75,7 +75,7 @@ export const useEventStore = defineStore('event', () => {
   const fetchEvent = async (id) => {
     loading.value = true
     try {
-      const res = await axios.get(`/event/${id}`)
+      const res = await axios.get(`/api/event/${id}`)
       event.value = res.data
       error.value = null
     } catch (e) {
