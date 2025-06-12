@@ -161,10 +161,9 @@
 </template>
 
 <script setup lang="ts">
-// 使用 lang="ts" 引入 TypeScript 支援
 import { ref, defineEmits, onMounted, watch, defineProps, computed } from "vue";
 
-// 定義篩選條件的介面，與你的 filters 物件結構對應
+// 篩選條件介面定義
 export interface BarFilters {
   address: string;
   ratingSort: "any" | "highToLow" | "lowToHigh" | "mostPopular";
@@ -177,15 +176,13 @@ export interface BarFilters {
   tags: string[];
 }
 
-const emit = defineEmits([
-  "filter-changed", // 觸發篩選變更時發出
-  "close-panel", // 關閉面板時發出
-]);
+// 事件發射定義
+const emit = defineEmits(["filter-changed", "close-panel"]);
 
+// Props 定義
 const props = defineProps({
-  // 從 App.vue 接收初始篩選條件，以便在開啟面板時恢復上次的狀態
   initialFilters: {
-    type: Object as () => BarFilters, // 明確指定類型
+    type: Object as () => BarFilters,
     default: () => ({
       address: "any",
       ratingSort: "any",
@@ -200,12 +197,9 @@ const props = defineProps({
   },
 });
 
-// --- 響應式狀態，用於保存當前篩選條件 ---
-// 使用 props.initialFilters 初始化本地狀態
+// 響應式狀態
 const filters = ref<BarFilters>({ ...props.initialFilters });
-
 const popularTags: string[] = [
-  // 明確指定類型
   "信義區",
   "大安區",
   "中山區",
@@ -222,16 +216,10 @@ const popularTags: string[] = [
   "爵士樂",
   "復古",
 ];
-
-// --- 響應式狀態 ---
 const openTime = ref("00:00");
 const closeTime = ref("24:00");
 
-// ----------------------------------------------------------------------
-// 計算屬性
-// ----------------------------------------------------------------------
-
-// 格式化已套用篩選條件以供顯示
+// 計算屬性：格式化已套用篩選條件以供顯示
 const appliedFiltersForDisplay = computed(() => {
   const displayFilters: {
     label: string;
@@ -239,6 +227,7 @@ const appliedFiltersForDisplay = computed(() => {
     value: any;
   }[] = [];
 
+  // 地點篩選
   if (filters.value.address !== "any") {
     displayFilters.push({
       label: `地點: ${filters.value.address}`,
@@ -247,6 +236,7 @@ const appliedFiltersForDisplay = computed(() => {
     });
   }
 
+  // 評價篩選
   if (filters.value.ratingSort !== "any") {
     let ratingLabel = "";
     switch (filters.value.ratingSort) {
@@ -267,19 +257,18 @@ const appliedFiltersForDisplay = computed(() => {
     });
   }
 
-  // 距離篩選只在 minDistance 不為 0 或 maxDistance 不為 5000 時顯示
+  // 距離篩選
   if (filters.value.minDistance !== 0 || filters.value.maxDistance !== 5000) {
     const min = filters.value.minDistance;
     const max = filters.value.maxDistance;
     displayFilters.push({
       label: `距離: ${min} - ${max} 公尺`,
-      type: "distance", // 自定義類型，用於移除邏輯
+      type: "distance",
       value: { min, max },
     });
   }
 
-  // 營業時間顯示格式化
-  // 只有當營業時間篩選條件不為預設值時才顯示
+  // 營業時間篩選
   if (
     filters.value.minOpenHour !== 0 ||
     filters.value.minOpenMinute !== 0 ||
@@ -287,7 +276,6 @@ const appliedFiltersForDisplay = computed(() => {
     filters.value.maxOpenMinute !== 0
   ) {
     const formatTime = (h: number, m: number): string => {
-      // 明確指定類型
       const hour = String(h).padStart(2, "0");
       const minute = String(m).padStart(2, "0");
       return `${hour}:${minute}`;
@@ -303,9 +291,8 @@ const appliedFiltersForDisplay = computed(() => {
 
     displayFilters.push({
       label: `營業時間: ${minTime} - ${maxTime}`,
-      type: "openHour", // 自定義類型，用於移除邏輯
+      type: "openHour",
       value: {
-        // 儲存完整的時間數值，方便移除時還原
         minHour: filters.value.minOpenHour,
         minMinute: filters.value.minOpenMinute,
         maxHour: filters.value.maxOpenHour,
@@ -319,7 +306,7 @@ const appliedFiltersForDisplay = computed(() => {
     filters.value.tags.forEach((tag) => {
       displayFilters.push({
         label: `標籤: ${tag}`,
-        type: "tags", // 改為複數
+        type: "tags",
         value: tag,
       });
     });
@@ -328,17 +315,11 @@ const appliedFiltersForDisplay = computed(() => {
   return displayFilters;
 });
 
-// ----------------------------------------------------------------------
-// 事件處理函式
-// ----------------------------------------------------------------------
-
-// 移除已套用的單一篩選條件
+// 事件處理函式：移除已套用的單一篩選條件
 const removeAppliedFilter = (
   type: keyof BarFilters | "distance" | "openHour" | "tags",
   value: any
 ) => {
-  // 明確指定類型
-  // 根據 type 和 value 來重置 filters 中的對應屬性
   switch (type) {
     case "address":
       filters.value.address = "any";
@@ -360,16 +341,14 @@ const removeAppliedFilter = (
       filters.value.tags = filters.value.tags.filter((t) => t !== value);
       break;
   }
-  applyFilters(); // 移除後重新應用篩選
+  applyFilters();
 };
 
-// 更新距離數值輸入框，並同步篩選
+// 事件處理函式：更新距離數值輸入框並同步篩選
 const updateDistance = () => {
-  // 確保 min <= max
   if (filters.value.minDistance > filters.value.maxDistance) {
     filters.value.minDistance = filters.value.maxDistance;
   }
-  // 限制數值在有效範圍內
   filters.value.minDistance = Math.max(
     0,
     Math.min(filters.value.minDistance, 5000)
@@ -378,21 +357,18 @@ const updateDistance = () => {
     0,
     Math.min(filters.value.maxDistance, 5000)
   );
-
   applyFilters();
 };
 
-// 更新距離滑動條，並同步篩選
+// 事件處理函式：更新距離滑動條並同步篩選
 const updateDistanceRange = () => {
-  // 當滑桿改變時，只需更新 maxDistance，minDistance 由 watch 確保不會超過 maxDistance
-  // 但我們也確保 minDistance 不會大於新的 maxDistance
   if (filters.value.minDistance > filters.value.maxDistance) {
     filters.value.minDistance = filters.value.maxDistance;
   }
   applyFilters();
 };
 
-// 更新營業時間輸入框，並同步篩選
+// 事件處理函式：更新營業時間輸入框並同步篩選
 const updateOpenHours = () => {
   const [minOpenHour, minOpenMinute] = openTime.value.split(":").map(Number);
   const [maxOpenHour, maxOpenMinute] = closeTime.value.split(":").map(Number);
@@ -403,9 +379,8 @@ const updateOpenHours = () => {
   applyFilters();
 };
 
-// 切換標籤選中狀態
+// 事件處理函式：切換標籤選中狀態
 const toggleTag = (tag: string) => {
-  // 明確指定類型
   if (!Array.isArray(filters.value.tags)) {
     filters.value.tags = [];
   }
@@ -418,13 +393,12 @@ const toggleTag = (tag: string) => {
   applyFilters();
 };
 
-// 觸發篩選條件變更事件
+// 事件處理函式：觸發篩選條件變更事件
 const applyFilters = () => {
-  // 發送一個包含所有當前篩選狀態的完整物件
   emit("filter-changed", { ...filters.value });
 };
 
-// 重設所有篩選條件為預設值
+// 事件處理函式：重設所有篩選條件為預設值
 const resetFilters = () => {
   filters.value = {
     address: "any",
@@ -437,81 +411,33 @@ const resetFilters = () => {
     maxOpenMinute: 0,
     tags: [],
   };
-  applyFilters(); // 重設後立即應用篩選
+  applyFilters();
 };
 
-// 關閉篩選面板
+// 事件處理函式：關閉篩選面板
 const closePanel = () => {
   emit("close-panel");
 };
 
-// ----------------------------------------------------------------------
-// Vue 生命週期與監聽器
-// ----------------------------------------------------------------------
-
-// 監聽父組件傳入的 initialFilters，並更新本地篩選狀態
+// 監聽器：監聽父組件傳入的 initialFilters，並更新本地篩選狀態
 watch(
   () => props.initialFilters,
   (newFilters) => {
     filters.value = { ...newFilters };
-    // 同步時間選擇器
     openTime.value = `${String(newFilters.minOpenHour).padStart(2, "0")}:${String(newFilters.minOpenMinute).padStart(2, "0")}`;
     closeTime.value = `${String(newFilters.maxOpenHour).padStart(2, "0")}:${String(newFilters.maxOpenMinute).padStart(2, "0")}`;
   },
   { deep: true, immediate: true }
 );
 
+// 生命週期鉤子
 onMounted(() => {
-  // 在組件掛載時，確保 initialFilters 已經應用到本地狀態
-  // 並發出一次初始篩選事件（如果需要）
-  // 由於 watch 設置了 immediate: true，這行通常可以省略，因為 watch 會在 mount 時觸發
-  // applyFilters(); // 根據你的需求決定是否在 mount 時立即發出一次
+  // 可以在此處處理組件掛載後的邏輯
 });
 </script>
 
 <style scoped>
-/* 新增或修改營業時間相關的樣式 */
-.time-inputs-container {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 8px;
-  margin-bottom: 13px;
-}
-
-.time-input-group {
-  display: flex;
-  align-items: center;
-  gap: 3px;
-}
-
-.time-number-input {
-  width: 45px;
-  padding: 10px 6px;
-  border: 1px solid #e0e0e0;
-  border-radius: 8px;
-  font-size: 15px;
-  text-align: center;
-  -moz-appearance: textfield;
-}
-.time-number-input::-webkit-outer-spin-button,
-.time-number-input::-webkit-inner-spin-button {
-  -webkit-appearance: none;
-  margin: 0;
-}
-
-.time-input-group span {
-  font-size: 15px;
-  color: #555;
-}
-
-.time-input-hint {
-  font-size: 14px;
-  color: #888;
-  margin-top: 8px;
-  text-align: center;
-}
-
+/* 已套用篩選標籤樣式 */
 .applied-filters-list-wrapper {
   margin-bottom: 24px;
   display: flex;
@@ -537,36 +463,35 @@ onMounted(() => {
   text-overflow: ellipsis;
 }
 
-/* 修改這裡：為移除按鈕和其內部的 SVG 圖示添加樣式 */
 .remove-filter-button {
   background: none;
   border: none;
-  margin-left: 8px; /* 與文字的間距 */
+  margin-left: 8px;
   cursor: pointer;
   opacity: 0.8;
   transition: opacity 0.2s;
-  display: flex; /* 使用 flexbox 讓 SVG 居中 */
+  display: flex;
   align-items: center;
   justify-content: center;
   padding: 0;
-  width: 18px; /* 調整按鈕的尺寸，可以根據實際效果微調 */
+  width: 18px;
   height: 18px;
-  border-radius: 50%; /* 讓按鈕背景可以更圓潤 */
-  background-color: rgba(0, 0, 0, 0.05); /* 淺灰色背景 */
+  border-radius: 50%;
+  background-color: rgba(0, 0, 0, 0.05);
 }
 
 .remove-filter-button:hover {
   opacity: 1;
-  background-color: rgba(0, 0, 0, 0.1); /* hover 時加深背景色 */
+  background-color: rgba(0, 0, 0, 0.1);
 }
 
 .remove-filter-icon {
-  width: 12px; /* 調整 SVG 圖示的大小，可以根據實際效果微調 */
+  width: 12px;
   height: 12px;
-  color: #333; /* 設置 SVG 圖示的顏色，如果 SVG 內部使用了 currentColor */
+  color: #333;
 }
-/* 修改到這裡結束 */
 
+/* 篩選面板容器樣式 */
 .filter-panel-container {
   padding: 24px;
   background-color: #ffffff;
@@ -583,6 +508,7 @@ onMounted(() => {
   flex-direction: column;
 }
 
+/* 篩選面板標頭樣式 */
 .filter-header {
   display: flex;
   justify-content: space-between;
@@ -621,6 +547,7 @@ onMounted(() => {
   height: 100%;
 }
 
+/* 篩選區塊通用樣式 */
 .filter-section {
   margin-bottom: 32px;
 }
@@ -656,6 +583,7 @@ onMounted(() => {
   box-shadow: 0 0 0 3px rgba(213, 181, 178, 0.3);
 }
 
+/* 距離篩選樣式 */
 .range-inputs {
   display: flex;
   justify-content: space-between;
@@ -720,6 +648,38 @@ onMounted(() => {
   margin-top: 8px;
 }
 
+/* 營業時間樣式 */
+.time-picker-vertical {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  align-items: center;
+}
+.time-picker-row-single {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+.time-label {
+  font-size: 14px;
+  color: #555;
+  margin-bottom: 2px;
+}
+.time-picker-input {
+  min-width: 150px;
+  width: 150px;
+  height: 40px;
+  padding: 6px 16px;
+  border-radius: 8px;
+  border: 1px solid #e0e0e0;
+  font-size: 16px;
+  box-sizing: border-box;
+  background: #fff;
+  text-align: left;
+}
+
+/* 標籤網格樣式 */
 .tags-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, 120px);
@@ -768,6 +728,7 @@ onMounted(() => {
   border-color: #dfc2c0;
 }
 
+/* 底部操作按鈕樣式 */
 .filter-actions {
   display: flex;
   justify-content: flex-end;
@@ -799,6 +760,7 @@ onMounted(() => {
   color: #333;
 }
 
+/* 響應式調整 */
 @media (max-width: 600px) {
   .filter-panel-container {
     width: 100vw;
@@ -807,36 +769,4 @@ onMounted(() => {
     padding: 16px;
   }
 }
-
-.time-picker-vertical {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  align-items: center;
-}
-.time-picker-row-single {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 4px;
-}
-.time-label {
-  font-size: 14px;
-  color: #555;
-  margin-bottom: 2px;
-}
-.time-picker-input {
-  min-width: 150px;
-  width: 150px;
-  height: 40px;
-  padding: 6px 16px;
-  border-radius: 8px;
-  border: 1px solid #e0e0e0;
-  font-size: 16px;
-  box-sizing: border-box;
-  background: #fff;
-  text-align: left;
-}
-
-/* 移除隱藏時鐘 icon 的 CSS，恢復原生功能 */
 </style>
