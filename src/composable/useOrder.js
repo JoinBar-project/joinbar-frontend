@@ -158,6 +158,149 @@ export function useOrder() {
    return String(orderId)
  }
 
+ const createOrder = async (orderData) => {
+   try {
+     isLoading.value = true
+     error.value = ''
+
+     validateOrderData(orderData)
+     
+     const response = await request('/api/orders/create', {
+       method: 'POST',
+       body: JSON.stringify(orderData)
+     })
+
+     if (response.order) {
+       currentOrder.value = response.order
+       
+       stats.totalOrders++
+       stats.totalAmount += parseFloat(response.order.totalAmount || 0)
+       if (response.order.status === 'pending') {
+         stats.pendingCount++
+       }
+     }
+
+     console.log('✅ 訂單創建成功:', response.order?.orderNumber)
+     return response
+   } catch (err) {
+     error.value = err.message
+     throw err
+   } finally {
+     isLoading.value = false
+   }
+ }
+
+ const getOrderDetails = async (orderId) => {
+   try {
+     isLoading.value = true
+     error.value = ''
+
+     const processedOrderId = validateOrderId(orderId)
+     const response = await request(`/api/orders/${processedOrderId}/details`)
+     
+     if (response.order) {
+       currentOrder.value = response.order
+     }
+
+     console.log('✅ 訂單詳情載入成功:', response.order?.orderNumber)
+     return response
+   } catch (err) {
+     error.value = err.message
+     throw err
+   } finally {
+     isLoading.value = false
+   }
+ }
+
+ const confirmPayment = async (orderId, paymentData) => {
+   try {
+     isLoading.value = true
+     error.value = ''
+
+     if (!paymentData || !paymentData.paymentId) {
+       throw new Error('付款數據不完整')
+     }
+     
+     console.log(`🔄 確認付款，更新訂單狀態...`)
+     const processedOrderId = validateOrderId(orderId)
+     
+     const response = await request(`/api/orders/confirm-payment/${processedOrderId}`, {
+       method: 'PUT',
+       body: JSON.stringify({
+         paymentId: paymentData.paymentId,
+         paymentMethod: paymentData.paymentMethod
+       })
+     })
+
+     if (currentOrder.value && currentOrder.value.orderId === processedOrderId) {
+       currentOrder.value.status = 'paid'
+       currentOrder.value.paymentId = paymentData.paymentId
+       currentOrder.value.paymentMethod = paymentData.paymentMethod
+       currentOrder.value.paidAt = new Date().toISOString()
+     }
+
+     stats.pendingCount = Math.max(0, stats.pendingCount - 1)
+     stats.completedCount++
+
+     console.log('✅ 付款確認成功:', response.orderId)
+     return response
+   } catch (err) {
+     error.value = err.message
+     throw err
+   } finally {
+     isLoading.value = false
+   }
+ }
+
+ const cancelOrder = async (orderId, reason = '') => {
+   try {
+     isLoading.value = true
+     error.value = ''
+
+     const processedOrderId = validateOrderId(orderId)
+     const response = await request(`/api/orders/${processedOrderId}`, {
+       method: 'DELETE',
+       body: JSON.stringify({ reason })
+     })
+
+     if (currentOrder.value && currentOrder.value.orderId === processedOrderId) {
+       currentOrder.value.status = 'cancelled'
+     }
+
+     console.log('✅ 訂單取消成功:', response.orderId)
+     return response
+   } catch (err) {
+     error.value = err.message
+     throw err
+   } finally {
+     isLoading.value = false
+   }
+ }
+
+ const simulatePayment = async (paymentData) => {
+   const { paymentMethod, orderData } = paymentData
+   
+   if (!paymentMethod || !orderData) {
+     throw new Error('付款方式和訂單數據不能為空')
+   }
+   
+   console.log(`💳 開始模擬 ${PAYMENT_METHOD_TEXT[paymentMethod]} 付款...`)
+   
+   const processingTime = paymentMethod === 'linepay' ? 1500 : 2000
+   await new Promise(resolve => setTimeout(resolve, processingTime))
+   
+   const result = {
+     success: true,
+     paymentId: `${paymentMethod.toUpperCase()}_${Date.now()}`,
+     paymentMethod,
+     orderId: String(orderData.orderId),
+     timestamp: new Date().toISOString()
+   }
+   
+   console.log(`✅ 付款模擬完成:`, result)
+   return result
+ }
+
  const clearError = () => {
    error.value = ''
  }
@@ -183,6 +326,11 @@ export function useOrder() {
    hasActiveOrder,
    formattedTotalAmount,
    request,
+   createOrder,
+   getOrderDetails,
+   confirmPayment,
+   cancelOrder,
+   simulatePayment,
    validateOrderData,
    validateItemId,
    validateOrderId,
