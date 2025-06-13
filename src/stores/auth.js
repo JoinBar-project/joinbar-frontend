@@ -30,18 +30,6 @@ export const useAuthStore = defineStore('auth', () => {
     }
   };
 
-  function init() {
-    const storedAccessToken = localStorage.getItem('access_token');
-    const storedRefreshToken = localStorage.getItem('refresh_token');
-    const storedUser = localStorage.getItem('user');
-
-    if (storedAccessToken) {
-      accessToken.value = storedAccessToken;
-      refreshToken.value = storedRefreshToken;
-      user.value = storedUser ? JSON.parse(storedUser) : null;
-    }
-  }
-
   // 清除錯誤訊息
   function clearError() {
     errorMessage.value = ''
@@ -236,6 +224,50 @@ export const useAuthStore = defineStore('auth', () => {
     }
     
     return null
+  }
+
+  function init() {
+    const storedAccessToken = localStorage.getItem('access_token');
+    const storedRefreshToken = localStorage.getItem('refresh_token');
+    const storedUser = localStorage.getItem('user');
+
+    if (storedAccessToken) {
+      accessToken.value = storedAccessToken;
+      refreshToken.value = storedRefreshToken;
+      user.value = storedUser ? JSON.parse(storedUser) : null;
+      console.log('從 localStorage 恢復登入狀態 (Email 登入)');
+    } else if (storedUser) {
+      user.value = JSON.parse(storedUser);
+      console.log('從 localStorage 恢復用戶資訊');
+    }
+
+    try {
+      const userInfoCookie = document.cookie
+        .split('; ')
+        .find(row => row.startsWith('user_info='))
+        ?.split('=')[1];
+
+      if (userInfoCookie) {
+        const userData = JSON.parse(decodeURIComponent(userInfoCookie));
+
+        if (!user.value || user.value.id !== userData.id) {
+          user.value = userData;
+          localStorage.setItem('user', JSON.stringify(userData));
+          console.log('從 cookie 更新用戶資訊 (LINE 登入)');
+        }
+      }
+    } catch(err) {
+      console.error('從 cookie 讀取用戶資訊失敗:', err);
+    }
+
+    if (!user.value) {
+      accessToken.value = null;
+      refreshToken.value = null;
+      localStorage.removeItem('access_token');
+      localStorage.removeItem('refresh_token');
+      localStorage.removeItem('user');
+      console.log('清理無效的登入狀態');
+    }
   }
 
   return {
