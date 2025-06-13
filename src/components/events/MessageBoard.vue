@@ -1,3 +1,18 @@
+<script setup>
+import { ref } from 'vue';
+
+const messageContent = ref('')
+
+
+function submitMessage(){
+  if( messageContent.value.trim() != ''){
+    messageContent.value = ''
+  }
+} 
+
+
+</script>
+
 <template>
   <div class="event-message-section">
     <div class="event-message-bg">
@@ -24,11 +39,11 @@
           </div>
         </div>
         <div class="message-area">
-          <textarea class="textarea" placeholder="來分享你的想法吧！">
+          <textarea v-model="messageContent" class="textarea" placeholder="來分享你的想法吧！">
           </textarea>
           <div class="messgae-tool">
             <i class="fa-regular fa-face-smile"></i>
-            <button class="messgae-btn" type="button">送出</button>
+            <button @click="submitMessage()" class="messgae-btn" type="button">送出</button>
           </div>
           <div>
           </div>
