@@ -170,22 +170,57 @@ export const useAuthStore = defineStore('auth', () => {
 
   // 檢查 LINE 登入回調
   async function checkLineCallback() {
-    const urlParams = new URLSearchParams(window.location.search)
-    const success = urlParams.get('success')
-    const error = urlParams.get('error')
+    const urlParams = new URLSearchParams(window.location.search);
+    const success = urlParams.get('success');
+    const error = urlParams.get('error');
 
     if (success === 'true') {
-      await Swal.fire({
-        title: 'LINE 登入成功!',
-        text: '歡迎使用 LINE 登入',
-        icon: 'success',
-        confirmButtonText: '開始使用'
-      })
-      
-      window.history.replaceState({}, document.title, window.location.pathname)
-      return { success: true, redirect: '/home' }
+      try {
+        // 讀取後端設定的 user_info cookie
+        const userInfoCookie = document.cookie
+          .split('; ')
+          .find(row => row.startsWith('user_info='))
+          ?.split('=')[1];
+        if (userInfoCookie) {
+          const userData = JSON.parse(decodeURIComponent(userInfoCookie));
+          
+          // 更新前端狀態
+          user.value = userData;
+          
+          // 同步到 localStorage（用於頁面重新整理時快速載入）
+          localStorage.setItem('user', JSON.stringify(userData));
+          
+          // 如果你需要 token 在前端（例如 API 調用），可以從 httpOnly cookie 取得
+          // 但通常不需要，因為 axios 會自動帶上 cookies
+          
+          console.log('LINE 登入用戶資訊已同步:', userData);
+        }
+        await Swal.fire({
+          title: 'LINE 登入成功!',
+          text: `歡迎 ${user.value?.lineDisplayName || user.value?.username || ''}`,
+          icon: 'success',
+          confirmButtonText: '開始使用'
+        });
 
-    } else if (error) {
+        window.history.replaceState({}, document.title, window.location.pathname);
+        return { success: true, redirect: '/home' };
+
+      } catch(err) {
+        console.error('LINE 登入狀態同步失敗:', err);
+
+        // 即使同步失敗，也顯示成功訊息（因為登入本身是成功的）
+        await Swal.fire({
+          title: 'LINE 登入成功!',
+          text: '歡迎使用 LINE 登入',
+          icon: 'success',
+          confirmButtonText: '開始使用'
+        });
+
+        window.history.replaceState({}, document.title, window.location.pathname);
+        return { success: true, redirect: '/home' };
+      }
+
+    } else if(error) {
       const errorMsg = decodeURIComponent(error)
       errorMessage.value = errorMsg
 
@@ -195,7 +230,7 @@ export const useAuthStore = defineStore('auth', () => {
         icon: 'error',
         confirmButtonText: '確認'
       })
-      
+
       window.history.replaceState({}, document.title, window.location.pathname)
       return { success: false }
     }
