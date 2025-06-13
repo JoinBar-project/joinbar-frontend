@@ -32,12 +32,11 @@ export const useAuthStore = defineStore('auth', () => {
     }
   };
 
-  // 清除錯誤訊息
   function clearError() {
     errorMessage.value = ''
   }
 
-// 清除認證狀態（供攔截器使用）
+// 清除認證狀態攔截器使用
   function clearAuthState() {
     user.value = null;
     accessToken.value = null;
@@ -58,7 +57,6 @@ export const useAuthStore = defineStore('auth', () => {
     try {
       // 發送一個需要認證的請求來驗證 token
       await apiClient.get('/auth/verify')
-      // 如果請求成功，表示 token 有效
       console.log('認證狀態有效')
       return true
     } catch (error) {
@@ -95,7 +93,6 @@ export const useAuthStore = defineStore('auth', () => {
     }
   }
 
-  // Email 登入
   async function emailLogin(email, password) {
     clearError();
 
@@ -119,12 +116,10 @@ export const useAuthStore = defineStore('auth', () => {
 
       console.log('登入成功:', resp.data);
 
-      // 儲存 token 和用戶資訊
       accessToken.value = resp.data.accessToken;
       refreshToken.value = resp.data.refreshToken;
       user.value = resp.data.user;
 
-      // 同步到 localStorage
       localStorage.setItem('access_token', accessToken.value);
       localStorage.setItem('refresh_token', refreshToken.value);
       localStorage.setItem('user', JSON.stringify(user.value));
@@ -154,7 +149,6 @@ export const useAuthStore = defineStore('auth', () => {
     }
   }
 
-  // LINE 登入
   async function lineLogin() {
     setLoading('line', true);
     clearError();
@@ -187,7 +181,6 @@ export const useAuthStore = defineStore('auth', () => {
     }
   }
 
-  // 檢查 LINE 登入回調
   async function checkLineCallback() {
     const urlParams = new URLSearchParams(window.location.search);
     const success = urlParams.get('success');
@@ -252,7 +245,7 @@ export const useAuthStore = defineStore('auth', () => {
   }
 
   function init() {
-    // 1. 先嘗試從 localStorage 恢復 Email 登入狀態
+    // 嘗試從 localStorage 恢復 Email 登入狀態
     const storedAccessToken = localStorage.getItem('access_token');
     const storedRefreshToken = localStorage.getItem('refresh_token');
     const storedUser = localStorage.getItem('user');
@@ -268,7 +261,7 @@ export const useAuthStore = defineStore('auth', () => {
         localStorage.removeItem('user');
       }
     } 
-    // 2. 如果沒有 token，檢查是否有用戶資訊（可能是 LINE 登入）
+    // 沒有 token 檢查是否有用戶資訊 可能是 LINE 登入
     else if (storedUser) {
       try {
       user.value = JSON.parse(storedUser);

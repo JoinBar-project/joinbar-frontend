@@ -2,10 +2,9 @@ import axios from 'axios';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api';
 
-// 建立 Axios 實例
 const apiClient = axios.create({
   baseURL: API_BASE_URL,
-  withCredentials: true, // 重要：讓請求自動帶上 cookies
+  withCredentials: true, // 請求會自動帶上 cookies
   timeout: 10000
 });
 
@@ -24,7 +23,6 @@ apiClient.interceptors.request.use(
 // 響應攔截器
 apiClient.interceptors.response.use(
   (response) => {
-    // 成功回應，直接返回
     console.log(`API 回應: ${response.config.method.toUpperCase()} ${response.config.url} - ${response.status}`)
     return response
   },
@@ -42,8 +40,8 @@ apiClient.interceptors.response.use(
         case 401:
           // Token 無效或過期
           console.warn('認證失效，清除登入狀態')
-          // 動態導入 store 和 router
           try {
+						// 動態導入 store 和 router 避免循環依賴
             const { useAuthStore } = await import('./auth')
             const { useRouter } = await import('vue-router')
             const authStore = useAuthStore()
@@ -69,7 +67,6 @@ apiClient.interceptors.response.use(
           console.error(`未處理的錯誤狀態: ${status}`)
       }
     } else if (error.request) {
-      // 網路錯誤
       console.error('網路連線錯誤')
     }
     return Promise.reject(error)

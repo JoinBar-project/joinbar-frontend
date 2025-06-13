@@ -110,25 +110,20 @@ const loginForm = ref({
   password: ''
 });
 
-// Email 登入處理
 const handleEmailLogin = async () => {
   const success = await authStore.emailLogin(loginForm.value.email, loginForm.value.password)
   
   if (success) {
-    // 清除表單
     loginForm.value.email = ''
     loginForm.value.password = ''
-    // 跳轉到首頁
     router.push('/home')
   }
 }
 
-// LINE 登入處理
 const handleLineLogin = async () => {
   await authStore.lineLogin()
 }
 
-// 測試帳號功能
 const useTestAccount = () => {
   loginForm.value.email = 'admin@test.com'
   loginForm.value.password = 'admin123'
@@ -144,7 +139,6 @@ const useTestAccount = () => {
 onMounted(async () => {
   // 初始化 store
   authStore.init()
-  
   // 檢查 LINE 登入回調
   const result = await authStore.checkLineCallback()
   if (result?.success) {
@@ -154,5 +148,4 @@ onMounted(async () => {
 </script>
 
 <style scoped>
-
 </style>
