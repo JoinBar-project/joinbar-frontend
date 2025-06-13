@@ -48,8 +48,12 @@
             </div>
 
             <div class="contact-info">
-              <p v-if="bar.formatted_address || bar.address">📍 {{ bar.formatted_address || bar.address }}</p>
-              <p v-if="bar.international_phone_number || bar.phone">📞 {{ bar.international_phone_number || bar.phone }}</p>
+              <p v-if="bar.formatted_address || bar.address">
+                📍 {{ bar.formatted_address || bar.address }}
+              </p>
+              <p v-if="bar.international_phone_number || bar.phone">
+                📞 {{ bar.international_phone_number || bar.phone }}
+              </p>
               <p v-if="bar.website">
                 🌐
                 <a
@@ -64,7 +68,11 @@
             <div class="opening-hours-detail">
               <h3>營業時間</h3>
               <p>
-                {{ bar.opening_hours?.weekday_text?.[0] || bar.openingHours?.weekday_text?.[0] || "未提供營業時間" }}
+                {{
+                  bar.opening_hours?.weekday_text?.[0] ||
+                  bar.openingHours?.weekday_text?.[0] ||
+                  "未提供營業時間"
+                }}
               </p>
             </div>
 
@@ -86,14 +94,27 @@
             </div>
 
             <!-- 顯示 Google 評論 -->
-            <div v-if="bar.googleReviews && bar.googleReviews.length" class="google-review-section">
+            <div
+              v-if="bar.googleReviews && bar.googleReviews.length"
+              class="google-review-section"
+            >
               <h3>Google 熱門評論</h3>
-              <div v-for="review in bar.googleReviews" :key="review.time" class="review-card">
+              <div
+                v-for="review in bar.googleReviews"
+                :key="review.time"
+                class="review-card"
+              >
                 <div class="review-header">
-                  <img :src="review.profile_photo_url" alt="User Avatar" class="user-avatar" />
+                  <img
+                    :src="review.profile_photo_url"
+                    alt="User Avatar"
+                    class="user-avatar"
+                  />
                   <div class="user-info">
                     <span class="user-name">{{ review.author_name }}</span>
-                    <span class="review-date">{{ new Date(review.time * 1000).toLocaleDateString() }}</span>
+                    <span class="review-date">{{
+                      new Date(review.time * 1000).toLocaleDateString()
+                    }}</span>
                   </div>
                 </div>
                 <p class="review-text">{{ review.text }}</p>
@@ -264,7 +285,7 @@
 
 <script setup>
 import { ref, watch, computed } from "vue";
-import { useRouter } from 'vue-router';
+import { useRouter } from "vue-router";
 
 const props = defineProps({
   bar: {

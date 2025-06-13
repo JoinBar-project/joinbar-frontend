@@ -65,13 +65,16 @@
     />
 
     <BarDetailModal
-      v-if="isBarDetailModalOpen"
+      v-if="isBarDetailModalOpen && selectedBarForDetail"
       :bar="selectedBarForDetail"
       @close="closeBarDetailModal"
       @toggle-wishlist="handleToggleWishlistFromDetail"
     />
 
-    <div v-if="googleMapsLoading || (isLoading && !firstLoadDone)" class="loading-overlay">
+    <div
+      v-if="googleMapsLoading || (isLoading && !firstLoadDone)"
+      class="loading-overlay"
+    >
       <div class="loader"></div>
       <p class="loading-message">載入中，請稍候...</p>
     </div>
@@ -149,12 +152,12 @@ const googlePlaceCache = ref({}); // placeId: 詳細資料
 
 // 新增：台北常用行政區中心座標
 const districtCenters = {
-  "信義區": { lat: 25.0330, lng: 121.5654 },
-  "大安區": { lat: 25.0268, lng: 121.5430 },
-  "中山區": { lat: 25.0526, lng: 121.5325 },
-  "松山區": { lat: 25.0505, lng: 121.5747 },
-  "萬華區": { lat: 25.0360, lng: 121.4997 },
-  "士林區": { lat: 25.0928, lng: 121.5246 },
+  信義區: { lat: 25.033, lng: 121.5654 },
+  大安區: { lat: 25.0268, lng: 121.543 },
+  中山區: { lat: 25.0526, lng: 121.5325 },
+  松山區: { lat: 25.0505, lng: 121.5747 },
+  萬華區: { lat: 25.036, lng: 121.4997 },
+  士林區: { lat: 25.0928, lng: 121.5246 },
   // ...可依需求擴充
 };
 
@@ -163,7 +166,10 @@ const filteredBars = computed(() => {
   let bars = googleBars.value;
 
   // 評價排序
-  if (currentFilters.value.ratingSort && currentFilters.value.ratingSort !== "any") {
+  if (
+    currentFilters.value.ratingSort &&
+    currentFilters.value.ratingSort !== "any"
+  ) {
     if (currentFilters.value.ratingSort === "highToLow") {
       bars = [...bars].sort((a, b) => b.rating - a.rating);
     } else if (currentFilters.value.ratingSort === "lowToHigh") {
@@ -180,17 +186,19 @@ const filteredBars = computed(() => {
   ) {
     const center = map.value?.getCenter?.();
     if (center) {
-      bars = bars.filter(bar => {
+      bars = bars.filter((bar) => {
         if (!bar.location) return false;
         // 使用 Haversine 公式計算距離
-        const toRad = deg => deg * Math.PI / 180;
+        const toRad = (deg) => (deg * Math.PI) / 180;
         const R = 6371000; // 地球半徑（公尺）
         const dLat = toRad(bar.location.lat - center.lat());
         const dLng = toRad(bar.location.lng - center.lng());
         const a =
           Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-          Math.cos(toRad(center.lat())) * Math.cos(toRad(bar.location.lat)) *
-          Math.sin(dLng / 2) * Math.sin(dLng / 2);
+          Math.cos(toRad(center.lat())) *
+            Math.cos(toRad(bar.location.lat)) *
+            Math.sin(dLng / 2) *
+            Math.sin(dLng / 2);
         const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
         const distance = R * c;
         return (
@@ -204,14 +212,15 @@ const filteredBars = computed(() => {
   // 標籤篩選（只針對非行政區型 tag）
   const allDistricts = Object.keys(districtCenters);
   const nonDistrictTags = Array.isArray(currentFilters.value.tags)
-    ? currentFilters.value.tags.filter(tag => !allDistricts.includes(tag))
+    ? currentFilters.value.tags.filter((tag) => !allDistricts.includes(tag))
     : [];
   if (nonDistrictTags.length > 0) {
-    bars = bars.filter(bar =>
-      nonDistrictTags.some(tag =>
-        (bar.types && bar.types.includes(tag)) ||
-        (bar.name && bar.name.includes(tag)) ||
-        (bar.vicinity && bar.vicinity.includes(tag))
+    bars = bars.filter((bar) =>
+      nonDistrictTags.some(
+        (tag) =>
+          (bar.types && bar.types.includes(tag)) ||
+          (bar.name && bar.name.includes(tag)) ||
+          (bar.vicinity && bar.vicinity.includes(tag))
       )
     );
   }
@@ -280,25 +289,30 @@ async function handleSearch() {
   try {
     // 1. 先用 textSearch 找地點
     const results = await textSearch(searchQuery.value);
-    if (results && results.length > 0 && results[0].geometry && results[0].geometry.location) {
+    if (
+      results &&
+      results.length > 0 &&
+      results[0].geometry &&
+      results[0].geometry.location
+    ) {
       // 2. 將地圖移動到搜尋到的地點
       const loc = results[0].geometry.location;
       map.value.setCenter({
-        lat: typeof loc.lat === 'function' ? loc.lat() : loc.lat,
-        lng: typeof loc.lng === 'function' ? loc.lng() : loc.lng,
+        lat: typeof loc.lat === "function" ? loc.lat() : loc.lat,
+        lng: typeof loc.lng === "function" ? loc.lng() : loc.lng,
       });
       map.value.setZoom(16);
       // 3. 等地圖移動完成後再查詢該地點附近酒吧
-      window.google.maps.event.addListenerOnce(map.value, 'idle', async () => {
+      window.google.maps.event.addListenerOnce(map.value, "idle", async () => {
         await searchBarsInMapBounds(true);
         isLoading.value = false;
       });
     } else {
-      alert('找不到相關地點，請換個關鍵字');
+      alert("找不到相關地點，請換個關鍵字");
       isLoading.value = false;
     }
   } catch (err) {
-    alert('搜尋失敗，請稍後再試');
+    alert("搜尋失敗，請稍後再試");
     isLoading.value = false;
   }
 }
@@ -323,10 +337,11 @@ function handleFilterChanged(filters) {
   const allDistricts = Object.keys(districtCenters);
   // 先判斷 tags 裡是否有行政區
   const selectedDistrictTag = Array.isArray(filters.tags)
-    ? filters.tags.find(tag => allDistricts.includes(tag))
+    ? filters.tags.find((tag) => allDistricts.includes(tag))
     : null;
   // 若同時選擇地點與 tag 行政區，以 tag 為主
-  const targetDistrict = selectedDistrictTag || (filters.address !== "any" ? filters.address : null);
+  const targetDistrict =
+    selectedDistrictTag || (filters.address !== "any" ? filters.address : null);
   if (targetDistrict && districtCenters[targetDistrict]) {
     const { lat, lng } = districtCenters[targetDistrict];
     if (map.value) {
@@ -385,12 +400,15 @@ async function searchBarsInMapBounds(showLoading = false) {
     if (!center) return;
     if (showLoading) isLoading.value = true;
     const newBars = await searchBarsInMapBoundsFromComposable(showLoading);
-    if (Array.isArray(newBars) && JSON.stringify(googleBars.value) !== JSON.stringify(newBars)) {
+    if (
+      Array.isArray(newBars) &&
+      JSON.stringify(googleBars.value) !== JSON.stringify(newBars)
+    ) {
       googleBars.value = newBars;
     }
     if (showLoading) isLoading.value = false;
   } catch (err) {
-    console.error('searchBarsInMapBounds error:', err);
+    console.error("searchBarsInMapBounds error:", err);
   } finally {
     isFetching.value = false;
   }
@@ -418,18 +436,34 @@ async function handleBarSelected(bar) {
     ...bar,
     ...googleDetail,
     // 圖片
-    images: (googleDetail?.photos && googleDetail.photos.length)
-      ? googleDetail.photos.map(photo => photo.getUrl({ maxWidth: 800, maxHeight: 600 }))
-      : (bar.images && bar.images.length ? bar.images : (bar.imageUrl ? [bar.imageUrl] : [])),
+    images:
+      googleDetail?.photos && googleDetail.photos.length
+        ? googleDetail.photos.map((photo) =>
+            photo.getUrl({ maxWidth: 800, maxHeight: 600 })
+          )
+        : bar.images && bar.images.length
+          ? bar.images
+          : bar.imageUrl
+            ? [bar.imageUrl]
+            : [],
     // 評論
     googleReviews: googleDetail?.reviews || [],
     // 標籤
     tags: bar.tags || googleDetail?.types || [],
     // 營業時間
-    openingHours: googleDetail?.opening_hours || bar.openingHours || bar.opening_hours || {},
-    opening_hours: googleDetail?.opening_hours || bar.openingHours || bar.opening_hours || {},
+    openingHours:
+      googleDetail?.opening_hours ||
+      bar.openingHours ||
+      bar.opening_hours ||
+      {},
+    opening_hours:
+      googleDetail?.opening_hours ||
+      bar.openingHours ||
+      bar.opening_hours ||
+      {},
     // 介紹
-    description: bar.description || googleDetail?.editorial_summary?.overview || '',
+    description:
+      bar.description || googleDetail?.editorial_summary?.overview || "",
   };
 
   panToAndShowBarInfo(bar);
@@ -446,7 +480,8 @@ function closeBarDetailModal() {
 function handleToggleWishlist(barId) {
   const barIndex = googleBars.value.findIndex((b) => b.id === barId);
   if (barIndex > -1) {
-    googleBars.value[barIndex].isWishlisted = !googleBars.value[barIndex].isWishlisted;
+    googleBars.value[barIndex].isWishlisted =
+      !googleBars.value[barIndex].isWishlisted;
   }
   // 確保如果詳細頁面打開，它的收藏狀態也能同步更新
   if (selectedBarForDetail.value && selectedBarForDetail.value.id === barId) {
@@ -472,7 +507,9 @@ onMounted(async () => {
       initMap();
       try {
         // 嘗試自動定位
-        await getMapCurrentLocation(document.querySelector(".bar-list-sidebar")?.offsetWidth || 0);
+        await getMapCurrentLocation(
+          document.querySelector(".bar-list-sidebar")?.offsetWidth || 0
+        );
       } catch (err) {
         console.warn("自動定位失敗，將以預設中心查詢:", err);
         // 定位失敗時不做任何事，地圖會停在預設中心
