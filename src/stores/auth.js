@@ -3,17 +3,32 @@ import { ref, computed } from 'vue';
 import axios from 'axios';
 import Swal from 'sweetalert2';
 
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api'
+
 export const useAuthStore = defineStore('auth', () => {
   const user = ref(null); 
   const accessToken = ref(null);
   const refreshToken = ref(null);
-  const isLoading = ref(false);
   const isEmailLoading = ref(false);
   const isLineLoading = ref(false);
   const errorMessage = ref('');
 
   const isAuthenticated = computed(() => !!accessToken.value);
   const currentUser = computed(() => user.value);
+  const isLoading = computed(() => isEmailLoading.value || isLineLoading.value);
+
+  const setLoading = (type, value) => {
+    switch (type) {
+      case 'email':
+        isEmailLoading.value = value;
+        break;
+      case 'line':
+        isLineLoading.value = value;
+        break;
+      default:
+        console.warn(`未知的 loading 類型: ${type}`);
+    }
+  };
 
   function init() {
     const storedAccessToken = localStorage.getItem('access_token');
@@ -46,10 +61,8 @@ export const useAuthStore = defineStore('auth', () => {
       return false;
     }
 
-    isEmailLoading.value = true;
-    isLoading.value = true;
+    setLoading('email', true);
 
-    const API_BASE_URL = 'http://localhost:3000/api';
     axios.defaults.withCredentials = true;
 
     try {
@@ -121,18 +134,14 @@ export const useAuthStore = defineStore('auth', () => {
       return false
 
     } finally {
-      isEmailLoading.value = false
-      isLoading.value = false
+      setLoading('email', false);
     }
   }
 
   // LINE 登入
   async function lineLogin() {
-    isLineLoading.value = true;
-    isLoading.value = true;
+    setLoading('line', true);
     errorMessage.value = '';
-
-    const API_BASE_URL = 'http://localhost:3000/api';
 
     try {
       const resp = await axios.get(`${API_BASE_URL}/auth/line/url`)
@@ -166,8 +175,7 @@ export const useAuthStore = defineStore('auth', () => {
       return false
 
     } finally {
-      isLineLoading.value = false
-      isLoading.value = false
+      setLoading('line', false);
     }
   }
 
@@ -223,5 +231,6 @@ export const useAuthStore = defineStore('auth', () => {
     emailLogin,
     lineLogin,
     checkLineCallback,
+    setLoading
   }
 })
