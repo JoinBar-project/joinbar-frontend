@@ -47,6 +47,33 @@ export const useAuthStore = defineStore('auth', () => {
     errorMessage.value = ''
   }
 
+  // 統一的錯誤處理函數
+  const handleError = (err, defaultTitle = '操作失敗') => {
+    console.error(defaultTitle + ':', err);
+
+    if (err.response) {
+      errorMessage.value = err.response.data.error || defaultTitle;
+
+      let title = defaultTitle;
+      if (err.response.status === 401) {
+        title = '帳號或密碼錯誤';
+        errorMessage.value = '請檢查您的電子郵件和密碼是否正確'
+      } else if (err.response.status === 500) {
+        title = '伺服器發生錯誤'
+      }
+
+      return { title, message: errorMessage.value };
+
+    } else if (err.request) {
+      errorMessage.value = '網路連線失敗，請檢查網路狀態'
+      return { title: '網路發生錯誤!', message: errorMessage.value };
+
+    } else {
+      errorMessage.value = '發生未知錯誤，請稍後再試'
+      return { title: '發生未知錯誤!', message: errorMessage.value };
+    }
+  }
+
   // Email 登入
   async function emailLogin(email, password) {
     clearError();
@@ -92,46 +119,16 @@ export const useAuthStore = defineStore('auth', () => {
       return true;
 
     } catch(err) {
-      console.error('登入失敗:', err);
+      const errorInfo = handleError(err, '登入失敗');
 
-      if (err.response) {
-        errorMessage.value = err.response.data.error || '登入失敗';
+      await Swal.fire({
+        title: errorInfo.title,
+        text: errorInfo.message,
+        icon: 'error',
+        confirmButtonText: '確認'
+      });
 
-        let title = '登入失敗';
-        if (err.response.status === 401) {
-          title = '帳號或密碼錯誤';
-          errorMessage.value = '請檢查您的電子郵件和密碼是否正確'
-        } else if (err.response.status === 500) {
-          title = '伺服器發生錯誤'
-        }
-
-        await Swal.fire({
-          title: title,
-          text: errorMessage.value,
-          icon: 'error',
-          confirmButtonText: '確認'
-        })
-
-      } else if (err.request) {
-        errorMessage.value = '網路連線失敗，請檢查網路狀態'
-        await Swal.fire({
-          title: '網路發生錯誤!',
-          text: errorMessage.value,
-          icon: 'error',
-          confirmButtonText: '確認'
-        })
-
-      } else {
-        errorMessage.value = '發生未知錯誤，請稍後再試'
-        await Swal.fire({
-          title: '發生未知錯誤!',
-          text: errorMessage.value,
-          icon: 'error',
-          confirmButtonText: '確認'
-        })
-      }
-
-      return false
+      return false;
 
     } finally {
       setLoading('email', false);
@@ -141,7 +138,7 @@ export const useAuthStore = defineStore('auth', () => {
   // LINE 登入
   async function lineLogin() {
     setLoading('line', true);
-    errorMessage.value = '';
+    clearError();
 
     try {
       const resp = await axios.get(`${API_BASE_URL}/auth/line/url`)
@@ -155,22 +152,14 @@ export const useAuthStore = defineStore('auth', () => {
       }
 
     } catch(err) {
-      console.error('LINE 登入失敗:', err)
-
-      if (err.response) {
-        errorMessage.value = err.response.data.error || 'LINE 登入失敗'
-      } else if (err.request) {
-        errorMessage.value = '網路連線失敗，請檢查網路狀態'
-      } else {
-        errorMessage.value = 'LINE 登入發生錯誤，請稍後再試'
-      }
+      const errorInfo = handleError(err, 'LINE 登入失敗');
 
       await Swal.fire({
-        title: 'LINE 登入失敗',
-        text: errorMessage.value,
+        title: errorInfo.title,
+        text: errorInfo.message,
         icon: 'error',
         confirmButtonText: '確認'
-      })
+      });
 
       return false
 
