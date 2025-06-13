@@ -13,7 +13,6 @@ export const useAuthStore = defineStore('auth', () => {
   const isLineLoading = ref(false);
   const errorMessage = ref('');
 
-  const isAuthenticated = computed(() => !!accessToken.value);
   const currentUser = computed(() => user.value);
   const isLoading = computed(() => isEmailLoading.value || isLineLoading.value);
 
@@ -269,6 +268,18 @@ export const useAuthStore = defineStore('auth', () => {
       console.log('清理無效的登入狀態');
     }
   }
+
+  const isAuthenticated = computed(() => {
+  // 有用戶資訊就算已認證（不管是 token 還是 cookie）
+  return !!user.value;
+});
+
+  // 也可以區分登入方式
+  const loginMethod = computed(() => {
+    if (!user.value) return null;
+    if (accessToken.value) return 'email';
+    return 'line'; // 假設沒有 token 的就是 LINE 登入
+  });
 
   return {
     user,
