@@ -10,7 +10,6 @@ dayjs.extend(timezone)
 dayjs.locale('zh-tw')
 
 const tz = 'Asia/Taipei'
-
 const messageContent = ref('')
 
 const messages = ref([
@@ -34,7 +33,6 @@ const messages = ref([
   },
 ])
 
-
 function submitMessage(){
   if( messageContent.value.trim() != ''){
     messages.value.push({
@@ -47,8 +45,6 @@ function submitMessage(){
   }
 } 
 
-
-
 </script>
 
 <template>
@@ -58,22 +54,12 @@ function submitMessage(){
       <div class="message-board">
         <div v-for="(message, index) in messages" :key="index" class="message-content">
           <div class="headshot">
-            <img src="@/components/events/picture/大頭照1.jpg" alt="大頭照">
+            <img :src="message.headshot" alt="大頭照">
           </div>
           <div class="message">
-            <p class="user">新店裕隆成</p>
-            <p>這裡看起來很讚!!這裡看起來很讚!!這裡看起來很讚!!這裡看起來很讚!!這裡看起來很讚!!這裡看起來很讚!!這裡看起來很讚!!這裡看起來很讚!!這裡看起來很讚!!這裡看起來很讚!!這裡看起來很讚!!這裡看起來很讚!!這裡看起來很讚!!這裡看起來很讚!!</p>
-            <p class="message-date">2025/06/01 20:54</p>
-          </div>
-        </div>
-        <div class="message-content">
-          <div class="headshot">
-            <img src="@/components/events/picture/大頭照2.jpg" alt="大頭照">
-          </div>
-          <div class="message">
-            <p class="user">台北蔡一零</p>
-            <p>那天我要睡在路邊! 喝到爛醉~~</p>
-            <p class="message-date">2025/06/01 20:54</p>
+            <p class="user">{{ message.user }}</p>
+            <p>{{ message.messageContent }}</p>
+            <p class="message-date">{{ message.messageTime }}</p>
           </div>
         </div>
         <div class="message-area">
