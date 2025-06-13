@@ -3,6 +3,27 @@ import { ref } from 'vue';
 
 const messageContent = ref('')
 
+const messages = ref([
+  {
+    headshot : new URL('@/components/events/picture/大頭照1.jpg', import.meta.url).href,
+    user : 'Bella',
+    messageContent : '這裡看起來很讚！我要來～',
+    messageTime : dayjs().tz(tz).format('YYYY.MM.DD HH:mm')
+  },
+  {
+    headshot : new URL('@/components/events/picture/大頭照1.jpg', import.meta.url).href,
+    user : 'Mella',
+    messageContent : '今天要介紹的酒吧是位於林森北路的Bar千華,主要是以經典調酒為主，只要能說得出酒名,基本上一定能做得出來,這次位我服務的調酒師叫Shawn, 雖然年紀不大,卻有個老派的靈魂對於酒類知識也十分精通,不管是經典調酒背後的典故,或各種烈酒的知識,都能信手拈來,調酒的風格屬於溫柔舒服的類型,但不代表酒下得少,只是運用調酒手法,把酒感處理得很漂亮,不知不覺就會讓人喝得比預期來得多。對於各式經典調酒,也有屬於自己的獨到見解,接下來就來看我為大家帶來的三杯經典吧!',
+    messageTime : dayjs().tz(tz).format('YYYY.MM.DD HH:mm')
+  },
+  {
+    headshot : new URL('@/components/events/picture/大頭照1.jpg', import.meta.url).href,
+    user : 'I LOVE MASO',
+    messageContent : '今天表演者共8位，一開始竟然是澳洲介紹vcr，猛男大外宣耶，舞蹈部分舞跳的非常不齊，有幾位很划水（但划水的長得帥所以沒關係），但也有幾位跳舞非常厲害，空翻樣樣來，舞蹈元素大概是牛仔、制服、戰士等，舞真的還好，重點在肉體!',
+    messageTime : dayjs().tz(tz).format('YYYY.MM.DD HH:mm')
+  },
+])
+
 
 function submitMessage(){
   if( messageContent.value.trim() != ''){
@@ -18,7 +39,7 @@ function submitMessage(){
     <div class="event-message-bg">
       <div class="message-board-title">BarTalks 留言板</div>
       <div class="message-board">
-        <div class="message-content">
+        <div v-for="(message, index) in messages" :key="index" class="message-content">
           <div class="headshot">
             <img src="@/components/events/picture/大頭照1.jpg" alt="大頭照">
           </div>
