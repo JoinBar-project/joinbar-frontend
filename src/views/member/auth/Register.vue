@@ -11,7 +11,6 @@
       </div>
     </transition>
     
-    <!-- Tabs -->
     <div class="flex border-b border-[#f3c4cc]">
       <router-link
         to="/login"

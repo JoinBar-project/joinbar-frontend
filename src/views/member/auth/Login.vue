@@ -11,7 +11,7 @@
     </transition>
     
     <!-- Tabs -->
-    <div class="flex border-b border-[#f3c4cc]">
+    <div class="flex border-b-12 border-[var(--color-bg-light)]">
       <button
         class="flex-1 py-2 text-center font-semibold border-b-3 border-[var(--color-text-salmon-pink)] text-[var(--color-primary-red)]">
         會員登入
