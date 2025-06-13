@@ -1,5 +1,5 @@
 <template>
-  <div class="relative max-w-md mx-auto mt-10 p-6 bg-[#f8ecec] rounded-xl shadow-xl">
+  <div class="relative max-w-md mx-auto mt-10 p-6 bg-[var(--color-secondary-pink)] rounded-xl shadow-xl">
     
     <transition name="alert-slide">
       <div v-if="showLoginSuccess" role="alert" class="alert alert-success alert-soft absolute -top-8 left-0 right-0 z-10">
@@ -13,7 +13,7 @@
     <!-- Tabs -->
     <div class="flex border-b border-[#f3c4cc]">
       <button
-        class="flex-1 py-2 text-center font-semibold border-b-3 border-[#aa666c] text-[var(--color-primary-red)]">
+        class="flex-1 py-2 text-center font-semibold border-b-3 border-[var(--color-text-salmon-pink)] text-[var(--color-primary-red)]">
         會員登入
       </button>
       <router-link to="/register" class="flex-1 py-2 text-center font-semibold text-[#b0a89c] hover:text-[var(--color-primary-red)] transition">
@@ -29,7 +29,7 @@
             :class="[
               'flex items-center border rounded px-3 py-2 transition-colors',
               errors.email 
-                ? 'border-red-500 bg-red-50' 
+                ? 'border-red-500 bg-[var(--color-bg-light)]' 
                 : 'border-gray-400'
             ]">
             <i class="fa-solid fa-envelope text-[var(--color-black)] mr-2"></i>
@@ -97,7 +97,7 @@
           <img src="/google.svg" alt="Google logo" class="w-5 h-5 mr-2" />
           Login with Google
         </button>
-        <button class="btn bg-[#03C755] text-white border-[#00b544] flex items-center px-4 py-2 rounded-lg hover:shadow-md transition">
+        <button class="btn bg-[var(--color-line-green)] text-white border-[var(--color-line-green-dark)] border-2 flex items-center px-4 py-2 rounded-lg hover:shadow-md transition">
           <img src="/line.svg" alt="Line logo" class="w-5 h-5 mr-2" />
           Login with LINE
         </button>
@@ -107,7 +107,7 @@
       <div class="flex justify-center">
         <button
           @click="handleLogin"
-          class="w-full max-w-[180px] py-2 hover:bg-[#aa666c] hover:text-[#3A3435] bg-[var(--color-primary-red)] text-[#ffffff] rounded-lg font-semibold mt-4 shadow-md hover:shadow-lg transition duration-200">
+          class="w-full max-w-[180px] py-2 hover:bg-[var(--color-text-salmon-pink)] hover:text-[#3A3435] bg-[var(--color-primary-red)] text-[#ffffff] rounded-lg font-semibold mt-4 shadow-md hover:shadow-lg transition duration-200">
           登入
         </button>
       </div>

@@ -1,5 +1,5 @@
 <template>
-  <div class="max-w-md mx-auto mt-10 mb-10 p-6 bg-[#f8ecec] rounded-xl shadow-xl text-[#f9ebd5] relative">
+  <div class="max-w-md mx-auto mt-10 mb-10 p-6 bg-[var(--color-secondary-pink)] rounded-xl shadow-xl text-[#f9ebd5] relative">
     
     <!-- 成功註冊通知 -->
     <transition name="alert-slide">
@@ -22,7 +22,7 @@
         會員登入
       </router-link>
       <button
-        class="flex-1 py-2 text-center font-semibold border-b-3 border-[#aa666c]"
+        class="flex-1 py-2 text-center font-semibold border-b-3 border-[var(--color-text-salmon-pink)]"
         style="color: var(--color-primary-red);">
         註冊
       </button>
@@ -40,7 +40,7 @@
               :class="[
                 'flex items-center border rounded px-3 py-2 transition-colors',
                 errors[field.model] 
-                  ? 'border-red-500 bg-red-50' 
+                  ? 'border-red-500 bg-[var(--color-bg-light)]' 
                   : 'border-gray-400',
                 field.type === 'password' ? 'relative' : ''
               ]">
@@ -83,14 +83,14 @@
             <button class="btn bg-white text-black border-[#e5e5e5] border-2 flex items-center px-4 py-2 rounded-lg hover:shadow-md transition">
               <img src="/google.svg" alt="Google" class="w-5 h-5 mr-2" /> register for Google 
             </button>
-            <button class="btn bg-[#03C755] text-white border-[#00b544] flex items-center px-4 py-2 rounded-lg hover:shadow-md transition">
+            <button class="btn bg-[var(--color-line-green)] text-white border-[var(--color-line-green-dark)] border-2 flex items-center px-4 py-2 rounded-lg hover:shadow-md transition">
               <img src="/line.svg" alt="LINE" class="w-5 h-5 mr-2" /> register for LINE
             </button>
           </div>
 
         <button
           @click="goToPreferences"
-          class="block mx-auto mt-6 px-6 py-2 rounded-lg font-semibold text-white bg-[var(--color-primary-red)] hover:bg-[#aa666c] hover:text-[var(--color-black)] hover:shadow-xl transition">
+          class="block mx-auto mt-6 px-6 py-2 rounded-lg font-semibold text-white bg-[var(--color-primary-red)] hover:bg-[var(--color-text-salmon-pink)] hover:text-[var(--color-black)] hover:shadow-xl transition">
           下一步
         </button>
 
@@ -108,7 +108,7 @@
           <h2 class="text-xl font-semibold mb-4" style="color: var(--color-primary-red);">選擇你的酒吧偏好</h2>
 
           <div>
-            <h3 class="text-lg font-medium mb-2 text-[#aa666c]">酒吧類型</h3>
+            <h3 class="text-lg font-medium mb-2 text-[var(--color-text-salmon-pink)]">酒吧類型</h3>
             <div class="grid grid-cols-3 grid-rows-2 gap-3 ">
               <button v-for="type in barTypes" :key="type" 
                 @click="toggleSelection(form.preferences.types, type)"
@@ -122,7 +122,7 @@
           </div>
 
           <div>
-            <h3 class="text-lg font-medium mb-2 text-[#aa666c]">酒吧氛圍</h3>
+            <h3 class="text-lg font-medium mb-2 text-[var(--color-text-salmon-pink)]">酒吧氛圍</h3>
             <div class="grid grid-cols-3 grid-rows-2 gap-2">
               <button v-for="mood in barMoods" :key="mood"
                 @click="toggleSelection(form.preferences.moods, mood)"
@@ -136,14 +136,14 @@
           </div>
 
           <div class="flex justify-between mt-6">
-            <button @click="step = 1" class="text-sm text-[#aa666c] transition"
+            <button @click="step = 1" class="text-sm text-[var(--color-text-salmon-pink)] transition"
                     @mouseover="$event.target.style.color = 'var(--color-primary-red)'"
-                    @mouseleave="$event.target.style.color = '#aa666c'">
+                    @mouseleave="$event.target.style.color = 'var(--color-text-salmon-pink)'">
               <i class="fa-solid fa-arrow-left mr-1"></i> 返回
             </button>
             <button
               @click="submitRegistration"
-              class="px-6 py-2 rounded-lg font-semibold text-white bg-[var(--color-primary-red)] hover:bg-[#aa666c] hover:text-[var(--color-black)] hover:shadow-xl transition">
+              class="px-6 py-2 rounded-lg font-semibold text-white bg-[var(--color-primary-red)] hover:bg-[var(--color-text-salmon-pink)] hover:text-[var(--color-black)] hover:shadow-xl transition">
               完成註冊
             </button>
           </div>

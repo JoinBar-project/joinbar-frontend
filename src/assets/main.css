@@ -4,11 +4,21 @@
 /* 全站通用樣式 */
 
 :root {
+  /* 主色 */
   --color-primary-red: #860914;
   --color-primary-orange: #daa258;
   --color-secondary-pink: #decdd5;
   --color-secondary-green: #afb18c;
   --color-black: #3A3435;
+
+  /* 背景色 */
+  --color-bg-light: #f8ecec;
+  /* 字體色 */
+  --color-text-salmon-pink: #aa666c;
+
+  /* 第三方登入按鈕顏色 */
+  --color-line-green: #03C755;
+  --color-line-green-dark: #00b544;
 }
 
 /* :root {
