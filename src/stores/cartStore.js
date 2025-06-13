@@ -1,5 +1,11 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
+import dayjs from 'dayjs'
+import utc from 'dayjs/plugin/utc'
+import timezone from 'dayjs/plugin/timezone'
+
+dayjs.extend(utc)
+dayjs.extend(timezone)
 
 export const useCartStore = defineStore('cart', () => {
  const items = ref([])
@@ -14,17 +20,16 @@ export const useCartStore = defineStore('cart', () => {
 
  const isEventExpired = (event) => {
    if (!event.endDate) return false
-   const now = new Date()
-   const endDate = new Date(event.endDate)
-   return endDate < now
+   const now = dayjs().tz('Asia/Taipei')
+   const endDate = dayjs(event.endDate).tz('Asia/Taipei')
+   return endDate.isBefore(now)
  }
 
  const isEventStartingSoon = (event, hoursThreshold = 2) => {
    if (!event.startDate) return false
-   const now = new Date()
-   const startDate = new Date(event.startDate)
-   const timeDiff = startDate.getTime() - now.getTime()
-   const hoursDiff = timeDiff / (1000 * 60 * 60)
+   const now = dayjs().tz('Asia/Taipei')
+   const startDate = dayjs(event.startDate).tz('Asia/Taipei')
+   const hoursDiff = startDate.diff(now, 'hour', true)
    return hoursDiff > 0 && hoursDiff <= hoursThreshold
  }
 
@@ -34,10 +39,10 @@ export const useCartStore = defineStore('cart', () => {
 
  const isEventOngoing = (event) => {
    if (!event.startDate || !event.endDate) return false
-   const now = new Date()
-   const startDate = new Date(event.startDate)
-   const endDate = new Date(event.endDate)
-   return now >= startDate && now <= endDate
+   const now = dayjs().tz('Asia/Taipei')
+   const startDate = dayjs(event.startDate).tz('Asia/Taipei')
+   const endDate = dayjs(event.endDate).tz('Asia/Taipei')
+   return now.isAfter(startDate) && now.isBefore(endDate)
  }
 
  const validateEventData = (event) => {
@@ -60,9 +65,9 @@ export const useCartStore = defineStore('cart', () => {
    }
    
    if (event.startDate && event.endDate) {
-     const start = new Date(event.startDate)
-     const end = new Date(event.endDate)
-     if (start >= end) {
+     const start = dayjs(event.startDate).tz('Asia/Taipei')
+     const end = dayjs(event.endDate).tz('Asia/Taipei')
+     if (start.isAfter(end) || start.isSame(end)) {
        errors.push('活動結束時間必須晚於開始時間')
      }
    }
@@ -90,7 +95,7 @@ export const useCartStore = defineStore('cart', () => {
  }
 
  const validateCart = () => {
-   const now = new Date()
+   const now = dayjs().tz('Asia/Taipei')
    const issues = {
      expired: [],
      invalid: [],
@@ -281,7 +286,7 @@ export const useCartStore = defineStore('cart', () => {
      endDate: item.endDate || null,
      hostUser: item.hostUser || null,
      maxPeople: item.maxPeople || null,
-     addedAt: new Date().toISOString()
+     addedAt: dayjs().tz('Asia/Taipei').toISOString()
    }
  }
 
@@ -390,10 +395,7 @@ export const useCartStore = defineStore('cart', () => {
        eventId: String(item.id),
        quantity: 1
      })),
-     paymentMethod: paymentMethod,
-     customerName: customerInfo.name.trim(),
-     customerPhone: customerInfo.phone.trim(),
-     customerEmail: customerInfo.email.trim()
+     paymentMethod: paymentMethod
    }
  }
 

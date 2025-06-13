@@ -141,9 +141,15 @@
  import { useOrder } from '@/composable/useOrder'
  import { computed, ref, onMounted, watch } from 'vue'
  import { useRouter } from 'vue-router'
+ import dayjs from 'dayjs'
+ import utc from 'dayjs/plugin/utc'
+ import timezone from 'dayjs/plugin/timezone'
  
  import IconLine from '@/components/icons/IconLine.vue'
  import IconCreditCard from '@/components/icons/IconCreditCard.vue'
+
+ dayjs.extend(utc)
+ dayjs.extend(timezone)
  
  const cart = useCartStore()
  const router = useRouter()
@@ -173,6 +179,7 @@
  const formErrors = ref({})
  
  onMounted(async () => {
+  loadUserInfo()
   setTimeout(() => {
     if (cart.items.length === 0) {
       alert('購物車是空的，即將返回購物車頁面')
@@ -262,7 +269,13 @@
     }
  
     console.log('📦 步驟 1/5: 準備訂單數據...')
-    const orderData = cart.getOrderData(customerInfo.value, paymentMethod.value)
+    const orderData = {
+      items: cartItems.value.map(item => ({
+        eventId: item.id,
+        quantity: 1
+      })),
+      paymentMethod: paymentMethod.value
+    }
     console.log('✅ 訂單數據準備完成:', orderData)
  
     console.log('🔄 步驟 2/5: 創建訂單...')

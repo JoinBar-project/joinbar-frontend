@@ -1,12 +1,10 @@
 <template>
   <div class="success-container">
-    <!-- 載入中 -->
     <div v-if="orderLoading" class="loading-box">
       <div class="spinner"></div>
       <p>載入訂單資訊中...</p>
     </div>
 
-    <!-- 載入失敗 -->
     <div v-else-if="orderError" class="error-section">
       <div class="error-icon">❌</div>
       <h2>載入失敗</h2>
@@ -19,7 +17,6 @@
       </div>
     </div>
 
-    <!-- 成功內容 -->
     <div v-else-if="orderInfo" class="success-content">
       <div class="success-header">
         <div class="success-icon">✅</div>
@@ -27,7 +24,6 @@
         <p class="success-subtitle">感謝您的購買，期待在活動中見到您！</p>
       </div>
 
-      <!-- 訂單詳情 -->
       <div class="info-card">
         <div class="card-header">
           <h2>訂單詳情</h2>
@@ -62,7 +58,6 @@
         </div>
       </div>
 
-      <!-- 活動明細 -->
       <div v-if="orderInfo.items?.length" class="info-card">
         <div class="card-header">
           <h3>已購買活動 ({{ orderInfo.items.length }} 項)</h3>
@@ -70,7 +65,6 @@
         <div class="events-list">
           <div v-for="item in orderInfo.items" :key="item.id" class="event-item">
             <div class="event-info">
-              <!-- 有活動詳情頁可 router-link，否則用 h4 -->
               <RouterLink v-if="item.eventId" :to="`/event/${item.eventId}`">
                 <h4 class="event-link">{{ item.eventName }}</h4>
               </RouterLink>
@@ -92,7 +86,6 @@
       </div>
     </div>
 
-    <!-- 複製成功提示 -->
     <div v-if="copyToast" class="copy-toast">
       {{ copyToast }}
     </div>
@@ -103,13 +96,18 @@
 import { ref, onMounted } from 'vue'
 import { useRoute, useRouter, RouterLink } from 'vue-router'
 import { useOrder } from '@/composable/useOrder'
+import dayjs from 'dayjs'
+import utc from 'dayjs/plugin/utc'
+import timezone from 'dayjs/plugin/timezone'
+
+dayjs.extend(utc)
+dayjs.extend(timezone)
 
 const route = useRoute()
 const router = useRouter()
 
 const {
   getOrderDetails,
-  formatDateTime,
   getStatusText,
   getPaymentMethodText,
   isLoading: orderLoading,
@@ -125,18 +123,14 @@ function formatAmount(amount) {
   return Number(amount).toLocaleString('zh-TW', { minimumFractionDigits: 0 })
 }
 
+function formatDateTime(dateString) {
+  if (!dateString) return '-'
+  return dayjs(dateString).tz('Asia/Taipei').format('YYYY年MM月DD日 HH:mm')
+}
+
 function formatEventTime(dateString) {
   if (!dateString) return '-'
-  try {
-    return new Date(dateString).toLocaleString('zh-TW', {
-      month: '2-digit',
-      day: '2-digit',
-      hour: '2-digit',
-      minute: '2-digit'
-    })
-  } catch {
-    return dateString
-  }
+  return dayjs(dateString).tz('Asia/Taipei').format('MM月DD日 HH:mm')
 }
 
 function getStatusClass(status) {
@@ -195,6 +189,7 @@ function showToast(msg) {
 function goToEvents() {
   router.push('/event')
 }
+
 function goToCart() {
   router.push('/cart')
 }
@@ -377,14 +372,6 @@ onMounted(loadOrderData)
   color: #1f2937;
   font-weight: 600;
   text-align: right;
- }
- 
- .total-row {
-  background: #f8fafc;
-  margin: 16px -16px 0;
-  padding: 16px;
-  border-radius: 8px;
-  border: none !important;
  }
  
  .total-amount {

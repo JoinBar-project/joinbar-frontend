@@ -1,5 +1,11 @@
 import { ref, computed, reactive } from 'vue'
 import axios from 'axios'
+import dayjs from 'dayjs'
+import utc from 'dayjs/plugin/utc'
+import timezone from 'dayjs/plugin/timezone'
+
+dayjs.extend(utc)
+dayjs.extend(timezone)
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000'
 
@@ -134,26 +140,12 @@ const handleApiError = (error, defaultMessage = '請求失敗') => {
 }
 
 const validateOrderData = (orderData) => {
-  const required = ['items', 'customerName', 'customerPhone', 'customerEmail', 'paymentMethod']
+  const required = ['items', 'paymentMethod']
   
   for (const field of required) {
     if (!orderData[field]) {
       throw new Error(`缺少必要欄位: ${field}`)
     }
-  }
-
-  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-  if (!emailRegex.test(orderData.customerEmail)) {
-    throw new Error('電子郵件格式不正確')
-  }
-
-  const phoneRegex = /^09\d{8}$|^0\d{1,2}-?\d{6,8}$/
-  if (!phoneRegex.test(orderData.customerPhone.replace(/[-\s]/g, ''))) {
-    console.warn('電話格式可能不正確:', orderData.customerPhone)
-  }
-
-  if (orderData.customerName.trim().length < 2) {
-    throw new Error('姓名至少需要2個字元')
   }
 
   if (!Array.isArray(orderData.items) || orderData.items.length === 0) {
@@ -263,7 +255,7 @@ const confirmPayment = async (orderId, paymentData) => {
       currentOrder.value.status = 'paid'
       currentOrder.value.paymentId = paymentData.paymentId
       currentOrder.value.paymentMethod = paymentData.paymentMethod
-      currentOrder.value.paidAt = new Date().toISOString()
+      currentOrder.value.paidAt = dayjs().tz('Asia/Taipei').toISOString()
     }
 
     stats.pendingCount = Math.max(0, stats.pendingCount - 1)
@@ -322,7 +314,7 @@ const simulatePayment = async (paymentData) => {
     paymentId: `${paymentMethod.toUpperCase()}_${Date.now()}`,
     paymentMethod,
     orderId: String(orderData.orderId),
-    timestamp: new Date().toISOString()
+    timestamp: dayjs().tz('Asia/Taipei').toISOString()
   }
   
   console.log(`✅ 付款模擬完成:`, result)
@@ -372,23 +364,12 @@ const formatAmount = (amount) => {
 
 const formatDateTime = (dateString) => {
   if (!dateString) return '-'
-  return new Date(dateString).toLocaleString('zh-TW', {
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-    hour: '2-digit',
-    minute: '2-digit'
-  })
+  return dayjs(dateString).tz('Asia/Taipei').format('YYYY/MM/DD HH:mm')
 }
 
 const formatEventDateTime = (dateString) => {
   if (!dateString) return '-'
-  return new Date(dateString).toLocaleString('zh-TW', {
-    month: '2-digit',
-    day: '2-digit',
-    hour: '2-digit',
-    minute: '2-digit'
-  })
+  return dayjs(dateString).tz('Asia/Taipei').format('MM/DD HH:mm')
 }
 
 const getStatusText = (status) => {
