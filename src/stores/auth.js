@@ -282,6 +282,7 @@ export const useAuthStore = defineStore('auth', () => {
   });
 
   return {
+    // 狀態
     user,
     accessToken,
     refreshToken,
@@ -290,9 +291,12 @@ export const useAuthStore = defineStore('auth', () => {
     isLineLoading,
     errorMessage,
 
+    // 計算屬性
     isAuthenticated,
     currentUser,
+    loginMethod,
 
+    // 方法
     init,
     clearError,
     emailLogin,
