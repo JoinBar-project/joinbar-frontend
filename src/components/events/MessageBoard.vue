@@ -1,5 +1,15 @@
 <script setup>
 import { ref } from 'vue';
+import dayjs from 'dayjs';
+import utc from 'dayjs/plugin/utc';
+import timezone from 'dayjs/plugin/timezone';
+import 'dayjs/locale/zh-tw'
+
+dayjs.extend(utc)
+dayjs.extend(timezone)
+dayjs.locale('zh-tw')
+
+const tz = 'Asia/Taipei'
 
 const messageContent = ref('')
 
@@ -27,9 +37,16 @@ const messages = ref([
 
 function submitMessage(){
   if( messageContent.value.trim() != ''){
+    messages.value.push({
+      headshot: new URL('@/components/events/picture/大頭照2.jpg', import.meta.url).href,
+      user: '天堂18曾',
+      messageContent: messageContent.value,
+      messageTime: dayjs().tz(tz).format('YYYY.MM.DD HH:mm')
+    })
     messageContent.value = ''
   }
 } 
+
 
 
 </script>
