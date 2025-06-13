@@ -4,6 +4,7 @@ import dayjs from 'dayjs';
 import utc from 'dayjs/plugin/utc';
 import timezone from 'dayjs/plugin/timezone';
 import 'dayjs/locale/zh-tw'
+import 'emoji-picker-element';
 
 dayjs.extend(utc)
 dayjs.extend(timezone)
@@ -11,6 +12,9 @@ dayjs.locale('zh-tw')
 
 const tz = 'Asia/Taipei'
 const messageContent = ref('')
+const showEmojiModal = ref(false)
+const textareaRef = ref(null)
+const cursorPos = ref(0)
 
 const messages = ref([
   {
@@ -43,7 +47,35 @@ function submitMessage(){
     })
     messageContent.value = ''
   }
-} 
+}
+
+function handleEmojiModal(){
+  showEmojiModal.value = !showEmojiModal.value
+}
+
+function updateCursorPosition() {
+  const textarea = textareaRef.value
+  if (textarea) {
+    cursorPos.value = textarea.selectionStart
+  }
+}
+
+function handleEmojiSelect(event) {
+  const emoji = event.detail.unicode
+  const textarea = textareaRef.value
+  const pos = cursorPos.value
+
+  const before = messageContent.value.slice(0, pos)
+  const after = messageContent.value.slice(pos)
+  messageContent.value = before + emoji + after
+
+  nextTick(() => {
+    const newPos = pos + emoji.length
+    cursorPos.value = newPos
+    textarea.setSelectionRange(newPos, newPos)
+    textarea.focus()
+  })
+}
 
 </script>
 
@@ -63,11 +95,24 @@ function submitMessage(){
           </div>
         </div>
         <div class="message-area">
-          <textarea v-model="messageContent" class="textarea" placeholder="來分享你的想法吧！">
+          <textarea 
+            ref="textareaRef"
+            v-model="messageContent"
+            @click="updateCursorPosition"
+            @keyup="updateCursorPosition"
+            @input="updateCursorPosition"
+            class="textarea" 
+            placeholder="來分享你的想法吧！"
+          >
           </textarea>
           <div class="messgae-tool">
-            <i class="fa-regular fa-face-smile"></i>
-            <button @click="submitMessage()" class="messgae-btn" type="button">送出</button>
+            <i @click="handleEmojiModal" class="fa-regular fa-face-smile"></i>
+            <emoji-picker 
+              v-if="showEmojiModal" 
+              @emoji-click="handleEmojiSelect" 
+              class="emoji"
+            ></emoji-picker>
+            <button @click="submitMessage" class="messgae-btn" type="button">送出</button>
           </div>
           <div>
           </div>
@@ -189,8 +234,18 @@ function submitMessage(){
 
 .messgae-tool{
   display: flex;
-  justify-content: space-between;
+  position: relative;
+  justify-content: end;
   align-items: center;
+}
+
+.emoji{
+  position: absolute;
+  z-index: 10;
+  right: -240px;
+  top: -200px;
+  min-width: 320px;
+  max-height: 200px;
 }
 
 </style>
