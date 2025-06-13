@@ -1,9 +1,7 @@
 import { defineStore } from 'pinia';
 import { ref, computed } from 'vue';
-import axios from 'axios';
 import Swal from 'sweetalert2';
-
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api'
+import apiClient from './axios';
 
 export const useAuthStore = defineStore('auth', () => {
   const user = ref(null); 
@@ -15,6 +13,11 @@ export const useAuthStore = defineStore('auth', () => {
 
   const currentUser = computed(() => user.value);
   const isLoading = computed(() => isEmailLoading.value || isLineLoading.value);
+
+  const isAuthenticated = computed(() => {
+  // 有用戶資訊就算已認證（不管是 token 還是 cookie）
+  return !!user.value;
+});
 
   const setLoading = (type, value) => {
     switch (type) {
@@ -32,6 +35,37 @@ export const useAuthStore = defineStore('auth', () => {
   // 清除錯誤訊息
   function clearError() {
     errorMessage.value = ''
+  }
+
+// 清除認證狀態（供攔截器使用）
+  function clearAuthState() {
+    user.value = null;
+    accessToken.value = null;
+    refreshToken.value = null;
+    localStorage.removeItem('access_token');
+    localStorage.removeItem('refresh_token');
+    localStorage.removeItem('user');
+    clearError();
+    console.log('認證狀態已清除');
+  }
+
+  // 檢查認證狀態的方法
+  async function checkAuthStatus() {
+    if (!user.value) {
+      return false
+    }
+
+    try {
+      // 發送一個需要認證的請求來驗證 token
+      await apiClient.get('/auth/verify')
+      // 如果請求成功，表示 token 有效
+      console.log('認證狀態有效')
+      return true
+    } catch (error) {
+      // 攔截器會處理 401 錯誤並清除狀態
+      console.warn('認證狀態無效')
+      return false
+    }
   }
 
   // 統一的錯誤處理函數
@@ -77,10 +111,8 @@ export const useAuthStore = defineStore('auth', () => {
 
     setLoading('email', true);
 
-    axios.defaults.withCredentials = true;
-
     try {
-      const resp = await axios.post(`${API_BASE_URL}/auth/login`, {
+      const resp = await apiClient.post('/auth/login', {
         email,
         password
       });
@@ -128,7 +160,7 @@ export const useAuthStore = defineStore('auth', () => {
     clearError();
 
     try {
-      const resp = await axios.get(`${API_BASE_URL}/auth/line/url`)
+      const resp = await apiClient.get('/auth/line/url')
       console.log('LINE 授權 URL 取得成功:', resp.data)
 
       if (resp.data.authUrl) {
@@ -167,19 +199,14 @@ export const useAuthStore = defineStore('auth', () => {
         const userInfoCookie = document.cookie
           .split('; ')
           .find(row => row.startsWith('user_info='))
-          ?.split('=')[1];
+          ?.split('=').slice(1).join('=');
         if (userInfoCookie) {
           const userData = JSON.parse(decodeURIComponent(userInfoCookie));
           
           // 更新前端狀態
           user.value = userData;
-          
           // 同步到 localStorage（用於頁面重新整理時快速載入）
           localStorage.setItem('user', JSON.stringify(userData));
-          
-          // 如果你需要 token 在前端（例如 API 調用），可以從 httpOnly cookie 取得
-          // 但通常不需要，因為 axios 會自動帶上 cookies
-          
           console.log('LINE 登入用戶資訊已同步:', userData);
         }
         await Swal.fire({
@@ -194,8 +221,7 @@ export const useAuthStore = defineStore('auth', () => {
 
       } catch(err) {
         console.error('LINE 登入狀態同步失敗:', err);
-
-        // 即使同步失敗，也顯示成功訊息（因為登入本身是成功的）
+        // 即使同步失敗，也顯示成功訊息
         await Swal.fire({
           title: 'LINE 登入成功!',
           text: '歡迎使用 LINE 登入',
@@ -226,29 +252,43 @@ export const useAuthStore = defineStore('auth', () => {
   }
 
   function init() {
+    // 1. 先嘗試從 localStorage 恢復 Email 登入狀態
     const storedAccessToken = localStorage.getItem('access_token');
     const storedRefreshToken = localStorage.getItem('refresh_token');
     const storedUser = localStorage.getItem('user');
 
-    if (storedAccessToken) {
+    if (storedAccessToken && storedUser) {
       accessToken.value = storedAccessToken;
       refreshToken.value = storedRefreshToken;
-      user.value = storedUser ? JSON.parse(storedUser) : null;
-      console.log('從 localStorage 恢復登入狀態 (Email 登入)');
-    } else if (storedUser) {
+      try {
+        user.value = JSON.parse(storedUser);
+        console.log('從 localStorage 恢復登入狀態 (Email 登入)');
+      } catch(err) {
+        console.error('解析用戶資料失敗:', err);
+        localStorage.removeItem('user');
+      }
+    } 
+    // 2. 如果沒有 token，檢查是否有用戶資訊（可能是 LINE 登入）
+    else if (storedUser) {
+      try {
       user.value = JSON.parse(storedUser);
       console.log('從 localStorage 恢復用戶資訊');
+    } catch (err) {
+      console.error('解析用戶資料失敗:', err);
+      localStorage.removeItem('user');
+    }
     }
 
     try {
       const userInfoCookie = document.cookie
         .split('; ')
         .find(row => row.startsWith('user_info='))
-        ?.split('=')[1];
+        ?.split('=').slice(1).join('=');
 
       if (userInfoCookie) {
         const userData = JSON.parse(decodeURIComponent(userInfoCookie));
 
+        // 如果 cookie 中的用戶與當前用戶不同，更新狀態
         if (!user.value || user.value.id !== userData.id) {
           user.value = userData;
           localStorage.setItem('user', JSON.stringify(userData));
@@ -259,6 +299,7 @@ export const useAuthStore = defineStore('auth', () => {
       console.error('從 cookie 讀取用戶資訊失敗:', err);
     }
 
+    // 4. 如果最終沒有用戶資訊，清理所有狀態
     if (!user.value) {
       accessToken.value = null;
       refreshToken.value = null;
@@ -268,11 +309,6 @@ export const useAuthStore = defineStore('auth', () => {
       console.log('清理無效的登入狀態');
     }
   }
-
-  const isAuthenticated = computed(() => {
-  // 有用戶資訊就算已認證（不管是 token 還是 cookie）
-  return !!user.value;
-});
 
   // 也可以區分登入方式
   const loginMethod = computed(() => {
@@ -302,6 +338,8 @@ export const useAuthStore = defineStore('auth', () => {
     emailLogin,
     lineLogin,
     checkLineCallback,
-    setLoading
+    setLoading,
+    clearAuthState,
+    checkAuthStatus
   }
 })
