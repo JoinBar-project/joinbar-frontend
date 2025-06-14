@@ -1,7 +1,7 @@
 import { defineStore } from 'pinia';
 import { ref, computed } from 'vue';
 import Swal from 'sweetalert2';
-import apiClient from '../api/axios';
+import { verifyAuth, resendVerification, login, getLineAuthUrl } from '../api/auth';
 
 export const useAuthStore = defineStore('auth', () => {
   const user = ref(null); 
@@ -48,15 +48,14 @@ export const useAuthStore = defineStore('auth', () => {
     console.log('認證狀態已清除');
   }
 
-  // 檢查認證狀態的方法
+  // 檢查認證狀態
   async function checkAuthStatus() {
     if (!user.value) {
       return false
     }
 
     try {
-      // 發送一個需要認證的請求來驗證 token
-      await apiClient.get('/auth/verify')
+      await verifyAuth();
       console.log('認證狀態有效')
       return true
     } catch (error) {
@@ -66,7 +65,7 @@ export const useAuthStore = defineStore('auth', () => {
     }
   }
 
-  // 統一的錯誤處理函數
+  // 統一的錯誤處理
   const handleError = (err, defaultTitle = '操作失敗') => {
     console.error(defaultTitle + ':', err);
 
@@ -93,7 +92,7 @@ export const useAuthStore = defineStore('auth', () => {
     }
   }
 
-  // 重新寄送驗證信的函數
+  // 重新寄送驗證信
   async function handleResendVerification(email) {
     try {
       // 顯示寄送中的載入畫面
@@ -108,9 +107,7 @@ export const useAuthStore = defineStore('auth', () => {
         }
       });
 
-      await apiClient.post('/auth/resend-verification', {
-        email
-      });
+      await resendVerification(email);
 
       await Swal.fire({
         title: '驗證信已重新寄送！',
@@ -186,10 +183,7 @@ export const useAuthStore = defineStore('auth', () => {
     setLoading('email', true);
 
     try {
-      const resp = await apiClient.post('/auth/login', {
-        email,
-        password
-      });
+      const resp = await login(email, password);
 
       console.log('登入成功:', resp.data);
 
@@ -210,7 +204,7 @@ export const useAuthStore = defineStore('auth', () => {
       return true;
 
     } catch(err) {
-      //信箱未驗證的情況
+      //信箱未驗證
       if (err.response?.status === 403 && err.response?.data?.needVerification) {
         const isExpired = err.response.data.tokenExpired;
         
@@ -246,7 +240,7 @@ export const useAuthStore = defineStore('auth', () => {
         });
 
         if (result.isConfirmed) {
-          // 重新寄送驗證信的函數
+          // 重新寄送驗證信
           await handleResendVerification(email);
         }
         return false;
@@ -273,7 +267,7 @@ export const useAuthStore = defineStore('auth', () => {
     clearError();
 
     try {
-      const resp = await apiClient.get('/auth/line/url')
+      const resp = await getLineAuthUrl();
       console.log('LINE 授權 URL 取得成功:', resp.data)
 
       if (resp.data.authUrl) {
@@ -317,7 +311,7 @@ export const useAuthStore = defineStore('auth', () => {
           
           // 更新前端狀態
           user.value = userData;
-          // 同步到 localStorage（用於頁面重新整理時快速載入）
+          // 同步到 localStorag 用於頁面重新整理時快速載入
           localStorage.setItem('user', JSON.stringify(userData));
           console.log('LINE 登入用戶資訊已同步:', userData);
         }
@@ -333,7 +327,7 @@ export const useAuthStore = defineStore('auth', () => {
 
       } catch(err) {
         console.error('LINE 登入狀態同步失敗:', err);
-        // 即使同步失敗，也顯示成功訊息
+        // 即使同步失敗 也顯示成功訊息
         await Swal.fire({
           title: 'LINE 登入成功!',
           text: '歡迎使用 LINE 登入',
@@ -400,7 +394,7 @@ export const useAuthStore = defineStore('auth', () => {
       if (userInfoCookie) {
         const userData = JSON.parse(decodeURIComponent(userInfoCookie));
 
-        // 如果 cookie 中的用戶與當前用戶不同，更新狀態
+        // 如果 cookie 中的用戶與當前用戶不同 更新狀態
         if (!user.value || user.value.id !== userData.id) {
           user.value = userData;
           localStorage.setItem('user', JSON.stringify(userData));
@@ -411,7 +405,7 @@ export const useAuthStore = defineStore('auth', () => {
       console.error('從 cookie 讀取用戶資訊失敗:', err);
     }
 
-    // 4. 如果最終沒有用戶資訊，清理所有狀態
+    // 如果最終沒有用戶 清理所有狀態
     if (!user.value) {
       accessToken.value = null;
       refreshToken.value = null;
@@ -422,7 +416,7 @@ export const useAuthStore = defineStore('auth', () => {
     }
   }
 
-  // 也可以區分登入方式
+  // 區分登入方式
   const loginMethod = computed(() => {
     if (!user.value) return null;
     if (accessToken.value) return 'email';
