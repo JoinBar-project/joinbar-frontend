@@ -1,5 +1,5 @@
 <template>
-  <div class="relative max-w-md mx-auto mt-10 p-6 bg-[var(--color-secondary-pink)] rounded-xl shadow-xl">
+  <div class="relative max-w-md mx-auto mt-10 p-6 bg-[var(--color-black)] rounded-xl shadow-xl">
     
     <transition name="alert-slide">
       <div v-if="showLoginSuccess" role="alert" class="alert alert-success alert-soft absolute -top-8 left-0 right-0 z-10">
@@ -10,13 +10,12 @@
       </div>
     </transition>
     
-    <!-- Tabs -->
-    <div class="flex border-b-12 border-[var(--color-bg-light)]">
+    <div class="flex border-b border-[var(--color-text-unselected)]">
       <button
-        class="flex-1 py-2 text-center font-semibold border-b-3 border-[var(--color-text-salmon-pink)] text-[var(--color-primary-red)]">
+        class="flex-1 py-2 text-center font-semibold border-b-3 border-[var(--color-text-selected)] text-[var(--color-text-selected)]">
         會員登入
       </button>
-      <router-link to="/register" class="flex-1 py-2 text-center font-semibold text-[#b0a89c] hover:text-[var(--color-primary-red)] transition">
+      <router-link to="/register" class="flex-1 py-2 text-center font-semibold text-[var(--color-text-unselected)] hover:text-[var(--color-text-selected)] transition">
         註冊
       </router-link>
     </div>
@@ -29,10 +28,12 @@
             :class="[
               'flex items-center border rounded px-3 py-2 transition-colors',
               errors.email 
-                ? 'border-red-500 bg-[var(--color-bg-light)]' 
-                : 'border-gray-400'
+                ? 'border-[var(--color-text-warn)] border-2 bg-white'
+                : 'border-[var(--color-text-selected)]'
             ]">
-            <i class="fa-solid fa-envelope text-[var(--color-black)] mr-2"></i>
+            <i class="fa-solid fa-envelope mr-2"
+              :class="errors.email ? 'text-[var(--color-black)]' : 'text-[var(--color-icon-secondary)]'">
+            </i>
             <input 
               type="email" 
               placeholder="電子郵件" 
@@ -41,12 +42,13 @@
               :class="[
                 'w-full outline-none placeholder-opacity-70 transition-colors text-sm ml-2',
                 errors.email 
-                  ? 'text-red-600 placeholder-red-400' 
-                  : 'text-[var(--color-primary-red)] placeholder-[var(--color-primary-red)]'
+                  ? 'text-[var(--color-primary-red)] placeholder-[var(--color-text-warn)]' 
+                  : 'text-[var(--color-text-selected)] placeholder-[var(--color-text-selected)]'
               ]"/>
+
           </div>
 
-          <div v-if="errors.email" class="text-red-500 text-xs ml-1">
+          <div v-if="errors.email" class="text-[var(--color-text-warn)] text-xs ml-1">
             {{ emailErrorMessage }}
           </div>
         </div>
@@ -56,10 +58,12 @@
             :class="[
               'relative flex items-center border rounded px-3 py-2 transition-colors',
               errors.password 
-                ? 'border-red-500 bg-red-50' 
-                : 'border-gray-400'
+                ? 'border-[var(--color-text-warn)] border-2 bg-white'
+                : 'border-[var(--color-text-selected)]'
             ]">
-            <i class="fa-solid fa-key mr-2" style="color: var(--color-black);"></i>
+            <i class="fa-solid fa-key mr-2" 
+            :class="errors.password ? 'text-[var(--color-black)]' : 'text-[var(--color-icon-secondary)]'">
+            </i>
             <input 
               :type="showPassword ? 'text' : 'password'" 
               placeholder="密碼" 
@@ -68,28 +72,32 @@
               :class="[
                 'w-full outline-none placeholder-opacity-70 transition-colors text-sm ml-2',
                 errors.password 
-                  ? 'text-red-600 placeholder-red-400' 
-                  : 'text-[var(--color-primary-red)] placeholder-[var(--color-primary-red)]'
+                  ? 'text-[var(--color-primary-red)] placeholder-[var(--color-text-warn)]' 
+                  : 'text-[var(--color-text-selected)] placeholder-[var(--color-text-selected)]'
               ]"/>
-            <button type="button" class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500" @click="showPassword = !showPassword">
+            <button
+              type="button"
+              class="absolute right-3 top-1/2 -translate-y-1/2"
+              :class="errors.password ? 'text-[var(--color-black)]' : 'text-[var(--color-icon-secondary)]'"
+              @click="showPassword = !showPassword">
               <i :class="showPassword ? 'fa-regular fa-eye' : 'fa-regular fa-eye-slash'"></i>
             </button>
           </div>
 
-          <div v-if="errors.password" class="text-red-500 text-xs ml-1">
+          <div v-if="errors.password" class="text-[var(--color-text-warn)] text-xs  ml-1">
             {{ passwordErrorMessage }}
           </div>
         </div>
       </div>
       
-      <div class="text-sm text-right mt-1 text-[var(--color-primary-red)] cursor-pointer hover:underline">
+      <div class="text-sm text-right mt-1 text-[var(--color-text-selected)] cursor-pointer hover:underline">
         忘記密碼？
       </div>
 
       <div class="flex items-center my-4">
-        <div class="flex-grow h-px bg-gray-400"></div>
-        <span class="px-4 text-[var(--color-primary-red)] text-sm">或</span>
-        <div class="flex-grow h-px bg-gray-400"></div>
+        <div class="flex-grow h-px bg-[var(--color-icon-secondary)]"></div>
+        <span class="px-4 text-[var(--color-text-selected)] text-sm">或</span>
+        <div class="flex-grow h-px bg-[var(--color-icon-secondary)]"></div>
       </div>
 
       <div class="flex space-x-2 justify-center mt-4">
@@ -107,19 +115,19 @@
       <div class="flex justify-center">
         <button
           @click="handleLogin"
-          class="w-full max-w-[180px] py-2 hover:bg-[var(--color-text-salmon-pink)] hover:text-[#3A3435] bg-[var(--color-primary-red)] text-[#ffffff] rounded-lg font-semibold mt-4 shadow-md hover:shadow-lg transition duration-200">
+          class="w-full max-w-[180px] py-2 bg-gradient-to-r from-[#fbdaca] to-[#eb96a4] text-[var(--color-black)] rounded-lg font-semibold mt-4 shadow-md transition duration-300 transform hover:scale-105 hover:brightness-110 hover:shadow-lg">
           登入
         </button>
       </div>
 
-      <div class="text-center mt-2 text-sm text-[var(--color-primary-red)] underline underline-offset-4 cursor-pointer hover:text-[#aa666c] transition"
+      <div class="text-center mt-2 text-sm text-[var(--color-text-selected)] underline underline-offset-4 cursor-pointer hover:text-[#aa666c] transition"
             @click="useTestAccount">
         後台管理員登入
       </div>
 
       <div class="text-center mt-4 pt-4 border-t border-gray-300">
-        <span class="text-sm text-gray-600">還沒有帳號？</span>
-        <router-link to="/register" class="text-sm text-[var(--color-primary-red)] hover:underline ml-1">
+        <span class="text-sm text-gray-300">還沒有帳號？</span>
+        <router-link to="/register" class="text-sm text-[var(--color-text-selected)] hover:underline ml-1">
           立即註冊
         </router-link>
       </div>

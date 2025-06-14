@@ -14,13 +14,15 @@
   /* 字體色 */
   --color-text-selected: #f5d1c0;
   --color-text-unselected: #937e7e;
+  --color-text-warn: #eb96a4;
 
   /* icon 色 */
   --color-icon-secondary: #bcaea4;
 
-  /* 第三方登入按鈕顏色 */
+  /* 按鈕顏色 */
   --color-line-green: #03C755;
   --color-line-green-dark: #00b544;
+  --color-select: #d17361;
 }
 
 /* :root {
