@@ -93,6 +93,83 @@ export const useAuthStore = defineStore('auth', () => {
     }
   }
 
+  // 重新寄送驗證信的函數
+  async function handleResendVerification(email) {
+    try {
+      // 顯示寄送中的載入畫面
+      Swal.fire({
+        title: '寄送中...',
+        text: '正在重新寄送驗證信，請稍候',
+        icon: 'info',
+        allowOutsideClick: false,
+        showConfirmButton: false,
+        didOpen: () => {
+          Swal.showLoading();
+        }
+      });
+
+      await apiClient.post('/auth/resend-verification', {
+        email
+      });
+
+      await Swal.fire({
+        title: '驗證信已重新寄送！',
+        html: `
+          <div class="text-left">
+            <p class="mb-3">新的驗證信已寄送至：</p>
+            <p class="font-mono bg-gray-100 p-2 rounded text-sm mb-3">${email}</p>
+            <div class="bg-blue-50 p-3 rounded-lg text-sm">
+              <p class="text-blue-700 mb-2">
+                <i class="fas fa-info-circle mr-1"></i>
+                接下來請：
+              </p>
+              <ol class="text-blue-600 ml-4 space-y-1">
+                <li>1. 檢查您的信箱（包含垃圾信件夾）</li>
+                <li>2. 點擊信件中的驗證連結</li>
+                <li>3. 驗證完成後即可正常登入</li>
+              </ol>
+            </div>
+            <p class="mt-3 text-gray-600 text-xs">
+              <i class="fas fa-clock mr-1"></i>
+              驗證連結將在 24 小時後失效
+            </p>
+          </div>
+        `,
+        icon: 'success',
+        confirmButtonText: '我知道了',
+        confirmButtonColor: '#860914',
+        width: '500px'
+      });
+
+      return true;
+
+    } catch (err) {
+      console.error('重新寄送驗證信失敗:', err);
+      
+      let errorMessage = '重新寄送驗證信失敗，請稍後再試';
+      let errorTitle = '寄送失敗';
+      
+      if (err.response?.status === 429) {
+        errorMessage = err.response.data.error || '請稍後再試，不要頻繁寄送驗證信';
+        errorTitle = '寄送過於頻繁';
+      } else if (err.response?.status === 400 && err.response.data.error?.includes('已經驗證')) {
+        errorMessage = '您的信箱已經驗證完成，可以直接登入';
+        errorTitle = '信箱已驗證';
+      } else if (err.response?.data?.error) {
+        errorMessage = err.response.data.error;
+      }
+
+      await Swal.fire({
+        title: errorTitle,
+        text: errorMessage,
+        icon: errorTitle === '信箱已驗證' ? 'success' : 'error',
+        confirmButtonText: '確認'
+      });
+
+      return false;
+    }
+  }
+
   async function emailLogin(email, password) {
     clearError();
 
@@ -375,6 +452,7 @@ export const useAuthStore = defineStore('auth', () => {
     checkLineCallback,
     setLoading,
     clearAuthState,
-    checkAuthStatus
+    checkAuthStatus,
+    handleResendVerification
   }
 })
