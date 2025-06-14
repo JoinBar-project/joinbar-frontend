@@ -11,25 +11,28 @@
       </router-link>
     </div>
 
-    <!-- 登入表單 -->
-    <div class="mt-6 space-y-4">
+    <div v-if="isLogin" class="mt-6 space-y-4">
+    <!-- 一般登入表單 -->
       <div class="space-y-4">
         <div class="flex items-center border border-gray-300 rounded px-3 py-2">
           <i class="fa-solid fa-envelope text-gray-400 mr-2"></i>
           <input 
+            v-model="loginForm.email"
             type="email" 
             placeholder="電子郵件" 
-            v-model="loginForm.email"
-            class="w-full outline-none placeholder-[#860914] text-sm text-[#860914] ml-2"/>
+            class="w-full outline-none placeholder-[#860914] text-sm text-[#860914] ml-2"
+            :disabled="authStore.isLoading"
+            />
         </div>
-
         <div class="relative flex items-center border border-gray-300 rounded px-3 py-2">
           <i class="fa-solid fa-key text-gray-400 mr-2"></i>
           <input 
-            :type="showPassword ? 'text' : 'password'" 
-            placeholder="密碼" 
             v-model="loginForm.password"
-            class="w-full outline-none placeholder-[#860914] text-sm text-[#860914] ml-2"/>
+            :type="showPassword ? 'text' : 'password'"
+            placeholder="密碼" 
+            class="w-full outline-none placeholder-[#860914] text-sm text-[#860914] ml-2"
+            :disabled="authStore.isLoading"
+            />
           <button type="button" class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500" @click="showPassword = !showPassword">
             <i :class="showPassword ? 'fa-regular fa-eye' : 'fa-regular fa-eye-slash'"></i>
           </button>
@@ -39,7 +42,6 @@
       <div class="text-sm text-right mt-1 text-[#860914] cursor-pointer hover:underline">
         忘記密碼？
       </div>
-
       <div class="flex items-center my-4">
         <div class="flex-grow h-px bg-gray-400"></div>
         <span class="px-4 text-[#aa666c] text-sm">或</span>
@@ -52,18 +54,25 @@
           <img src="/google.svg" alt="Google logo" class="w-5 h-5 mr-2" />
           Login with Google
         </button>
-        <button class="btn bg-[#03C755] text-white border-[#00b544] flex items-center px-4 py-2 rounded-lg hover:shadow-md transition">
+        <button 
+          @click="handleLineLogin"
+          :disabled="authStore.isLoading"
+          class="btn bg-[#03C755] text-white border-[#00b544] flex items-center px-4 py-2 rounded-lg hover:bg-[#00b544] hover:shadow-md transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+        >
           <img src="/line.svg" alt="Line logo" class="w-5 h-5 mr-2" />
-          Login with LINE
+          <span v-if="authStore.isLineLoading">載入中...</span>
+          <span v-else>Login with LINE</span>
         </button>
       </div>
 
       <!-- 登入按鈕 -->
       <div class="flex justify-center">
         <button
-          @click="handleLogin"
-          class="w-full max-w-[180px] py-2 hover:bg-[#aa666c] hover:text-[#3A3435] bg-[#860914] text-[#ffffff] rounded-lg font-semibold mt-4 shadow-md hover:shadow-lg transition duration-200">
-          登入
+          @click="handleEmailLogin"
+          :disabled="authStore.isLoading || !loginForm.email || !loginForm.password"
+          class="w-full max-w-[180px] py-2 hover:bg-[#aa666c] hover:text-[#3A3435] bg-[#860914] text-[#ffffff] rounded-lg font-semibold mt-4 shadow-md hover:shadow-lg transition duration-200 disabled:opacity-50 disabled:cursor-not-allowed">
+          <span v-if="authStore.isEmailLoading">登入中...</span>
+          <span v-else>登入</span>
         </button>
       </div>
 
@@ -85,35 +94,57 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
-import { useRouter } from 'vue-router'
+import { ref, onMounted } from 'vue';
+import { useRouter } from 'vue-router';
+import { useAuthStore } from '@/api/auth'
+import Swal from 'sweetalert2';
 
-const router = useRouter()
+const authStore = useAuthStore()
+const router = useRouter();
 
-const showPassword = ref(false)
+const isLogin = ref(true);
+const showPassword = ref(false);
 
 const loginForm = ref({
   email: '',
   password: ''
-})
+});
 
-const handleLogin = () => {
-  // 登入邏輯
-  if (!loginForm.value.email || !loginForm.value.password) {
-    alert('請填寫完整資訊')
-    return
-  }
+const handleEmailLogin = async () => {
+  const success = await authStore.emailLogin(loginForm.value.email, loginForm.value.password)
   
-  console.log('登入資料：', loginForm.value)
-  // 這裡可以加入 API 呼叫
-  alert('登入成功！')
+  if (success) {
+    loginForm.value.email = ''
+    loginForm.value.password = ''
+    router.push('/home')
+  }
+}
+
+const handleLineLogin = async () => {
+  await authStore.lineLogin()
 }
 
 const useTestAccount = () => {
   loginForm.value.email = 'admin@test.com'
   loginForm.value.password = 'admin123'
-  alert('已填入測試帳號')
+  Swal.fire({
+    title: '測試帳號已填入',
+    text: '已自動填入測試用的電子郵件和密碼',
+    icon: 'info',
+    confirmButtonText: '確認'
+  })
 }
+
+// 組件掛載時檢查 LINE 登入狀態
+onMounted(async () => {
+  // 初始化 store
+  authStore.init()
+  // 檢查 LINE 登入回調
+  const result = await authStore.checkLineCallback()
+  if (result?.success) {
+    router.push(result.redirect)
+  }
+})
 </script>
 
 <style scoped>

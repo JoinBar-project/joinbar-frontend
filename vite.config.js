@@ -1,9 +1,9 @@
-import { fileURLToPath, URL } from 'node:url'
-import { defineConfig } from 'vite'
-import vue from '@vitejs/plugin-vue'
-import path from 'path'
-import vueDevTools from 'vite-plugin-vue-devtools'
-import tailwindcss from '@tailwindcss/vite'
+import { fileURLToPath, URL } from "node:url";
+import { defineConfig } from "vite";
+import vue from "@vitejs/plugin-vue";
+import path from "path";
+import vueDevTools from "vite-plugin-vue-devtools";
+import tailwindcss from "@tailwindcss/vite";
 
 
 export default defineConfig({
@@ -14,7 +14,7 @@ export default defineConfig({
   ],
   resolve: {
     alias: {
-      '@': path.resolve(__dirname, 'src'),
+      '@': path.resolve(__dirname, './src'),
     }
   },
   server: {
