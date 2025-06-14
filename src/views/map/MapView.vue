@@ -7,8 +7,6 @@
       >
         <i class="fas fa-filter"></i>
       </button>
-    </div>
-</div>
 
       <div class="search-panel-map">
         <div class="input-group">
@@ -44,81 +42,6 @@
       >
         <b>📍 顯示我目前位置</b>
       </button>
-  <div class="map-view-container">
-    <div class="top-left-controls">
-      <button
-        class="filter-toggle-button map-control-button"
-        @click="toggleFilterPanel"
-      >
-        <i class="fas fa-filter"></i>
-      </button>
-
-      <div class="search-panel-map">
-        <div class="input-group">
-          <input
-            type="text"
-            id="searchInput"
-            class="search-input"
-            v-model="searchQuery"
-            placeholder="輸入地點名稱或關鍵字"
-            @input="debouncedSearchSuggestions"
-          />
-          <ul v-if="suggestions.length" class="suggestions-list">
-            <li
-              v-for="(suggestion, index) in suggestions"
-              :key="index"
-              @click="selectSuggestion(suggestion)"
-            >
-              🔍 {{ suggestion.description }}
-            </li>
-          </ul>
-          <button
-            @click="handleSearch"
-            class="btn search-bt map-control-button"
-          >
-            <b>🔍 搜尋</b>
-          </button>
-        </div>
-      </div>
-
-      <button
-        @click="handleGetCurrentLocation"
-        class="place-now-map map-control-button"
-      >
-        <b>📍 顯示我目前位置</b>
-      </button>
-    </div>
-
-    <aside class="bar-list-sidebar">
-      <div class="bar-list-scroll-area">
-        <BarList
-          :bars="filteredBars"
-          @bar-selected="handleBarSelected"
-          @toggle-wishlist="handleToggleWishlist"
-        />
-      </div>
-    </aside>
-
-    <div ref="mapContainer" class="map-container"></div>
-
-    <FilterPanel
-      v-if="isFilterPanelOpen"
-      @filter-changed="handleFilterChanged"
-      @close-panel="toggleFilterPanel"
-      @remove-applied-filter="handleRemoveAppliedFilter"
-      :initial-filters="currentFilters"
-    />
-
-    <BarDetailModal
-      v-if="isBarDetailModalOpen"
-      :bar="selectedBarForDetail"
-      @close="closeBarDetailModal"
-      @toggle-wishlist="handleToggleWishlistFromDetail"
-    />
-
-    <div v-if="googleMapsLoading || isLoading" class="loading-overlay">
-      <div class="loader"></div>
-      <p class="loading-message">載入中，請稍候...</p>
     </div>
 
     <aside class="bar-list-sidebar">
@@ -168,7 +91,6 @@ import { useGoogleMaps } from "@/composable/useGoogleMaps";
 const googleMapsApiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
 const myMapId = import.meta.env.MAP_ID;
 
-// --- 響應式狀態定義 ---
 const isLoading = ref(false);
 const mapContainer = ref(null);
 
@@ -225,14 +147,13 @@ const selectedBarForDetail = ref(null);
 const filteredBars = computed(() => {
   let barsToFilter = [...allBars.value];
 
-  // 1. 地址篩選
   if (currentFilters.value.address !== "any") {
     barsToFilter = barsToFilter.filter((bar) =>
       bar.tags.includes(currentFilters.value.address)
     );
   }
 
-  // 2. 距離篩選
+
   if (map.value && window.google?.maps?.geometry?.spherical) {
     const mapCenter = map.value.getCenter();
     if (mapCenter) {
@@ -263,7 +184,7 @@ const filteredBars = computed(() => {
     }
   }
 
-  // 3. 營業時間篩選 (處理跨日邏輯)
+
   if (
     currentFilters.value.minOpenHour !== 0 ||
     currentFilters.value.minOpenMinute !== 0 ||
@@ -293,14 +214,14 @@ const filteredBars = computed(() => {
     });
   }
 
-  // 4. 評分排序
+
   if (currentFilters.value.ratingSort === "highToLow") {
     barsToFilter.sort((a, b) => b.rating - a.rating);
   } else if (currentFilters.value.ratingSort === "lowToHigh") {
     barsToFilter.sort((a, b) => a.rating - b.rating);
   }
 
-  // 5. 標籤篩選
+
   if (currentFilters.value.tags && currentFilters.value.tags.length > 0) {
     barsToFilter = barsToFilter.filter((bar) =>
       currentFilters.value.tags.every((tag) => bar.tags.includes(tag))
@@ -603,7 +524,7 @@ watch(selectedBar, (newVal) => {
 </script>
 
 <style scoped>
-/* --- 頁面整體佈局 --- */
+
 .map-view-container {
   display: flex;
   height: 100vh;
@@ -612,16 +533,12 @@ watch(selectedBar, (newVal) => {
   position: relative;
 }
 
-/* --- 地圖左上控制區塊 --- */
 .top-left-controls {
   position: absolute;
   top: 20px;
   left: calc(380px + 20px);
   z-index: 100;
   display: flex;
-  flex-direction: row;
-  align-items: center;
-  flex-wrap: wrap;
   flex-direction: row;
   align-items: center;
   flex-wrap: wrap;
@@ -633,7 +550,6 @@ watch(selectedBar, (newVal) => {
   transition: left 0.3s ease-in-out;
 }
 
-/* --- 酒吧列表側邊欄 --- */
 .bar-list-sidebar {
   width: 380px;
   background-color: #f7f7f7;
@@ -644,13 +560,11 @@ watch(selectedBar, (newVal) => {
   transition: transform 0.3s ease-in-out;
 }
 
-/* 隱藏側邊欄的狀態 */
 .bar-list-sidebar.sidebar-hidden {
   transform: translateX(-100%);
   position: absolute;
 }
 
-/* --- 通用地圖控制按鈕樣式 --- */
 .map-control-button {
   padding: 12px 20px;
   border: none;
@@ -679,7 +593,6 @@ watch(selectedBar, (newVal) => {
   box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
 }
 
-/* --- 篩選按鈕樣式 --- */
 .filter-toggle-button {
   order: 1;
   padding: 0;
@@ -710,7 +623,6 @@ watch(selectedBar, (newVal) => {
   color: #3a3435;
 }
 
-/* --- 搜尋面板樣式 --- */
 .search-panel-map {
   order: 2;
   display: flex;
@@ -725,23 +637,17 @@ watch(selectedBar, (newVal) => {
   position: relative;
   width: 100%;
   gap: 0;
-  width: 100%;
-  gap: 0;
 }
 
 .search-input {
   height: 40px;
   padding: 8px 12px;
   font-size: 16px;
-  font-size: 16px;
   border: 1px solid #decdd5;
-  border-right: 0;
-  border-radius: 8px 0 0 8px;
   border-right: 0;
   border-radius: 8px 0 0 8px;
   outline: none;
   flex: 1;
-  margin: 0;
   margin: 0;
 }
 
@@ -752,14 +658,8 @@ watch(selectedBar, (newVal) => {
   margin: 0;
   border: 1px solid #decdd5;
   border-left: 0;
-  margin: 0;
-  border: 1px solid #decdd5;
-  border-left: 0;
   border-radius: 0px 5px 5px 0px;
   cursor: pointer;
-  order: 3;
-  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-  outline: none;
   order: 3;
   box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
   outline: none;
@@ -775,21 +675,15 @@ watch(selectedBar, (newVal) => {
   box-shadow: 0 0 0 2px rgba(184, 162, 142, 0.2);
 }
 
-/* --- 顯示目前位置按鈕樣式 --- */
 .place-now-map {
   padding: 8px 12px;
-  margin: 0;
   margin: 0;
   border: none;
   background-color: #decdd5;
   color: #3a3435;
-  color: #3a3435;
   border-radius: 5px;
   cursor: pointer;
   white-space: nowrap;
-  order: 4;
-  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-  outline: none;
   order: 4;
   box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
   outline: none;
@@ -800,14 +694,11 @@ watch(selectedBar, (newVal) => {
   color: #ffffff;
 }
 
-/* --- 搜尋建議列表樣式 --- */
 .suggestions-list {
   position: absolute;
   top: calc(100% + 5px);
-  top: calc(100% + 5px);
   left: 0;
   right: 0;
-  z-index: 20;
   z-index: 20;
   list-style: none;
   margin: 0;
@@ -815,20 +706,13 @@ watch(selectedBar, (newVal) => {
   background: white;
   border: 1px solid #ddd;
   border-radius: 8px;
-  border-radius: 8px;
   max-height: 200px;
   overflow-y: auto;
-  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
   box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
 }
 .suggestions-list li {
   padding: 10px 12px;
-  padding: 10px 12px;
   cursor: pointer;
-  border-bottom: 1px solid #f0f0f0;
-}
-.suggestions-list li:last-child {
-  border-bottom: none;
   border-bottom: 1px solid #f0f0f0;
 }
 .suggestions-list li:last-child {
@@ -838,7 +722,6 @@ watch(selectedBar, (newVal) => {
   background: #f0f0f0;
 }
 
-/* --- 資訊視窗內容樣式 --- */
 .info-window-content {
   padding: 15px;
   font-family: "Noto Sans TC", sans-serif;
@@ -893,18 +776,15 @@ watch(selectedBar, (newVal) => {
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
-/* --- 酒吧列表滾動區域 --- */
 .bar-list-scroll-area {
   flex-grow: 1;
   overflow-y: auto;
   padding: 16px;
 }
 
-/* --- 地圖容器 --- */
 .map-container {
-  height: 100%;
-  width: 100%;
   flex-grow: 1;
+  height: 100%;
   background-color: #e0e0e0;
 }
 
@@ -916,7 +796,6 @@ watch(selectedBar, (newVal) => {
   width: 100vw;
   height: 100vh;
   background-color: rgba(255, 255, 255, 0.85);
-  background-color: rgba(255, 255, 255, 0.85);
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -925,12 +804,7 @@ watch(selectedBar, (newVal) => {
 }
 
 /* 載入動畫樣式 */
-
-/* 載入動畫樣式 */
 .loader {
-  width: 60px;
-  height: 60px;
-  --b: 8px;
   width: 60px;
   height: 60px;
   --b: 8px;
@@ -949,7 +823,6 @@ watch(selectedBar, (newVal) => {
   mask-composite: intersect;
   animation: l4 1s infinite;
 }
-
 
 @keyframes l4 {
   to {

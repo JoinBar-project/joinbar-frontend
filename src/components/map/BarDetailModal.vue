@@ -231,11 +231,6 @@
           <button class="start-event-button" @click="goToBarActivities">
             發起活動
             <img
-              src="@/assets/icons/mapicons/dropdown-arrow-icon.svg"
-              alt="下拉"
-              class="icon-dropdown"
-            />
-            <img
               src="@/assets/icons/mapicons/plus-icon.svg"
               alt="加號"
               class="icon-plus"
@@ -309,7 +304,6 @@ const closeModal = () => {
   emit("close");
 };
 
-// 這裡的 toggleFavorite 會向父組件發送事件，父組件應該更新 bar.isWishlisted
 const toggleFavorite = () => {
   if (props.bar.place_id) {
     emit("toggle-wishlist", props.bar.place_id);
@@ -349,7 +343,6 @@ const handleFileUpload = (event) => {
 </script>
 
 <style scoped>
-/* Modal 遮罩層 */
 .bar-detail-modal-overlay {
   position: fixed;
   top: 0;
@@ -363,7 +356,6 @@ const handleFileUpload = (event) => {
   z-index: 1000;
 }
 
-/* Modal 內容區塊 */
 .bar-detail-modal-content {
   background-color: #fff;
   border-radius: 12px;
@@ -377,14 +369,12 @@ const handleFileUpload = (event) => {
   box-shadow: 0 8px 30px rgba(0, 0, 0, 0.3);
 }
 
-/* 包裹左右兩側主要內容的 flex 容器 */
 .content-flex-wrapper {
   display: flex;
   flex-grow: 1;
   overflow: hidden;
 }
 
-/* 關閉按鈕 */
 .close-button {
   position: absolute;
   top: 15px;
@@ -403,13 +393,11 @@ const handleFileUpload = (event) => {
   transform: scale(1.1);
 }
 
-/* 新增的 .close-icon 樣式 */
 .close-button .close-icon {
   width: 100%;
   height: 100%;
 }
 
-/* 左側：圖片輪播區 */
 .image-gallery-container {
   width: 50%;
   height: 100%;
@@ -482,7 +470,6 @@ const handleFileUpload = (event) => {
   transform: scale(1.2);
 }
 
-/* 右側：詳細資訊區塊 */
 .detail-info-section {
   width: 50%;
   padding: 80px 25px 20px 25px;
@@ -493,7 +480,6 @@ const handleFileUpload = (event) => {
   padding-bottom: calc(20px + 60px + 15px);
 }
 
-/* 標題與愛心按鈕的 flex 容器 */
 .header-main {
   display: flex;
   align-items: center;
@@ -509,7 +495,6 @@ const handleFileUpload = (event) => {
   line-height: 1.2;
 }
 
-/* 愛心收藏按鈕新樣式 */
 .wishlist-detail-button {
   cursor: pointer;
   z-index: 10;
@@ -521,7 +506,6 @@ const handleFileUpload = (event) => {
   transform: scale(1.1);
 }
 
-/* 愛心 SVG 圖標樣式 */
 .wishlist-detail-button .heart-icon {
   width: 24px;
   height: 24px;
@@ -532,7 +516,7 @@ const handleFileUpload = (event) => {
 
 .wishlist-detail-button:not([fill="red"]):hover .heart-icon {
   fill: #ffebeb;
-  stroke: red; /* 懸停時邊框變紅 */
+  stroke: red;
 }
 
 .rating-price-info {
@@ -664,7 +648,6 @@ const handleFileUpload = (event) => {
   color: #888;
 }
 
-/* 固定在 bar-detail-modal-content 底部 */
 .footer-actions {
   position: absolute;
   bottom: 0;
@@ -732,7 +715,6 @@ const handleFileUpload = (event) => {
   background-color: #c37b1c;
 }
 
-.icon-dropdown,
 .icon-plus {
   width: 20px;
   height: 20px;
@@ -742,7 +724,6 @@ const handleFileUpload = (event) => {
   margin-left: -4px;
 }
 
-/* Modal 淡入淡出過渡效果 */
 .modal-fade-enter-active,
 .modal-fade-leave-active {
   transition: opacity 0.3s ease;
@@ -794,7 +775,7 @@ const handleFileUpload = (event) => {
     width: 20px;
     height: 20px;
   }
-  /* 手機版 footer-actions 調整 */
+
   .footer-actions {
     position: absolute;
     bottom: 0;
@@ -819,7 +800,7 @@ const handleFileUpload = (event) => {
     padding: 8px 15px;
     font-size: 15px;
   }
-  .icon-dropdown,
+
   .icon-plus {
     width: 18px;
     height: 18px;

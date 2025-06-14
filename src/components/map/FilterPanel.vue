@@ -163,10 +163,8 @@
 <script setup>
 import { ref, defineEmits, onMounted, watch, defineProps, computed } from "vue";
 
-// 事件發射定義
 const emit = defineEmits(["filter-changed", "close-panel"]);
 
-// Props 定義
 const props = defineProps({
   initialFilters: {
     type: Object,
@@ -184,7 +182,6 @@ const props = defineProps({
   },
 });
 
-// 響應式狀態
 const filters = ref({ ...props.initialFilters });
 const popularTags = [
   "信義區",
@@ -206,11 +203,10 @@ const popularTags = [
 const openTime = ref("00:00");
 const closeTime = ref("24:00");
 
-// 計算屬性：格式化已套用篩選條件以供顯示
+// 格式化已套用篩選條件以供顯示
 const appliedFiltersForDisplay = computed(() => {
   const displayFilters = [];
 
-  // 地點篩選
   if (filters.value.address !== "any") {
     displayFilters.push({
       label: `地點: ${filters.value.address}`,
@@ -219,7 +215,6 @@ const appliedFiltersForDisplay = computed(() => {
     });
   }
 
-  // 評價篩選
   if (filters.value.ratingSort !== "any") {
     let ratingLabel = "";
     switch (filters.value.ratingSort) {
@@ -240,7 +235,6 @@ const appliedFiltersForDisplay = computed(() => {
     });
   }
 
-  // 距離篩選
   if (filters.value.minDistance !== 0 || filters.value.maxDistance !== 5000) {
     const min = filters.value.minDistance;
     const max = filters.value.maxDistance;
@@ -251,7 +245,6 @@ const appliedFiltersForDisplay = computed(() => {
     });
   }
 
-  // 營業時間篩選
   if (
     filters.value.minOpenHour !== 0 ||
     filters.value.minOpenMinute !== 0 ||
@@ -284,7 +277,6 @@ const appliedFiltersForDisplay = computed(() => {
     });
   }
 
-  // 標籤篩選
   if (Array.isArray(filters.value.tags)) {
     filters.value.tags.forEach((tag) => {
       displayFilters.push({
@@ -298,7 +290,7 @@ const appliedFiltersForDisplay = computed(() => {
   return displayFilters;
 });
 
-// 事件處理函式：移除已套用的單一篩選條件
+// 移除已套用的單一篩選條件
 const removeAppliedFilter = (type, value) => {
   switch (type) {
     case "address":
@@ -324,7 +316,7 @@ const removeAppliedFilter = (type, value) => {
   applyFilters();
 };
 
-// 事件處理函式：更新距離數值輸入框並同步篩選
+// 更新距離數值輸入框並同步篩選
 const updateDistance = () => {
   if (filters.value.minDistance > filters.value.maxDistance) {
     filters.value.minDistance = filters.value.maxDistance;
@@ -340,7 +332,6 @@ const updateDistance = () => {
   applyFilters();
 };
 
-// 事件處理函式：更新距離滑動條並同步篩選
 const updateDistanceRange = () => {
   if (filters.value.minDistance > filters.value.maxDistance) {
     filters.value.minDistance = filters.value.maxDistance;
@@ -348,7 +339,6 @@ const updateDistanceRange = () => {
   applyFilters();
 };
 
-// 事件處理函式：更新營業時間輸入框並同步篩選
 const updateOpenHours = () => {
   const [minOpenHour, minOpenMinute] = openTime.value.split(":").map(Number);
   const [maxOpenHour, maxOpenMinute] = closeTime.value.split(":").map(Number);
@@ -359,7 +349,6 @@ const updateOpenHours = () => {
   applyFilters();
 };
 
-// 事件處理函式：切換標籤選中狀態
 const toggleTag = (tag) => {
   if (!Array.isArray(filters.value.tags)) {
     filters.value.tags = [];
@@ -373,12 +362,10 @@ const toggleTag = (tag) => {
   applyFilters();
 };
 
-// 事件處理函式：觸發篩選條件變更事件
 const applyFilters = () => {
   emit("filter-changed", { ...filters.value });
 };
 
-// 事件處理函式：重設所有篩選條件為預設值
 const resetFilters = () => {
   filters.value = {
     address: "any",
@@ -394,12 +381,11 @@ const resetFilters = () => {
   applyFilters();
 };
 
-// 事件處理函式：關閉篩選面板
 const closePanel = () => {
   emit("close-panel");
 };
 
-// 監聽器：監聽父組件傳入的 initialFilters，並更新本地篩選狀態
+// 更新本地篩選狀態
 watch(
   () => props.initialFilters,
   (newFilters) => {
@@ -417,14 +403,9 @@ watch(
   { deep: true, immediate: true }
 );
 
-// 生命週期鉤子
-onMounted(() => {
-  // 可以在此處處理組件掛載後的邏輯
-});
 </script>
 
 <style scoped>
-/* 已套用篩選標籤樣式 */
 .applied-filters-list-wrapper {
   margin-bottom: 24px;
   display: flex;
@@ -478,7 +459,6 @@ onMounted(() => {
   color: #333;
 }
 
-/* 篩選面板容器樣式 */
 .filter-panel-container {
   padding: 24px;
   background-color: #ffffff;
@@ -495,7 +475,6 @@ onMounted(() => {
   flex-direction: column;
 }
 
-/* 篩選面板標頭樣式 */
 .filter-header {
   display: flex;
   justify-content: space-between;
@@ -534,7 +513,6 @@ onMounted(() => {
   height: 100%;
 }
 
-/* 篩選區塊通用樣式 */
 .filter-section {
   margin-bottom: 32px;
 }
@@ -570,7 +548,6 @@ onMounted(() => {
   box-shadow: 0 0 0 3px rgba(213, 181, 178, 0.3);
 }
 
-/* 距離篩選樣式 */
 .range-inputs {
   display: flex;
   justify-content: space-between;
@@ -635,7 +612,6 @@ onMounted(() => {
   margin-top: 8px;
 }
 
-/* 營業時間樣式 */
 .time-picker-vertical {
   display: flex;
   flex-direction: column;
@@ -666,7 +642,6 @@ onMounted(() => {
   text-align: left;
 }
 
-/* 標籤網格樣式 */
 .tags-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, 120px);
@@ -715,7 +690,6 @@ onMounted(() => {
   border-color: #dfc2c0;
 }
 
-/* 底部操作按鈕樣式 */
 .filter-actions {
   display: flex;
   justify-content: flex-end;
@@ -747,7 +721,6 @@ onMounted(() => {
   color: #333;
 }
 
-/* 響應式調整 */
 @media (max-width: 600px) {
   .filter-panel-container {
     width: 100vw;
