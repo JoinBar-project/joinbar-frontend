@@ -133,6 +133,48 @@ export const useAuthStore = defineStore('auth', () => {
       return true;
 
     } catch(err) {
+      //信箱未驗證的情況
+      if (err.response?.status === 403 && err.response?.data?.needVerification) {
+        const isExpired = err.response.data.tokenExpired;
+        
+        const result = await Swal.fire({
+          title: '信箱尚未驗證',
+          html: `
+            <div class="text-left">
+              <p class="mb-3">無法登入，因為您的信箱尚未完成驗證</p>
+              <div class="bg-yellow-50 p-3 rounded-lg text-sm">
+                <p class="text-yellow-700 mb-2">
+                  <i class="fas fa-lightbulb mr-1"></i>
+                  找不到驗證信？請檢查：
+                </p>
+                <ul class="text-yellow-600 ml-4 space-y-1">
+                  <li>• 垃圾信件夾</li>
+                  <li>• 促銷郵件夾</li>
+                  <li>• 信箱地址是否正確</li>
+                </ul>
+              </div>
+              ${isExpired ? 
+                '<p class="mt-3 text-red-600 text-sm"><i class="fas fa-clock mr-1"></i>您的驗證連結已過期</p>' : 
+                '<p class="mt-3 text-blue-600 text-sm"><i class="fas fa-envelope mr-1"></i>或者重新寄送新的驗證信</p>'
+              }
+            </div>
+          `,
+          icon: 'warning',
+          showCancelButton: true,
+          confirmButtonText: '重新寄送驗證信',
+          cancelButtonText: '稍後再試',
+          confirmButtonColor: '#860914',
+          cancelButtonColor: '#6c757d',
+          width: '500px'
+        });
+
+        if (result.isConfirmed) {
+          // 重新寄送驗證信的函數
+          await handleResendVerification(email);
+        }
+        return false;
+      }
+
       const errorInfo = handleError(err, '登入失敗');
 
       await Swal.fire({
