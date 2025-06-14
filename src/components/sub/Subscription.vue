@@ -1,5 +1,44 @@
 <script setup>
+import { ref } from 'vue'
+
+const spotlight = ref(null)
+
+const cardData = [
+  {
+    title: "尊爵黑卡",
+    price: "$2,999",
+    duration: "365 天",
+    benefits: [
+      "VIP 專屬特調 3 次 / 年",
+      "合作酒吧招待飲品 6 次 / 年",
+      "合作酒吧招待小點 6 次 / 年"
+    ]
+  },
+  {
+    title: "季訂方案",
+    price: "$1,999",
+    duration: "90 天",
+    benefits: [
+      "VIP 專屬特調 2 次 / 年",
+      "合作酒吧招待飲品 3 次 / 季",
+      "合作酒吧招待小點 3 次 / 季"
+    ]
+  },
+  {
+    title: "小資月卡",
+    price: "$999",
+    duration: "30 天",
+    benefits: [
+      "VIP 專屬特調 1 次 / 年",
+      "合作酒吧招待飲品 1 次 / 月",
+      "合作酒吧招待小點 1 次 / 月"
+    ]
+  }
+];
+
+
 </script>
+
 
 <template>
   <div>
