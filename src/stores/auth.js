@@ -1,7 +1,7 @@
 import { defineStore } from 'pinia';
 import { ref, computed } from 'vue';
 import Swal from 'sweetalert2';
-import apiClient from './axios';
+import apiClient from '../api/axios';
 
 export const useAuthStore = defineStore('auth', () => {
   const user = ref(null); 
