@@ -18,6 +18,42 @@ export function useGoogleMaps(mapContainerRef, options) {
   const currentMarker = shallowRef(null);
   const loading = ref(false);
   const error = ref(null);
+  const googleBars = ref([]); // 存儲從 Google Places API 獲取的所有酒吧資料
+
+  // 更新酒吧列表的方法
+  const updateGoogleBars = (bars) => {
+    googleBars.value = bars;
+    console.log('更新酒吧列表:', bars.length, '個酒吧');
+  };
+
+  // 搜尋附近酒吧的方法
+  const searchNearbyBars = async (location, radius = 5000) => {
+    if (!placesService.value || !map.value) {
+      console.error('Places service or map not initialized');
+      return [];
+    }
+
+    try {
+      loading.value = true;
+      const request = {
+        location: location,
+        radius: radius,
+        type: ['bar', 'night_club', 'restaurant'], // 包含酒吧、夜店和餐廳
+        language: 'zh-TW',
+      };
+
+      const response = await placesService.value.nearbySearch(request);
+      const bars = response.results.filter(isBarLike);
+      updateGoogleBars(bars);
+      return bars;
+    } catch (err) {
+      console.error('搜尋附近酒吧時發生錯誤:', err);
+      error.value = err.message;
+      return [];
+    } finally {
+      loading.value = false;
+    }
+  };
 
   const isFetching = ref(false);
 

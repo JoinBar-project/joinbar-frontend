@@ -51,6 +51,13 @@
           @bar-selected="handleBarSelected"
           @toggle-wishlist="handleToggleWishlist"
         />
+
+        <BarDetailModal
+          v-if="selectedBar"
+          :bar="selectedBar"
+          @close="selectedBar = null"
+          @toggle-wishlist="handleToggleWishlist"
+        />
       </div>
     </aside>
 
@@ -89,12 +96,12 @@ import BarDetailModal from "../../components/map/BarDetailModal.vue";
 import { useGoogleMaps } from "@/composable/useGoogleMaps";
 
 // 環境變數中的 Google Maps API Key
-const googleMapsApiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
+const googleMapsApiKey = import.meta.env.VITE_Maps_API_KEY;
 
 // --- 響應式狀態 ---
 const isLoading = ref(false);
 const mapContainer = ref(null);
-const firstLoad = ref(true);
+const firstLoad = ref(true); // 這變數看起來沒被用到，如果不需要可以刪除
 const isFetching = ref(false);
 const hasFirstLoad = ref(false);
 const firstMapMarkersDrawn = ref(false);
@@ -103,15 +110,15 @@ const firstLoadDone = ref(false);
 // --- 引入 useGoogleMaps Composable ---
 const {
   map,
-  markers,
+  markers, // 這個看起來也沒被用到，如果不需要可以刪除
   infoWindow,
   loading: googleMapsLoading,
   loadGoogleMapsAPI,
   initMap,
   showInfoWindow,
   closeInfoWindow,
-  panTo,
-  setZoom,
+  panTo, // 這個看起來也沒被用到，如果不需要可以刪除
+  setZoom, // 這個看起來也沒被用到，如果不需要可以刪除
   displayBarsOnMap,
   requestGeolocationPermission,
   getCurrentLocation: getMapCurrentLocation,
@@ -120,6 +127,9 @@ const {
   getPlaceDetails,
   panToAndShowBarInfo,
   searchBarsInMapBounds: searchBarsInMapBoundsFromComposable,
+  googleBars: googleBarsFromComposable,
+  // 這裡我們將 searchNearbyBars 從 composable 中解構出來
+  searchNearbyBars: searchNearbyBarsFromComposable, // 重新命名以避免衝突
 } = useGoogleMaps(mapContainer, {
   googleMapsApiKey: googleMapsApiKey,
   // 透過這裡的回調來更新 MapView 的 loading 狀態
@@ -131,10 +141,53 @@ const {
   },
 });
 
+// 使用 composable 中的 googleBars
+const googleBars = ref([]); // 宣告 googleBars 讓它是一個響應式參考
+googleBars.value = googleBarsFromComposable.value; // 在這裡給它初始值
+
 const isFilterPanelOpen = ref(false);
 const searchQuery = ref("");
 const suggestions = ref([]);
-const googleBars = ref([]); // 只用 Google 搜尋到的酒吧
+
+// 監聽 googleBars 變化
+watch(
+  () => googleBarsFromComposable.value, // 監聽來自 composable 的 googleBars
+  (newBars) => {
+    googleBars.value = newBars; // 更新本地的 googleBars
+    console.log('googleBars 更新:', newBars.length, '個酒吧');
+  },
+  { deep: true }
+);
+
+// 原始的 `searchNearbyBars` 函式定義被移除，
+// 因為它與從 `useGoogleMaps` 導入的名稱衝突。
+// 如果你想在這裡包裝 `searchNearbyBarsFromComposable`，可以這樣做：
+const wrapperSearchNearbyBars = async (location) => {
+  if (!map.value) return;
+  try {
+    isLoading.value = true;
+    // 調用從 composable 引入的函式
+    const bars = await searchNearbyBarsFromComposable(location);
+    console.log('搜尋到的酒吧:', bars.length, '個');
+    displayBarsOnMap(bars);
+  } catch (err) {
+    console.error('搜尋附近酒吧時發生錯誤:', err);
+  } finally {
+    isLoading.value = false;
+  }
+};
+
+// 初始化時搜尋附近酒吧
+// onMounted(async () => {
+//   if (map.value) {
+//     const center = map.value.getCenter();
+//     if (center) {
+//       await wrapperSearchNearbyBars(center); // 使用修改後的名稱
+//     }
+//   }
+// });
+// 註：這段 onMounted 邏輯已經被更全面的載入邏輯取代，見最底部的 onMounted 區塊
+
 const currentFilters = ref({}); // 篩選功能可後續補強
 const selectedBar = ref(null); // 這用於地圖上的 infoWindow
 const isBarDetailModalOpen = ref(false); // 新增：控制酒吧詳細頁面的顯示
@@ -160,16 +213,26 @@ const districtCenters = {
 
 // 根據篩選條件過濾酒吧列表
 const filteredBars = computed(() => {
+  console.log('開始過濾酒吧:', googleBars.value.length, '個總酒吧');
   let bars = googleBars.value;
+
+  // 確保每個酒吧都有必要的屬性
+  bars = bars.map(bar => ({
+    ...bar,
+    rating: bar.rating || 0,
+    reviews: bar.reviews || 0,
+    location: bar.location || (bar.geometry && bar.geometry.location)
+  }));
 
   // 評價排序
   if (currentFilters.value.ratingSort && currentFilters.value.ratingSort !== "any") {
+    console.log('應用評價排序:', currentFilters.value.ratingSort);
     if (currentFilters.value.ratingSort === "highToLow") {
-      bars = [...bars].sort((a, b) => b.rating - a.rating);
+      bars = [...bars].sort((a, b) => (b.rating || 0) - (a.rating || 0));
     } else if (currentFilters.value.ratingSort === "lowToHigh") {
-      bars = [...bars].sort((a, b) => a.rating - b.rating);
+      bars = [...bars].sort((a, b) => (a.rating || 0) - (b.rating || 0));
     } else if (currentFilters.value.ratingSort === "mostPopular") {
-      bars = [...bars].sort((a, b) => b.reviews - a.reviews);
+      bars = [...bars].sort((a, b) => (b.reviews || 0) - (a.reviews || 0));
     }
   }
 
@@ -180,6 +243,7 @@ const filteredBars = computed(() => {
   ) {
     const center = map.value?.getCenter?.();
     if (center) {
+      console.log('應用距離篩選:', currentFilters.value.minDistance, '-', currentFilters.value.maxDistance);
       bars = bars.filter(bar => {
         if (!bar.location) return false;
         // 使用 Haversine 公式計算距離
@@ -207,6 +271,7 @@ const filteredBars = computed(() => {
     ? currentFilters.value.tags.filter(tag => !allDistricts.includes(tag))
     : [];
   if (nonDistrictTags.length > 0) {
+    console.log('應用標籤篩選:', nonDistrictTags);
     bars = bars.filter(bar =>
       nonDistrictTags.some(tag =>
         (bar.types && bar.types.includes(tag)) ||
@@ -216,9 +281,7 @@ const filteredBars = computed(() => {
     );
   }
 
-  // 營業時間（僅能過濾有 open_now 或 opening_hours 的 bar，Google API 支援有限）
-  // ...可根據需求補充
-
+  console.log('過濾後的酒吧數量:', bars.length);
   return bars;
 });
 
@@ -290,7 +353,8 @@ async function handleSearch() {
       map.value.setZoom(16);
       // 3. 等地圖移動完成後再查詢該地點附近酒吧
       window.google.maps.event.addListenerOnce(map.value, 'idle', async () => {
-        await searchBarsInMapBounds(true);
+        // 使用從 composable 引入的函式，並傳遞 showLoading 參數
+        await searchBarsInMapBoundsFromComposable(true);
         isLoading.value = false;
       });
     } else {
@@ -309,7 +373,8 @@ async function handleGetCurrentLocation() {
     await getMapCurrentLocation(
       document.querySelector(".bar-list-sidebar")?.offsetWidth || 0
     );
-    await searchBarsInMapBounds(true);
+    // 使用從 composable 引入的函式
+    await searchBarsInMapBoundsFromComposable(true);
   } catch (err) {
     console.error("獲取目前位置失敗:", err);
     alert("無法獲取您的目前位置，請檢查瀏覽器權限設定。");
@@ -333,13 +398,15 @@ function handleFilterChanged(filters) {
       map.value.setCenter({ lat, lng });
       map.value.setZoom(15);
     }
-    setTimeout(() => {
+    setTimeout(async () => { // 添加 async
       currentFilters.value = { ...filters, address: targetDistrict };
-      searchBarsInMapBounds(true);
+      // 使用從 composable 引入的函式
+      await searchBarsInMapBoundsFromComposable(true); // 使用 async/await 確保執行完成
     }, 500);
   } else {
     currentFilters.value = filters;
-    searchBarsInMapBounds(true);
+    // 使用從 composable 引入的函式
+    searchBarsInMapBoundsFromComposable(true);
   }
 }
 
@@ -368,6 +435,8 @@ function handleRemoveAppliedFilter(payload) {
       );
       break;
   }
+  // 移除篩選條件後重新搜尋
+  searchBarsInMapBoundsFromComposable(true);
 }
 
 function toggleFilterPanel() {
@@ -375,26 +444,28 @@ function toggleFilterPanel() {
 }
 
 // 地圖初始化或移動時自動搜尋酒吧
-async function searchBarsInMapBounds(showLoading = false) {
-  if (!map.value || !map.value.getBounds()) return;
-  if (isFetching.value) return;
-  isFetching.value = true;
-  try {
-    const bounds = map.value.getBounds();
-    const center = bounds.getCenter();
-    if (!center) return;
-    if (showLoading) isLoading.value = true;
-    const newBars = await searchBarsInMapBoundsFromComposable(showLoading);
-    if (Array.isArray(newBars) && JSON.stringify(googleBars.value) !== JSON.stringify(newBars)) {
-      googleBars.value = newBars;
-    }
-    if (showLoading) isLoading.value = false;
-  } catch (err) {
-    console.error('searchBarsInMapBounds error:', err);
-  } finally {
-    isFetching.value = false;
-  }
-}
+// 這個函式現在可以被移除，因為 searchBarsInMapBoundsFromComposable 已經足夠
+// async function searchBarsInMapBounds(showLoading = false) {
+//   if (!map.value || !map.value.getBounds()) return;
+//   if (isFetching.value) return;
+//   isFetching.value = true;
+//   try {
+//     const bounds = map.value.getBounds();
+//     const center = bounds.getCenter();
+//     if (!center) return;
+//     if (showLoading) isLoading.value = true;
+//     const newBars = await searchBarsInMapBoundsFromComposable(showLoading);
+//     if (Array.isArray(newBars) && JSON.stringify(googleBars.value) !== JSON.stringify(newBars)) {
+//       googleBars.value = newBars;
+//     }
+//     if (showLoading) isLoading.value = false;
+//   } catch (err) {
+//     console.error('searchBarsInMapBounds error:', err);
+//   } finally {
+//     isFetching.value = false;
+//   }
+// }
+
 
 // 修改 handleBarSelected，現在它會打開詳細頁面
 async function handleBarSelected(bar) {
@@ -478,7 +549,7 @@ onMounted(async () => {
         // 定位失敗時不做任何事，地圖會停在預設中心
       }
       // 以目前地圖中心查詢附近酒吧
-      await searchBarsInMapBounds(true);
+      await searchBarsInMapBoundsFromComposable(true); // 使用從 composable 引入的函式
       hasFirstLoad.value = true;
       requestGeolocationPermission();
     } else {
@@ -498,6 +569,10 @@ onMounted(async () => {
 watch(selectedBar, (newVal) => {
   if (newVal && map.value && !isBarDetailModalOpen.value) {
     // 只有當詳細頁面沒有打開時，才顯示地圖上的 infoWindow
+    // 如果這裡你需要 infoWindow 顯示特定酒吧資訊，要呼叫 showInfoWindow
+    // 但因為 handleBarSelected 已經會呼叫 panToAndShowBarInfo，
+    // 而 panToAndShowBarInfo 應該已經包含了 showInfoWindow 的邏輯，
+    // 所以這裡可能不需要額外操作。
   } else if (!isBarDetailModalOpen.value) {
     closeInfoWindow();
   }
