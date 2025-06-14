@@ -5,11 +5,11 @@ let googleMapsLoaded = false;
 let googleMapsLoadPromise = null;
 
 /**
- * Google Maps 相關功能的 Composition API Hook。
+ * Google Maps 相關功能的 Composition API Hook
   @param {Ref<HTMLElement>} mapContainerRef
   @param {Object} options
   @param {string} options.googleMapsApiKey
-  @param {string} [options.mapId] - 自定義地圖的 Map ID。
+  @param {string} [options.mapId]
  */
 export function useGoogleMaps(mapContainerRef, options) {
   const {
@@ -34,7 +34,7 @@ export function useGoogleMaps(mapContainerRef, options) {
   let skipNextIdle = false;
 
   /**
-   * 輔助函數：判斷是否為酒吧類型。
+   * 判斷是否為酒吧類型
    */
   const isBarLike = (place) => {
     const nameLower = place.name ? place.name.toLowerCase() : "";
@@ -52,20 +52,24 @@ export function useGoogleMaps(mapContainerRef, options) {
       nameLower.includes("bar") ||
       nameLower.includes("酒吧") ||
       nameLower.includes("酒館") ||
-      nameLower.includes("居酒屋");
+      nameLower.includes("居酒屋")||
+      nameLower.includes("雞尾酒")||
+      nameLower.includes("lounge");
     const hasBarTag = tags.some(
       (tag) =>
         tag.includes("酒吧") ||
         tag.includes("酒館") ||
         tag.includes("居酒屋") ||
         tag.includes("精釀啤酒") ||
-        tag.includes("調酒")
+        tag.includes("調酒") ||
+        tag.includes("雞尾酒") ||
+        tag.includes("lounge")
     );
     return hasBarType || hasBarKeywordInName || hasBarTag;
   };
 
   /**
-   * 載入 Google Maps JavaScript API 腳本 (單例模式)。
+   * 載入 Google Maps JavaScript API 腳本
    */
   const loadGoogleMapsAPI = () => {
     if (googleMapsLoaded && window.google && window.google.maps) {
@@ -141,7 +145,7 @@ export function useGoogleMaps(mapContainerRef, options) {
   };
 
   /**
-   * 初始化 Google Map 實例與相關服務。
+   * 初始化 Google Map 與相關服務
    */
   const initMap = () => {
     if (!mapContainerRef.value || !window.google || !window.google.maps) {
@@ -181,8 +185,8 @@ export function useGoogleMaps(mapContainerRef, options) {
   };
 
   /**
-   * 清除地圖上的標記。
-   * @param {'all' | 'bars' | 'search'} [type='all'] - 要清除的標記類型。
+   * 清除地圖上的標記
+   * @param {'all' | 'bars' | 'search'} [type='all'] 
    */
   const clearMarkers = (type = "all") => {
     if (type === "bars" || type === "all") {
@@ -196,10 +200,10 @@ export function useGoogleMaps(mapContainerRef, options) {
   };
 
   /**
-   * 在地圖上添加一個標記。
+   * 在地圖上添加標記
    @param {google.maps.LatLngLiteral | google.maps.LatLng} position
    @param {string} title
-   @param {function(google.maps.Marker): void} [onClickCallback] - 點擊回調。
+   @param {function(google.maps.Marker): void} [onClickCallback]
    @param {string} [iconUrl]
    @param {'bars' | 'search' | 'currentLocation' | string} [markerType='bars']
    @param {Object} [placeData=null]
@@ -245,18 +249,12 @@ export function useGoogleMaps(mapContainerRef, options) {
     return marker;
   };
 
-  /**
-   * 在指定標記上顯示資訊視窗。
-   */
   const showInfoWindow = (marker, content) => {
     if (!infoWindow.value || !map.value) return;
     infoWindow.value.setContent(content);
     infoWindow.value.open(map.value, marker);
   };
 
-  /**
-   * 關閉當前的資訊視窗。
-   */
   const closeInfoWindow = () => {
     if (infoWindow.value) {
       infoWindow.value.close();
@@ -264,7 +262,7 @@ export function useGoogleMaps(mapContainerRef, options) {
   };
 
   /**
-   * 格式化酒吧資訊視窗的 HTML 內容。
+   * 格式化酒吧資訊視窗的內容
    */
   const formatBarInfoWindowContent = (bar) => {
     return `
@@ -300,7 +298,7 @@ export function useGoogleMaps(mapContainerRef, options) {
   };
 
   /**
-   * 格式化地點搜尋結果的資訊視窗 HTML 內容。
+   * 格式化地點搜尋結果的資訊視窗 HTML 內容
    */
   const formatPlaceInfoWindowContent = (place) => {
     return `
@@ -326,9 +324,6 @@ export function useGoogleMaps(mapContainerRef, options) {
     `;
   };
 
-  /**
-   * 平移地圖中心到指定位置。
-   */
   const panTo = (location) => {
     if (map.value) {
       skipNextIdle = true;
@@ -336,9 +331,6 @@ export function useGoogleMaps(mapContainerRef, options) {
     }
   };
 
-  /**
-   * 設定地圖的縮放等級。
-   */
   const setZoom = (zoomLevel) => {
     if (map.value) {
       skipNextIdle = true;
@@ -346,9 +338,6 @@ export function useGoogleMaps(mapContainerRef, options) {
     }
   };
 
-  /**
-   * 調整地圖視圖以包含所有指定地理範圍。
-   */
   const fitBounds = (bounds) => {
     if (map.value) {
       skipNextIdle = true;
@@ -357,7 +346,7 @@ export function useGoogleMaps(mapContainerRef, options) {
   };
 
   /**
-   * 在地圖上顯示酒吧標記，並調整地圖視圖。
+   * 地圖上顯示酒吧標記，調整地圖視圖
    */
   const displayBarsOnMap = (barsToMark) => {
     if (!map.value) return;
@@ -398,7 +387,7 @@ export function useGoogleMaps(mapContainerRef, options) {
   };
 
   /**
-   * 請求瀏覽器地理定位權限。
+   * 請求瀏覽器地理定位權限
    */
   const requestGeolocationPermission = () => {
     if (!navigator.geolocation) {
@@ -416,7 +405,7 @@ export function useGoogleMaps(mapContainerRef, options) {
   };
 
   /**
-   * 取得使用者當前地理位置並在地圖上顯示。
+   * 取得使用者當前地理位置並在地圖上顯示
    */
   const getCurrentLocation = (mapContainerWidth = 0) => {
     return new Promise((resolve, reject) => {
@@ -523,7 +512,7 @@ export function useGoogleMaps(mapContainerRef, options) {
   };
 
   /**
-   * 取得 Google Places API 地點搜尋建議。
+   * Google Places API 地點搜尋建議
    */
   const getPlacePredictions = (input, region = "tw") => {
     return new Promise((resolve, reject) => {
@@ -552,7 +541,7 @@ export function useGoogleMaps(mapContainerRef, options) {
   };
 
   /**
-   * 使用 Google Places API 進行文字搜尋。
+   * Google Places API 文字搜尋
    */
   const textSearch = (query, location, radius = 50000, region = "tw") => {
     return new Promise((resolve, reject) => {
@@ -585,7 +574,7 @@ export function useGoogleMaps(mapContainerRef, options) {
   };
 
   /**
-   * 執行地點搜尋並在地圖上顯示結果。
+   * 地點搜尋在地圖上顯示結果
    */
   const searchAndDisplayPlaces = async (query) => {
     if (!map.value) {
@@ -658,7 +647,7 @@ export function useGoogleMaps(mapContainerRef, options) {
   };
 
   /**
-   * 將地圖平移到指定酒吧位置並顯示資訊視窗。
+   * 地圖平移到指定酒吧位置並顯示資訊視窗
    */
   const panToAndShowBarInfo = (bar) => {
     if (!map.value) {
@@ -694,7 +683,7 @@ export function useGoogleMaps(mapContainerRef, options) {
     });
   };
 
-  // 組件卸載時清理資源
+  // 清理資源
   onUnmounted(() => {
     clearMarkers();
     if (currentMarker.value) {
