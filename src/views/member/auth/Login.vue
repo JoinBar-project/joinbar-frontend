@@ -22,30 +22,31 @@
 
     <div v-if="isLogin" class="mt-6 space-y-4">
     <!-- 一般登入表單 -->
-        <div class="space-y-1">
-          <div 
-            :class="[
-              'flex items-center border rounded px-3 py-2 transition-colors',
-              errors.email 
-                ? 'border-[var(--color-text-warn)] border-2 bg-white'
-                : 'border-[var(--color-text-selected)]'
-            ]">
-            <i class="fa-solid fa-envelope mr-2"
-              :class="errors.email ? 'text-[var(--color-black)]' : 'text-[var(--color-icon-secondary)]'">
-            </i>
-            <input 
-              type="email" 
-              placeholder="電子郵件" 
-              v-model="loginForm.email"
-              @input="clearError('email')"
-              :class="[
-                'w-full outline-none placeholder-opacity-70 transition-colors text-sm ml-2',
-                errors.email 
-                  ? 'text-[var(--color-primary-red)] placeholder-[var(--color-text-warn)]' 
-                  : 'text-[var(--color-text-selected)] placeholder-[var(--color-text-selected)]'
-              ]"/>
+    <div class="space-y-1">
+      <div 
+      :class="[
+        'flex items-center border rounded px-3 py-2 transition-colors',
+        errors.email 
+          ? 'border-[var(--color-text-warn)] border-2 bg-white'
+          : 'border-[var(--color-text-selected)]'
+      ]">
+      <i class="fa-solid fa-envelope mr-2"
+        :class="errors.email ? 'text-[var(--color-black)]' : 'text-[var(--color-icon-secondary)]'">
+      </i>
 
-          </div>
+      <input 
+        type="email" 
+        placeholder="電子郵件" 
+        v-model="loginForm.email"
+        @input="clearError('email')"
+        :disabled="authStore.isLoading"
+        :class="[
+          'w-full outline-none placeholder-opacity-70 transition-colors text-sm ml-2',
+          errors.email 
+            ? 'text-[var(--color-primary-red)] placeholder-[var(--color-text-warn)]' 
+            : 'text-[var(--color-text-selected)] placeholder-[var(--color-text-selected)]'
+        ]"/>
+      </div>
 
           <div v-if="errors.email" class="text-[var(--color-text-warn)] text-xs ml-1">
             {{ emailErrorMessage }}
@@ -117,8 +118,8 @@
       <!-- 登入按鈕 -->
       <div class="flex justify-center">
         <button
-          @click="handleEmailLogin"
-          :disabled="authStore.isLoading || !loginForm.email || !loginForm.password"
+          @click="handleLogin"
+          :disabled="authStore.isLoading"
           class="w-full max-w-[180px] py-2 bg-gradient-to-r from-[#fbdaca] to-[#eb96a4] text-[var(--color-black)] rounded-lg font-semibold mt-4 shadow-md transition duration-300 transform hover:scale-105 hover:brightness-110 hover:shadow-lg">
           <span v-if="authStore.isEmailLoading">登入中...</span>
           <span v-else>登入</span>
@@ -137,7 +138,6 @@
         </router-link>
       </div>
     </div>
-  </div>
 </template>
 
 <script setup>
@@ -266,7 +266,7 @@ const handleLogin = () => {
 
 const useTestAccount = () => {
   loginForm.value.email = 'admin@test.com'
-  loginForm.value.password = 'admin123'
+  loginForm.value.password = 'Aa201201'
 
   // 清除所有錯誤狀態
   errors.value.email = false
