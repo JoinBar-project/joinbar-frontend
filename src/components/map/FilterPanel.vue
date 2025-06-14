@@ -579,17 +579,27 @@ onMounted(() => {
 .filter-panel-container {
   padding: 24px;
   background-color: #ffffff;
-  height: 100%;
+  height: 100%; /* 讓它佔滿整個高度 */
   overflow-y: auto;
-  box-shadow: -4px 0 10px rgba(0, 0, 0, 0.1);
-  position: absolute;
+  box-shadow: -4px 0 10px rgba(0, 0, 0, 0.1); /* 陰影調整為從左側 */
+  position: fixed; /* <--- 關鍵：使用 fixed 定位，相對於視窗 */
   top: 0;
-  right: 0;
+  right: 0; /* <--- 讓它位於視窗右側 */
   width: 320px;
   max-width: 90vw;
-  z-index: 100;
+  z-index: 1000; /* <--- 確保它在最上層，高於其他內容 */
+
+  /* 滑入動畫相關樣式 */
+  transform: translateX(100%); /* <--- 初始狀態：完全移出視窗右側 */
+  transition: transform 0.3s ease-out; /* <--- 過渡動畫 */
   display: flex;
   flex-direction: column;
+}
+
+/* 當篩選面板打開時的狀態 */
+.filter-panel-container.open {
+  /* 您需要在父組件中動態添加這個 'open' 類 */
+  transform: translateX(0); /* <--- 打開時：移回視窗內 */
 }
 
 .filter-header {

@@ -262,18 +262,21 @@ export function useGoogleMaps(mapContainerRef, options) {
       }
       <h3 class="info-window-title text-gray-800">${bar.name}</h3>
       <p class="info-window-meta text-gray-800">⭐️ ${bar.rating} (${
-      bar.reviews || 0
-    } 評論)</p>
+        bar.reviews || 0
+      } 評論)</p>
       <p class="info-window-meta text-gray-800">⏱️ ${
-      bar.openingHours?.weekday_text?.[0] || "未提供營業時間"
-    }</p>
+        bar.openingHours?.weekday_text?.[0] || "未提供營業時間"
+      }</p>
       <p class="info-window-description text-gray-800">${
         bar.description || ""
       }</p>
       <div class="info-window-tags-container">
         ${
           bar.tags
-            ?.map((tag) => `<span class="info-window-tag text-gray-800">${tag}</span>`)
+            ?.map(
+              (tag) =>
+                `<span class="info-window-tag text-gray-800">${tag}</span>`
+            )
             .join("") || ""
         }
       </div>
@@ -677,14 +680,25 @@ export function useGoogleMaps(mapContainerRef, options) {
         {
           placeId,
           fields: [
-            "name", "rating", "user_ratings_total", "formatted_address",
-            "international_phone_number", "website", "opening_hours",
-            "photos", "reviews", "geometry", "types"
+            "name",
+            "rating",
+            "user_ratings_total",
+            "formatted_address",
+            "international_phone_number",
+            "website",
+            "opening_hours",
+            "photos",
+            "reviews",
+            "geometry",
+            "types",
           ],
-          language: "zh-TW"
+          language: "zh-TW",
         },
         (place, status) => {
-          if (status === window.google.maps.places.PlacesServiceStatus.OK && place) {
+          if (
+            status === window.google.maps.places.PlacesServiceStatus.OK &&
+            place
+          ) {
             resolve(place);
           } else {
             resolve(null); // 不拋錯，讓 UI fallback
@@ -705,7 +719,7 @@ export function useGoogleMaps(mapContainerRef, options) {
       return;
     }
     if (showLoading) loading.value = true;
-    const results = await textSearch('bar', center, 3000);
+    const results = await textSearch("bar", center, 3000);
 
     // 只取前 10 筆，避免 API 浪費
     const limitedResults = results.slice(0, 10);
@@ -720,18 +734,21 @@ export function useGoogleMaps(mapContainerRef, options) {
         return {
           ...place,
           location: {
-            lat: typeof place.geometry.location.lat === 'function'
-              ? place.geometry.location.lat()
-              : place.geometry.location.lat,
-            lng: typeof place.geometry.location.lng === 'function'
-              ? place.geometry.location.lng()
-              : place.geometry.location.lng,
+            lat:
+              typeof place.geometry.location.lat === "function"
+                ? place.geometry.location.lat()
+                : place.geometry.location.lat,
+            lng:
+              typeof place.geometry.location.lng === "function"
+                ? place.geometry.location.lng()
+                : place.geometry.location.lng,
           },
           rating: place.rating || 0,
           reviews: place.user_ratings_total || 0,
-          imageUrl: place.photos && place.photos.length > 0
-            ? place.photos[0].getUrl({ maxWidth: 400, maxHeight: 300 })
-            : '',
+          imageUrl:
+            place.photos && place.photos.length > 0
+              ? place.photos[0].getUrl({ maxWidth: 400, maxHeight: 300 })
+              : "",
           openingHours: details.opening_hours ?? place.opening_hours,
           opening_hours: details.opening_hours ?? place.opening_hours,
         };
