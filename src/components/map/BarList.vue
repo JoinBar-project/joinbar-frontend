@@ -46,15 +46,9 @@
 
           <div v-if="bar.tags && bar.tags.length" class="bar-tags">
             <span v-for="tag in bar.tags" :key="tag" class="bar-tag">{{
-<<<<<<< HEAD
               tag
             }}</span>
           </div>
-=======
-                  tag
-                }}</span>
-                </div>
->>>>>>> origin/dev
 
           <div class="bar-hours">
             {{ getOpeningHourText(bar) }}
@@ -68,10 +62,6 @@
 <script setup>
 import { watch, ref } from "vue";
 
-<<<<<<< HEAD
-=======
-// --- Props 與 Emits ---
->>>>>>> origin/dev
 const props = defineProps({
   bars: {
     type: Array,
@@ -91,10 +81,6 @@ const handleImageError = (event) => {
 };
 
 // 營業時間格式化函式
-<<<<<<< HEAD
-=======
-
->>>>>>> origin/dev
 const getOpeningHourText = (bar) => {
   if (bar.openingHours?.weekdayText?.length > 0) {
     return bar.openingHours.weekdayText[0];
@@ -120,10 +106,6 @@ const emitToggleWishlist = (placeId) => {
   emit("toggle-wishlist", { placeId, isFavorite: isFavorite(placeId) });
 };
 
-<<<<<<< HEAD
-=======
-// Vue 生命週期與監聽器 (僅用於偵錯，實際應用可能移除)
->>>>>>> origin/dev
 watch(
   () => props.bars,
   (newBars) => {

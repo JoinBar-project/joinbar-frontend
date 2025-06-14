@@ -231,14 +231,11 @@
           <button class="start-event-button" @click="goToBarActivities">
             發起活動
             <img
-<<<<<<< HEAD
               src="@/assets/icons/mapicons/dropdown-arrow-icon.svg"
               alt="下拉"
               class="icon-dropdown"
             />
             <img
-=======
->>>>>>> origin/dev
               src="@/assets/icons/mapicons/plus-icon.svg"
               alt="加號"
               class="icon-plus"
@@ -371,47 +368,27 @@ const handleFileUpload = (event) => {
   background-color: #fff;
   border-radius: 12px;
   overflow: hidden;
-<<<<<<< HEAD
   display: flex;
   flex-direction: column;
   width: 90%;
   max-width: 900px;
   height: 85vh;
   position: relative;
-=======
-  display: flex; /* 設置為 flex 容器 */
-  flex-direction: column; /* 內容垂直排列 (header, content, footer) */
-  width: 90%;
-  max-width: 900px;
-  height: 85vh;
-  position: relative; /* 確保內部絕對定位的按鈕參考此容器 */
->>>>>>> origin/dev
   box-shadow: 0 8px 30px rgba(0, 0, 0, 0.3);
 }
 
 /* 包裹左右兩側主要內容的 flex 容器 */
 .content-flex-wrapper {
   display: flex;
-<<<<<<< HEAD
   flex-grow: 1;
   overflow: hidden;
-=======
-  flex-grow: 1; /* 讓此容器佔用 bar-detail-modal-content 內的所有剩餘垂直空間 */
-  overflow: hidden; /* 防止內部滾動條溢出此容器 */
->>>>>>> origin/dev
 }
 
 /* 關閉按鈕 */
 .close-button {
   position: absolute;
-<<<<<<< HEAD
   top: 15px;
   right: 20px;
-=======
-  top: 15px; /* 距離 modal 容器頂部 */
-  right: 20px; /* 距離 modal 容器右側 */
-  /* background: rgba(0, 0, 0, 0.5); */
->>>>>>> origin/dev
   border: none;
   border-radius: 50%;
   width: 36px;
@@ -428,25 +405,14 @@ const handleFileUpload = (event) => {
 
 /* 新增的 .close-icon 樣式 */
 .close-button .close-icon {
-<<<<<<< HEAD
   width: 100%;
   height: 100%;
-=======
-  width: 100%; /* 調整為您希望的圖示大小 */
-  height: 100%; /* 調整為您希望的圖示大小 */
-  /* 如果您的 SVG 圖示是單色且需要繼承顏色，可以考慮使用 fill: currentColor; */
-  /* fill: currentColor; */
->>>>>>> origin/dev
 }
 
 /* 左側：圖片輪播區 */
 .image-gallery-container {
   width: 50%;
-<<<<<<< HEAD
   height: 100%;
-=======
-  height: 100%; /* 佔用 content-flex-wrapper 的高度 */
->>>>>>> origin/dev
   overflow: hidden;
   position: relative;
   background-color: #000;
@@ -519,35 +485,19 @@ const handleFileUpload = (event) => {
 /* 右側：詳細資訊區塊 */
 .detail-info-section {
   width: 50%;
-<<<<<<< HEAD
   padding: 80px 25px 20px 25px;
   overflow-y: auto;
   flex-grow: 1;
   display: flex;
   flex-direction: column;
   padding-bottom: calc(20px + 60px + 15px);
-=======
-  padding: 80px 25px 20px 25px; /* 上 右 下 左，80px 是為頂部空白區預留 */
-  overflow-y: auto; /* 關鍵：允許此區塊內容滾動 */
-  flex-grow: 1; /* 讓此區塊在 content-flex-wrapper 中佔用剩餘的所有垂直空間 */
-  display: flex;
-  flex-direction: column;
-  padding-bottom: calc(
-    20px + 60px + 15px
-  ); /* 增加底部內邊距，為固定在 Modal 底部的 footer-actions 留出空間 */
->>>>>>> origin/dev
 }
 
 /* 標題與愛心按鈕的 flex 容器 */
 .header-main {
   display: flex;
-<<<<<<< HEAD
   align-items: center;
   justify-content: flex-start;
-=======
-  align-items: center; /* 垂直居中對齊 */
-  justify-content: flex-start; /* 保持左側對齊 */
->>>>>>> origin/dev
   margin-bottom: 10px;
 }
 
@@ -564,11 +514,7 @@ const handleFileUpload = (event) => {
   cursor: pointer;
   z-index: 10;
   outline: none;
-<<<<<<< HEAD
   transition: transform 0.2s ease-in-out;
-=======
-  transition: transform 0.2s ease-in-out; /* 懸停時的縮放動畫，保持 */
->>>>>>> origin/dev
 }
 
 .wishlist-detail-button:hover {
@@ -577,7 +523,6 @@ const handleFileUpload = (event) => {
 
 /* 愛心 SVG 圖標樣式 */
 .wishlist-detail-button .heart-icon {
-<<<<<<< HEAD
   width: 24px;
   height: 24px;
   transition:
@@ -587,20 +532,6 @@ const handleFileUpload = (event) => {
 
 .wishlist-detail-button:not([fill="red"]):hover .heart-icon {
   fill: #ffebeb;
-=======
-  width: 24px; /* 調整為與其他 action-icon-button 中的圖示大小一致 */
-  height: 24px; /* 調整為與其他 action-icon-button 中的圖示大小一致 */
-  transition:
-    fill 0.3s ease,
-    stroke 0.3s ease; /* 保持顏色過渡 */
-}
-
-/* 當滑鼠懸停在按鈕上且未收藏時，SVG 的顏色變為 red-400 的效果 */
-.wishlist-detail-button:not([fill="red"]):hover .heart-icon {
-  /* 假設現在是未收藏狀態，我們會看到白底黑邊。
-       Hover 時我們希望看到淺紅底紅邊。 */
-  fill: #ffebeb; /* 淺紅色背景效果 */
->>>>>>> origin/dev
   stroke: red; /* 懸停時邊框變紅 */
 }
 
@@ -733,11 +664,7 @@ const handleFileUpload = (event) => {
   color: #888;
 }
 
-<<<<<<< HEAD
 /* 固定在 bar-detail-modal-content 底部 */
-=======
-/* 底部操作按鈕容器 - 固定在 bar-detail-modal-content 底部 */
->>>>>>> origin/dev
 .footer-actions {
   position: absolute;
   bottom: 0;
@@ -805,10 +732,7 @@ const handleFileUpload = (event) => {
   background-color: #c37b1c;
 }
 
-<<<<<<< HEAD
 .icon-dropdown,
-=======
->>>>>>> origin/dev
 .icon-plus {
   width: 20px;
   height: 20px;
@@ -828,10 +752,6 @@ const handleFileUpload = (event) => {
   opacity: 0;
 }
 
-<<<<<<< HEAD
-=======
-/* 響應式調整 */
->>>>>>> origin/dev
 @media (max-width: 768px) {
   .bar-detail-modal-content {
     flex-direction: column;
@@ -841,11 +761,7 @@ const handleFileUpload = (event) => {
     border-radius: 8px;
   }
   .content-flex-wrapper {
-<<<<<<< HEAD
     flex-direction: column;
-=======
-    flex-direction: column; /* 手機版堆疊 */
->>>>>>> origin/dev
   }
   .image-gallery-container {
     width: 100%;
@@ -853,11 +769,7 @@ const handleFileUpload = (event) => {
   }
   .detail-info-section {
     width: 100%;
-<<<<<<< HEAD
     padding: 60px 15px 20px 15px;
-=======
-    padding: 60px 15px 20px 15px; /* 調整手機版頂部內邊距 */
->>>>>>> origin/dev
     padding-bottom: calc(20px + 60px + 10px);
   }
   .bar-detail-name {
@@ -872,20 +784,12 @@ const handleFileUpload = (event) => {
     width: 32px;
     height: 32px;
   }
-<<<<<<< HEAD
 
-=======
-  /* 針對新的圖片式關閉圖示調整大小 */
->>>>>>> origin/dev
   .close-button .close-icon {
     width: 100%;
     height: 100%;
   }
-<<<<<<< HEAD
 
-=======
-  /* 手機版愛心收藏按鈕位置調整 */
->>>>>>> origin/dev
   .wishlist-detail-button .heart-icon {
     width: 20px;
     height: 20px;
@@ -915,11 +819,7 @@ const handleFileUpload = (event) => {
     padding: 8px 15px;
     font-size: 15px;
   }
-<<<<<<< HEAD
   .icon-dropdown,
-=======
-
->>>>>>> origin/dev
   .icon-plus {
     width: 18px;
     height: 18px;

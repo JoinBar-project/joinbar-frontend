@@ -26,7 +26,7 @@
           class="remove-filter-button"
         >
           <img
-            src="@/assets/icons/mapicons/tag-close-icon.svg"
+            src="@/assets/icons/mapicons/close-tag.svg"
             alt="移除篩選"
             class="remove-filter-icon"
           />
