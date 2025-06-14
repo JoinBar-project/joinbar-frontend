@@ -12,6 +12,19 @@ const apiClient = axios.create({
 apiClient.interceptors.request.use(
   (config) => {
     console.log(`API 請求: ${config.method.toUpperCase()} ${config.url}`)
+
+    // 檢查是否需要添加 Authorization header (Email 登入)
+    const token = localStorage.getItem('access_token');
+    const user = JSON.parse(localStorage.getItem('user') || '{}');
+    
+    // 如果有 token 且不是 LINE 用戶，則添加 Authorization header
+    if (token && user?.providerType !== 'line') {
+      config.headers.Authorization = `Bearer ${token}`;
+      console.log('添加 Bearer token 到請求 headers');
+    } else if (user?.providerType === 'line') {
+      console.log('LINE 用戶，使用 cookie 認證');
+    }
+
     return config
   },
   (error) => {
