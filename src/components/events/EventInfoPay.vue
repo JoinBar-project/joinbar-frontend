@@ -1,6 +1,8 @@
 <script setup>
 import { useEvent } from '@/composable/useEvent.js';
-import { toRef } from 'vue';
+import { useCartStore } from '@/stores/cartStore';  
+import { useRouter } from 'vue-router';              
+import { toRef, computed } from 'vue';
 import EventHoster from './EventHoster.vue';
 import MessageBoard from './MessageBoard.vue';
 
@@ -10,6 +12,8 @@ const props = defineProps({
 }) 
 
 const eventRef = toRef(props, 'event')
+const cart = useCartStore() 
+const router = useRouter()   
 
 const {
   isJoin,
@@ -23,6 +27,55 @@ const {
   handleConfirmCancel
 } = useEvent(eventRef)
 
+const isInCart = computed(() => cart.isInCart(props.event.id))
+
+const addToCart = () => {
+  try {
+    const eventData = {
+      id: props.event.id,
+      name: props.event.name,
+      price: props.event.price,
+      imageUrl: props.event.imageUrl,
+      barName: props.event.barName,
+      location: props.event.location,
+      startDate: props.event.startDate,
+      endDate: props.event.endDate,
+      maxPeople: props.event.maxPeople,
+      hostUser: props.event.hostUser
+    }
+    
+    cart.addItem(eventData)
+    alert('已加入購物車！')
+    
+  } catch (error) {
+    alert(error.message)
+  }
+}
+
+const buyNow = () => {
+  try {
+    if (!isInCart.value) {
+      const eventData = {
+        id: props.event.id,
+        name: props.event.name,
+        price: props.event.price,
+        imageUrl: props.event.imageUrl,
+        barName: props.event.barName,
+        location: props.event.location,
+        startDate: props.event.startDate,
+        endDate: props.event.endDate,
+        maxPeople: props.event.maxPeople,
+        hostUser: props.event.hostUser
+      }
+      cart.addItem(eventData)
+    }
+    
+    router.push('/payment')
+    
+  } catch (error) {
+    alert(error.message)
+  }
+}
 </script>
 
 <template>
@@ -68,9 +121,9 @@ const {
 
             <div class="event-content-info">
               <i class="fa-solid fa-wine-glass"></i>
-            
               <p>店名：{{ props.event.barName}}</p>
             </div>
+            
             <div class="event-content-info">
               <i class="fa-solid fa-location-dot"></i>
               <p>地址：{{ props.event.location }}</p>
@@ -87,14 +140,13 @@ const {
             </div>
           </div>
 
+          <button @click="addToCart" type="button" class="event-btn event-btn-cart">
+            {{ isInCart ? '✓ 已在購物車' : '加入購物車' }}
+          </button>
+          <button @click="buyNow" type="button" class="event-btn event-btn-pay">
+            立即付費參加
+          </button>
           
-          <button type="button" class="event-btn event-btn-cart">加入購物車</button>
-          <button type="button" class="event-btn event-btn-pay">立即付費參加</button>
-          
-          <!-- <div>
-            <button type="button" class="event-btn event-btn-cart">已報名</button>
-            <button v-if="isJoin" @click="openCancelModal()" :disabled="!isOver24hr" :class="['event-btn event-btn-free',    isOver24hr ? 'cursor-pointer' : 'cursor-not-allowed opacity-50']"  type="button" class="event-btn event-btn-free" >取消報名</button>
-          </div> -->
         </div>
       </div>
     </div>
@@ -105,8 +157,6 @@ const {
 </template>
 
 <style scoped>
-
-
 .event-information-section{
   max-width: 100vw;
   padding-top: 2%;
@@ -235,5 +285,4 @@ const {
   padding: 8px 28px 10px 28px;
   cursor: pointer;
 }
-
 </style>
