@@ -1,16 +1,22 @@
 <script setup>
-import { ref, watch, defineEmits } from 'vue'
+import { ref, watch } from 'vue'
 const emit = defineEmits(['update:modelValue'])
 
-// 定義props：從上層給我一包資料，如果沒給，我自己用一份新的
 const props = defineProps({
-  // modelValue 是陣列，讓預設給空陣列
   modelValue: { type: Array, default: () => [] }
 })
-const selectedTags = ref([...props.modelValue])
 
+const options = ref([
+  { id: 1, name: '免費活動' },
+  { id: 2, name: '限時報名' },
+  { id: 3, name: '單身限定' },
+  { id: 4, name: '週末來喝' },
+  { id: 5, name: '主題之夜' },
+  { id: 6, name: '現場LIVE' },
+])
+
+const selectedTags = ref([])
 const modalOpen = ref(false)
-const options = ref(['免費活動', '限時報名', '單身限定', '週末來喝', '主題之夜', '現場LIVE']) 
 const warning = ref('')
 
 function openModal() {
@@ -22,9 +28,7 @@ function closeModal() {
   warning.value = ''
 }
 function toggleTag(tag) {
-  // 檢查這個 tag 有沒有在已選標籤列表裡
-  const idx = selectedTags.value.indexOf(tag)
-  // -1 : 還沒被選過
+  const idx = selectedTags.value.findIndex(t => t.id === tag.id)
   if (idx === -1) {
     if (selectedTags.value.length >= 2) {
       warning.value = '最多選擇 2 個標籤'
@@ -32,22 +36,22 @@ function toggleTag(tag) {
     }
     selectedTags.value.push(tag)
   } else {
-    // 已經選了這個標籤，再選一次 = 移除(splice)
     selectedTags.value.splice(idx, 1)
     warning.value = ''
   }
+  emit('update:modelValue', selectedTags.value.map(tag => tag.id))
 }
 function confirmTags() {
-  emit('update:modelValue', [...selectedTags.value])
+  emit('update:modelValue', selectedTags.value.map(tag => tag.id))
   closeModal()
 }
 function removeTag(tag) {
   toggleTag(tag)
 }
 
-// 同步
+// 同步：modelValue（id陣列）→ selectedTags（物件陣列）
 watch(() => props.modelValue, (val) => {
-  selectedTags.value = [...val]
+  selectedTags.value = options.value.filter(option => val.includes(option.id))
 })
 </script>
 
@@ -57,8 +61,8 @@ watch(() => props.modelValue, (val) => {
     <div style="display:flex;align-items:center;gap:8px;width:100%;flex-wrap:wrap;">
       <button type="button" class="btn-hashtag-modal" @click="openModal">選擇</button>
       <div class="selected-tags">
-        <span v-for="tag in selectedTags" :key="tag" class="selected-tag">
-          {{ tag }}
+        <span v-for="tag in selectedTags" :key="tag.id" class="selected-tag">
+          {{ tag.name }}
           <span class="remove-tag" @click="removeTag(tag)">×</span>
         </span>
       </div>
@@ -74,11 +78,11 @@ watch(() => props.modelValue, (val) => {
         <div class="modal-tags">
           <button
             v-for="tag in options"
-            :key="tag"
+            :key="tag.id"
             class="tag-btn"
-            :class="{active:selectedTags.includes(tag)}"
+            :class="{active: selectedTags.some(t => t.id === tag.id)}"
             @click="toggleTag(tag)"
-          >{{ tag }}</button>
+          >{{ tag.name }}</button>
         </div>
         <div class="modal-actions">
           <span class="warning" v-if="warning">{{ warning }}</span>
@@ -90,127 +94,86 @@ watch(() => props.modelValue, (val) => {
 </template>
 
 <style scoped>
+@reference "tailwindcss";
+
 .form-row {
-  display: grid;
-  grid-template-columns: 100px 1fr;
-  align-items: center;
-  margin: 10px 0;
+  @apply grid grid-cols-[100px_1fr] items-center my-2;
 }
+
 .form-row label {
-  font-size: 20px;
-  text-align: center;
+  @apply text-xl text-center;
 }
+
 .selected-tags {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-  min-height: 30px;
+  @apply flex flex-wrap gap-2 min-h-8;
 }
+
 .selected-tag {
+  @apply relative flex items-center mb-1 py-1 text-sm rounded-2xl pr-[11px] pl-2;
   background: #ffecf0;
   color: #c9475d;
-  padding: 4px 11px 4px 8px;
-  border-radius: 15px;
-  font-size: 15px;
-  margin-bottom: 2px;
-  position: relative;
-  display: flex;
-  align-items: center;
 }
+
 .remove-tag {
-  font-size: 15px;
-  margin-left: 6px;
-  cursor: pointer;
+  @apply ml-2 cursor-pointer font-bold select-none text-sm;
   color: #c9475d;
-  font-weight: bold;
-  user-select: none;
 }
+
 .btn-hashtag-modal {
-  border-radius: 15px;
-  padding: 5px 18px;
-  background: #eee;
-  border: 3px solid #b9b9b9;
-  font-size: 15px;
-  cursor: pointer;
+  @apply rounded-2xl py-1 px-4 border-[3px] border-gray-400 text-sm cursor-pointer bg-gray-100;
 }
+
 .btn-hashtag-modal:hover {
-  background: #ffe3e3;
+  @apply bg-red-100;
 }
+
 .hashtag-modal-overlay {
-  position: fixed;
-  left: 0; top: 0;
-  width: 100vw; height: 100vh;
+  @apply fixed left-0 top-0 w-screen h-screen flex items-center justify-center z-[3000];
   background: rgba(0,0,0,0.20);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 3000;
 }
+
 .hashtag-modal-content {
-  background: #fff;
-  border-radius: 18px;
-  min-width: 300px;
-  padding: 32px 28px 20px 28px;
-  box-shadow: 0 4px 28px #0002;
-  position: relative;
+  @apply bg-white rounded-2xl min-w-[300px] relative shadow-2xl p-[32px_28px_20px_28px];
   animation: popupFadeIn 0.25s;
 }
+
 @keyframes popupFadeIn {
   from { transform: scale(0.93); opacity: 0; }
   to { transform: scale(1); opacity: 1; }
 }
+
 .modal-header {
-  font-size: 20px;
-  font-weight: bold;
-  margin-bottom: 18px;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
+  @apply text-xl font-bold mb-4 flex justify-between items-center;
 }
+
 .modal-close-btn {
-  font-size: 22px;
-  background: none;
-  border: none;
-  cursor: pointer;
+  @apply text-2xl bg-transparent border-none cursor-pointer;
 }
+
 .modal-tags {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 12px;
-  justify-content: center;
-  margin-bottom: 15px;
+  @apply flex flex-wrap gap-3 justify-center mb-4;
 }
+
 .tag-btn {
-  font-size: 16px;
-  border: 2px solid #b9b9b9;
-  border-radius: 20px;
-  padding: 7px 18px;
-  background: #faf9f9;
-  cursor: pointer;
-  transition: background 0.2s, border-color 0.2s;
+  @apply text-base border-2 border-gray-400 rounded-2xl py-2 px-4 cursor-pointer transition-all duration-200 bg-gray-50;
 }
+
 .tag-btn.active,
 .tag-btn:active {
-  background: #ffe3e3;
-  border-color: #ffadad;
+  @apply bg-red-100 border-red-300;
 }
+
 .modal-actions {
-  margin-top: 8px;
-  text-align: right;
+  @apply mt-2 text-right;
 }
+
 .confirm-btn {
-  border: none;
+  @apply border-none text-white rounded-2xl text-base py-1 px-6 cursor-pointer ml-3;
   background: var(--color-primary-red, #c9475d);
-  color: #fff;
-  border-radius: 20px;
-  font-size: 16px;
-  padding: 6px 22px;
-  cursor: pointer;
-  margin-left: 12px;
 }
+
 .warning {
+  @apply text-sm mr-2;
   color: #c9475d;
-  font-size: 15px;
-  margin-right: 10px;
 }
 </style>

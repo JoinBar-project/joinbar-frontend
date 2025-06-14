@@ -1,30 +1,57 @@
 <script setup>
-import { ref } from 'vue'
-import { defineEmits } from 'vue'
+import { useEventForm } from '@/composable/useEventForm'
+import { watch } from 'vue'
 import Hashtag from './Hashtag.vue'
-const emit = defineEmits(['update', 'delete'])
 
-const eventName = ref('')
-const eventLocation = ref('')
-const eventDate = ref('')
-const eventTime = ref('')
-const eventPeople = ref('')
-const eventHashtags = ref([])
+const emit = defineEmits(['update', 'delete' ,'cancel'])
+const props = defineProps({ eventId: String })
 
-function handleUpdate() {
-  emit('update')
+const {
+  eventName,
+  barName,
+  eventLocation,
+  eventStartDate,
+  eventEndDate,
+  eventPrice,
+  eventPeople,
+  eventHashtags,
+  handleUpdate,
+  handleDelete,
+  loadEvent 
+} = useEventForm(props.eventId)
+
+watch(
+  () => props.eventId,
+  (newId) => {
+    if (newId) loadEvent(newId)
+  },
+  { immediate: true }
+)
+
+async function onUpdate() {
+  try {
+    const success = await handleUpdate(props.eventId)
+    if (success) {
+      emit('update')
+    }
+  } catch (error) {
+    console.error('更新失敗:', error)
+  }
 }
-function handleDelete() {
-  emit('delete')
+
+async function onDelete() {
+  try {
+    await handleDelete(props.eventId)
+    emit('delete')
+  } catch (error) {
+    console.error('刪除失敗:', error)
+  }
 }
-function handleCancel() {
-  emit('update')
-}
+
 </script>
 
 <template>
   <section class="event-form" id="edit-event">
-
     <div class="form-header">編輯中</div>
     <div class="form-container">
       <div class="form-image-upload">
@@ -37,19 +64,26 @@ function handleCancel() {
             <input type="text" id="event-name" v-model="eventName" placeholder="請輸入活動名稱" />
           </div>
           <div class="form-row">
-            <label for="event-location">活動地點</label>
-            <input type="text" id="event-location" v-model="eventLocation" placeholder="請輸入活動地點" />
+            <label for="bar-name">酒吧名稱</label>
+            <input type="text" id="bar-name" v-model="barName" placeholder="請輸入酒吧名稱" />
+          </div>
+          <div class="event-location">
+            {{eventLocation}}
           </div>
           <div class="form-row">
-            <label for="event-date">活動日期</label>
-            <input type="date" id="event-date" v-model="eventDate"/>
+            <label for="event-start-date">開始日期</label>
+            <input type="datetime-local" id="event-start-date" v-model="eventStartDate" />
           </div>
           <div class="form-row">
-            <label for="event-time">活動時間</label>
-            <input type="time" id="event-time" v-model="eventTime"/>
+            <label for="event-end-date">結束日期</label>
+            <input type="datetime-local" id="event-end-date" v-model="eventEndDate" />
           </div>
           <div class="form-row">
-            <label for="event-time">參加人數</label>
+            <label for="event-price">價格</label>
+            <input type="number" id="event-price" v-model="eventPrice" placeholder="請輸入價格" />
+          </div>
+          <div class="form-row">
+            <label for="event-people">參加人數</label>
             <input type="number" id="event-people" v-model="eventPeople" min="1" step="1" max="30"/>
           </div>
           <Hashtag v-model="eventHashtags" />
@@ -57,120 +91,81 @@ function handleCancel() {
         <div class="form-right"></div>
       </div>
       <div class="form-bottom">
-        <button type="button" class="btn-delete" @click="handleDelete">刪除活動</button>
-        <button type="button" class="btn-cancle" @click="handleCancel">取消修改</button>
-        <button type="button" class="btn-confirm" @click="handleUpdate">完成發佈</button>
+        <button type="button" class="btn-delete" @click="onDelete">刪除活動</button>
+        <button type="button" class="btn-cancle" @click="$emit('cancel')">取消修改</button>
+        <button type="button" class="btn-confirm" @click="onUpdate">完成發佈</button>
       </div>
     </div>
   </section>
 </template>
 
 <style scoped>
+@reference "tailwindcss";
 
-.event-form{
-  z-index: 99;
+.event-form {
+  @apply z-[99];
 }
 
-.form-header{
-  width: 140px;
-  text-align: center;
-  margin: 0 auto;
-  font-size: 18px;
-  padding: 6px;
-  border-radius: 15px 15px 0 0;
-  color: #fff;
+.form-header {
+  @apply w-36 text-center mx-auto text-lg p-1 rounded-t-2xl text-white;
   background-color: var(--color-primary-orange);
 }
 
 .form-container {
-  margin: 0 auto;
-  width: 700px;
-  border-radius: 20px;
-  background-color: #ccc;
+  @apply mx-auto w-[700px] rounded-xl bg-gray-300;
 }
 
-.form-image-upload{
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  width: 100%;
-  height: 300px;
-  font-size: 20px;
-  color:#b1b1b1;
-  border-radius: 20px 20px 0 0;
-  background-color: #e6e6e6;
+.form-image-upload {
+  @apply flex justify-center items-center w-full h-72 text-xl text-gray-400 rounded-t-xl bg-gray-200;
 }
 
-.form-layout{
-  padding: 20px;
-  display: grid;
-  grid-template-columns: 1.5fr 1fr ; 
-  align-items: center;
-  gap: 20px;
+.form-layout {
+  @apply p-5 grid grid-cols-[1.5fr_1fr] items-center gap-5;
 }
-
 
 .form-left {
-  font-size: 20px;
+  @apply text-xl;
 }
 
 .form-right {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  width: 100%;
-  height: 100%;
-  border-radius: 10px;
+  @apply flex justify-center items-center w-full h-full rounded-2xl;
   background-color: var(--color-black);
 }
 
 .form-row {
-  display: grid;
-  grid-template-columns: 100px 1fr; 
-  align-items: center;
-  margin: 10px 0;
+  @apply grid grid-cols-[100px_1fr] items-center my-2;
 }
 
 .form-row label {
-  font-size: 20px;
-  text-align: center;
-}
-.form-row input {
-  height: 40px;
-  padding: 0 10px;
-  font-size: 18px;
-  border: 3px solid #b9b9b9;
-  border-radius: 15px;
-  background-color: white;
+  @apply text-xl text-center;
 }
 
-.form-bottom{
-  padding: 0 50px;
-  display: grid;
-  grid-template-columns: 1fr 1fr 1fr ;
-  padding-bottom: 20px;
+.form-row input {
+  @apply h-10 px-2 text-lg border-[3px] border-gray-400 rounded-2xl bg-white;
+}
+
+.event-location {
+  @apply text-base ml-28;
+  color: var(--color-primary-red);
+}
+
+.form-bottom {
+  @apply px-12 grid grid-cols-3 pb-5;
 }
 
 .form-bottom button {
-  display: block;
-  margin: 0 auto;
-  width: 180px;
-  padding: 5px 0;
-  font-size: 20px;
-  color: white;
-  border: none;
-  border-radius: 20px;
-  cursor: pointer;
+  @apply block mx-auto w-44 py-1 text-xl text-white border-none rounded-xl cursor-pointer;
 }
 
-.btn-delete{
-  background-color: #b1b1b1;
+.btn-delete {
+  @apply bg-gray-400;
 }
-.btn-cancle{
+
+.btn-cancle {
   background-color: var(--color-secondary-green);
 }
-.btn-confirm{
+
+.btn-confirm {
   background-color: var(--color-primary-red);
 }
-
 </style>
