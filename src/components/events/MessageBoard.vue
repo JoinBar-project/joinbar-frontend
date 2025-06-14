@@ -1,5 +1,5 @@
 <script setup>
-import { ref } from 'vue';
+import { ref, nextTick, onMounted, watch } from 'vue';
 import dayjs from 'dayjs';
 import utc from 'dayjs/plugin/utc';
 import timezone from 'dayjs/plugin/timezone';
@@ -77,6 +77,25 @@ function handleEmojiSelect(event) {
   })
 }
 
+function hideSearchRow() {
+  const picker = document.querySelector('emoji-picker')
+  const shadow = picker?.shadowRoot
+  const searchRow = shadow?.querySelector('.search-row')
+  if (searchRow) {
+    searchRow.style.display = 'none'
+  }
+}
+
+onMounted(() => {
+  watch(showEmojiModal, (val) => {
+    if (val) {
+      nextTick(() => {
+        hideSearchRow()
+      })
+    }
+  })
+})
+
 </script>
 
 <template>
@@ -110,7 +129,7 @@ function handleEmojiSelect(event) {
             <emoji-picker 
               v-if="showEmojiModal" 
               @emoji-click="handleEmojiSelect" 
-              class="emoji"
+              class="emoji emoji-picker"
             ></emoji-picker>
             <button @click="submitMessage" class="messgae-btn" type="button">送出</button>
           </div>
