@@ -167,6 +167,65 @@ export const useAuthStore = defineStore('auth', () => {
     }
   }
 
+  function init() {
+    // 嘗試從 localStorage 恢復 Email 登入狀態
+    const storedAccessToken = localStorage.getItem('access_token');
+    const storedRefreshToken = localStorage.getItem('refresh_token');
+    const storedUser = localStorage.getItem('user');
+
+    if (storedAccessToken && storedUser) {
+      accessToken.value = storedAccessToken;
+      refreshToken.value = storedRefreshToken;
+      try {
+        user.value = JSON.parse(storedUser);
+        console.log('從 localStorage 恢復登入狀態 (Email 登入)');
+      } catch(err) {
+        console.error('解析用戶資料失敗:', err);
+        localStorage.removeItem('user');
+      }
+    } 
+    // 沒有 token 檢查是否有用戶資訊 可能是 LINE 登入
+    else if (storedUser) {
+      try {
+      user.value = JSON.parse(storedUser);
+      console.log('從 localStorage 恢復用戶資訊');
+    } catch (err) {
+      console.error('解析用戶資料失敗:', err);
+      localStorage.removeItem('user');
+    }
+    }
+
+    try {
+      const userInfoCookie = document.cookie
+        .split('; ')
+        .find(row => row.startsWith('user_info='))
+        ?.split('=').slice(1).join('=');
+
+      if (userInfoCookie) {
+        const userData = JSON.parse(decodeURIComponent(userInfoCookie));
+
+        // 如果 cookie 中的用戶與當前用戶不同 更新狀態
+        if (!user.value || user.value.id !== userData.id) {
+          user.value = userData;
+          localStorage.setItem('user', JSON.stringify(userData));
+          console.log('從 cookie 更新用戶資訊 (LINE 登入)');
+        }
+      }
+    } catch(err) {
+      console.error('從 cookie 讀取用戶資訊失敗:', err);
+    }
+
+    // 如果最終沒有用戶 清理所有狀態
+    if (!user.value) {
+      accessToken.value = null;
+      refreshToken.value = null;
+      localStorage.removeItem('access_token');
+      localStorage.removeItem('refresh_token');
+      localStorage.removeItem('user');
+      console.log('清理無效的登入狀態');
+    }
+  }
+
   async function emailLogin(email, password) {
     clearError();
 
@@ -355,65 +414,6 @@ export const useAuthStore = defineStore('auth', () => {
     }
     
     return null
-  }
-
-  function init() {
-    // 嘗試從 localStorage 恢復 Email 登入狀態
-    const storedAccessToken = localStorage.getItem('access_token');
-    const storedRefreshToken = localStorage.getItem('refresh_token');
-    const storedUser = localStorage.getItem('user');
-
-    if (storedAccessToken && storedUser) {
-      accessToken.value = storedAccessToken;
-      refreshToken.value = storedRefreshToken;
-      try {
-        user.value = JSON.parse(storedUser);
-        console.log('從 localStorage 恢復登入狀態 (Email 登入)');
-      } catch(err) {
-        console.error('解析用戶資料失敗:', err);
-        localStorage.removeItem('user');
-      }
-    } 
-    // 沒有 token 檢查是否有用戶資訊 可能是 LINE 登入
-    else if (storedUser) {
-      try {
-      user.value = JSON.parse(storedUser);
-      console.log('從 localStorage 恢復用戶資訊');
-    } catch (err) {
-      console.error('解析用戶資料失敗:', err);
-      localStorage.removeItem('user');
-    }
-    }
-
-    try {
-      const userInfoCookie = document.cookie
-        .split('; ')
-        .find(row => row.startsWith('user_info='))
-        ?.split('=').slice(1).join('=');
-
-      if (userInfoCookie) {
-        const userData = JSON.parse(decodeURIComponent(userInfoCookie));
-
-        // 如果 cookie 中的用戶與當前用戶不同 更新狀態
-        if (!user.value || user.value.id !== userData.id) {
-          user.value = userData;
-          localStorage.setItem('user', JSON.stringify(userData));
-          console.log('從 cookie 更新用戶資訊 (LINE 登入)');
-        }
-      }
-    } catch(err) {
-      console.error('從 cookie 讀取用戶資訊失敗:', err);
-    }
-
-    // 如果最終沒有用戶 清理所有狀態
-    if (!user.value) {
-      accessToken.value = null;
-      refreshToken.value = null;
-      localStorage.removeItem('access_token');
-      localStorage.removeItem('refresh_token');
-      localStorage.removeItem('user');
-      console.log('清理無效的登入狀態');
-    }
   }
 
   // 區分登入方式
