@@ -13,7 +13,6 @@ import Login from "@/views/member/auth/Login.vue"
 import Register from "@/views/member/auth/Register.vue";
 import NotFound from '../views/NotFound.vue'
 
-
 const routes = [
   { path: '/', redirect: '/home' },
   { path: '/home', name: 'Home', component: Home },
@@ -27,6 +26,7 @@ const routes = [
   { path: '/subscription', name: 'Subscription', component: Subscription },
   { path: '/cart', name: 'Cart', component: Cart },
   { path: '/payment', name: 'Payment', component: Payment },
+  { path: '/sub', name: 'EventInformation', component: EventInfo },
   { path: '/404', name: 'NotFound', component: NotFound },
   { path: '/:pathMatch(.*)*', redirect: '/404' }
 ]
