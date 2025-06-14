@@ -1,8 +1,6 @@
 @import "tailwindcss";
 @plugin "daisyui";
 
-/* 全站通用樣式 */
-
 :root {
   /* 主色 */
   --color-primary-red: #860914;
@@ -32,3 +30,4 @@
   --color-secondary-green: #d0de80;
   --color-black: #292929;
 } */
+

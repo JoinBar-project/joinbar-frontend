@@ -20,9 +20,8 @@
       </router-link>
     </div>
 
-    <!-- 登入表單 -->
-    <div class="mt-6 space-y-4">
-      <div class="space-y-4">
+    <div v-if="isLogin" class="mt-6 space-y-4">
+    <!-- 一般登入表單 -->
         <div class="space-y-1">
           <div 
             :class="[
@@ -93,7 +92,6 @@
       <div class="text-sm text-right mt-1 text-[var(--color-text-selected)] cursor-pointer hover:underline">
         忘記密碼？
       </div>
-
       <div class="flex items-center my-4">
         <div class="flex-grow h-px bg-[var(--color-icon-secondary)]"></div>
         <span class="px-4 text-[var(--color-text-selected)] text-sm">或</span>
@@ -105,18 +103,25 @@
           <img src="/google.svg" alt="Google logo" class="w-5 h-5 mr-2" />
           Login with Google
         </button>
-        <button class="btn bg-[var(--color-line-green)] text-white border-[var(--color-line-green-dark)] border-2 flex items-center px-4 py-2 rounded-lg hover:shadow-md transition">
+
+        <button 
+          @click="handleLineLogin"
+          :disabled="authStore.isLoading"
+        class="btn bg-[var(--color-line-green)] text-white border-[var(--color-line-green-dark)] border-2 flex items-center px-4 py-2 rounded-lg hover:shadow-md transition">
           <img src="/line.svg" alt="Line logo" class="w-5 h-5 mr-2" />
-          Login with LINE
+          <span v-if="authStore.isLineLoading">載入中...</span>
+          <span v-else>Login with LINE</span>
         </button>
       </div>
 
       <!-- 登入按鈕 -->
       <div class="flex justify-center">
         <button
-          @click="handleLogin"
+          @click="handleEmailLogin"
+          :disabled="authStore.isLoading || !loginForm.email || !loginForm.password"
           class="w-full max-w-[180px] py-2 bg-gradient-to-r from-[#fbdaca] to-[#eb96a4] text-[var(--color-black)] rounded-lg font-semibold mt-4 shadow-md transition duration-300 transform hover:scale-105 hover:brightness-110 hover:shadow-lg">
-          登入
+          <span v-if="authStore.isEmailLoading">登入中...</span>
+          <span v-else>登入</span>
         </button>
       </div>
 
@@ -136,15 +141,22 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref, onMounted } from 'vue';
+import { useRouter } from 'vue-router';
+import { useAuthStore } from '@/api/auth'
+import Swal from 'sweetalert2';
 
-const showPassword = ref(false)
+const authStore = useAuthStore()
+const router = useRouter();
+
+const isLogin = ref(true);
+const showPassword = ref(false);
 const showLoginSuccess = ref(false)
 
 const loginForm = ref({
   email: '',
   password: ''
-})
+});
 
 // 紀錄每個欄位是否有錯誤
 const errors = ref({
@@ -156,20 +168,17 @@ const errors = ref({
 const emailErrorMessage = ref('')
 const passwordErrorMessage = ref('')
 
-// 驗證電子郵件格式（必須包含英文字母和@符號）
 const validateEmail = (email) => {
   if (!email || email.trim() === '') {
     emailErrorMessage.value = '電子郵件為必填欄位'
     return false
   }
   
-  // 檢查是否包含@符號
   if (!email.includes('@')) {
     emailErrorMessage.value = '電子郵件格式不正確，必須包含@符號'
     return false
   }
   
-  // 檢查是否包含英文字母
   const hasEnglish = /[a-zA-Z]/.test(email)
   if (!hasEnglish) {
     emailErrorMessage.value = '電子郵件必須包含英文字母'
@@ -177,6 +186,19 @@ const validateEmail = (email) => {
   }
   
   return true
+}
+const handleEmailLogin = async () => {
+  const success = await authStore.emailLogin(loginForm.value.email, loginForm.value.password)
+  
+  if (success) {
+    loginForm.value.email = ''
+    loginForm.value.password = ''
+    router.push('/home')
+  }
+}
+
+const handleLineLogin = async () => {
+  await authStore.lineLogin()
 }
 
 // 驗證密碼格式
@@ -245,11 +267,29 @@ const handleLogin = () => {
 const useTestAccount = () => {
   loginForm.value.email = 'admin@test.com'
   loginForm.value.password = 'admin123'
+
   // 清除所有錯誤狀態
   errors.value.email = false
   errors.value.password = false
-  alert('已填入測試帳號')
+
+  Swal.fire({
+    title: '測試帳號已填入',
+    text: '已自動填入測試用的電子郵件和密碼',
+    icon: 'info',
+    confirmButtonText: '確認'
+  })
 }
+
+// 組件掛載時檢查 LINE 登入狀態
+onMounted(async () => {
+  // 初始化 store
+  authStore.init()
+  // 檢查 LINE 登入回調
+  const result = await authStore.checkLineCallback()
+  if (result?.success) {
+    router.push(result.redirect)
+  }
+})
 </script>
 
 <style scoped>

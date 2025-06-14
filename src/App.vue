@@ -13,7 +13,7 @@ import NavBar from '@/components/NavBar.vue'
 body {
   margin: 0;
   font-family: Arial, sans-serif;
-  /* overflow-x: hidden; */
+  overflow-x: hidden; /* 防止水平滾動條 */
 }
 
 .home {
