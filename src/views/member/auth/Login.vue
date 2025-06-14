@@ -126,7 +126,7 @@ const handleLineLogin = async () => {
 
 const useTestAccount = () => {
   loginForm.value.email = 'admin@test.com'
-  loginForm.value.password = 'admin123'
+  loginForm.value.password = 'Aa201201'
   Swal.fire({
     title: '測試帳號已填入',
     text: '已自動填入測試用的電子郵件和密碼',

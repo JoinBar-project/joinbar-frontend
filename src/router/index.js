@@ -12,7 +12,7 @@ import Cart from '@/views/cart/Cart.vue';
 import Payment from '@/views/cart/Payment.vue';
 import Login from '@/views/member/auth/Login.vue';
 import Register from '@/views/member/auth/Register.vue';
-import NotFound from '../views/NotFound.vue'
+import NotFound from '../views/NotFound.vue';
 
 const routes = [
   { path: '/', redirect: '/home' },
@@ -56,8 +56,8 @@ const routes = [
   { path: '/cart', name: 'Cart', component: Cart },
   { path: '/payment', name: 'Payment', component: Payment },
   { path: '/404', name: 'NotFound', component: NotFound },
-  { path: '/:pathMatch(.*)*', redirect: '/404' }
-]
+  { path: '/:pathMatch(.*)*', redirect: '/404' },
+];
 
 const router = createRouter({
   history: createWebHistory(),

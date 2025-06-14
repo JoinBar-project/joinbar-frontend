@@ -1,3 +1,68 @@
+<script setup>
+import { ref, onMounted, watch } from 'vue';
+import { useAuthStore } from '@/api/auth';
+import { useUserProfileStore } from '@/stores/userProfileStore';
+import { storeToRefs } from 'pinia';
+const authStore = useAuthStore();
+const { user } = storeToRefs(authStore);
+
+const userProfileStore = useUserProfileStore();
+const { profile } = storeToRefs(userProfileStore);
+
+const form = ref({
+  username: '',
+  nickname: '',
+  birthday: '',
+  preferences: {
+    types: [],
+    moods: [],
+  },
+});
+
+watch(
+  () => user.value?.id,
+  id => {
+    if (id) {
+      userProfileStore.getUserProfile(id);
+    }
+  },
+  { immediate: true }
+);
+
+watch(
+  () => profile.value,
+  newProfile => {
+    if (newProfile) {
+      form.value.username = newProfile.username || '';
+      form.value.nickname = newProfile.nickname || '';
+      form.value.birthday = newProfile.birthday || '';
+      form.value.preferences = newProfile.preferences || { types: [], moods: [] };
+    }
+  },
+  { immediate: true }
+);
+
+const profileFields = [
+  { model: 'username', placeholder: '姓名', icon: 'fa-solid fa-user', type: 'text' },
+  { model: 'nickname', placeholder: '暱稱', icon: 'fa-solid fa-user-pen', type: 'text' },
+  { model: 'birthday', placeholder: '生日', icon: 'fa-solid fa-cake-candles', type: 'date' },
+];
+
+const barTypes = ['運動酒吧', '音樂酒吧', '學生酒吧', '餐酒館', '暢飲店'];
+const barMoods = ['熱鬧歡樂', '浪漫私密', '復古懷舊', '高級精緻', '輕鬆悠閒'];
+
+const toggleSelection = (arr, value) => {
+  const index = arr.indexOf(value);
+  if (index > -1) arr.splice(index, 1);
+  else arr.push(value);
+};
+
+const handleSubmit = () => {
+  console.log('修改成功:', form.value);
+  alert('修改成功！');
+};
+</script>
+
 <template>
   <form @submit.prevent="handleSubmit" class="space-y-4 w-full max-w-md mx-auto mt-8">
     <div v-for="(field, index) in profileFields" :key="index" class="flex items-center border border-gray-300 rounded px-3 py-2 mb-3 bg-white">
@@ -49,54 +114,3 @@
     <button type="button" class="bg-gray-800 text-white px-4 py-2 rounded">編輯</button>
   </form>
 </template>
-
-<script setup>
-import { ref, onMounted, watch } from 'vue';
-import { useUserProfileStore } from '@/stores/userProfileStore';
-const userProfileStore = useUserProfileStore();
-
-const form = ref({
-  username: '',
-  nickname: '',
-  birthday: '',
-  confirmPassword: '',
-  preferences: {
-    types: [],
-    moods: [],
-  },
-});
-
-onMounted(() => {
-  userProfileStore.getUserProfile('123'); // 先放假的 id
-});
-
-watch(
-  () => userProfileStore.profile,
-  newValue => {
-    form.value.username = newValue.username;
-    form.value.nickname = newValue.nickname;
-    form.value.birthday = newValue.birthday;
-  },
-  { immediate: true }
-);
-
-const profileFields = [
-  { model: 'username', placeholder: '姓名', icon: 'fa-solid fa-user', type: 'text' },
-  { model: 'nickname', placeholder: '暱稱', icon: 'fa-solid fa-user-pen', type: 'text' },
-  { model: 'birthday', placeholder: '生日', icon: 'fa-solid fa-cake-candles', type: 'date' },
-];
-
-const barTypes = ['運動酒吧', '音樂酒吧', '學生酒吧', '餐酒館', '暢飲店'];
-const barMoods = ['熱鬧歡樂', '浪漫私密', '復古懷舊', '高級精緻', '輕鬆悠閒'];
-
-const toggleSelection = (arr, value) => {
-  const index = arr.indexOf(value);
-  if (index > -1) arr.splice(index, 1);
-  else arr.push(value);
-};
-
-const handleSubmit = () => {
-  console.log('修改成功:', form.value);
-  alert('修改成功！');
-};
-</script>
