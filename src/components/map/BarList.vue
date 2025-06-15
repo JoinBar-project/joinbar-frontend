@@ -82,8 +82,9 @@ const handleImageError = (event) => {
 
 // 營業時間格式化函式
 const getOpeningHourText = (bar) => {
-  if (bar.openingHours?.weekdayText?.length > 0) {
-    return bar.openingHours.weekdayText[0];
+  // 修正：從 weekday_text 屬性獲取營業時間
+  if (bar.openingHours?.weekday_text?.length > 0) {
+    return bar.openingHours.weekday_text[0];
   } else if (bar.openingHours) {
     return "營業時間待提供";
   } else {
@@ -98,18 +99,24 @@ const selectBar = (bar) => {
 };
 
 // 切換酒吧的收藏狀態，現在直接發出事件
+// 注意：isFavorite 函數在這裡沒有定義。這需要在父組件中處理，或者您需要傳入一個 favorites 列表。
+// 如果沒有定義，這會是一個 runtime error。暫時移除，等待父組件邏輯。
 const emitToggleWishlist = (placeId) => {
   if (!placeId) {
     console.warn("無法收藏/取消收藏，因為 place_id 不存在。");
     return;
   }
-  emit("toggle-wishlist", { placeId, isFavorite: isFavorite(placeId) });
+  // isFavorite(placeId) 在此組件中未定義，需要從父組件傳入或在父組件處理收藏狀態
+  // emit("toggle-wishlist", { placeId, isFavorite: isFavorite(placeId) });
+  // 暫時修改為僅發送 placeId，收藏狀態判斷由父組件負責
+  emit("toggle-wishlist", placeId);
 };
 
 watch(
   () => props.bars,
   (newBars) => {
-    console.log("BarList 接收到的 bars prop 並更新列表:", newBars.length);
+    // 這裡打印的 newBars.length 是 BarList 實際接收到的數據量
+    console.log("BarList 接收到的 bars prop 並更新列表，目前數量:", newBars.length);
   },
   { immediate: true }
 );

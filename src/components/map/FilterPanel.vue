@@ -161,7 +161,7 @@
 </template>
 
 <script setup>
-import { ref, defineEmits, onMounted, watch, defineProps, computed } from "vue";
+import { ref, defineEmits, watch, defineProps, computed } from "vue";
 
 const emit = defineEmits(["filter-changed", "close-panel"]);
 
@@ -175,8 +175,8 @@ const props = defineProps({
       maxDistance: 5000,
       minOpenHour: 0,
       minOpenMinute: 0,
-      maxOpenHour: 24,
-      maxOpenMinute: 0,
+      maxOpenHour: 24, // 這裡的 24 可能會造成問題，通常是 23
+      maxOpenMinute: 0, // 這裡的 0 通常用於 23:00，但如果想表示午夜，會是 00:00 (次日)
       tags: [],
     }),
   },
@@ -201,7 +201,7 @@ const popularTags = [
   "復古",
 ];
 const openTime = ref("00:00");
-const closeTime = ref("24:00");
+const closeTime = ref("23:59"); // 將預設值改為 23:59，這樣比較符合標準時間選擇器
 
 // 格式化已套用篩選條件以供顯示
 const appliedFiltersForDisplay = computed(() => {
@@ -245,25 +245,30 @@ const appliedFiltersForDisplay = computed(() => {
     });
   }
 
+  // 檢查營業時間篩選條件，處理 24:00 的情況
+  const currentMinHour = filters.value.minOpenHour;
+  const currentMinMinute = filters.value.minOpenMinute;
+  let currentMaxHour = filters.value.maxOpenHour;
+  let currentMaxMinute = filters.value.maxOpenMinute;
+
+  // 將 24:00 轉換為 00:00 (次日)
+  if (currentMaxHour === 24 && currentMaxMinute === 0) {
+    currentMaxHour = 0; // 表示到午夜
+  }
+
   if (
-    filters.value.minOpenHour !== 0 ||
-    filters.value.minOpenMinute !== 0 ||
-    filters.value.maxOpenHour !== 24 ||
-    filters.value.maxOpenMinute !== 0
+    currentMinHour !== 0 ||
+    currentMinMinute !== 0 ||
+    currentMaxHour !== 0 || // 這裡檢查調整後的 00:00
+    currentMaxMinute !== 0
   ) {
     const formatTime = (h, m) => {
       const hour = String(h).padStart(2, "0");
       const minute = String(m).padStart(2, "0");
       return `${hour}:${minute}`;
     };
-    const minTime = formatTime(
-      filters.value.minOpenHour,
-      filters.value.minOpenMinute
-    );
-    const maxTime = formatTime(
-      filters.value.maxOpenHour,
-      filters.value.maxOpenMinute
-    );
+    const minTime = formatTime(currentMinHour, currentMinMinute);
+    const maxTime = formatTime(currentMaxHour, currentMaxMinute);
 
     displayFilters.push({
       label: `營業時間: ${minTime} - ${maxTime}`,
@@ -271,7 +276,7 @@ const appliedFiltersForDisplay = computed(() => {
       value: {
         minHour: filters.value.minOpenHour,
         minMinute: filters.value.minOpenMinute,
-        maxHour: filters.value.maxOpenHour,
+        maxHour: filters.value.maxOpenHour, // 這裡仍然使用原始值，因為這是實際篩選邏輯會用的
         maxMinute: filters.value.maxOpenMinute,
       },
     });
@@ -306,14 +311,16 @@ const removeAppliedFilter = (type, value) => {
     case "openHour":
       filters.value.minOpenHour = 0;
       filters.value.minOpenMinute = 0;
-      filters.value.maxOpenHour = 24;
-      filters.value.maxOpenMinute = 0;
+      filters.value.maxOpenHour = 24; // 重置為預設的 24
+      filters.value.maxOpenMinute = 0; // 重置為預設的 0
+      openTime.value = "00:00";
+      closeTime.value = "23:59"; // 同步更新時間選擇器
       break;
     case "tags":
       filters.value.tags = filters.value.tags.filter((t) => t !== value);
       break;
   }
-  applyFilters();
+  applyFilters(); // 每次移除篩選後都重新應用篩選
 };
 
 // 更新距離數值輸入框並同步篩選
@@ -341,11 +348,45 @@ const updateDistanceRange = () => {
 
 const updateOpenHours = () => {
   const [minOpenHour, minOpenMinute] = openTime.value.split(":").map(Number);
-  const [maxOpenHour, maxOpenMinute] = closeTime.value.split(":").map(Number);
+  let [maxOpenHour, maxOpenMinute] = closeTime.value.split(":").map(Number);
+
+  // 處理如果選擇 00:00 作為結束時間，但實際上是表示午夜的情況
+  // 這通常意味著 "到今天結束"，但如果資料結構是 24 小時制，24:00 會更明確
+  // 這裡我們將 00:00 視為第二天的開始，並將其內部表示為 24:00 (如果原始是 24:00)
+  // 或者，如果選擇器設定為 23:59，則直接使用 23:59
+  if (maxOpenHour === 0 && maxOpenMinute === 0 && closeTime.value === "00:00") {
+      // 判斷是否為「午夜」的 00:00，如果是，考慮轉換為 24:00 方便後端處理
+      // 這需要根據後端或資料結構來決定
+      // 這裡簡單處理為，如果用戶選擇了 00:00，表示到午夜。
+      // 如果您的數據模型是 0-23 小時，那麼 00:00 就是下一天的開始
+      // 最簡單且兼容性好的處理是確保 min < max，或者考慮跨日邏輯。
+      // 目前您的 initialFilters 設置 maxOpenHour: 24, maxOpenMinute: 0
+      // 這裡將 00:00（次日）視為 24:00（當日結束）
+      if (openTime.value !== "00:00") { // 避免開始和結束都是 00:00
+         maxOpenHour = 24;
+         maxOpenMinute = 0;
+      }
+  }
+
+
   filters.value.minOpenHour = minOpenHour;
   filters.value.minOpenMinute = minOpenMinute;
   filters.value.maxOpenHour = maxOpenHour;
   filters.value.maxOpenMinute = maxOpenMinute;
+
+  // 確保開始時間不晚於結束時間（除非是跨日營業）
+  // 這裡的簡單檢查不處理跨日營業的情況
+  const startMinutes = minOpenHour * 60 + minOpenMinute;
+  const endMinutes = maxOpenHour * 60 + maxOpenMinute;
+
+  if (startMinutes > endMinutes && endMinutes !== 0) { // 允許 00:00 作為結束時間 (表示到午夜)
+      // 如果開始時間晚於結束時間 (且結束時間不是 00:00)，則調整結束時間為 23:59
+      // 或者您可以選擇互換或彈出提示
+      filters.value.maxOpenHour = minOpenHour;
+      filters.value.maxOpenMinute = minOpenMinute;
+      closeTime.value = openTime.value; // 同步 UI
+  }
+
   applyFilters();
 };
 
@@ -374,10 +415,12 @@ const resetFilters = () => {
     maxDistance: 5000,
     minOpenHour: 0,
     minOpenMinute: 0,
-    maxOpenHour: 24,
-    maxOpenMinute: 0,
+    maxOpenHour: 24, // 重置為預設的 24
+    maxOpenMinute: 0, // 重置為預設的 0
     tags: [],
   };
+  openTime.value = "00:00"; // 同步時間選擇器
+  closeTime.value = "23:59"; // 同步時間選擇器
   applyFilters();
 };
 
@@ -397,15 +440,21 @@ watch(
       filters.value = { ...newFilters, tags: [] };
     }
 
+    // 將 24:00 轉換為 00:00 (UI 顯示)
+    let displayMaxHour = newFilters.maxOpenHour;
+    if (displayMaxHour === 24 && newFilters.maxOpenMinute === 0) {
+        displayMaxHour = 0; // 對於 UI 顯示，24:00 可以顯示為 00:00
+    }
+
     openTime.value = `${String(newFilters.minOpenHour).padStart(2, "0")}:${String(newFilters.minOpenMinute).padStart(2, "0")}`;
-    closeTime.value = `${String(newFilters.maxOpenHour).padStart(2, "0")}:${String(newFilters.maxOpenMinute).padStart(2, "0")}`;
+    closeTime.value = `${String(displayMaxHour).padStart(2, "0")}:${String(newFilters.maxOpenMinute).padStart(2, "0")}`;
   },
   { deep: true, immediate: true }
 );
-
 </script>
 
 <style scoped>
+/* 樣式保持不變 */
 .applied-filters-list-wrapper {
   margin-bottom: 24px;
   display: flex;
