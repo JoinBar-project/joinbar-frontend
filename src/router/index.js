@@ -1,15 +1,15 @@
-import { createRouter, createWebHistory } from 'vue-router'
+import { createRouter, createWebHistory } from "vue-router";
 
-import Home from '@/views/home/Home.vue'
-import Event from '@/views/events/Event.vue'
-import EventInfo from '@/views/events/EventInfo.vue'
-import MapView from '@/views/map/MapView.vue'
-import Member from '@/views/member/auth/Member.vue'
-import Reviews from '@/views/reviews/Reviews.vue'
-import Subscription from '@/views/sub/Subscription.vue'
-import Cart from '@/views/cart/Cart.vue'
-import Payment from "@/views/cart/Payment.vue"
-import Login from "@/views/member/auth/Login.vue"
+import Home from "@/views/home/Home.vue";
+import Event from "@/views/events/Event.vue";
+import EventInfo from "@/views/events/EventInfo.vue";
+import MapView from "@/views/map/MapView.vue";
+import Member from "@/views/member/auth/Member.vue";
+import Reviews from "@/views/reviews/Reviews.vue";
+import Subscription from "@/views/sub/Subscription.vue";
+import Cart from "@/views/cart/Cart.vue";
+import Payment from "@/views/cart/Payment.vue";
+import Login from "@/views/member/auth/Login.vue";
 import Register from "@/views/member/auth/Register.vue";
 import NotFound from '../views/NotFound.vue'
 
@@ -34,6 +34,6 @@ const routes = [
 const router = createRouter({
   history: createWebHistory(),
   routes,
-})
+});
 
-export default router
+export default router;
