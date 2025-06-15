@@ -1,5 +1,6 @@
 <template>
-  <div class="max-w-md mx-auto mt-10 mb-10 p-6 bg-[var(--color-black)] rounded-xl shadow-xl  relative">
+  <div class="flex justify-center items-start pt-10 px-4 min-h-screen">
+    <div class="max-w-[424px] mx-auto p-6 bg-[var(--color-black)] rounded-xl shadow-xl  relative">
     
     <transition name="alert-slide">
       <div v-if="showRegisterSuccess" role="alert" class="alert alert-success absolute -top-8 left-0 right-0 z-10">
@@ -10,8 +11,8 @@
       </div>
     </transition>
     
-    <div class="flex border-b border-[var(--color-text-unselected)]">
-      <router-link to="/login" class="flex-1 py-2 text-center font-semibold text-[var(--color-text-unselected)] hover:text-[var(--color-secondary-green)] transition">
+    <div class="flex border-b border-[var(--color-icon-secondary)]">
+      <router-link to="/login" class="flex-1 py-2 text-center font-semibold text-[var(--color-icon-secondary)] hover:text-[var(--color-secondary-green)] transition">
         會員登入
       </router-link>
       <button
@@ -22,7 +23,7 @@
     </div>
 
     <transition name="slide-fade" mode="out-in">
-      <div :key="step">
+      <div :key="step" class="w-[380px]">
         <!-- Step 1: 註冊表單 -->
         <div v-if="step === 1" class="space-y-4 mt-6">
           <h2 class="text-lg font-semibold mb-4" style="color: var(--color-primary-orange);">建立帳號</h2>
@@ -107,10 +108,10 @@
 
           <div>
             <h3 class="text-base font-medium mb-2 text-[var(--color-secondary-green)]">酒吧類型</h3>
-            <div class="grid grid-cols-3 grid-rows-2 gap-3 ">
+            <div class="grid grid-cols-3 gap-3 ">
               <button v-for="type in barTypes" :key="type" 
                 @click="toggleSelection(form.preferences.types, type)"
-                :class="['text-sm py-2 rounded-full border transition duration-200 cursor-pointer']"
+                :class="['min-w-[80px] text-sm py-2 rounded-full border transition duration-200 cursor-pointer']"
                 :style="form.preferences.types.includes(type)
                   ? 'background-color: var(--color-primary-orange); color: white; border-color: var(--color-primary-orange);'
                   : 'background-color: var(--color-icon-secondary); color: var(--color-black); border-color: var(--color-black);'">
@@ -121,10 +122,10 @@
 
           <div>
             <h3 class="text-base font-medium mb-2 text-[var(--color-secondary-green)]">酒吧氛圍</h3>
-            <div class="grid grid-cols-3 grid-rows-2 gap-2">
+            <div class="grid grid-cols-3 gap-2">
               <button v-for="mood in barMoods" :key="mood"
                 @click="toggleSelection(form.preferences.moods, mood)"
-                :class="['text-sm py-2 rounded-full border transition duration-200 cursor-pointer']"
+                :class="['min-w-[80px] text-sm py-2 rounded-full border transition duration-200 cursor-pointer']"
                 :style="form.preferences.moods.includes(mood)
                   ? 'background-color: var(--color-primary-orange); color: white; border-color: var(--color-primary-orange);'
                   : 'background-color: var(--color-icon-secondary); color: var(--color-black); border-color: var(--color-black);'">
@@ -149,6 +150,8 @@
       </div>
     </transition>
   </div>
+  </div>
+  
 </template>
 
 <script setup>

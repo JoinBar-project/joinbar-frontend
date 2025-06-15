@@ -1,5 +1,6 @@
 <template>
-  <div class="relative max-w-md mx-auto mt-10 p-6 bg-[var(--color-black)] rounded-xl shadow-xl">
+  <div class="flex justify-center items-start pt-10 min-h-[calc(100vh-6rem)]">
+    <div class="relative max-w-[424px] mx-auto p-6 bg-[var(--color-black)] rounded-xl shadow-xl">
     
     <transition name="alert-slide">
       <div v-if="showLoginSuccess" role="alert" class="alert alert-success alert-soft absolute -top-8 left-0 right-0 z-10">
@@ -10,12 +11,12 @@
       </div>
     </transition>
     
-    <div class="flex border-b border-[var(--color-text-unselected)]">
+    <div class="flex border-b border-[var(--color-icon-secondary)]">
       <button
         class="flex-1 py-2 text-center font-semibold border-b-3 border-[var(--color-secondary-green)] text-[var(--color-secondary-green)]">
         會員登入
       </button>
-      <router-link to="/register" class="flex-1 py-2 text-center font-semibold text-[var(--color-text-unselected)] hover:text-[var(--color-secondary-green)] transition">
+      <router-link to="/register" class="flex-1 py-2 text-center font-semibold text-[var(--color-icon-secondary)] hover:text-[var(--color-secondary-green)] transition">
         註冊
       </router-link>
     </div>
@@ -138,6 +139,7 @@
         </router-link>
       </div>
     </div>
+  </div>
 </template>
 
 <script setup>
