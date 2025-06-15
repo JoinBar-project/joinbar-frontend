@@ -35,6 +35,11 @@ const routes = [
         component: () => import('@/views/member/profile/Profile.vue'),
       },
       {
+        path: 'profile/edit',
+        name: 'MemberProfileEdit',
+        component: ()=> import("@/views/member/profile/ProfileEdit.vue")
+      },
+      {
         path: 'event-records',
         name: 'MemberEventRecords',
         component: () => import('@/views/member/profile/EventRecords.vue'),

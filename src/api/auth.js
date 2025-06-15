@@ -201,11 +201,11 @@ export const useAuthStore = defineStore('auth', () => {
       localStorage.setItem('refresh_token', refreshToken.value);
       localStorage.setItem('user', JSON.stringify(user.value));
 
-      await Swal.fire({
-        title: '登入成功!',
-        icon: 'success',
-        confirmButtonText: '開始使用'
-      });
+      // await Swal.fire({
+      //   title: '登入成功!',
+      //   icon: 'success',
+      //   confirmButtonText: '開始使用'
+      // });
 
       return true;
 
