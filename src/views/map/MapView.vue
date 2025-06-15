@@ -1,4 +1,4 @@
-<template>
+<!-- <template>
   <div class="map-view-container">
     <div class="top-left-controls">
       <button
@@ -950,4 +950,4 @@ watch(selectedBar, (newVal) => {
     width: 100%;
   }
 }
-</style>
+</style> -->
