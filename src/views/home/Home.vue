@@ -18,7 +18,7 @@ onMounted(() => {
   showAd.value = true
 })
 
-const videoUrl = new URL('@/assets/homepage/JOINBAR-NOLOGO3.mp4', import.meta.url).href
+const videoUrl = new URL('@/assets/homepage/JOINBAR-NOLOGO.mp4', import.meta.url).href
 
 const features = [
   {
@@ -134,63 +134,34 @@ const bars = [
 </template>
 
 <style scoped>
+@reference "tailwindcss";
 
 .hero {
-  text-align: center;
-  position: relative;
-  overflow: hidden;
-  height: 100vh;
+  @apply text-center relative overflow-hidden h-screen;
 }
 
 .hero-bg-video {
-  position: absolute;
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  z-index: 0;
+  @apply absolute w-full h-full object-cover z-0;
 }
 
 .hero-main-visual {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 20px;
-  position: relative;
+  @apply flex flex-col items-center gap-[20px] relative;
 }
 
 .hero-main-visual img {
-  position: relative;
-  z-index: 1;
+  @apply relative z-[1];
 }
 
 .hero-main-visual h1 {
-  font-size: 20px;
-  position: relative;
-  z-index: 2;
-  color: white;
-  text-shadow: 0 2px 4px rgba(0,0,0,0.5);
+  @apply text-[20px] relative z-[2] text-white ;
 }
 
 .frosted-mask {
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  backdrop-filter: blur(6px);
-  -webkit-backdrop-filter: blur(6px);
-  z-index: 1;
+  @apply absolute bottom-0 left-0 w-full h-full backdrop-blur-[6px] z-[1];
 }
 
 .hero-content {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  gap: 2rem;
-  position: relative;
-  max-width: 600px;
-  margin: 0 auto;
-  z-index: 2;
+  @apply flex justify-center items-center gap-[32px] relative max-w-[600px] mx-auto z-[2];
 }
 
 .features-section, .popular-bars-section {
