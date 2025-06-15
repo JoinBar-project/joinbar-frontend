@@ -1,6 +1,6 @@
 <template>
   <div class="bar-list-wrapper">
-    <div v-if="bars.length === 0" class="text-gray-600 no-results">
+    <div v-if="bars.length === 0" class="no-results">
       目前沒有符合條件的酒吧。
     </div>
     <div v-else class="bar-cards-list">
@@ -12,20 +12,20 @@
       >
         <div class="bar-card-image">
           <img
-            :src="bar.imageUrl || 'https://placehold.co/300x200/decdd5/860914?text=Bar+Image'"
+            :src="bar.imageUrl || defaultPlaceholderImage"
             :alt="bar.name"
-            class="object-cover w-full h-full rounded-t-lg"
-            width="300"
-            height="200"
+            class="bar-image"
+            loading="lazy"
+            @error="handleImageError"
           />
           <button
             class="wishlist-button"
-            @click.stop="emitToggleWishlist(bar.place_id)"
+            @click.stop="emitToggleWishlist(bar.place_id, bar.isWishlisted)"
             :aria-label="bar.isWishlisted ? '取消收藏' : '加入收藏'"
           >
             <svg
               xmlns="http://www.w3.org/2000/svg"
-              class="w-6 h-6"
+              class="wishlist-icon"
               :fill="bar.isWishlisted ? 'red' : 'white'"
               viewBox="0 0 24 24"
               stroke="none"
@@ -37,26 +37,21 @@
           </button>
         </div>
         <div class="bar-card-content">
-          <h3 class="text-gray-900 bar-name">{{ bar.name }}</h3>
+          <h3 class="bar-name">{{ bar.name }}</h3>
           <div class="bar-rating-price">
-            <span class="text-gray-700 bar-rating"
-              >⭐️ {{ bar.rating || "N/A" }}</span
-            >
-            <span class="ml-1 text-gray-700 bar-reviews">
-              ({{ bar.reviews || "0" }} 評論)</span
-            >
+            <span class="bar-rating">⭐️ {{ bar.rating || "N/A" }}</span>
+            <span class="bar-reviews"> ({{ bar.user_ratings_total || "0" }} 評論)</span>
+            <span class="bar-price">NT$ {{ bar.priceRange || "???" }}</span>
           </div>
 
           <div v-if="bar.tags && bar.tags.length" class="bar-tags">
-            <span
-              v-for="(tag, index) in bar.tags"
-              :key="index"
-              class="text-gray-600 bar-tag"
-              >{{ tag }}</span
-            >
+            <span v-for="tag in bar.tags" :key="tag" class="bar-tag">{{
+              tag
+            }}</span>
           </div>
-          <div class="text-gray-700 bar-hours">
-            {{ getOpeningHourText(bar) }}
+
+          <div class="bar-hours">
+            {{ bar.openingHoursText || "營業時間未提供" }}
           </div>
         </div>
       </div>
@@ -64,81 +59,49 @@
   </div>
 </template>
 
-<script setup lang="ts">
-import { ref, watch } from "vue";
-import type { PropType } from "vue";
+<script setup>
+import { watch, ref } from "vue";
 
-// --- 類型定義 ---
-interface Bar {
-  id?: string;
-  place_id?: string;
-  name: string;
-  imageUrl?: string;
-  rating?: number;
-  reviews?: number;
-  tags?: string[];
-  types?: string[];
-  openingHours?: any | { weekday_text?: string[] };
-  opening_hours?: any | { weekday_text?: string[] };
-  location?: { lat: number; lng: number };
-  description?: string;
-  isWishlisted?: boolean;
-  distance?: number;
-}
-
-// --- Props 與 Emits ---
 const props = defineProps({
   bars: {
-    type: Array as PropType<Bar[]>,
+    type: Array,
     default: () => [],
   },
 });
 
-const emit = defineEmits(["bar-selected", "toggle-wishlist"]); // 新增 toggle-wishlist 事件
+const emit = defineEmits(["bar-selected", "toggle-wishlist"]);
 
-// --- 響應式狀態 ---
-// 使用 Set 存儲收藏的 place_id，便於快速查找和增刪
-const favoritePlaceIds = ref<Set<string>>(new Set());
+const defaultPlaceholderImage =
+  "https://placehold.co/300x200/decdd5/860914?text=Bar+Image";
 
-// ----------------------------------------------------------------------
-// 事件處理函式
-// ----------------------------------------------------------------------
+const handleImageError = (event) => {
+  event.target.src = defaultPlaceholderImage;
+  event.target.onerror = null;
+};
 
-// 選中酒吧並發送事件給父組件
-const selectBar = (bar: Bar) => {
+// 移除 getOpeningHourText 函數，直接使用 bar.openingHoursText
+// const getOpeningHourText = (bar) => {
+//   if (bar.openingHours?.weekdayText?.length > 0) {
+//     return bar.openingHours.weekdayText[0];
+//   } else if (bar.openingHours) {
+//     return "營業時間待提供";
+//   } else {
+//     return "未提供營業時間";
+//   }
+// };
+
+const selectBar = (bar) => {
   emit("bar-selected", bar);
 };
 
-// 切換酒吧的收藏狀態，現在直接發出事件
-const emitToggleWishlist = (placeId: string | undefined) => {
+// 修改 emitToggleWishlist，直接傳遞當前的 isWishlisted 狀態
+const emitToggleWishlist = (placeId, isWishlisted) => {
   if (!placeId) {
     console.warn("無法收藏/取消收藏，因為 place_id 不存在。");
     return;
   }
-  if (favoritePlaceIds.value.has(placeId)) {
-    favoritePlaceIds.value.delete(placeId);
-    console.log(`取消收藏: ${placeId}`);
-  } else {
-    favoritePlaceIds.value.add(placeId);
-    console.log(`收藏: ${placeId}`);
-  }
-  emit("toggle-wishlist", placeId);
+  emit("toggle-wishlist", { placeId, isFavorite: isWishlisted });
 };
-
-// 顯示營業時間
-function getOpeningHourText(bar: Bar): string {
-  if (bar.openingHours && bar.openingHours.weekday_text && bar.openingHours.weekday_text.length > 0) {
-    return bar.openingHours.weekday_text[0];
-  }
-  if (bar.opening_hours && bar.opening_hours.weekday_text && bar.opening_hours.weekday_text.length > 0) {
-    return bar.opening_hours.weekday_text[0];
-  }
-  return '未提供營業時間';
-}
-
-// ----------------------------------------------------------------------
-// Vue 生命週期與監聽器 (僅用於偵錯，實際應用可能移除)
-// ----------------------------------------------------------------------
 
 watch(
   () => props.bars,
@@ -150,19 +113,13 @@ watch(
 </script>
 
 <style scoped>
-/* 您的現有樣式，已移除 color 相關的屬性，讓 Tailwind 類別來控制顏色 */
-
 .bar-list-wrapper {
   padding: 16px;
-  /* 移除這裡的 height 和 overflow 樣式，它們應該由父組件控制 */
-  /* height: 100%; */
-  /* overflow-y: auto; */
-  /* overflow-x: hidden; */ /* 僅在父組件設置，讓它負責側邊欄的滾動 */
 }
 
 .no-results {
   text-align: center;
-  /* color: #666; <--- 已移除，因為模板中已添加 text-gray-600 */
+  color: #6b7280;
   padding: 32px;
   font-size: 18px;
 }
@@ -171,15 +128,13 @@ watch(
   display: flex;
   flex-direction: column;
   gap: 16px;
-  /* 移除這裡的任何 height 或 max-height，讓它自然撐開內容 */
-  /* 確保沒有 overflow 屬性，除非你希望卡片列表內部有自己的滾動條 */
 }
 
 .bar-card {
   background-color: #ffffff;
   border-radius: 12px;
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-  overflow: hidden; /* 為了圓角，保留 */
+  overflow: hidden;
   cursor: pointer;
   transition:
     transform 0.2s ease-in-out,
@@ -187,7 +142,7 @@ watch(
   border: 1px solid #f0f0f0;
   display: flex;
   flex-direction: column;
-  position: relative; /* 確保子元素的絕對定位是相對於卡片 */
+  position: relative;
 }
 
 .bar-card:hover {
@@ -199,13 +154,15 @@ watch(
   width: 100%;
   height: 180px;
   overflow: hidden;
-  position: relative; /* 確保 wishlist-button 可以相對於圖片定位 */
+  position: relative;
 }
 
-.bar-card-image img {
+.bar-image {
   width: 100%;
   height: 100%;
-  object-fit: cover;
+  object-fit: cover; /* 修改：確保圖片填充整個區域 */
+  border-top-left-radius: 12px;
+  border-top-right-radius: 12px;
 }
 
 .wishlist-button {
@@ -221,27 +178,23 @@ watch(
   align-items: center;
   justify-content: center;
   transition: background-color 0.2s;
-  z-index: 10; /* 確保在圖片和其他內容上方 */
+  z-index: 10;
 }
 
 .wishlist-button:hover {
   background-color: rgba(0, 0, 0, 0.6);
 }
 
-/* 愛心圖標的顏色控制 */
-.wishlist-button svg {
-  fill: white; /* 預設愛心顏色為白色 */
-  transition: fill 0.2s ease; /* 為 fill 屬性添加過渡效果 */
+.wishlist-icon {
+  width: 24px;
+  height: 24px;
+  fill: white;
+  transition: fill 0.2s ease;
 }
 
-/* 當滑鼠懸停在按鈕上且未收藏時，SVG 的顏色變為 red-400 的效果 */
-.wishlist-button:not([fill="red"]):hover svg {
-  /* 檢查非紅色的情況下 hover */
-  fill: #f87171; /* Tailwind's red-400 */
+.wishlist-button:not([fill="red"]):hover .wishlist-icon {
+  fill: #f87171;
 }
-
-/* 收藏狀態的愛心顏色由模板中的 :fill="bar.isWishlisted ? 'red' : 'white'" 控制 */
-/* 所以不需要額外的 .favorite class 或複雜的 CSS 規則來控制紅色狀態 */
 
 .bar-card-content {
   padding: 16px;
@@ -253,7 +206,7 @@ watch(
 .bar-name {
   font-size: 20px;
   font-weight: 700;
-  /* color: #333; */
+  color: #1a202c;
   margin-bottom: 8px;
   white-space: nowrap;
   overflow: hidden;
@@ -262,41 +215,54 @@ watch(
 
 .bar-rating-price {
   display: flex;
-  justify-content: space-between;
+  /* justify-content: space-between; */ /* 移除這個，讓元素自然排列 */
   align-items: center;
   margin-bottom: 8px;
+  gap: 8px; /* 新增：元素間距 */
 }
 
 .bar-rating {
   font-size: 14px;
-  /* color: #666;*/
+  color: #4a5568;
   display: flex;
   align-items: center;
+  white-space: nowrap; /* 避免換行 */
 }
 
-.bar-rating .star-icon {
-  margin-right: 3px;
+.bar-reviews {
+  /* margin-left: 4px; */ /* 移除這個，由 gap 控制間距 */
+  font-size: 14px;
+  color: #4a5568;
+  white-space: nowrap; /* 避免換行 */
+}
+
+.bar-price {
+  font-size: 16px;
+  font-weight: 600;
+  color: #ea580c;
+  margin-left: auto; /* 將價格推到最右邊 */
+  white-space: nowrap; /* 避免換行 */
 }
 
 .bar-tags {
   display: flex;
   flex-wrap: wrap;
-  gap: 12px;
+  gap: 8px; /* 調整間距，看起來更緊湊 */
   margin-bottom: 12px;
 }
 
 .bar-tag {
   background-color: #f0f0f0;
-  color: #495057;
-  padding: 5px 11px;
-  border-radius: 16px;
-  font-size: 13px;
+  color: #4a5568;
+  padding: 4px 8px; /* 調整 padding */
+  border-radius: 12px; /* 調整圓角 */
+  font-size: 12px; /* 調整字體大小 */
   white-space: nowrap;
 }
 
 .bar-hours {
   font-size: 14px;
-  /* color: #888;  */
+  color: #4a5568;
   margin-top: auto;
 }
 </style>
