@@ -124,14 +124,14 @@ onMounted(() => {
             placeholder="來分享你的想法吧！"
           >
           </textarea>
-          <div class="messgae-tool">
+          <div class="message-tool">
             <i @click="handleEmojiModal" class="fa-regular fa-face-smile"></i>
             <emoji-picker 
               v-if="showEmojiModal" 
               @emoji-click="handleEmojiSelect" 
               class="emoji emoji-picker"
             ></emoji-picker>
-            <button @click="submitMessage" class="messgae-btn" type="button">送出</button>
+            <button @click="submitMessage" class="message-btn" type="button">送出</button>
           </div>
           <div>
           </div>
@@ -228,7 +228,7 @@ onMounted(() => {
   margin-bottom: 30px;
 }
 
-.messgae-btn{
+.message-btn{
   border-radius: 6px;
   background-color: var(--color-secondary-green);
   border: 0 solid;
@@ -237,7 +237,7 @@ onMounted(() => {
   cursor: pointer;
 }
 
-.messgae-btn:hover{
+.message-btn:hover{
   background-color: var(--color-primary-orange);
 }
 
@@ -251,7 +251,7 @@ onMounted(() => {
   color: var(--color-primary-orange);
 }
 
-.messgae-tool{
+.message-tool{
   display: flex;
   position: relative;
   justify-content: end;
