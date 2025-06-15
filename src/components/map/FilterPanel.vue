@@ -200,6 +200,7 @@ const popularTags = [
   "爵士樂",
   "復古",
 ];
+const districtTags = ["信義區", "大安區", "中山區", "松山區", "萬華區", "士林區"];
 const openTime = ref("00:00");
 const closeTime = ref("23:59"); // 將預設值改為 23:59，這樣比較符合標準時間選擇器
 
@@ -391,14 +392,21 @@ const updateOpenHours = () => {
 };
 
 const toggleTag = (tag) => {
-  if (!Array.isArray(filters.value.tags)) {
-    filters.value.tags = [];
-  }
-  const index = filters.value.tags.indexOf(tag);
-  if (index > -1) {
-    filters.value.tags.splice(index, 1);
+  if (districtTags.includes(tag)) {
+    // 如果是行政區標籤，直接設為地點
+    filters.value.address = tag;
+    // 並且移除 tags 裡的該行政區（避免重複）
+    filters.value.tags = filters.value.tags.filter(t => t !== tag);
   } else {
-    filters.value.tags.push(tag);
+    if (!Array.isArray(filters.value.tags)) {
+      filters.value.tags = [];
+    }
+    const index = filters.value.tags.indexOf(tag);
+    if (index > -1) {
+      filters.value.tags.splice(index, 1);
+    } else {
+      filters.value.tags.push(tag);
+    }
   }
   applyFilters();
 };
