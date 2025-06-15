@@ -58,33 +58,18 @@ onUnmounted(() => {
 </template>
 
 <style scoped>
+@reference "tailwindcss";
+
 .footer {
-  position: fixed;
-  bottom: 0;
-  left: 0;
-  width: 100%;
-  background-color: var(--color-black);
-  color: #e0e0e0;
-  padding: 2rem 5%;
-  box-sizing: border-box;
-  z-index: 1000;
-  transform: translateY(100%);
-  opacity: 0;
-  transition: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
-  box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.3);
+  @apply fixed bottom-0 left-0 w-full bg-black text-[#e0e0e0] px-[5%] py-8 box-border z-[1000] translate-y-full opacity-0 transition-all duration-[400ms] ease-[cubic-bezier(0.25,0.46,0.45,0.94)] shadow-[0_-1_5_rgba(0,0,0,0.3)];
 }
 
 .footer-visible {
-  transform: translateY(0);
-  opacity: 1;
+  @apply translate-y-0 opacity-100;
 }
 
 .footer-content {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 2rem;
-  margin: 0 auto;
+  @apply flex items-center justify-between gap-8 mx-auto;
 }
 
 .footer-logo img {
@@ -93,46 +78,31 @@ onUnmounted(() => {
 }
 
 .footer-links {
-  display: flex;
-  gap: 2rem;
+  @apply flex gap-8;
 }
 
 .footer-links a {
-  color: #e0e0e0;
-  text-decoration: none;
-  transition: color 0.3s ease;
-  font-weight: 500;
+  @apply text-[#e0e0e0] no-underline transition-colors duration-300 ease-in-out font-medium;
 }
 
 .footer-links a:hover {
-  color: #ffffff;
+  @apply text-white;
 }
 
 .footer-socials {
-  display: flex;
-  gap: 1rem;
+  @apply flex gap-4;
 }
 
 .footer-socials a {
-  font-size: 1.2rem;
-  transition: all 0.3s ease;
-  padding: 0.5rem;
+  @apply text-xl transition-all duration-300 ease-in-out p-2;
 }
 
 .footer-socials a:hover {
-  color: #ffffff;
-  background-color: rgba(255, 255, 255, 0.2);
-  transform: translateY(-2px);
+  @apply text-white bg-white/20 -translate-y-0.5;
 }
 
 .footer-bottom {
-  text-align: center;
-  font-size: 0.9rem;
-  opacity: 0.8;
-  margin: 0 auto;
-  max-width: 1200px;
-  border-top: 1px solid rgba(255, 255, 255, 0.1);
-  padding-top: 1rem;
+  @apply text-center text-sm opacity-80 mx-auto max-w-[300px] border-t border-white/10 pt-4;
 }
 
 </style>
