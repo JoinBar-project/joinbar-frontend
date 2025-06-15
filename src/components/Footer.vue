@@ -7,22 +7,24 @@ const handleScroll = () => {
   const scrollTop = window.pageYOffset || document.documentElement.scrollTop
   const windowHeight = window.innerHeight
   const documentHeight = document.documentElement.scrollHeight
-  
+
   const threshold = 100
   const isNearBottom = scrollTop + windowHeight >= documentHeight - threshold
-  
-  isFooterVisible.value = isNearBottom
+
+  if (isNearBottom && !isFooterVisible.value) {
+    isFooterVisible.value = true
+  } else if (!isNearBottom && isFooterVisible.value) {
+    isFooterVisible.value = false
+  }
 }
 
 onMounted(() => {
   window.addEventListener('scroll', handleScroll)
-  handleScroll()
 })
 
 onUnmounted(() => {
   window.removeEventListener('scroll', handleScroll)
 })
-
 </script>
 
 <template>
