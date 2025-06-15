@@ -6,21 +6,19 @@ import adImageFile from '@/assets/homepage/subscribe.jpg'
 const showAd = ref(false)
 const adImage = adImageFile
 
-
-onMounted(() => {
-  const hasSeenAd = localStorage.getItem('hasSeenAd')
-  if (!hasSeenAd) {
-    showAd.value = true
-    localStorage.setItem('hasSeenAd', 'true')
-  }
-})
-
 // onMounted(() => {
-//   showAd.value = true
+//   const hasSeenAd = localStorage.getItem('hasSeenAd')
+//   if (!hasSeenAd) {
+//     showAd.value = true
+//     localStorage.setItem('hasSeenAd', 'true')
+//   }
 // })
 
+onMounted(() => {
+  showAd.value = true
+})
 
-const videoUrl = new URL('@/assets/homepage/JOINBAR-NOLOGO.mp4', import.meta.url).href
+const videoUrl = new URL('@/assets/homepage/JOINBAR-NOLOGO3.mp4', import.meta.url).href
 
 const features = [
   {
@@ -28,7 +26,7 @@ const features = [
     desc: "參與我們舉辦的品酒會、派對等精彩活動。",
     image: "/wine.gif",
     path: "/event",
-    gridArea: "1 / 2 / 3 / 4" // large feature
+    gridArea: "1 / 2 / 3 / 4"
   },
   {
     title: "酒吧地圖",
