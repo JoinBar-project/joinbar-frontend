@@ -2,11 +2,16 @@
 @plugin "daisyui";
 
 :root {
- 
+  /* 主色 */
+  --color-primary-red: #860914;
+  --color-primary-orange: #e1ac67;
+  --color-secondary-pink: #decdd5;
+  --color-secondary-green: #afb18c;
+  --color-black: #3A3435;
+
   /* 字體色 */
-  --color-text-selected: #f5d1c0;
+  --color-main-text: #ebd3af;
   --color-text-unselected: #937e7e;
-  --color-text-warn: #eb96a4;
 
   /* icon 色 */
   --color-icon-secondary: #bcaea4;
@@ -16,3 +21,12 @@
   --color-line-green-dark: #00b544;
   --color-select: #d17361;
 }
+
+/* :root {
+  --color-primary-red: #d4624e;
+  --color-primary-orange: #f2bf56;
+  --color-secondary-pink: #f4dad9;
+  --color-secondary-green: #d0de80;
+  --color-black: #292929;
+} */
+

@@ -12,10 +12,10 @@
     
     <div class="flex border-b border-[var(--color-text-unselected)]">
       <button
-        class="flex-1 py-2 text-center font-semibold border-b-3 border-[var(--color-text-selected)] text-[var(--color-text-selected)]">
+        class="flex-1 py-2 text-center font-semibold border-b-3 border-[var(--color-secondary-green)] text-[var(--color-secondary-green)]">
         會員登入
       </button>
-      <router-link to="/register" class="flex-1 py-2 text-center font-semibold text-[var(--color-text-unselected)] hover:text-[var(--color-text-selected)] transition">
+      <router-link to="/register" class="flex-1 py-2 text-center font-semibold text-[var(--color-text-unselected)] hover:text-[var(--color-secondary-green)] transition">
         註冊
       </router-link>
     </div>
@@ -27,8 +27,8 @@
       :class="[
         'flex items-center border rounded px-3 py-2 transition-colors',
         errors.email 
-          ? 'border-[var(--color-text-warn)] border-2 bg-white'
-          : 'border-[var(--color-text-selected)]'
+          ? 'border-[var(--color-primary-orange)] border-2 bg-white'
+          : 'border-[var(--color-icon-secondary)]'
       ]">
       <i class="fa-solid fa-envelope mr-2"
         :class="errors.email ? 'text-[var(--color-black)]' : 'text-[var(--color-icon-secondary)]'">
@@ -43,12 +43,12 @@
         :class="[
           'w-full outline-none placeholder-opacity-70 transition-colors text-sm ml-2',
           errors.email 
-            ? 'text-[var(--color-primary-red)] placeholder-[var(--color-text-warn)]' 
-            : 'text-[var(--color-text-selected)] placeholder-[var(--color-text-selected)]'
+            ? 'text-[var(--color-primary-orange)] placeholder-[var(--color-primary-orange)]' 
+            : 'text-[var(--color-secondary-green)] placeholder-[var(--color-secondary-green)]'
         ]"/>
       </div>
 
-          <div v-if="errors.email" class="text-[var(--color-text-warn)] text-xs ml-1">
+          <div v-if="errors.email" class="text-[var(--color-primary-orange)] text-xs ml-1">
             {{ emailErrorMessage }}
           </div>
         </div>
@@ -58,8 +58,8 @@
             :class="[
               'relative flex items-center border rounded px-3 py-2 transition-colors',
               errors.password 
-                ? 'border-[var(--color-text-warn)] border-2 bg-white'
-                : 'border-[var(--color-text-selected)]'
+                ? 'border-[var(--color-primary-orange)] border-2 bg-white'
+                : 'border-[var(--color-icon-secondary)]'
             ]">
             <i class="fa-solid fa-key mr-2" 
             :class="errors.password ? 'text-[var(--color-black)]' : 'text-[var(--color-icon-secondary)]'">
@@ -72,8 +72,8 @@
               :class="[
                 'w-full outline-none placeholder-opacity-70 transition-colors text-sm ml-2',
                 errors.password 
-                  ? 'text-[var(--color-primary-red)] placeholder-[var(--color-text-warn)]' 
-                  : 'text-[var(--color-text-selected)] placeholder-[var(--color-text-selected)]'
+                  ? 'text-[var(--color-primary-orange)] placeholder-[var(--color-primary-orange)]' 
+                  : 'text-[var(--color-secondary-green)] placeholder-[var(--color-secondary-green)]'
               ]"/>
             <button
               type="button"
@@ -84,23 +84,23 @@
             </button>
           </div>
 
-          <div v-if="errors.password" class="text-[var(--color-text-warn)] text-xs  ml-1">
+          <div v-if="errors.password" class="text-[var(--color-primary-orange)] text-xs  ml-1">
             {{ passwordErrorMessage }}
           </div>
         </div>
       </div>
       
-      <div class="text-sm text-right mt-1 text-[var(--color-text-selected)] cursor-pointer hover:underline">
+      <div class="text-sm text-right mt-1 text-[var(--color-primary-orange)] cursor-pointer hover:underline underline-offset-4">
         忘記密碼？
       </div>
       <div class="flex items-center my-4">
-        <div class="flex-grow h-px bg-[var(--color-icon-secondary)]"></div>
-        <span class="px-4 text-[var(--color-text-selected)] text-sm">或</span>
-        <div class="flex-grow h-px bg-[var(--color-icon-secondary)]"></div>
+        <div class="flex-grow h-px bg-gray-300"></div>
+        <span class="px-4 text-[var(--color-main-text)] text-sm">或</span>
+        <div class="flex-grow h-px bg-gray-300"></div>
       </div>
 
       <div class="flex space-x-2 justify-center mt-4">
-        <button class="btn bg-white text-black border-[#e5e5e5] border-2 flex items-center px-4 py-2 rounded-lg hover:shadow-md transition">
+        <button class="btn bg-white text-black border-[#e5e5e5] border-2 flex items-center px-4 py-2 rounded-lg hover:scale-105 transition">
           <img src="/google.svg" alt="Google logo" class="w-5 h-5 mr-2" />
           Login with Google
         </button>
@@ -108,7 +108,7 @@
         <button 
           @click="handleLineLogin"
           :disabled="authStore.isLoading"
-        class="btn bg-[var(--color-line-green)] text-white border-[var(--color-line-green-dark)] border-2 flex items-center px-4 py-2 rounded-lg hover:shadow-md transition">
+        class="btn bg-[var(--color-line-green)] text-white border-[var(--color-line-green-dark)] border-2 flex items-center px-4 py-2 rounded-lg hover:scale-105 transition">
           <img src="/line.svg" alt="Line logo" class="w-5 h-5 mr-2" />
           <span v-if="authStore.isLineLoading">載入中...</span>
           <span v-else>Login with LINE</span>
@@ -120,20 +120,20 @@
         <button
           @click="handleLogin"
           :disabled="authStore.isLoading"
-          class="w-full max-w-[180px] py-2 bg-gradient-to-r from-[#fbdaca] to-[#eb96a4] text-[var(--color-black)] rounded-lg font-semibold mt-4 shadow-md transition duration-300 transform hover:scale-105 hover:brightness-110 hover:shadow-lg">
+          class="w-full max-w-[180px] py-2 bg-gradient-to-r from-[var(--color-secondary-green)] via-[#d8dbaf] to-[var(--color-primary-orange)] text-[var(--color-black)] rounded-lg font-semibold mt-4 shadow-md transition duration-300 transform hover:scale-105 hover:brightness-110 hover:shadow-lg">
           <span v-if="authStore.isEmailLoading">登入中...</span>
           <span v-else>登入</span>
         </button>
       </div>
 
-      <div class="text-center mt-2 text-sm text-[var(--color-text-selected)] underline underline-offset-4 cursor-pointer hover:text-[#aa666c] transition"
+      <div class="text-center mt-2 text-sm text-[var(--color-primary-orange)] underline underline-offset-4 cursor-pointer hover:text-[var(--color-secondary-green)] transition"
             @click="useTestAccount">
         後台管理員登入
       </div>
 
       <div class="text-center mt-4 pt-4 border-t border-gray-300">
         <span class="text-sm text-gray-300">還沒有帳號？</span>
-        <router-link to="/register" class="text-sm text-[var(--color-text-selected)] hover:underline ml-1">
+        <router-link to="/register" class="text-sm text-[var(--color-secondary-green)] hover:underline underline-offset-4">
           立即註冊
         </router-link>
       </div>
