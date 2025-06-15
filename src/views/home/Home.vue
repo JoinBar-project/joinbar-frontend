@@ -24,31 +24,31 @@ const features = [
   {
     title: "社群活動",
     desc: "參與我們舉辦的品酒會、派對等精彩活動。",
-    image: "/wine.gif",
+    image: new URL('@/assets/homepage/wine.gif', import.meta.url).href,
     path: "/event",
     gridArea: "1 / 2 / 3 / 4"
   },
   {
     title: "酒吧地圖",
-    image: "/google-maps.gif",
+    image: new URL('@/assets/homepage/google-maps.gif', import.meta.url).href,
     path: "/map",
     gridArea: "1 / 1 / 2 / 2"
   },
   {
     title: "訂閱優惠",
-    image: "/fireworks-.gif",
+    image: new URL('@/assets/homepage/fireworks-.gif', import.meta.url).href,
     path: "/subscription",
     gridArea: "1 / 4 / 2 / 5"
   },
   {
     title: "用戶評論",
-    image: "/interaction.gif",
+    image: new URL('@/assets/homepage/interaction.gif', import.meta.url).href,
     path: "/comments",
     gridArea: "2 / 1 / 3 / 2"
   },
   {
     title: "會員服務",
-    image: "/social-care.gif",
+    image: new URL('@/assets/homepage/social-care.gif', import.meta.url).href,
     path: "/member",
     gridArea: "2 / 4 / 3 / 5"
   }
@@ -227,51 +227,31 @@ const bars = [
 }
 
 .bar-cards-container {
-  display: flex;
-  justify-content: center;
-  gap: 1.5rem;
-  flex-wrap: wrap;
-  max-width: 1300px;
-  margin: 0 auto;
-  position: relative;
-  z-index: 2;
+  @apply flex justify-center gap-[24px] flex-wrap max-w-[1300px] mx-auto relative z-[2];
 }
 
 .bar-card {
-  background-color: #ffffff;
-  border-radius: 12px;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-  overflow: hidden;
-  width: 280px;
-  flex-shrink: 0;
-  transition: transform 0.3s, box-shadow 0.3s;
+  @apply bg-white rounded-[12px] shadow-[0_4px_12px_rgba(0,0,0,0.1)] overflow-hidden w-[280px] shrink-0 transition-transform duration-300 ease-in-out;
 }
 
 .bar-card:hover {
-  transform: translateY(-10px);
-  box-shadow: 0 12px 24px rgba(0,0,0,0.15);
+  @apply -translate-y-[10px] shadow-[0_12px_24px_rgba(0,0,0,0.15)];
 }
 
 .bar-card img {
-  width: 100%;
-  height: 350px;
-  object-fit: cover;
-  display: block;
+  @apply w-full h-[350px] object-cover block;
 }
 
 .bar-card .bar-info {
-  padding: 1rem;
+  @apply p-[16px];
 }
 
 .bar-card h3 {
-  margin: 0 0 0.5rem 0;
-  font-size: 1.25rem;
+  @apply m-0 mb-[8px] text-[20px];
 }
 
 .bar-card p {
-  margin: 0;
-  color: #666666;
-  font-size: 0.9rem;
+  @apply m-0 text-[#666666] text-[14.4px];
 }
 
 </style>
