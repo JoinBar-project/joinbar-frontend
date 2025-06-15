@@ -2,6 +2,29 @@
 
 const videoUrl = new URL('@/assets/homepage/JOINBAR-NOLOGO.mp4', import.meta.url).href
 
+const bars = [
+  {
+    name: "The Alchemist's Corner",
+    desc: "神秘的燈光與獨創調酒。",
+    image: new URL('@/assets/homepage/bar-1.jpg', import.meta.url).href
+  },
+  {
+    name: "Sunset Vista Rooftop",
+    desc: "城市天際線下的微醺時光。",
+    image: new URL('@/assets/homepage/bar-2.jpg', import.meta.url).href
+  },
+  {
+    name: "Liquid Artistry",
+    desc: "欣賞調酒師的指尖魔法。",
+    image: new URL('@/assets/homepage/bar-3.jpg', import.meta.url).href
+  },
+  {
+    name: "The Cozy Barrel",
+    desc: "溫馨舒適的週末好去處。",
+    image: new URL('@/assets/homepage/bar-4.jpg', import.meta.url).href
+  }
+]
+
 </script>
 
 <template>
@@ -47,6 +70,21 @@ const videoUrl = new URL('@/assets/homepage/JOINBAR-NOLOGO.mp4', import.meta.url
       </div>
     </div>
   </section>
+
+  <section id="popular" class="popular-bars-section">
+    <div class="section-number-bg num-2">2</div>
+    <h2>熱門酒吧推薦，不醉不歸排行榜</h2>
+    <div class="bar-cards-container">
+      <div class="bar-card" v-for="(bar, index) in bars" :key="index">
+        <img :src="bar.image" :alt="bar.name" />
+        <div class="bar-info">
+          <h3>{{ bar.name }}</h3>
+          <p>{{ bar.desc }}</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
 </template>
 
 <style scoped>
@@ -109,7 +147,7 @@ const videoUrl = new URL('@/assets/homepage/JOINBAR-NOLOGO.mp4', import.meta.url
   z-index: 2;
 }
 
-.features-section {
+.features-section, .popular-bars-section {
   padding: 6rem 5%;
   position: relative;
   overflow: hidden;
@@ -172,16 +210,16 @@ const videoUrl = new URL('@/assets/homepage/JOINBAR-NOLOGO.mp4', import.meta.url
 }
 
 .feature-card h3 {
-    margin: 0 0 0.5rem 0;
-    font-size: 20px;
+  margin: 0 0 0.5rem 0;
+  font-size: 20px;
 
 }
 
 .feature-card p {
-    margin: 0;
-    font-size: 0.9rem;
-    font-weight: 400;
-    color: #666666;
+  margin: 0;
+  font-size: 0.9rem;
+  font-weight: 400;
+  color: #666666;
 }
 
 .feature-card:nth-child(1) { grid-area: 1 / 2 / 3 / 4; }
@@ -200,12 +238,63 @@ const videoUrl = new URL('@/assets/homepage/JOINBAR-NOLOGO.mp4', import.meta.url
   filter: none;
 }
 
-.features-section h2 {
+.popular-bars-section {
+  background-color: #ffffff;
+}
+
+.features-section h2, .popular-bars-section h2 {
   text-align: center;
   font-size: 2rem;
   margin-bottom: 1rem;
   font-weight: 700;
 }
 
+.bar-cards-container {
+  display: flex;
+  justify-content: center;
+  gap: 1.5rem;
+  flex-wrap: wrap;
+  max-width: 1300px;
+  margin: 0 auto;
+  position: relative;
+  z-index: 2;
+}
+
+.bar-card {
+  background-color: #ffffff;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+  overflow: hidden;
+  width: 280px;
+  flex-shrink: 0;
+  transition: transform 0.3s, box-shadow 0.3s;
+}
+
+.bar-card:hover {
+  transform: translateY(-10px);
+  box-shadow: 0 12px 24px rgba(0,0,0,0.15);
+}
+
+.bar-card img {
+  width: 100%;
+  height: 350px;
+  object-fit: cover;
+  display: block;
+}
+
+.bar-card .bar-info {
+  padding: 1rem;
+}
+
+.bar-card h3 {
+  margin: 0 0 0.5rem 0;
+  font-size: 1.25rem;
+}
+
+.bar-card p {
+  margin: 0;
+  color: #666666;
+  font-size: 0.9rem;
+}
 
 </style>
