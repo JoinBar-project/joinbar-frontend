@@ -164,99 +164,66 @@ const bars = [
   @apply flex justify-center items-center gap-[32px] relative max-w-[600px] mx-auto z-[2];
 }
 
-.features-section, .popular-bars-section {
-  padding: 6rem 5%;
-  position: relative;
-  overflow: hidden;
+.features-section,
+.popular-bars-section {
+  @apply px-[5%] py-[96px] relative overflow-hidden;
 }
 
 .section-number-bg {
-  position: absolute;
-  font-size: 30rem;
-  font-weight: 900;
-  z-index: 0;
-  user-select: none;
-  transform: translateY(-50%);
-  left: 20%;
+  @apply absolute text-[480px] font-black z-0 select-none -translate-y-1/2 left-[20%];
 }
 
 .num-1 {
-  color: rgba(255, 255, 255, 0.5);
+  @apply text-white/50;
 }
+
 .num-2 {
-  color: rgba(218, 162, 88, 0.5);
+  @apply text-[#DAA258]/50;
 }
 
 
 .features-section {
-  background-color: rgba(175, 177, 140, 0.5);
+  @apply bg-[rgba(175,177,140,0.5)];
 }
 
 .features-grid {
-  display: grid;
+  @apply grid gap-[24px] max-w-[1200px] mx-auto relative z-[2];
   grid-template-columns: repeat(4, 1fr);
   grid-template-rows: repeat(2, 1fr);
-  gap: 1.5rem;
-  max-width: 1200px;
-  margin: 0 auto;
   aspect-ratio: 2.5 / 1;
-  position: relative;
-  z-index: 2;
 }
 
 .feature-card {
-  background-color: #ffffff;
-  border: 1px solid #e0e0e0;
-  border-radius: 12px;
-  padding: 1rem;
-  display: flex;
-  flex-direction: column;
-  justify-content: end;
-  align-items: center;
-  text-align: center;
-  font-size: 1.1rem;
-  font-weight: 700;
-  box-shadow: 0 4px 8px rgba(0,0,0,0.05);
-  transition: transform 0.3s, box-shadow 0.3s;
-  cursor: pointer;
+  @apply bg-white border border-[#e0e0e0] rounded-[12px] p-[16px] flex flex-col justify-end items-center text-center text-[17.6px] font-bold shadow-[0_4px_8px_rgba(0,0,0,0.05)] transition-transform duration-300 ease-in-out cursor-pointer;
 }
 
 .feature-card:hover {
-  transform: translateY(-10px);
-  box-shadow: 0 12px 24px rgba(0,0,0,0.1);
+  @apply -translate-y-[10px] shadow-[0_12px_24px_rgba(0,0,0,0.1)];
 }
 
 .feature-card h3 {
-  margin: 0 0 0.5rem 0;
-  font-size: 20px;
-
+  @apply m-0 mb-[8px] text-[20px];
 }
 
 .feature-card p {
-  margin: 0;
-  font-size: 0.9rem;
-  font-weight: 400;
-  color: #666666;
+  @apply m-0 text-[14.4px] font-normal text-[#666666];
 }
 
 .feature-card img {
-  filter: grayscale(100%);
-  transition: filter 0.3s ease;
-  opacity: 0.8;
+  @apply grayscale transition duration-300 ease-in-out opacity-80;
 }
+
 .feature-card img:hover {
-  filter: none;
+  @apply filter-none;
 }
 
 .popular-bars-section {
-  background-color: #ffffff;
+  @apply bg-white;
 }
 
-.features-section h2, .popular-bars-section h2 {
-  text-align: center;
-  font-size: 2rem;
-  margin-bottom: 1rem;
-  font-weight: 700;
+.features-section h2,
+.popular-bars-section h2 {
+  @apply text-center text-[32px] mb-[16px] font-bold;
 }
 
 .bar-cards-container {
