@@ -396,7 +396,6 @@ const resetStats = () => {
   stats.completedCount = 0
 }
 
-// 在所有基礎函數定義完成後，定義需要依賴它們的函數
 const processLinePayPayment = async (orderData) => {
   console.log('processLinePayPayment is deprecated, use useLinePay composable instead')
   throw new Error('Please use useLinePay composable for LINE Pay operations')
@@ -412,12 +411,10 @@ const pollPaymentStatus = async (orderId, maxAttempts = 30, interval = 2000, ski
       let orderData
       
       if (skipLoading) {
-        // 直接調用 API，不觸發 loading 狀態
         const processedOrderId = validateOrderId(orderId)
         const response = await apiClient.get(`/api/orders/${processedOrderId}/details`)
         orderData = response.data
       } else {
-        // 正常調用 getOrderDetails
         orderData = await getOrderDetails(orderId)
       }
       

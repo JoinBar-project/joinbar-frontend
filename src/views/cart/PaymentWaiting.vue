@@ -1,7 +1,6 @@
 <template>
   <div class="payment-waiting-container">
     <div class="waiting-content">
-      <!-- Loading 狀態 -->
       <div v-if="isChecking" class="checking-section">
         <div class="spinner-large"></div>
         <h2>正在確認付款狀態</h2>
@@ -19,7 +18,6 @@
         </div>
       </div>
 
-      <!-- 成功狀態 -->
       <div v-else-if="paymentStatus === 'success'" class="success-section">
         <div class="success-icon">✅</div>
         <h2>付款確認成功！</h2>
@@ -33,7 +31,6 @@
         </button>
       </div>
 
-      <!-- 失敗狀態 -->
       <div v-else-if="paymentStatus === 'failed'" class="failed-section">
         <div class="failed-icon">❌</div>
         <h2>付款確認失敗</h2>
@@ -51,7 +48,6 @@
         </div>
       </div>
 
-      <!-- 超時狀態 -->
       <div v-else-if="paymentStatus === 'timeout'" class="timeout-section">
         <div class="timeout-icon">⏰</div>
         <h2>付款狀態確認超時</h2>
@@ -71,7 +67,6 @@
       </div>
     </div>
 
-    <!-- 說明資訊 -->
     <div class="info-section">
       <h3>付款說明</h3>
       <ul>
@@ -90,7 +85,7 @@ import { useOrder } from '@/composables/useOrder'
 
 const route = useRoute()
 const router = useRouter()
-const { pollPaymentStatus, formatAmount } = useOrder()  // 移除 getOrderDetails
+const { pollPaymentStatus, formatAmount } = useOrder()
 
 const isChecking = ref(true)
 const paymentStatus = ref('checking')
@@ -125,7 +120,6 @@ const startPaymentCheck = async (orderId) => {
     isChecking.value = true
     paymentStatus.value = 'checking'
     
-    // 使用 skipLoading=true 避免觸發 useOrder 的 loading 狀態
     const result = await pollPaymentStatus(orderId, maxAttempts.value, 2000, true)
     
     if (result.success) {

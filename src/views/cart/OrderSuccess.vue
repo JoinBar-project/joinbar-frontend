@@ -49,12 +49,31 @@
           </div>
           <div class="info-row" v-if="orderInfo.paymentMethod">
             <span class="label">付款方式</span>
-            <span class="value">{{ getPaymentMethodText(orderInfo.paymentMethod) }}</span>
+            <span class="value payment-method">
+              <span class="payment-icon" v-if="orderInfo.paymentMethod === 'linepay'">💚</span>
+              <span class="payment-icon" v-else-if="orderInfo.paymentMethod === 'creditcard'">💳</span>
+              {{ getPaymentMethodText(orderInfo.paymentMethod) }}
+            </span>
+          </div>
+          <div v-if="orderInfo.paymentMethod === 'linepay' && (orderInfo.transactionId || orderInfo.paymentId)" class="info-row">
+            <span class="label">LINE Pay 交易號</span>
+            <span class="value transaction-id">
+              {{ orderInfo.transactionId || orderInfo.paymentId }}
+            </span>
           </div>
           <div class="info-row total-row">
             <span class="label">總金額</span>
             <span class="value total-amount">${{ formatAmount(orderInfo.totalAmount) }}</span>
           </div>
+        </div>
+      </div>
+
+      <div v-if="orderInfo.paymentMethod === 'linepay'" class="linepay-notice">
+        <div class="notice-icon">💚</div>
+        <div class="notice-content">
+          <h3>LINE Pay 付款完成</h3>
+          <p>您已成功透過 LINE Pay 完成付款，款項將顯示在您的 LINE Pay 交易記錄中。</p>
+          <p>如有任何問題，請保留交易號碼以便查詢：<strong>{{ orderInfo.transactionId || orderInfo.paymentId }}</strong></p>
         </div>
       </div>
 
@@ -65,24 +84,47 @@
         <div class="events-list">
           <div v-for="item in orderInfo.items" :key="item.id" class="event-item">
             <div class="event-info">
-              <RouterLink v-if="item.eventId" :to="`/event/${item.eventId}`">
+              <RouterLink v-if="item.eventId" :to="`/event/${item.eventId}`" class="event-link-wrapper">
                 <h4 class="event-link">{{ item.eventName }}</h4>
               </RouterLink>
-              <h4 v-else>{{ item.eventName }}</h4>
-              <p class="event-meta">📍 {{ item.barName }}</p>
-              <p class="event-meta" v-if="item.location">{{ item.location }}</p>
-              <p class="event-meta" v-if="item.eventStartDate">
-                🕒 {{ formatEventTime(item.eventStartDate) }}
-              </p>
+              <h4 v-else class="event-name">{{ item.eventName }}</h4>
+              <div class="event-details">
+                <p class="event-meta">📍 {{ item.barName }}</p>
+                <p class="event-meta" v-if="item.location">{{ item.location }}</p>
+                <p class="event-meta" v-if="item.eventStartDate">
+                  🕒 {{ formatEventTime(item.eventStartDate) }}
+                </p>
+                <p class="event-meta" v-if="item.eventEndDate">
+                  結束：{{ formatEventTime(item.eventEndDate) }}
+                </p>
+              </div>
             </div>
-            <div class="event-price">${{ formatAmount(item.price) }}</div>
+            <div class="event-price">
+              <span class="price-label">票價</span>
+              <span class="price-value">${{ formatAmount(item.price) }}</span>
+            </div>
           </div>
+        </div>
+      </div>
+
+      <div class="info-card reminder-card">
+        <div class="card-header">
+          <h3>溫馨提醒</h3>
+        </div>
+        <div class="reminder-content">
+          <ul>
+            <li>📱 請截圖或記住您的訂單編號，以便現場核對</li>
+            <li>🕒 請提早 15-30 分鐘到達活動現場</li>
+            <li>🆔 現場可能需要出示身份證件核對</li>
+            <li>📧 如有疑問，請聯繫客服或活動主辦方</li>
+          </ul>
         </div>
       </div>
 
       <div class="action-buttons">
         <button class="btn-outline" @click="goToEvents">繼續瀏覽活動</button>
-        <button class="btn-secondary" @click="goToCart">返回購物車</button>
+        <button class="btn-secondary" @click="goToOrders">查看我的訂單</button>
+        <button class="btn-primary" @click="shareOrder">分享給朋友</button>
       </div>
     </div>
 
@@ -110,6 +152,7 @@ const {
   getOrderDetails,
   getStatusText,
   getPaymentMethodText,
+  formatAmount,
   isLoading: orderLoading,
   error: orderError,
   clearError: clearOrderError,
@@ -118,10 +161,6 @@ const {
 const orderInfo = ref(null)
 const retrying = ref(false)
 const copyToast = ref('')
-
-function formatAmount(amount) {
-  return Number(amount).toLocaleString('zh-TW', { minimumFractionDigits: 0 })
-}
 
 function formatDateTime(dateString) {
   if (!dateString) return '-'
@@ -150,8 +189,17 @@ async function loadOrderData() {
     if (!orderId) throw new Error('缺少訂單 ID')
     const response = await getOrderDetails(orderId)
     orderInfo.value = response.order
+    
+    if (orderInfo.value.paymentMethod === 'linepay') {
+      console.log('✅ LINE Pay 訂單載入成功:', {
+        orderNumber: orderInfo.value.orderNumber,
+        transactionId: orderInfo.value.transactionId || orderInfo.value.paymentId,
+        status: orderInfo.value.status
+      })
+    }
   } catch (err) {
     orderInfo.value = null
+    console.error('❌ 載入訂單失敗:', err)
   }
 }
 
@@ -194,6 +242,38 @@ function goToCart() {
   router.push('/cart')
 }
 
+function goToOrders() {
+  router.push('/member/orders')
+}
+
+function shareOrder() {
+  if (orderInfo.value) {
+    const shareText = `我剛在 JoinBar 購買了活動票券！\n\n訂單編號：${orderInfo.value.orderNumber}\n活動數量：${orderInfo.value.items?.length || 0} 個\n\n快來一起參加吧！`
+    
+    if (navigator.share) {
+      navigator.share({
+        title: 'JoinBar 活動票券',
+        text: shareText,
+        url: window.location.href
+      }).catch(err => {
+        console.log('分享失敗:', err)
+        fallbackShare(shareText)
+      })
+    } else {
+      fallbackShare(shareText)
+    }
+  }
+}
+
+function fallbackShare(text) {
+  try {
+    navigator.clipboard.writeText(text)
+    showToast('✅ 分享內容已複製到剪貼板')
+  } catch {
+    alert('請手動複製分享內容：\n\n' + text)
+  }
+}
+
 onMounted(loadOrderData)
 </script>
 
@@ -206,20 +286,32 @@ onMounted(loadOrderData)
 .event-link:hover {
   color: #2563eb;
 }
+
+.event-link-wrapper {
+  text-decoration: none;
+}
+
+.event-name {
+  color: #1f2937;
+  margin: 0 0 8px 0;
+  font-size: 16px;
+  font-weight: 600;
+}
+
 .success-container {
   max-width: 800px;
   margin: 48px auto;
   padding: 40px;
   font-size: 15px;
- }
+}
  
- .loading-box {
+.loading-box {
   text-align: center;
   padding: 48px 0;
   color: #666;
- }
+}
  
- .spinner {
+.spinner {
   margin: 16px auto;
   width: 40px;
   height: 40px;
@@ -227,222 +319,316 @@ onMounted(loadOrderData)
   border-top: 4px solid #10b981;
   border-radius: 50%;
   animation: spin 0.8s linear infinite;
- }
+}
  
- @keyframes spin {
+@keyframes spin {
   to { transform: rotate(360deg); }
- }
+}
  
- .error-section {
+.error-section {
   text-align: center;
   padding: 80px 40px;
   color: #666;
- }
+}
  
- .error-icon {
+.error-icon {
   font-size: 64px;
   margin-bottom: 24px;
- }
+}
  
- .error-section h2 {
+.error-section h2 {
   color: #dc2626;
   margin-bottom: 16px;
   font-size: 24px;
- }
+}
  
- .error-description {
+.error-description {
   color: #666;
   margin-bottom: 32px;
   font-size: 16px;
   line-height: 1.5;
- }
+}
  
- .error-actions {
+.error-actions {
   display: flex;
   gap: 16px;
   justify-content: center;
- }
+}
  
- .success-content {
+.success-content {
   display: flex;
   flex-direction: column;
   gap: 32px;
- }
+}
  
- .success-header {
+.success-header {
   text-align: center;
   padding: 48px 32px;
   background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
   border-radius: 16px;
- }
+}
  
- .success-icon {
+.success-icon {
   font-size: 64px;
   margin-bottom: 24px;
- }
+}
  
- .success-header h1 {
+.success-header h1 {
   color: #1e40af;
   margin-bottom: 12px;
   font-size: 28px;
   font-weight: 700;
- }
+}
  
- .success-subtitle {
+.success-subtitle {
   color: #64748b;
   font-size: 16px;
   margin: 0;
- }
+}
  
- .info-card {
+.info-card {
   background-color: #fff;
   border-radius: 16px;
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
   padding: 32px;
   border: 1px solid #f1f5f9;
- }
+}
  
- .card-header {
+.card-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
   margin-bottom: 24px;
   padding-bottom: 16px;
   border-bottom: 1px solid #f1f5f9;
- }
+}
  
- .card-header h2,
- .card-header h3 {
+.card-header h2,
+.card-header h3 {
   margin: 0;
   font-size: 18px;
   font-weight: 600;
   color: #1f2937;
- }
+}
  
- .status-badge {
+.status-badge {
   padding: 6px 16px;
   border-radius: 20px;
   font-size: 12px;
   font-weight: 600;
   text-transform: uppercase;
- }
+}
  
- .status-paid,
- .status-confirmed {
+.status-paid,
+.status-confirmed {
   background: #dcfce7;
   color: #166534;
- }
+}
  
- .status-pending {
+.status-pending {
   background: #fef3c7;
   color: #92400e;
- }
+}
  
- .status-cancelled,
- .status-refunded {
+.status-cancelled,
+.status-refunded {
   background: #fee2e2;
   color: #991b1b;
- }
+}
  
- .order-info {
+.order-info {
   display: flex;
   flex-direction: column;
   gap: 16px;
- }
+}
  
- .info-row {
+.info-row {
   display: flex;
   justify-content: space-between;
   align-items: center;
   padding: 12px 0;
   border-bottom: 1px solid #f8fafc;
- }
+}
  
- .info-row:last-child {
+.info-row:last-child {
   border-bottom: none;
- }
+}
  
- .label {
+.label {
   color: #64748b;
   font-weight: 500;
   font-size: 14px;
- }
+}
  
- .value {
+.value {
   color: #1f2937;
   font-weight: 600;
   text-align: right;
- }
+}
+
+.payment-method {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.payment-icon {
+  font-size: 16px;
+}
+
+.transaction-id {
+  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+  font-size: 12px;
+  background: #f1f5f9;
+  padding: 4px 8px;
+  border-radius: 4px;
+}
  
- .total-amount {
+.total-amount {
   color: #dc2626;
   font-size: 20px;
   font-weight: 700;
- }
+}
  
- .copy-text {
+.copy-text {
   cursor: pointer;
   padding: 4px 8px;
   background: #f8fafc;
   border-radius: 4px;
   transition: all 0.2s;
- }
+}
  
- .copy-text:hover {
+.copy-text:hover {
   background: #e2e8f0;
- }
+}
  
- .copy-hint {
+.copy-hint {
   color: #64748b;
   font-size: 11px;
   opacity: 0.7;
- }
+}
+
+.linepay-notice {
+  display: flex;
+  gap: 16px;
+  padding: 20px;
+  background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
+  border: 1px solid #bbf7d0;
+  border-radius: 12px;
+  margin: 16px 0;
+}
+
+.notice-icon {
+  font-size: 32px;
+  flex-shrink: 0;
+}
+
+.notice-content h3 {
+  margin: 0 0 8px 0;
+  color: #166534;
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.notice-content p {
+  margin: 4px 0;
+  color: #15803d;
+  font-size: 14px;
+  line-height: 1.5;
+}
  
- .events-list {
+.events-list {
   display: flex;
   flex-direction: column;
   gap: 16px;
- }
+}
  
- .event-item {
+.event-item {
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
-  padding: 16px;
+  padding: 20px;
   background: #f8fafc;
-  border-radius: 8px;
+  border-radius: 12px;
   border: 1px solid #e2e8f0;
- }
+  transition: all 0.2s;
+}
+
+.event-item:hover {
+  background: #f1f5f9;
+  border-color: #cbd5e1;
+}
  
- .event-info h4 {
-  margin: 0 0 8px 0;
+.event-info {
+  flex: 1;
+}
+
+.event-info h4 {
+  margin: 0 0 12px 0;
   font-size: 16px;
   font-weight: 600;
   color: #1f2937;
- }
+}
+
+.event-details {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
  
- .event-meta {
-  margin: 4px 0;
+.event-meta {
+  margin: 0;
   font-size: 13px;
   color: #64748b;
- }
+}
  
- .event-price {
+.event-price {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
+}
+
+.price-label {
+  font-size: 12px;
+  color: #64748b;
+}
+
+.price-value {
   color: #dc2626;
-  font-size: 16px;
+  font-size: 18px;
   font-weight: 700;
- }
+}
+
+.reminder-card {
+  background: linear-gradient(135deg, #fefce8 0%, #fef3c7 100%);
+  border: 1px solid #fde047;
+}
+
+.reminder-content ul {
+  margin: 0;
+  padding-left: 0;
+  list-style: none;
+}
+
+.reminder-content li {
+  margin: 12px 0;
+  padding: 8px 0;
+  color: #92400e;
+  font-size: 14px;
+  line-height: 1.5;
+}
  
- .action-buttons {
+.action-buttons {
   display: flex;
   gap: 16px;
   justify-content: center;
   flex-wrap: wrap;
- }
+}
  
- .btn-primary,
- .btn-secondary,
- .btn-outline {
+.btn-primary,
+.btn-secondary,
+.btn-outline {
   padding: 12px 24px;
   border-radius: 8px;
   font-size: 14px;
@@ -450,38 +636,38 @@ onMounted(loadOrderData)
   cursor: pointer;
   transition: all 0.2s;
   border: none;
- }
+}
  
- .btn-primary {
+.btn-primary {
   background-color: #dc2626;
   color: white;
- }
+}
  
- .btn-primary:hover {
+.btn-primary:hover {
   background-color: #b91c1c;
- }
+}
  
- .btn-secondary {
+.btn-secondary {
   background-color: #6b7280;
   color: white;
- }
+}
  
- .btn-secondary:hover {
+.btn-secondary:hover {
   background-color: #4b5563;
- }
+}
  
- .btn-outline {
+.btn-outline {
   background: white;
   color: #dc2626;
   border: 1px solid #dc2626;
- }
+}
  
- .btn-outline:hover {
+.btn-outline:hover {
   background: #dc2626;
   color: white;
- }
+}
  
- .copy-toast {
+.copy-toast {
   position: fixed;
   bottom: 20px;
   right: 20px;
@@ -493,9 +679,9 @@ onMounted(loadOrderData)
   font-weight: 500;
   z-index: 1000;
   animation: slideIn 0.3s ease-out;
- }
+}
  
- @keyframes slideIn {
+@keyframes slideIn {
   from {
     opacity: 0;
     transform: translateX(100%);
@@ -504,9 +690,9 @@ onMounted(loadOrderData)
     opacity: 1;
     transform: translateX(0);
   }
- }
+}
  
- @media (max-width: 768px) {
+@media (max-width: 768px) {
   .success-container {
     margin: 24px 16px;
     padding: 24px;
@@ -536,6 +722,10 @@ onMounted(loadOrderData)
     flex-direction: column;
     gap: 12px;
   }
+
+  .event-price {
+    align-items: flex-start;
+  }
   
   .action-buttons {
     flex-direction: column;
@@ -546,5 +736,10 @@ onMounted(loadOrderData)
     right: 16px;
     bottom: 16px;
   }
- }
+
+  .linepay-notice {
+    flex-direction: column;
+    text-align: center;
+  }
+}
 </style>
