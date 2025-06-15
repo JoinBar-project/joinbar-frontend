@@ -38,13 +38,13 @@ onUnmounted(() => {
           <img src="../../../public/joinbar-logo.png" alt="JoinBar Logo">
         </a>
       </div>
-      <div class="footer-links">
-        <a href="#">酒吧地圖</a>
-        <a href="#">酒吧評論</a>
-        <a href="#">酒吧活動</a>
-        <a href="#">訂閱優惠</a>
-        <a href="#">聯絡我們</a>
-      </div>
+    <div class="footer-links">
+      <router-link to="/map">酒吧地圖</router-link>
+      <router-link to="/reviews">酒吧評論</router-link>
+      <router-link to="/event">酒吧活動</router-link>
+      <router-link to="/subscription">訂閱優惠</router-link>
+      <router-link to="/contact">聯絡我們</router-link>
+    </div>
       <div class="footer-socials">
         <a href="#"><i class="fab fa-facebook-f"></i></a>
         <a href="#"><i class="fab fa-twitter"></i></a>
