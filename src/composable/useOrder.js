@@ -396,6 +396,91 @@ const resetStats = () => {
   stats.completedCount = 0
 }
 
+// 在所有基礎函數定義完成後，定義需要依賴它們的函數
+const processLinePayPayment = async (orderData) => {
+  console.log('processLinePayPayment is deprecated, use useLinePay composable instead')
+  throw new Error('Please use useLinePay composable for LINE Pay operations')
+}
+
+const pollPaymentStatus = async (orderId, maxAttempts = 30, interval = 2000, skipLoading = false) => {
+  let attempts = 0
+  
+  console.log(`🔄 Starting payment status polling for order ${orderId}`)
+  
+  while (attempts < maxAttempts) {
+    try {
+      let orderData
+      
+      if (skipLoading) {
+        // 直接調用 API，不觸發 loading 狀態
+        const processedOrderId = validateOrderId(orderId)
+        const response = await apiClient.get(`/api/orders/${processedOrderId}/details`)
+        orderData = response.data
+      } else {
+        // 正常調用 getOrderDetails
+        orderData = await getOrderDetails(orderId)
+      }
+      
+      const order = orderData.order
+      
+      console.log(`📊 Poll attempt ${attempts + 1}/${maxAttempts}, status: ${order.status}`)
+      
+      if (['confirmed', 'paid', 'cancelled', 'expired', 'refunded'].includes(order.status)) {
+        console.log(`✅ Final status reached: ${order.status}`)
+        return {
+          success: ['confirmed', 'paid'].includes(order.status),
+          status: order.status,
+          order: order,
+          attempts: attempts + 1
+        }
+      }
+      
+      attempts++
+      
+      if (attempts < maxAttempts) {
+        await new Promise(resolve => setTimeout(resolve, interval))
+      }
+      
+    } catch (error) {
+      console.error(`❌ Poll attempt ${attempts + 1} failed:`, error)
+      attempts++
+      
+      if (attempts < maxAttempts) {
+        await new Promise(resolve => setTimeout(resolve, interval))
+      }
+    }
+  }
+  
+  console.log(`⏰ Payment status polling timeout after ${maxAttempts} attempts`)
+  return {
+    success: false,
+    status: 'timeout',
+    message: 'Payment status check timeout',
+    attempts: maxAttempts
+  }
+}
+
+const syncPaymentStatus = async (orderId) => {
+  try {
+    console.log('🔄 Syncing payment status...', orderId)
+    
+    const result = await getOrderDetails(orderId)
+    
+    return {
+      success: true,
+      order: result.order,
+      synced: true
+    }
+  } catch (error) {
+    console.error('❌ Payment status sync failed:', error)
+    return {
+      success: false,
+      error: error.message,
+      synced: false
+    }
+  }
+}
+
 return {
   isLoading,
   error,
@@ -425,6 +510,9 @@ return {
   ORDER_STATUS,
   ORDER_STATUS_TEXT,
   PAYMENT_METHOD_TEXT,
-  apiClient
+  apiClient,
+  processLinePayPayment,
+  pollPaymentStatus,
+  syncPaymentStatus
 }
 }

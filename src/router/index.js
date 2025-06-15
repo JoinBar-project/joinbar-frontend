@@ -8,10 +8,11 @@ import Member from '@/views/member/auth/Member.vue'
 import Reviews from '@/views/reviews/Reviews.vue'
 import Subscription from '@/views/sub/Subscription.vue'
 import Cart from '@/views/cart/Cart.vue'
-import Payment from "@/views/cart/Payment.vue"
+import Payment from '@/views/cart/Payment.vue' 
+import PaymentWaiting from '@/views/cart/PaymentWaiting.vue'
 import OrderSuccess from '@/views/cart/OrderSuccess.vue'
 import Login from "@/views/member/auth/Login.vue"
-import Register from "@/views/member/auth/Register.vue";
+import Register from "@/views/member/auth/Register.vue"
 import NotFound from '../views/NotFound.vue'
 
 
@@ -28,6 +29,7 @@ const routes = [
   { path: '/subscription', name: 'Subscription', component: Subscription },
   { path: '/cart', name: 'Cart', component: Cart },
   { path: '/payment', name: 'Payment', component: Payment },
+  { path: '/payment-waiting', name: 'PaymentWaiting', component: PaymentWaiting },
   { path: '/order-success/:orderNumber', name: 'OrderSuccess', component: OrderSuccess, props: true },
   { path: '/404', name: 'NotFound', component: NotFound },
   { path: '/:pathMatch(.*)*', redirect: '/404' }
