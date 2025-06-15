@@ -1,4 +1,24 @@
 <script setup>
+import { ref, onMounted } from 'vue'
+import AdModal from '@/components/AdModal.vue'
+import adImageFile from '@/assets/homepage/subscribe.jpg'
+
+const showAd = ref(false)
+const adImage = adImageFile
+
+
+// onMounted(() => {
+//   const hasSeenAd = localStorage.getItem('hasSeenAd')
+//   if (!hasSeenAd) {
+//     showAd.value = true
+//     localStorage.setItem('hasSeenAd', 'true')
+//   }
+// })
+
+onMounted(() => {
+  showAd.value = true
+})
+
 
 const videoUrl = new URL('@/assets/homepage/JOINBAR-NOLOGO.mp4', import.meta.url).href
 
@@ -28,7 +48,11 @@ const bars = [
 </script>
 
 <template>
-
+  <AdModal
+    v-if="showAd"
+    :adImage="adImage"
+    @close="showAd = false"
+  />
   <section class="hero">
   <video class="hero-bg-video" autoplay muted loop playsinline>
     <source :src="videoUrl" type="video/mp4">
