@@ -1,4 +1,3 @@
-import { fileURLToPath, URL } from "node:url";
 import { defineConfig } from "vite";
 import vue from "@vitejs/plugin-vue";
 import path from "path";
@@ -15,7 +14,14 @@ export default defineConfig({
         }
       }
     }),
-    tailwindcss(),
+    tailwindcss({
+      content: [
+        "./index.html",
+        "./src/**/*.{vue,js,ts,jsx,tsx}",
+        "./src/views/**/*.vue",
+        "./src/components/**/*.vue"
+      ]
+    }),
     vueDevTools()
   ],
   resolve: {

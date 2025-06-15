@@ -11,6 +11,8 @@ import Cart from '@/views/cart/Cart.vue'
 import Payment from "@/views/cart/Payment.vue"
 import Login from "@/views/member/auth/Login.vue"
 import Register from "@/views/member/auth/Register.vue";
+import NotFound from '../views/NotFound.vue'
+
 
 const routes = [
   { path: '/', redirect: '/home' },
@@ -24,7 +26,9 @@ const routes = [
   { path: '/reviews', name: 'Reviews', component: Reviews },
   { path: '/subscription', name: 'Subscription', component: Subscription },
   { path: '/cart', name: 'Cart', component: Cart },
-  { path: '/payment', name: 'Payment', component: Payment }
+  { path: '/payment', name: 'Payment', component: Payment },
+  { path: '/404', name: 'NotFound', component: NotFound },
+  { path: '/:pathMatch(.*)*', redirect: '/404' }
 ]
 
 const router = createRouter({
