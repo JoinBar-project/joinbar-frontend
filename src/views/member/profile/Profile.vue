@@ -5,6 +5,7 @@ import { storeToRefs } from 'pinia';
 import { useRouter, useRoute } from 'vue-router';
 import { watch } from 'vue';
 import ProfileForm from '@/components/member/ProfileForm.vue';
+import UserAvatar from '@/components/UserAvatar.vue';
 
 const authStore = useAuthStore();
 const { user } = storeToRefs(authStore);
@@ -37,7 +38,24 @@ const goToEdit = () => {
 </script>
 
 <template>
-  <ProfileForm :form="profile" :isEdit="false" :profileFields="profileFields" :barTypes="barTypes" :barMoods="barMoods" :toggleSelection="() => {}" />
+  <div class="max-w-md mx-auto mt-10 flex flex-col items-center">
+    <UserAvatar
+      :avatar-url="profile.avatar || '/default-user-avatar.png'"
+      :display-name="profile.username"
+      :show-name="false" />
+    <ProfileForm
+      :form="profile"
+      :isEdit="false"
+      :profileFields="profileFields"
+      :barTypes="barTypes"
+      :barMoods="barMoods"
+      :toggleSelection="() => {}" />
 
-  <button type="button" class="mt-6 px-4 py-2 bg-gray-800 text-white rounded flex justify-center" @click="goToEdit">編輯</button>
+    <button
+      type="button"
+      class="mt-6 px-4 py-2 bg-gray-800 text-white rounded"
+      @click="goToEdit">
+      編輯
+    </button>
+  </div>
 </template>
