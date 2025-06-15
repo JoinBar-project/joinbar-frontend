@@ -125,10 +125,10 @@
         </div>
       </div>
  
-      <div v-if="errorMessage || orderError" class="error-message">
+      <div v-if="errorMessage || orderError || linePayError" class="error-message">
         <div class="error-content">
           <span class="error-icon">⚠️</span>
-          <span>{{ errorMessage || orderError }}</span>
+          <span>{{ errorMessage || orderError || linePayError }}</span>
         </div>
         <button @click="clearAllErrors" class="error-close">✕</button>
       </div>
@@ -137,261 +137,301 @@
  </template>
  
  <script setup>
- import { useCartStore } from '@/stores/cartStore'
- import { useOrder } from '@/composable/useOrder'
- import { computed, ref, onMounted, watch } from 'vue'
- import { useRouter } from 'vue-router'
- import dayjs from 'dayjs'
- import utc from 'dayjs/plugin/utc'
- import timezone from 'dayjs/plugin/timezone'
- 
- import IconLine from '@/components/icons/IconLine.vue'
- import IconCreditCard from '@/components/icons/IconCreditCard.vue'
+import { useCartStore } from '@/stores/cartStore'
+import { useOrder } from '@/composable/useOrder'
+import { useLinePay } from '@/composables/useLinePay'
+import { computed, ref, onMounted, watch } from 'vue'
+import { useRouter } from 'vue-router'
+import dayjs from 'dayjs'
+import utc from 'dayjs/plugin/utc'
+import timezone from 'dayjs/plugin/timezone'
 
- dayjs.extend(utc)
- dayjs.extend(timezone)
- 
- const cart = useCartStore()
- const router = useRouter()
- 
- const { 
-  createOrder, 
-  confirmPayment, 
-  simulatePayment,
-  isLoading: orderLoading,
-  error: orderError,
-  clearError: clearOrderError
- } = useOrder()
- 
- const paymentMethod = ref('')
- const isLoading = ref(true)
- const isSubmitting = ref(false)
- 
- const errorMessage = ref('')
- const paymentMethodError = ref('')
- 
- const customerInfo = ref({
-  name: '',
-  phone: '',
-  email: ''
- })
- 
- const formErrors = ref({})
- 
- onMounted(async () => {
-  loadUserInfo()
-  setTimeout(() => {
-    if (cart.items.length === 0) {
-      alert('購物車是空的，即將返回購物車頁面')
-      router.push('/cart')
-      return
+import IconLine from '@/components/icons/IconLine.vue'
+import IconCreditCard from '@/components/icons/IconCreditCard.vue'
+
+dayjs.extend(utc)
+dayjs.extend(timezone)
+
+const cart = useCartStore()
+const router = useRouter()
+
+const { 
+createOrder, 
+confirmPayment, 
+simulatePayment,
+isLoading: orderLoading,
+error: orderError,
+clearError: clearOrderError
+} = useOrder()
+
+const { 
+createLinePayment, 
+redirectToLinePay,
+isLoading: linePayLoading,
+error: linePayError,
+clearState: clearLinePayState
+} = useLinePay()
+
+const paymentMethod = ref('')
+const isLoading = ref(true)
+const isSubmitting = ref(false)
+
+const errorMessage = ref('')
+const paymentMethodError = ref('')
+
+const customerInfo = ref({
+name: '',
+phone: '',
+email: ''
+})
+
+const formErrors = ref({})
+
+onMounted(async () => {
+loadUserInfo()
+setTimeout(() => {
+  if (cart.items.length === 0) {
+    alert('購物車是空的，即將返回購物車頁面')
+    router.push('/cart')
+    return
+  }
+  
+  isLoading.value = false
+}, 400)
+})
+
+const cartItems = computed(() => cart.items)
+
+const calcSubtotal = (item) => (item.price * item.quantity).toLocaleString()
+
+const totalPrice = computed(() =>
+cartItems.value.reduce((acc, item) => acc + item.price * item.quantity, 0).toLocaleString(),
+)
+
+const canSubmit = computed(() => {
+return paymentMethod.value && 
+       !isSubmitting.value && 
+       !orderLoading.value &&
+       !linePayLoading.value &&
+       isCustomerInfoValid.value &&
+       cartItems.value.length > 0
+})
+
+const isCustomerInfoValid = computed(() => {
+const { name, phone, email } = customerInfo.value
+const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+
+return name.trim() && 
+       phone.trim() && 
+       email.trim() && 
+       emailRegex.test(email)
+})
+
+const getSubmitButtonText = () => {
+if (isSubmitting.value || orderLoading.value || linePayLoading.value) return '處理中...'
+if (!paymentMethod.value) return '請選擇付款方式'
+if (!isCustomerInfoValid.value) return '請完成客戶資訊'
+return '確認付款'
+}
+
+watch(() => customerInfo.value.name, () => {
+if (formErrors.value.name) delete formErrors.value.name
+})
+
+watch(() => customerInfo.value.phone, () => {
+if (formErrors.value.phone) delete formErrors.value.phone
+})
+
+watch(() => customerInfo.value.email, () => {
+if (formErrors.value.email) delete formErrors.value.email
+})
+
+watch(() => paymentMethod.value, () => {
+paymentMethodError.value = ''
+})
+
+function loadUserInfo() {
+try {
+  const userInfo = localStorage.getItem('user_info')
+  if (userInfo) {
+    const user = JSON.parse(userInfo)
+    customerInfo.value.name = user.username || user.lineDisplayName || ''
+    customerInfo.value.email = user.email || ''
+    console.log('✅ 用戶資訊已載入:', user.username || user.lineDisplayName)
+  }
+} catch (error) {
+  console.warn('⚠️ 載入用戶資訊失敗:', error)
+}
+}
+
+const submitOrder = async () => {
+if (isSubmitting.value || !canSubmit.value) return
+
+try {
+  isSubmitting.value = true
+  clearAllErrors()
+
+  console.log('🔄 Starting complete order processing flow...')
+
+  if (!validateForm()) {
+    console.log('❌ Form validation failed')
+    return
+  }
+
+  console.log('📦 Step 1/3: Preparing order data...')
+  const orderData = {
+    items: cartItems.value.map(item => ({
+      eventId: item.id,
+      quantity: 1
+    })),
+    paymentMethod: paymentMethod.value
+  }
+  console.log('✅ Order data prepared:', orderData)
+
+  console.log('🔄 Step 2/3: Creating order...')
+  const orderResponse = await createOrder(orderData)
+  const order = orderResponse.order
+  console.log('✅ Order created successfully:', order.orderNumber)
+
+  if (paymentMethod.value === 'linepay') {
+    console.log('🔄 Step 3/3: Processing LINE Pay payment...')
+    
+    try {
+      const paymentResult = await createLinePayment(order.orderId || order.id)
+      console.log('✅ LINE Pay payment created:', paymentResult.transactionId)
+      
+      const confirmRedirect = confirm(
+        `✅ 訂單創建成功！\n\n` +
+        `訂單編號：${order.orderNumber}\n` +
+        `金額：$${totalPrice.value}\n\n` +
+        `點擊「確定」跳轉到 LINE Pay 付款頁面\n` +
+        `完成付款後系統會自動確認訂單`
+      )
+      
+      if (confirmRedirect) {
+        redirectToLinePay(paymentResult.paymentUrl)
+        cart.clearCart()
+      } else {
+        setError('已取消付款，訂單已創建但尚未付款')
+      }
+      
+    } catch (linePayError) {
+      console.error('❌ LINE Pay payment failed:', linePayError)
+      setError(`LINE Pay 付款失敗：${linePayError.message}`)
     }
     
-    isLoading.value = false
-  }, 400)
- })
- 
- const cartItems = computed(() => cart.items)
- 
- const calcSubtotal = (item) => (item.price * item.quantity).toLocaleString()
- 
- const totalPrice = computed(() =>
-  cartItems.value.reduce((acc, item) => acc + item.price * item.quantity, 0).toLocaleString(),
- )
- 
- const canSubmit = computed(() => {
-  return paymentMethod.value && 
-         !isSubmitting.value && 
-         !orderLoading.value &&
-         isCustomerInfoValid.value &&
-         cartItems.value.length > 0
- })
- 
- const isCustomerInfoValid = computed(() => {
-  const { name, phone, email } = customerInfo.value
-  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-  
-  return name.trim() && 
-         phone.trim() && 
-         email.trim() && 
-         emailRegex.test(email)
- })
- 
- const getSubmitButtonText = () => {
-  if (isSubmitting.value || orderLoading.value) return '處理中...'
-  if (!paymentMethod.value) return '請選擇付款方式'
-  if (!isCustomerInfoValid.value) return '請完成客戶資訊'
-  return '確認付款'
- }
- 
- watch(() => customerInfo.value.name, () => {
-  if (formErrors.value.name) delete formErrors.value.name
- })
- 
- watch(() => customerInfo.value.phone, () => {
-  if (formErrors.value.phone) delete formErrors.value.phone
- })
- 
- watch(() => customerInfo.value.email, () => {
-  if (formErrors.value.email) delete formErrors.value.email
- })
- 
- watch(() => paymentMethod.value, () => {
-  paymentMethodError.value = ''
- })
- 
- function loadUserInfo() {
-  try {
-    const userInfo = localStorage.getItem('user_info')
-    if (userInfo) {
-      const user = JSON.parse(userInfo)
-      customerInfo.value.name = user.username || user.lineDisplayName || ''
-      customerInfo.value.email = user.email || ''
-      console.log('✅ 用戶資訊已載入:', user.username || user.lineDisplayName)
-    }
-  } catch (error) {
-    console.warn('⚠️ 載入用戶資訊失敗:', error)
-  }
- }
- 
- const submitOrder = async () => {
-  if (isSubmitting.value || !canSubmit.value) return
- 
-  try {
-    isSubmitting.value = true
-    clearAllErrors()
- 
-    console.log('🔄 開始完整的訂單處理流程...')
- 
-    if (!validateForm()) {
-      console.log('❌ 表單驗證失敗')
-      return
-    }
- 
-    console.log('📦 步驟 1/5: 準備訂單數據...')
-    const orderData = {
-      items: cartItems.value.map(item => ({
-        eventId: item.id,
-        quantity: 1
-      })),
-      paymentMethod: paymentMethod.value
-    }
-    console.log('✅ 訂單數據準備完成:', orderData)
- 
-    console.log('🔄 步驟 2/5: 創建訂單...')
-    const orderResponse = await createOrder(orderData)
-    const order = orderResponse.order
-    console.log('✅ 訂單創建成功:', order.orderNumber)
- 
-    console.log('🔄 步驟 3/5: 處理付款...')
+  } else {
+    console.log('🔄 Step 3/3: Processing simulated payment...')
     const paymentData = {
       paymentMethod: paymentMethod.value,
       orderData: order
     }
     const paymentResult = await simulatePayment(paymentData)
-    console.log('✅ 付款處理完成:', paymentResult.paymentId)
- 
-    console.log('🔄 步驟 4/5: 確認付款...')
+    console.log('✅ Payment processed:', paymentResult.paymentId)
+
+    console.log('🔄 Step 4/4: Confirming payment...')
     await confirmPayment(order.orderId || order.id, paymentResult)
-    console.log('✅ 付款確認成功')
- 
+    console.log('✅ Payment confirmed')
+
     showPaymentSuccessMessage(order, paymentResult)
- 
-    console.log('🔄 步驟 5/5: 清空購物車並跳轉...')
+
+    console.log('🔄 Step 5/5: Clearing cart and redirecting...')
     cart.clearCart()
     
     const orderId = order.orderId || order.id
     router.push(`/order-success/${order.orderNumber}?orderId=${orderId}`)
     
-    console.log('🎉 訂單處理完成！')
- 
-  } catch (error) {
-    console.error('❌ 訂單提交失敗:', error)
-    handleSubmitError(error)
-  } finally {
-    isSubmitting.value = false
+    console.log('🎉 Order processing completed!')
   }
- }
- 
- function validateForm() {
-  formErrors.value = {}
-  
-  if (!customerInfo.value.name.trim()) {
-    formErrors.value.name = '請輸入姓名'
-  }
-  
-  if (!customerInfo.value.phone.trim()) {
-    formErrors.value.phone = '請輸入電話號碼'
-  }
-  
-  if (!customerInfo.value.email.trim()) {
-    formErrors.value.email = '請輸入電子郵件'
-  } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(customerInfo.value.email)) {
-    formErrors.value.email = '電子郵件格式不正確'
-  }
-  
-  if (!paymentMethod.value) {
-    paymentMethodError.value = '請選擇付款方式'
-    return false
-  }
-  
-  if (Object.keys(formErrors.value).length > 0) {
-    setError('請修正表單錯誤')
-    return false
-  }
- 
-  return true
- }
- 
- function showPaymentSuccessMessage(order, paymentResult) {
-  const paymentMethodName = paymentMethod.value === 'linepay' ? 'LINE Pay' : '信用卡'
-  const amount = totalPrice.value
-  
-  if (paymentMethod.value === 'linepay') {
-    alert(`🟢 ${paymentMethodName} 模擬付款成功！\n\n訂單編號：${order.orderNumber}\n金額：${amount}\n付款ID：${paymentResult.paymentId}\n\n點擊確定前往訂單詳情`)
-  } else if (paymentMethod.value === 'creditcard') {
-    alert(`💳 ${paymentMethodName} 模擬付款成功！\n\n訂單編號：${order.orderNumber}\n金額：${amount}\n付款ID：${paymentResult.paymentId}\n\n點擊確定前往訂單詳情`)
-  }
- }
- 
- function handleSubmitError(error) {
-  let errorMsg = '訂單提交失敗，請重新嘗試'
-  
-  if (error.message.includes('登入已過期') || error.message.includes('認證')) {
-    errorMsg = '登入已過期，請重新登入'
-    localStorage.removeItem('auth_token')
-    localStorage.removeItem('user_info')
-    setTimeout(() => router.push('/login'), 1500)
-  } else if (error.message.includes('已滿員')) {
-    errorMsg = error.message + '，請重新選擇活動'
-  } else if (error.message.includes('已結束') || error.message.includes('過期')) {
-    errorMsg = error.message + '，請移除過期活動'
-  } else if (error.message.includes('重複')) {
-    errorMsg = error.message
-  } else if (error.message.includes('網路') || error.message.includes('請求失敗')) {
-    errorMsg = '網路連線有問題，請檢查網路後重試'
-  } else if (error.message) {
-    errorMsg = error.message
-  }
-  
-  setError(errorMsg)
- }
- 
- function setError(message) {
-  errorMessage.value = message
- }
- 
- function clearAllErrors() {
-  errorMessage.value = ''
-  clearOrderError()
-  formErrors.value = {}
-  paymentMethodError.value = ''
- }
- 
- const goBack = () => {
-  router.push('/cart')
- }
- </script>
+
+} catch (error) {
+  console.error('❌ Order submission failed:', error)
+  handleSubmitError(error)
+} finally {
+  isSubmitting.value = false
+}
+}
+
+function validateForm() {
+formErrors.value = {}
+
+if (!customerInfo.value.name.trim()) {
+  formErrors.value.name = '請輸入姓名'
+}
+
+if (!customerInfo.value.phone.trim()) {
+  formErrors.value.phone = '請輸入電話號碼'
+}
+
+if (!customerInfo.value.email.trim()) {
+  formErrors.value.email = '請輸入電子郵件'
+} else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(customerInfo.value.email)) {
+  formErrors.value.email = '電子郵件格式不正確'
+}
+
+if (!paymentMethod.value) {
+  paymentMethodError.value = '請選擇付款方式'
+  return false
+}
+
+if (Object.keys(formErrors.value).length > 0) {
+  setError('請修正表單錯誤')
+  return false
+}
+
+return true
+}
+
+function showPaymentSuccessMessage(order, paymentResult) {
+const paymentMethodName = paymentMethod.value === 'linepay' ? 'LINE Pay' : '信用卡'
+const amount = totalPrice.value
+
+if (paymentMethod.value === 'linepay') {
+  alert(`🟢 ${paymentMethodName} 模擬付款成功！\n\n訂單編號：${order.orderNumber}\n金額：${amount}\n付款ID：${paymentResult.paymentId}\n\n點擊確定前往訂單詳情`)
+} else if (paymentMethod.value === 'creditcard') {
+  alert(`💳 ${paymentMethodName} 模擬付款成功！\n\n訂單編號：${order.orderNumber}\n金額：${amount}\n付款ID：${paymentResult.paymentId}\n\n點擊確定前往訂單詳情`)
+}
+}
+
+function handleSubmitError(error) {
+let errorMsg = '訂單提交失敗，請重新嘗試'
+
+if (error.message.includes('登入已過期') || error.message.includes('認證')) {
+  errorMsg = '登入已過期，請重新登入'
+  localStorage.removeItem('auth_token')
+  localStorage.removeItem('user_info')
+  setTimeout(() => router.push('/login'), 1500)
+} else if (error.message.includes('已滿員')) {
+  errorMsg = error.message + '，請重新選擇活動'
+} else if (error.message.includes('已結束') || error.message.includes('過期')) {
+  errorMsg = error.message + '，請移除過期活動'
+} else if (error.message.includes('重複')) {
+  errorMsg = error.message
+} else if (error.message.includes('網路') || error.message.includes('請求失敗')) {
+  errorMsg = '網路連線有問題，請檢查網路後重試'
+} else if (error.message) {
+  errorMsg = error.message
+}
+
+setError(errorMsg)
+}
+
+function setError(message) {
+errorMessage.value = message
+}
+
+function clearAllErrors() {
+errorMessage.value = ''
+clearOrderError()
+clearLinePayState()
+formErrors.value = {}
+paymentMethodError.value = ''
+}
+
+const goBack = () => {
+router.push('/cart')
+}
+</script>
  
  <style scoped>
  * {
