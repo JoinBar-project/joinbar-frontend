@@ -90,12 +90,12 @@
         </div>
       </div>
       
-      <div class="text-sm text-right mt-1 text-[var(--color-primary-orange)] cursor-pointer hover:underline underline-offset-4">
+      <div class="text-xs text-right mt-1 text-[var(--color-primary-orange)] cursor-pointer hover:underline underline-offset-4">
         忘記密碼？
       </div>
       <div class="flex items-center my-4">
         <div class="flex-grow h-px bg-gray-300"></div>
-        <span class="px-4 text-[var(--color-main-text)] text-sm">或</span>
+        <span class="px-4 text-gray-300 text-sm">或</span>
         <div class="flex-grow h-px bg-gray-300"></div>
       </div>
 

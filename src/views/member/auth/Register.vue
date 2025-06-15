@@ -11,12 +11,12 @@
     </transition>
     
     <div class="flex border-b border-[var(--color-text-unselected)]">
-      <router-link to="/login" class="flex-1 py-2 text-center font-semibold text-[var(--color-text-unselected)] hover:text-[var(--color-text-selected)] transition">
+      <router-link to="/login" class="flex-1 py-2 text-center font-semibold text-[var(--color-text-unselected)] hover:text-[var(--color-secondary-green)] transition">
         會員登入
       </router-link>
       <button
         class="flex-1 py-2 text-center font-semibold border-b-3 border-[var(--color-text-salmon-pink)]"
-        style="color: var(--color-text-selected);">
+        style="color: var(--color-secondary-green);">
         註冊
       </button>
     </div>
@@ -25,15 +25,15 @@
       <div :key="step">
         <!-- Step 1: 註冊表單 -->
         <div v-if="step === 1" class="space-y-4 mt-6">
-          <h2 class="text-lg font-semibold mb-4" style="color: var(--color-text-selected);">建立帳號</h2>
+          <h2 class="text-lg font-semibold mb-4" style="color: var(--color-primary-orange);">建立帳號</h2>
           
           <div v-for="(field, index) in registerFields" :key="index" class="space-y-1">
             <div 
               :class="[
                 'flex items-center border rounded px-3 py-2 transition-colors',
                 errors[field.model] 
-                  ? 'border-[var(--color-text-warn)] border-2 bg-white' 
-                  : 'border-[var(--color-text-selected)]',
+                  ? 'border-[var(--color-primary-orange)] border-2 bg-white' 
+                  : 'border-[var(--color-icon-secondary)]',
                 field.type === 'password' ? 'relative' : ''
               ]">
               <i :class="[ field.icon,'mr-2',
@@ -48,10 +48,10 @@
                 :class="[
                   'w-full outline-none placeholder-opacity-70 transition-colors text-sm',
                   errors[field.model] 
-                    ? 'text-red-600 placeholder-red-400' 
-                    : 'text-[var(--color-text-selected)] placeholder-[var(--color-text-selected)]'
+                    ? 'text-[var(--color-primary-orange)] placeholder-[var(--color-primary-orange)]' 
+                    : 'text-[var(--color-secondary-green)] placeholder-[var(--color-secondary-green)]'
                 ]"
-                :style="!errors[field.model] ? 'text-[var(--color-text-selected)]' : ''"
+                :style="!errors[field.model] ? 'text-[var(--color-primary-orange)]' : ''"
               />
 
               <button
@@ -65,15 +65,15 @@
               </button>
             </div>
 
-            <div v-if="errors[field.model]" class="text-[var(--color-text-warn)] text-xs ml-1">
+            <div v-if="errors[field.model]" class="text-[var(--color-primary-orange)] text-xs ml-1">
               {{ field.placeholder }}為必填欄位
             </div>
           </div>
 
           <div class="text-center text-sm text-gray-300 my-4 flex items-center">
-            <div class="flex-grow h-px bg-[var(--color-icon-secondary)]"></div>
-            <span class="mx-2" style="color: var(--color-text-selected);">或</span>
-            <div class="flex-grow h-px bg-[var(--color-icon-secondary)]"></div>
+            <div class="flex-grow h-px bg-gray-300"></div>
+            <span class="mx-2 text-gray-300">或</span>
+            <div class="flex-grow h-px bg-gray-300"></div>
           </div>
           <div class="flex space-x-2 justify-center">
             <button class="btn bg-white text-black border-[#e5e5e5] border-2 flex items-center px-4 py-2 rounded-lg hover:shadow-md transition">
@@ -86,14 +86,16 @@
 
         <button
           @click="goToPreferences"
-          class="block mx-auto mt-6 px-6 py-2 bg-gradient-to-r from-[#fbdaca] to-[#eb96a4] text-[var(--color-black)] rounded-lg font-semibold text-sm mt-4 shadow-md transition duration-300 transform hover:scale-105 hover:brightness-110 hover:shadow-lg">
+          class="block mx-auto mt-6 px-6 py-2 bg-gradient-to-r from-[var(--color-secondary-green)] via-[#d8dbaf] to-[var(--color-primary-orange)] text-[var(--color-black)] rounded-lg font-semibold text-sm mt-4 shadow-md transition duration-300 transform hover:scale-105 hover:brightness-110 hover:shadow-lg">
           下一步
         </button>
 
           <!-- 登入提示 -->
           <div class="text-center mt-4 pt-4 border-t border-gray-300">
             <span class="text-sm text-gray-300">已有帳號？</span>
-            <router-link to="/login" class="text-sm hover:underline ml-1" style="color: var(--color-text-selected);">
+            <router-link
+              to="/login"
+              class="text-sm hover:underline underline-offset-4 ml-1 text-[var(--color-secondary-green)]">
               立即登入
             </router-link>
           </div>
@@ -101,16 +103,16 @@
 
         <!-- Step 2: 偏好選擇 -->
         <div v-else class="space-y-4 mt-6">
-          <h2 class="text-lg font-semibold mb-4" style="color: var(--color-text-selected);">選擇你的酒吧偏好</h2>
+          <h2 class="text-lg font-semibold mb-4 text-[var(--color-primary-orange)]">選擇你的酒吧偏好</h2>
 
           <div>
-            <h3 class="text-base font-medium mb-2 text-[var(--color-text-selected)]">酒吧類型</h3>
+            <h3 class="text-base font-medium mb-2 text-[var(--color-secondary-green)]">酒吧類型</h3>
             <div class="grid grid-cols-3 grid-rows-2 gap-3 ">
               <button v-for="type in barTypes" :key="type" 
                 @click="toggleSelection(form.preferences.types, type)"
                 :class="['text-sm py-2 rounded-full border transition duration-200 cursor-pointer']"
                 :style="form.preferences.types.includes(type)
-                  ? 'background-color: var(--color-select); color: white; border-color: var(--color-select);'
+                  ? 'background-color: var(--color-primary-orange); color: white; border-color: var(--color-primary-orange);'
                   : 'background-color: var(--color-icon-secondary); color: var(--color-black); border-color: var(--color-black);'">
                 {{ type }}
               </button>
@@ -118,13 +120,13 @@
           </div>
 
           <div>
-            <h3 class="text-base font-medium mb-2 text-[var(--color-text-selected)]">酒吧氛圍</h3>
+            <h3 class="text-base font-medium mb-2 text-[var(--color-secondary-green)]">酒吧氛圍</h3>
             <div class="grid grid-cols-3 grid-rows-2 gap-2">
               <button v-for="mood in barMoods" :key="mood"
                 @click="toggleSelection(form.preferences.moods, mood)"
                 :class="['text-sm py-2 rounded-full border transition duration-200 cursor-pointer']"
                 :style="form.preferences.moods.includes(mood)
-                  ? 'background-color: var(--color-select); color: white; border-color: var(--color-select);'
+                  ? 'background-color: var(--color-primary-orange); color: white; border-color: var(--color-primary-orange);'
                   : 'background-color: var(--color-icon-secondary); color: var(--color-black); border-color: var(--color-black);'">
                 {{ mood }}
               </button>
@@ -134,12 +136,12 @@
           <div class="flex justify-between mt-6">
             <button
               @click="step = 1"
-              class="text-sm text-[var(--color-text-selected)] hover:text-[var(--color-text-warn)] active:text-[var(--color-text-warn)] transition-colors duration-200">
+              class="text-sm text-[var(--color-primary-orange)] hover:text-[var(--color-secondary-green)] active:text-[var(--color-text-warn)] transition-colors duration-200">
               <i class="fa-solid fa-arrow-left mr-1"></i> 返回
             </button>
             <button
               @click="submitRegistration"
-              class="px-4 py-2 bg-gradient-to-r from-[#fbdaca] to-[#eb96a4] text-[var(--color-black)] rounded-lg font-medium shadow-md transition duration-300 transform hover:scale-105 hover:brightness-110 hover:shadow-lg">
+              class="px-4 py-2 bg-gradient-to-r from-[var(--color-secondary-green)] via-[#d8dbaf] to-[var(--color-primary-orange)] text-[var(--color-black)] rounded-lg font-medium shadow-md transition duration-300 transform hover:scale-105 hover:brightness-110 hover:shadow-lg">
               完成註冊
             </button>
           </div>
