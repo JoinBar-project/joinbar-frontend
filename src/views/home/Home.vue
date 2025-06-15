@@ -7,20 +7,54 @@ const showAd = ref(false)
 const adImage = adImageFile
 
 
-// onMounted(() => {
-//   const hasSeenAd = localStorage.getItem('hasSeenAd')
-//   if (!hasSeenAd) {
-//     showAd.value = true
-//     localStorage.setItem('hasSeenAd', 'true')
-//   }
-// })
-
 onMounted(() => {
-  showAd.value = true
+  const hasSeenAd = localStorage.getItem('hasSeenAd')
+  if (!hasSeenAd) {
+    showAd.value = true
+    localStorage.setItem('hasSeenAd', 'true')
+  }
 })
+
+// onMounted(() => {
+//   showAd.value = true
+// })
 
 
 const videoUrl = new URL('@/assets/homepage/JOINBAR-NOLOGO.mp4', import.meta.url).href
+
+const features = [
+  {
+    title: "社群活動",
+    desc: "參與我們舉辦的品酒會、派對等精彩活動。",
+    image: "/wine.gif",
+    path: "/event",
+    gridArea: "1 / 2 / 3 / 4" // large feature
+  },
+  {
+    title: "酒吧地圖",
+    image: "/google-maps.gif",
+    path: "/map",
+    gridArea: "1 / 1 / 2 / 2"
+  },
+  {
+    title: "訂閱優惠",
+    image: "/fireworks-.gif",
+    path: "/subscription",
+    gridArea: "1 / 4 / 2 / 5"
+  },
+  {
+    title: "用戶評論",
+    image: "/interaction.gif",
+    path: "/comments",
+    gridArea: "2 / 1 / 3 / 2"
+  },
+  {
+    title: "會員服務",
+    image: "/social-care.gif",
+    path: "/member",
+    gridArea: "2 / 4 / 3 / 5"
+  }
+]
 
 const bars = [
   {
@@ -71,27 +105,17 @@ const bars = [
     <div class="section-number-bg num-1">1</div>
     <h2>JoinBar 為你串連酒吧、活動與朋友</h2>
     <div class="features-grid">
-      <div class="feature-card large-feature">
-        <img src="/wine.gif" alt="JoinBar Logo">
-        <h3>社群活動</h3>
-        <p>參與我們舉辦的品酒會、派對等精彩活動。</p>
-      </div>
-      <div class="feature-card">
-        <img src="/google-maps.gif">
-        <h3>酒吧地圖</h3>
-      </div>
-      <div class="feature-card">
-        <img src="/fireworks-.gif">
-        <h3>訂閱優惠</h3>
-      </div>
-      <div class="feature-card">
-        <img src="/interaction.gif">
-        <h3>用戶評論</h3>
-      </div>
-      <div class="feature-card">
-        <img src="/social-care.gif">
-        <h3>會員服務</h3>
-      </div>
+      <router-link
+        v-for="(feature, index) in features"
+        :key="index"
+        :to="feature.path"
+        class="feature-card"
+        :style="{ gridArea: feature.gridArea }"
+      >
+        <img :src="feature.image" :alt="feature.title" />
+        <h3>{{ feature.title }}</h3>
+        <p v-if="feature.desc">{{ feature.desc }}</p>
+      </router-link>
     </div>
   </section>
 
@@ -245,13 +269,6 @@ const bars = [
   font-weight: 400;
   color: #666666;
 }
-
-.feature-card:nth-child(1) { grid-area: 1 / 2 / 3 / 4; }
-.feature-card:nth-child(2) { grid-area: 1 / 1 / 2 / 2; }
-.feature-card:nth-child(3) { grid-area: 1 / 4 / 2 / 5; }
-.feature-card:nth-child(4) { grid-area: 2 / 1 / 3 / 2; }
-.feature-card:nth-child(5) { grid-area: 2 / 4 / 3 / 5; }
-
 
 .feature-card img {
   filter: grayscale(100%);
