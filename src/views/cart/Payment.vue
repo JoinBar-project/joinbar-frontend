@@ -87,20 +87,20 @@
         
         <div class="payment-options">
           <button 
-            class="btn bg-[#25c916] text-white border-[#25c916] payment-btn"
-            :class="{ 'ring-2 ring-[#25c916] ring-offset-2': paymentMethod === 'linepay' }"
+            class="payment-btn linepay-btn"
+            :class="{ 'selected': paymentMethod === 'linepay' }"
             @click="paymentMethod = 'linepay'"
           >
-          <IconLine />
+            <IconLine />
             LINE Pay
           </button>
  
           <button 
-            class="btn bg-[#ffd4d4] text-black border-[#ffd4d4] payment-btn"
-            :class="{ 'ring-2 ring-[#ffd4d4] ring-offset-2': paymentMethod === 'creditcard' }"
+            class="payment-btn creditcard-btn"
+            :class="{ 'selected': paymentMethod === 'creditcard' }"
             @click="paymentMethod = 'creditcard'"
           >
-          <IconCreditCard />  
+            <IconCreditCard />  
             信用卡
           </button>
         </div>
@@ -114,7 +114,7 @@
             總金額：<strong>${{ totalPrice }}</strong>
           </p>
           <button 
-            class="btn bg-[#860914] text-white checkout-btn"
+            class="checkout-btn"
             :class="{ 'btn-disabled': !canSubmit || isSubmitting || orderLoading }"
             :disabled="!canSubmit || isSubmitting || orderLoading" 
             @click="submitOrder"
@@ -139,7 +139,7 @@
  <script setup>
 import { useCartStore } from '@/stores/cartStore'
 import { useOrder } from '@/composable/useOrder'
-import { useLinePay } from '@/composables/useLinePay'
+import { useLinePay } from '@/composable/useLinePay'
 import { computed, ref, onMounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import dayjs from 'dayjs'
@@ -156,20 +156,20 @@ const cart = useCartStore()
 const router = useRouter()
 
 const { 
-createOrder, 
-confirmPayment, 
-simulatePayment,
-isLoading: orderLoading,
-error: orderError,
-clearError: clearOrderError
+ createOrder, 
+ confirmPayment, 
+ simulatePayment,
+ isLoading: orderLoading,
+ error: orderError,
+ clearError: clearOrderError
 } = useOrder()
 
 const { 
-createLinePayment, 
-redirectToLinePay,
-isLoading: linePayLoading,
-error: linePayError,
-clearState: clearLinePayState
+ createLinePayment, 
+ redirectToLinePay,
+ isLoading: linePayLoading,
+ error: linePayError,
+ clearState: clearLinePayState
 } = useLinePay()
 
 const paymentMethod = ref('')
@@ -180,24 +180,25 @@ const errorMessage = ref('')
 const paymentMethodError = ref('')
 
 const customerInfo = ref({
-name: '',
-phone: '',
-email: ''
+ name: '',
+ phone: '',
+ email: ''
 })
 
 const formErrors = ref({})
 
 onMounted(async () => {
-loadUserInfo()
-setTimeout(() => {
-  if (cart.items.length === 0) {
-    alert('購物車是空的，即將返回購物車頁面')
-    router.push('/cart')
-    return
-  }
-  
-  isLoading.value = false
-}, 400)
+ loadUserInfo()
+ handleLinePayReturn() // 新增：處理 LINE Pay 回調
+ setTimeout(() => {
+   if (cart.items.length === 0) {
+     alert('購物車是空的，即將返回購物車頁面')
+     router.push('/cart')
+     return
+   }
+   
+   isLoading.value = false
+ }, 400)
 })
 
 const cartItems = computed(() => cart.items)
@@ -205,231 +206,264 @@ const cartItems = computed(() => cart.items)
 const calcSubtotal = (item) => (item.price * item.quantity).toLocaleString()
 
 const totalPrice = computed(() =>
-cartItems.value.reduce((acc, item) => acc + item.price * item.quantity, 0).toLocaleString(),
+ cartItems.value.reduce((acc, item) => acc + item.price * item.quantity, 0).toLocaleString(),
 )
 
 const canSubmit = computed(() => {
-return paymentMethod.value && 
-       !isSubmitting.value && 
-       !orderLoading.value &&
-       !linePayLoading.value &&
-       isCustomerInfoValid.value &&
-       cartItems.value.length > 0
+ return paymentMethod.value && 
+        !isSubmitting.value && 
+        !orderLoading.value &&
+        !linePayLoading.value &&
+        isCustomerInfoValid.value &&
+        cartItems.value.length > 0
 })
 
 const isCustomerInfoValid = computed(() => {
-const { name, phone, email } = customerInfo.value
-const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-
-return name.trim() && 
-       phone.trim() && 
-       email.trim() && 
-       emailRegex.test(email)
+ const { name, phone, email } = customerInfo.value
+ const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+ 
+ return name.trim() && 
+        phone.trim() && 
+        email.trim() && 
+        emailRegex.test(email)
 })
 
 const getSubmitButtonText = () => {
-if (isSubmitting.value || orderLoading.value || linePayLoading.value) return '處理中...'
-if (!paymentMethod.value) return '請選擇付款方式'
-if (!isCustomerInfoValid.value) return '請完成客戶資訊'
-return '確認付款'
+ if (isSubmitting.value || orderLoading.value || linePayLoading.value) return '處理中...'
+ if (!paymentMethod.value) return '請選擇付款方式'
+ if (!isCustomerInfoValid.value) return '請完成客戶資訊'
+ return '確認付款'
 }
 
 watch(() => customerInfo.value.name, () => {
-if (formErrors.value.name) delete formErrors.value.name
+ if (formErrors.value.name) delete formErrors.value.name
 })
 
 watch(() => customerInfo.value.phone, () => {
-if (formErrors.value.phone) delete formErrors.value.phone
+ if (formErrors.value.phone) delete formErrors.value.phone
 })
 
 watch(() => customerInfo.value.email, () => {
-if (formErrors.value.email) delete formErrors.value.email
+ if (formErrors.value.email) delete formErrors.value.email
 })
 
 watch(() => paymentMethod.value, () => {
-paymentMethodError.value = ''
+ paymentMethodError.value = ''
 })
 
 function loadUserInfo() {
-try {
-  const userInfo = localStorage.getItem('user_info')
-  if (userInfo) {
-    const user = JSON.parse(userInfo)
-    customerInfo.value.name = user.username || user.lineDisplayName || ''
-    customerInfo.value.email = user.email || ''
-    console.log('✅ 用戶資訊已載入:', user.username || user.lineDisplayName)
-  }
-} catch (error) {
-  console.warn('⚠️ 載入用戶資訊失敗:', error)
+ try {
+   const userInfo = localStorage.getItem('user_info')
+   if (userInfo) {
+     const user = JSON.parse(userInfo)
+     customerInfo.value.name = user.username || user.lineDisplayName || ''
+     customerInfo.value.email = user.email || ''
+     console.log('✅ 用戶資訊已載入:', user.username || user.lineDisplayName)
+   }
+ } catch (error) {
+   console.warn('⚠️ 載入用戶資訊失敗:', error)
+ }
 }
+
+// 新增：處理 LINE Pay 回調
+const handleLinePayReturn = () => {
+ const urlParams = new URLSearchParams(window.location.search)
+ const transactionId = urlParams.get('transactionId')
+ const orderId = urlParams.get('orderId')
+ 
+ if (transactionId && orderId) {
+   console.log('🔄 檢測到 LINE Pay 回調:', { transactionId, orderId })
+   router.replace(`/payment-waiting?orderId=${orderId}&transactionId=${transactionId}`)
+ }
 }
 
 const submitOrder = async () => {
-if (isSubmitting.value || !canSubmit.value) return
+ if (isSubmitting.value || !canSubmit.value) return
 
-try {
-  isSubmitting.value = true
-  clearAllErrors()
+ try {
+   isSubmitting.value = true
+   clearAllErrors()
 
-  console.log('🔄 Starting complete order processing flow...')
+   console.log('🔄 開始完整訂單處理流程...')
 
-  if (!validateForm()) {
-    console.log('❌ Form validation failed')
-    return
-  }
+   if (!validateForm()) {
+     console.log('❌ 表單驗證失敗')
+     return
+   }
 
-  console.log('📦 Step 1/3: Preparing order data...')
-  const orderData = {
-    items: cartItems.value.map(item => ({
-      eventId: item.id,
-      quantity: 1
-    })),
-    paymentMethod: paymentMethod.value
-  }
-  console.log('✅ Order data prepared:', orderData)
+   console.log('📦 Step 1/3: 準備訂單數據...')
+   const orderData = {
+     items: cartItems.value.map(item => ({
+       eventId: item.id,
+       quantity: 1
+     })),
+     paymentMethod: paymentMethod.value
+   }
+   console.log('✅ 訂單數據準備完成:', orderData)
 
-  console.log('🔄 Step 2/3: Creating order...')
-  const orderResponse = await createOrder(orderData)
-  const order = orderResponse.order
-  console.log('✅ Order created successfully:', order.orderNumber)
+   console.log('🔄 Step 2/3: 創建訂單...')
+   const orderResponse = await createOrder(orderData)
+   const order = orderResponse.order
+   
+   // 修復：統一獲取訂單 ID
+   const orderId = order.id || order.orderId
+   if (!orderId) {
+     throw new Error('訂單 ID 格式錯誤')
+   }
+   
+   console.log('✅ 訂單創建成功:', { 
+     orderNumber: order.orderNumber, 
+     orderId: orderId 
+   })
 
-  if (paymentMethod.value === 'linepay') {
-    console.log('🔄 Step 3/3: Processing LINE Pay payment...')
-    
-    try {
-      const paymentResult = await createLinePayment(order.orderId || order.id)
-      console.log('✅ LINE Pay payment created:', paymentResult.transactionId)
-      
-      const confirmRedirect = confirm(
-        `✅ 訂單創建成功！\n\n` +
-        `訂單編號：${order.orderNumber}\n` +
-        `金額：$${totalPrice.value}\n\n` +
-        `點擊「確定」跳轉到 LINE Pay 付款頁面\n` +
-        `完成付款後系統會自動確認訂單`
-      )
-      
-      if (confirmRedirect) {
-        redirectToLinePay(paymentResult.paymentUrl)
-        cart.clearCart()
-      } else {
-        setError('已取消付款，訂單已創建但尚未付款')
-      }
-      
-    } catch (linePayError) {
-      console.error('❌ LINE Pay payment failed:', linePayError)
-      setError(`LINE Pay 付款失敗：${linePayError.message}`)
-    }
-    
-  } else {
-    console.log('🔄 Step 3/3: Processing simulated payment...')
-    const paymentData = {
-      paymentMethod: paymentMethod.value,
-      orderData: order
-    }
-    const paymentResult = await simulatePayment(paymentData)
-    console.log('✅ Payment processed:', paymentResult.paymentId)
+   if (paymentMethod.value === 'linepay') {
+     console.log('🔄 Step 3/3: 處理 LINE Pay 付款...')
+     
+     try {
+       const paymentResult = await createLinePayment(orderId)
+       console.log('✅ LINE Pay 付款創建成功:', paymentResult.transactionId)
+       
+       // 保存訂單信息到 sessionStorage
+       sessionStorage.setItem('pendingOrder', JSON.stringify({
+         orderId: orderId,
+         orderNumber: order.orderNumber,
+         transactionId: paymentResult.transactionId
+       }))
+       
+       const confirmRedirect = confirm(
+         `✅ 訂單創建成功！\n\n` +
+         `訂單編號：${order.orderNumber}\n` +
+         `金額：$${totalPrice.value}\n\n` +
+         `點擊「確定」跳轉到 LINE Pay 付款頁面\n` +
+         `完成付款後系統會自動確認訂單`
+       )
+       
+       if (confirmRedirect) {
+         cart.clearCart()
+         redirectToLinePay(paymentResult.paymentUrl)
+       } else {
+         setError('已取消付款，訂單已創建但尚未付款')
+       }
+       
+     } catch (linePayError) {
+       console.error('❌ LINE Pay 付款失敗:', linePayError)
+       setError(`LINE Pay 付款失敗：${linePayError.message}`)
+     }
+     
+   } else {
+     console.log('🔄 Step 3/3: 處理模擬付款...')
+     const paymentData = {
+       paymentMethod: paymentMethod.value,
+       orderData: order
+     }
+     const paymentResult = await simulatePayment(paymentData)
+     console.log('✅ 付款處理完成:', paymentResult.paymentId)
 
-    console.log('🔄 Step 4/4: Confirming payment...')
-    await confirmPayment(order.orderId || order.id, paymentResult)
-    console.log('✅ Payment confirmed')
+     console.log('🔄 Step 4/4: 確認付款...')
+     await confirmPayment(orderId, paymentResult)
+     console.log('✅ 付款確認完成')
 
-    showPaymentSuccessMessage(order, paymentResult)
+     showPaymentSuccessMessage(order, paymentResult)
 
-    console.log('🔄 Step 5/5: Clearing cart and redirecting...')
-    cart.clearCart()
-    
-    const orderId = order.orderId || order.id
-    router.push(`/order-success/${order.orderNumber}?orderId=${orderId}`)
-    
-    console.log('🎉 Order processing completed!')
-  }
+     console.log('🔄 Step 5/5: 清空購物車並跳轉...')
+     cart.clearCart()
+     
+     // 修復：統一路由跳轉
+     router.push({
+       name: 'OrderSuccess',
+       params: { orderNumber: order.orderNumber },
+       query: { orderId: orderId }
+     })
+     
+     console.log('🎉 訂單處理完成！')
+   }
 
-} catch (error) {
-  console.error('❌ Order submission failed:', error)
-  handleSubmitError(error)
-} finally {
-  isSubmitting.value = false
-}
+ } catch (error) {
+   console.error('❌ 訂單提交失敗:', error)
+   handleSubmitError(error)
+ } finally {
+   isSubmitting.value = false
+ }
 }
 
 function validateForm() {
-formErrors.value = {}
+ formErrors.value = {}
+ 
+ if (!customerInfo.value.name.trim()) {
+   formErrors.value.name = '請輸入姓名'
+ }
+ 
+ if (!customerInfo.value.phone.trim()) {
+   formErrors.value.phone = '請輸入電話號碼'
+ }
+ 
+ if (!customerInfo.value.email.trim()) {
+   formErrors.value.email = '請輸入電子郵件'
+ } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(customerInfo.value.email)) {
+   formErrors.value.email = '電子郵件格式不正確'
+ }
+ 
+ if (!paymentMethod.value) {
+   paymentMethodError.value = '請選擇付款方式'
+   return false
+ }
+ 
+ if (Object.keys(formErrors.value).length > 0) {
+   setError('請修正表單錯誤')
+   return false
+ }
 
-if (!customerInfo.value.name.trim()) {
-  formErrors.value.name = '請輸入姓名'
-}
-
-if (!customerInfo.value.phone.trim()) {
-  formErrors.value.phone = '請輸入電話號碼'
-}
-
-if (!customerInfo.value.email.trim()) {
-  formErrors.value.email = '請輸入電子郵件'
-} else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(customerInfo.value.email)) {
-  formErrors.value.email = '電子郵件格式不正確'
-}
-
-if (!paymentMethod.value) {
-  paymentMethodError.value = '請選擇付款方式'
-  return false
-}
-
-if (Object.keys(formErrors.value).length > 0) {
-  setError('請修正表單錯誤')
-  return false
-}
-
-return true
+ return true
 }
 
 function showPaymentSuccessMessage(order, paymentResult) {
-const paymentMethodName = paymentMethod.value === 'linepay' ? 'LINE Pay' : '信用卡'
-const amount = totalPrice.value
-
-if (paymentMethod.value === 'linepay') {
-  alert(`🟢 ${paymentMethodName} 模擬付款成功！\n\n訂單編號：${order.orderNumber}\n金額：${amount}\n付款ID：${paymentResult.paymentId}\n\n點擊確定前往訂單詳情`)
-} else if (paymentMethod.value === 'creditcard') {
-  alert(`💳 ${paymentMethodName} 模擬付款成功！\n\n訂單編號：${order.orderNumber}\n金額：${amount}\n付款ID：${paymentResult.paymentId}\n\n點擊確定前往訂單詳情`)
-}
+ const paymentMethodName = paymentMethod.value === 'linepay' ? 'LINE Pay' : '信用卡'
+ const amount = totalPrice.value
+ 
+ if (paymentMethod.value === 'linepay') {
+   alert(`🟢 ${paymentMethodName} 模擬付款成功！\n\n訂單編號：${order.orderNumber}\n金額：${amount}\n付款ID：${paymentResult.paymentId}\n\n點擊確定前往訂單詳情`)
+ } else if (paymentMethod.value === 'creditcard') {
+   alert(`💳 ${paymentMethodName} 模擬付款成功！\n\n訂單編號：${order.orderNumber}\n金額：${amount}\n付款ID：${paymentResult.paymentId}\n\n點擊確定前往訂單詳情`)
+ }
 }
 
 function handleSubmitError(error) {
-let errorMsg = '訂單提交失敗，請重新嘗試'
-
-if (error.message.includes('登入已過期') || error.message.includes('認證')) {
-  errorMsg = '登入已過期，請重新登入'
-  localStorage.removeItem('auth_token')
-  localStorage.removeItem('user_info')
-  setTimeout(() => router.push('/login'), 1500)
-} else if (error.message.includes('已滿員')) {
-  errorMsg = error.message + '，請重新選擇活動'
-} else if (error.message.includes('已結束') || error.message.includes('過期')) {
-  errorMsg = error.message + '，請移除過期活動'
-} else if (error.message.includes('重複')) {
-  errorMsg = error.message
-} else if (error.message.includes('網路') || error.message.includes('請求失敗')) {
-  errorMsg = '網路連線有問題，請檢查網路後重試'
-} else if (error.message) {
-  errorMsg = error.message
-}
-
-setError(errorMsg)
+ let errorMsg = '訂單提交失敗，請重新嘗試'
+ 
+ if (error.message.includes('登入已過期') || error.message.includes('認證')) {
+   errorMsg = '登入已過期，請重新登入'
+   localStorage.removeItem('auth_token')
+   localStorage.removeItem('user_info')
+   setTimeout(() => router.push('/login'), 1500)
+ } else if (error.message.includes('已滿員')) {
+   errorMsg = error.message + '，請重新選擇活動'
+ } else if (error.message.includes('已結束') || error.message.includes('過期')) {
+   errorMsg = error.message + '，請移除過期活動'
+ } else if (error.message.includes('重複')) {
+   errorMsg = error.message
+ } else if (error.message.includes('網路') || error.message.includes('請求失敗')) {
+   errorMsg = '網路連線有問題，請檢查網路後重試'
+ } else if (error.message) {
+   errorMsg = error.message
+ }
+ 
+ setError(errorMsg)
 }
 
 function setError(message) {
-errorMessage.value = message
+ errorMessage.value = message
 }
 
 function clearAllErrors() {
-errorMessage.value = ''
-clearOrderError()
-clearLinePayState()
-formErrors.value = {}
-paymentMethodError.value = ''
+ errorMessage.value = ''
+ clearOrderError()
+ clearLinePayState()
+ formErrors.value = {}
+ paymentMethodError.value = ''
 }
 
 const goBack = () => {
-router.push('/cart')
+ router.push('/cart')
 }
 </script>
  
@@ -443,16 +477,21 @@ router.push('/cart')
   max-width: 1280px;
   margin: 48px auto;
   padding: 40px;
-  background-color: #fff;
+  background-color: var(--color-black, #1a1a1a);
   border-radius: 20px;
   box-shadow: 0 0 16px rgba(0, 0, 0, 0.05);
   font-size: 15px;
+ }
+
+ .cart-container h2 {
+  color: var(--color-text-selected, #f5d1c0);
+  margin-bottom: 32px;
  }
  
  .loading-box {
   text-align: center;
   padding: 48px 0;
-  color: #666;
+  color: var(--color-text-selected, #f5d1c0);
  }
  
  .spinner {
@@ -460,7 +499,7 @@ router.push('/cart')
   width: 40px;
   height: 40px;
   border: 4px solid #eee;
-  border-top: 4px solid #860914;
+  border-top: 4px solid var(--color-select, #d17361);
   border-radius: 50%;
   animation: spin 0.8s linear infinite;
  }
@@ -475,7 +514,8 @@ router.push('/cart')
   display: flex;
   padding: 16px 0;
   font-weight: bold;
-  border-bottom: 1px solid #ddd;
+  border-bottom: 1px solid var(--color-icon-secondary, #bcaea4);
+  color: var(--color-text-selected, #f5d1c0);
  }
  
  .cart-header > div {
@@ -493,10 +533,11 @@ router.push('/cart')
   align-items: center;
   padding: 16px 0;
   border-bottom: 1px solid #eee;
+  color: var(--color-text-selected, #f5d1c0);
  }
  
  .cart-row:hover {
-  background-color: #fafafa;
+  background-color: rgba(245, 209, 192, 0.05);
  }
  
  .cart-row > div {
@@ -527,6 +568,7 @@ router.push('/cart')
   font-size: 16px;
   font-weight: 600;
   margin: 0;
+  color: var(--color-text-selected, #f5d1c0);
  }
  
  .total-bar {
@@ -539,6 +581,7 @@ router.push('/cart')
  
  .total-label {
   font-size: 19px;
+  color: var(--color-text-selected, #f5d1c0);
  }
  
  .payment-method {
@@ -546,12 +589,14 @@ router.push('/cart')
   margin-top: 16px;
  }
  
+ /* === 修正後的付款按鈕樣式 === */
  .payment-options {
   display: flex;
   gap: 16px;
   margin-top: 16px;
  }
  
+ /* 基本按鈕樣式 */
  .payment-btn {
   padding: 12px 20px;
   font-size: 16px;
@@ -563,40 +608,97 @@ router.push('/cart')
   align-items: center;
   justify-content: center;
   gap: 8px;
-  transition: all 0.2s;
+  border-radius: 6px;
+  border: 2px solid;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  position: relative;
  }
- 
+
  .payment-btn:hover {
   transform: translateY(-1px);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
  }
+
+ /* LINE Pay 按鈕 */
+ .linepay-btn {
+  background-color: var(--color-line-green, #25c916);
+  color: white;
+  border-color: var(--color-line-green, #25c916);
+ }
+
+ .linepay-btn:hover {
+  background-color: var(--color-line-green-dark, #20b012);
+  border-color: var(--color-line-green-dark, #20b012);
+ }
+
+ .linepay-btn.selected {
+  box-shadow: 0 0 0 2px var(--color-line-green, #25c916), 
+              0 0 0 4px rgba(37, 201, 22, 0.2);
+ }
+
+ /* 信用卡按鈕 */
+ .creditcard-btn {
+  background-color: var(--color-creditcard, #ffd4d4);
+  color: var(--color-creditcard-text, #333);
+  border-color: var(--color-creditcard, #ffd4d4);
+ }
+
+ .creditcard-btn:hover {
+  background-color: #ffcaca;
+  border-color: #ffcaca;
+ }
+
+ .creditcard-btn.selected {
+  box-shadow: 0 0 0 2px var(--color-creditcard, #ffd4d4), 
+              0 0 0 4px rgba(255, 212, 212, 0.3);
+ }
  
+ /* === 確認付款按鈕樣式 === */
  .checkout-btn {
-  font-size: 14px;
-  padding: 10px 24px;
+  background-color: var(--color-select, #d17361);
+  color: white;
+  border: 2px solid var(--color-select, #d17361);
+  font-size: 16px;
+  font-weight: 500;
+  padding: 12px 24px;
+  border-radius: 6px;
+  cursor: pointer;
   transition: all 0.2s ease-in-out;
+  min-height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  white-space: nowrap;
  }
  
  .checkout-btn:hover:not(.btn-disabled) {
-  background-color: #a50b18;
-  border-color: #a50b18;
+  background-color: var(--color-select-dark, #b85d4a);
+  border-color: var(--color-select-dark, #b85d4a);
   transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(134, 9, 20, 0.3);
+  box-shadow: 0 4px 12px rgba(209, 115, 97, 0.3);
  }
  
  .checkout-btn:active:not(.btn-disabled) {
   transform: translateY(0);
-  box-shadow: 0 2px 8px rgba(134, 9, 20, 0.25);
+  box-shadow: 0 2px 8px rgba(209, 115, 97, 0.25);
  }
  
  .checkout-btn.btn-disabled {
+  background-color: var(--color-icon-secondary, #bcaea4);
+  border-color: var(--color-icon-secondary, #bcaea4);
+  color: var(--color-text-unselected, #937e7e);
   cursor: not-allowed;
+  opacity: 0.7;
+  transform: none;
+  box-shadow: none;
  }
  
  .error-message {
-  background-color: #fee2e2;
-  border: 1px solid #fecaca;
-  color: #991b1b;
+  background-color: rgba(235, 150, 164, 0.1);
+  border: 1px solid var(--color-text-warn, #eb96a4);
+  color: var(--color-text-warn, #eb96a4);
   padding: 16px;
   border-radius: 8px;
   margin-top: 16px;
@@ -618,7 +720,7 @@ router.push('/cart')
  .error-close {
   background: none;
   border: none;
-  color: #991b1b;
+  color: var(--color-text-warn, #eb96a4);
   font-size: 18px;
   cursor: pointer;
   padding: 4px;
@@ -626,14 +728,21 @@ router.push('/cart')
  }
  
  .error-close:hover {
-  background-color: rgba(153, 27, 27, 0.1);
+  background-color: rgba(235, 150, 164, 0.1);
  }
  
  .customer-section h3 {
   font-size: 18px;
   font-weight: 600;
   margin-bottom: 16px;
-  color: #333;
+  color: var(--color-text-selected, #f5d1c0);
+ }
+
+ .payment-method h3 {
+  font-size: 18px;
+  font-weight: 600;
+  margin-bottom: 16px;
+  color: var(--color-text-selected, #f5d1c0);
  }
  
  .form-grid {
@@ -652,51 +761,84 @@ router.push('/cart')
   font-size: 14px;
   font-weight: 500;
   margin-bottom: 4px;
-  color: #333;
+  color: var(--color-text-selected, #f5d1c0);
  }
  
  .form-input {
   padding: 10px 12px;
-  border: 1px solid #ddd;
+  border: 1px solid var(--color-icon-secondary, #bcaea4);
   border-radius: 6px;
   font-size: 14px;
   transition: border-color 0.2s;
+  background-color: rgba(245, 209, 192, 0.05);
+  color: var(--color-text-selected, #f5d1c0);
+ }
+
+ .form-input::placeholder {
+  color: var(--color-text-unselected, #937e7e);
  }
  
  .form-input:focus {
   outline: none;
-  border-color: #860914;
-  box-shadow: 0 0 0 2px rgba(134, 9, 20, 0.1);
+  border-color: var(--color-select, #d17361);
+  box-shadow: 0 0 0 2px rgba(209, 115, 97, 0.2);
  }
  
  .form-input.input-error {
-  border-color: #dc2626;
-  box-shadow: 0 0 0 2px rgba(220, 38, 38, 0.1);
+  border-color: var(--color-text-warn, #eb96a4);
+  box-shadow: 0 0 0 2px rgba(235, 150, 164, 0.2);
  }
  
  .error-text {
-  color: #dc2626;
+  color: var(--color-text-warn, #eb96a4);
   font-size: 12px;
   margin-top: 4px;
  }
  
  .payment-error {
-  color: #dc2626;
+  color: var(--color-text-warn, #eb96a4);
   font-size: 14px;
   margin-top: 12px;
   padding: 8px 12px;
-  background: #fee2e2;
+  background: rgba(235, 150, 164, 0.1);
   border-radius: 6px;
-  border: 1px solid #fecaca;
+  border: 1px solid var(--color-text-warn, #eb96a4);
  }
  
  .section-spacing {
   margin-top: 32px;
  }
+
+ .btn {
+  background: transparent;
+  border: 1px solid var(--color-icon-secondary, #bcaea4);
+  color: var(--color-text-selected, #f5d1c0);
+  padding: 0.5rem 1rem;
+  font-size: 0.875rem;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+ }
+
+ .btn:hover {
+  background: var(--color-icon-secondary, #bcaea4);
+  color: var(--color-black, #1a1a1a);
+ }
  
+ /* 響應式設計 */
  @media (max-width: 768px) {
   .form-grid {
     grid-template-columns: 1fr;
+  }
+ }
+
+ @media (max-width: 480px) {
+  .payment-options {
+    flex-direction: column;
+  }
+  
+  .payment-btn {
+    width: 100%;
   }
  }
  </style>

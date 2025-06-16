@@ -357,7 +357,6 @@ function fetchBarsData() {
   // 這裡只負責獲取數據，isLoading 由 MapView 負責管理
   // 假設數據是同步返回，如果異步則需要 await
   allBars.value = [
-
     {
       id: "b001",
       place_id: "ChIJ7-02o96jQjQR6c8b9j01314", // 為了收藏功能，需要一個 place_id
@@ -538,7 +537,7 @@ function fetchBarsData() {
 // ----------------------------------------------------------------------
 
 onMounted(async () => {
-  isLoading.value = true; // 開始載入所有非地圖相關數據
+  isLoading.value = true;
   try {
     await loadGoogleMapsAPI();
     console.log("Google Maps API 載入完成，準備初始化地圖...");
@@ -554,30 +553,6 @@ onMounted(async () => {
       requestGeolocationPermission();
     } else {
       console.error("錯誤：地圖容器 ref 未綁定，無法初始化地圖。");
-
-                  <strong>${details.name}</strong><br/>
-                  地址：${details.formatted_address}<br/>
-                  評分：${details.rating}<br/>
-                  ${details.website ? `<a href="${details.website}" target="_blank">網站</a>` : ''}
-                `
-                infoWindow.setContent(content)
-                infoWindow.open(map, marker)
-              })
-            }
-          }
-        )
-
-        markers.push(marker)
-        bounds.extend(place.geometry.location)
-      })
-
-      map.fitBounds(bounds)
-       // 限制 zoom 不要放太大
-      const listener = google.maps.event.addListenerOnce(map, 'bounds_changed', () => {
-        if (map.getZoom() > 15) {
-          map.setZoom(15)
-        }
-      })
     }
   } catch (err) {
     console.error("地圖或數據載入失敗:", err);

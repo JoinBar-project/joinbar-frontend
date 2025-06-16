@@ -81,7 +81,7 @@
 <script setup>
 import { ref, onMounted, onUnmounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { useOrder } from '@/composables/useOrder'
+import { useOrder } from '@/composable/useOrder'
 
 const route = useRoute()
 const router = useRouter()
