@@ -189,19 +189,6 @@ const validateEmail = (email) => {
   
   return true
 }
-const handleEmailLogin = async () => {
-  const success = await authStore.emailLogin(loginForm.value.email, loginForm.value.password)
-  
-  if (success) {
-    loginForm.value.email = ''
-    loginForm.value.password = ''
-    router.push('/home')
-  }
-}
-
-const handleLineLogin = async () => {
-  await authStore.lineLogin()
-}
 
 // 驗證密碼格式
 const validatePassword = (password) => {
@@ -230,23 +217,15 @@ const validatePassword = (password) => {
   return true
 }
 
-// 清除單一欄位的錯誤狀態
-const clearError = (fieldName) => {
-  if (errors.value[fieldName]) {
-    errors.value[fieldName] = false
-  }
-}
-
-const handleLogin = () => {
+const handleLogin = async () => {
   let valid = true
-  
+
   if (!validateEmail(loginForm.value.email)) {
     errors.value.email = true
     valid = false
   } else {
     errors.value.email = false
   }
-  
 
   if (!validatePassword(loginForm.value.password)) {
     errors.value.password = true
@@ -254,17 +233,40 @@ const handleLogin = () => {
   } else {
     errors.value.password = false
   }
-  
-  // 如果有錯誤就不登入
-  if (!valid) return
-  
-  
-  showLoginSuccess.value = true
 
-  setTimeout(() => {
+  if (!valid) return
+
+  try {
+    const success = await authStore.emailLogin(loginForm.value.email, loginForm.value.password)
+    
+    if (success) {
+      showLoginSuccess.value = true
+
+      loginForm.value.email = ''
+      loginForm.value.password = ''
+
+      setTimeout(() => {
+        showLoginSuccess.value = false
+        router.push('/home')
+      }, 1500)
+    }
+
+  } catch (error) {
+    console.error('登入過程發生錯誤:', error)
     showLoginSuccess.value = false
-    }, 3000)
   }
+}
+
+const handleLineLogin = async () => {
+  await authStore.lineLogin()
+}
+
+// 清除單一欄位的錯誤狀態
+const clearError = (fieldName) => {
+  if (errors.value[fieldName]) {
+    errors.value[fieldName] = false
+  }
+}
 
 const useTestAccount = () => {
   loginForm.value.email = 'admin@test.com'
