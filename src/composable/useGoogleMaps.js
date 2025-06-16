@@ -591,11 +591,11 @@ export function useGoogleMaps(mapContainerRef, options) {
         if (radius !== null) {
           request.radius = radius;
         }
+      }
 
       if (bounds !== null) {
         request.bounds = bounds;
       }
-
 
       placesService.value.textSearch(
         request,
@@ -653,7 +653,6 @@ export function useGoogleMaps(mapContainerRef, options) {
       }
 
       const results = await textSearch(query, targetLocation, null, "tw", targetBounds);
-
 
       if (!results.length) {
         clearMarkers("search");
