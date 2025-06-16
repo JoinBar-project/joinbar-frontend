@@ -55,7 +55,7 @@ apiClient.interceptors.response.use(
           console.warn('認證失效，清除登入狀態')
           try {
 						// 動態導入 store 和 router 避免循環依賴
-            const { useAuthStore } = await import('./auth')
+            const { useAuthStore } = await import('../stores/authStore')
             const { useRouter } = await import('vue-router')
             const authStore = useAuthStore()
             const router = useRouter()
