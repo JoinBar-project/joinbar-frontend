@@ -5,7 +5,6 @@ let googleMapsLoaded = false;
 let googleMapsLoadPromise = null;
 
 /**
- * Google Maps 相關功能的 Composition API Hook
  @param {Ref<HTMLElement>} mapContainerRef
  @param {Object} options
  @param {string} options.googleMapsApiKey
@@ -14,7 +13,7 @@ let googleMapsLoadPromise = null;
 export function useGoogleMaps(mapContainerRef, options) {
   const {
     googleMapsApiKey,
-    defaultCenter = { lat: 25.033, lng: 121.5654 }, // 台北的預設中心點
+    defaultCenter = { lat: 25.033, lng: 121.5654 },
     defaultZoom = 12,
     mapId,
   } = options;
@@ -34,7 +33,7 @@ export function useGoogleMaps(mapContainerRef, options) {
   let skipNextIdle = false;
 
   /**
-   * 判斷是否為酒吧類型
+   * 判斷酒吧類型
    */
   const isBarLike = (place) => {
     const nameLower = place.name ? place.name.toLowerCase() : "";
@@ -69,7 +68,7 @@ export function useGoogleMaps(mapContainerRef, options) {
   };
 
   /**
-   * 載入 Google Maps JavaScript API 腳本
+   * 載入 Google Maps JavaScript API
    */
   const loadGoogleMapsAPI = () => {
     if (googleMapsLoaded && window.google && window.google.maps) {
@@ -145,7 +144,7 @@ export function useGoogleMaps(mapContainerRef, options) {
   };
 
   /**
-   * 初始化 Google Map 與相關服務
+   * 初始化 Google Map 
    */
   const initMap = () => {
     if (!mapContainerRef.value || !window.google || !window.google.maps) {
@@ -185,7 +184,6 @@ export function useGoogleMaps(mapContainerRef, options) {
   };
 
   /**
-   * 清除地圖上的標記
    * @param {'all' | 'bars' | 'search'} [type='all']
    */
   const clearMarkers = (type = "all") => {
@@ -568,11 +566,11 @@ export function useGoogleMaps(mapContainerRef, options) {
 
   /**
    * Google Places API 文字搜尋
-   * @param {string} query 搜尋查詢字串
-   * @param {google.maps.LatLngLiteral | google.maps.LatLng | null} [location=null] 搜尋中心點，如果為 null 則不限制
-   * @param {number | null} [radius=null] 搜尋半徑（公尺），如果為 null 則不限制
-   * @param {string} [region="tw"] 搜尋地區代碼
-   * @param {google.maps.LatLngBounds | null} [bounds=null] 搜尋結果的地理邊界
+   * @param {string} query
+   * @param {google.maps.LatLngLiteral | google.maps.LatLng | null} [location=null]
+   * @param {number | null} [radius=null]
+   * @param {string} [region="tw"]
+   * @param {google.maps.LatLngBounds | null} [bounds=null]
    */
   const textSearch = (query, location = null, radius = null, region = "tw", bounds = null) => {
     return new Promise((resolve, reject) => {
@@ -593,14 +591,7 @@ export function useGoogleMaps(mapContainerRef, options) {
         if (radius !== null) {
           request.radius = radius;
         }
-      } else if (map.value) {
-          // 如果沒有明確提供 location，但地圖已初始化，可以使用地圖當前中心點作為提示（而非嚴格限制）
-          // 但是，對於帶有城市名稱的 query，我們希望其優先權高於地圖中心點
-          // 所以這裡僅作為一個 fallback 或輕微偏好
-          // request.location = map.value.getCenter();
-      }
 
-      // 如果有提供 bounds，則將其添加到 request 中
       if (bounds !== null) {
         request.bounds = bounds;
       }
@@ -638,23 +629,18 @@ export function useGoogleMaps(mapContainerRef, options) {
       let targetLocation = null;
       let targetBounds = null;
 
-      // 嘗試從查詢中提取城市或地區名稱，並獲取其地理信息
       const cityMatch = query.match(/(台北|台中|高雄|台南|桃園|新北|新竹|嘉義|苗栗|彰化|南投|雲林|屏東|宜蘭|花蓮|台東|金門|馬祖|澎湖)市?|([行政區])(區)/);
       let potentialCityOrDistrict = null;
 
       if (cityMatch) {
-          if (cityMatch[1]) { // 匹配到直轄市名稱 (台北, 台中等)
-              potentialCityOrDistrict = cityMatch[1] + (cityMatch[1].endsWith("市") ? "" : "市"); // 確保是 "XX市" 格式
-          } else if (cityMatch[2] === "區" && cityMatch.input) { // 匹配到行政區名稱
-              // 為了精確，我們需要找到這個區屬於哪個城市，簡單起見，這裡直接用 query 中的區名
-              // 更嚴謹的做法是解析整個地址，或使用 Places API 的預測功能
-              potentialCityOrDistrict = cityMatch.input.split(" ")[0]; // 取第一個詞作為潛在區名
+          if (cityMatch[1]) {
+              potentialCityOrDistrict = cityMatch[1] + (cityMatch[1].endsWith("市") ? "" : "市");
+          } else if (cityMatch[2] === "區" && cityMatch.input) {
+              potentialCityOrDistrict = cityMatch.input.split(" ")[0];
           }
       }
 
-      // 如果查詢中包含了城市或行政區名稱，嘗試精確定位該區域
       if (potentialCityOrDistrict) {
-          // 使用 getPlacePredictions 查找該城市/地區的 place_id
           const predictions = await getPlacePredictions(potentialCityOrDistrict + " 台灣", "tw");
           if (predictions && predictions.length > 0) {
               // 選擇最相關的預測，並獲取其詳細信息
@@ -666,17 +652,12 @@ export function useGoogleMaps(mapContainerRef, options) {
           }
       }
 
-      // 使用獲取到的地理信息來執行 textSearch
-      // 如果 targetLocation 和 targetBounds 存在，則使用它們來限制搜尋範圍
-      // 否則，textSearch 函數會根據其內部邏輯進行廣泛搜尋
       const results = await textSearch(query, targetLocation, null, "tw", targetBounds);
 
 
       if (!results.length) {
         clearMarkers("search");
         closeInfoWindow();
-        // 如果沒有結果，可以考慮將地圖中心點移回預設或保持現有，或顯示無結果提示
-        // 如果連結果都沒有，則將地圖視圖重置到全台或預設中心
         map.value.setCenter(defaultCenter);
         map.value.setZoom(defaultZoom);
         return [];
