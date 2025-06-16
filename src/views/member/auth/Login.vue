@@ -188,56 +188,6 @@ const validateEmail = (email) => {
   return true
 }
 
-const handleLogin = async () => {
-  let valid = true
-  
-  // 1. 表單驗證
-  if (!validateEmail(loginForm.value.email)) {
-    errors.value.email = true
-    valid = false
-  } else {
-    errors.value.email = false
-  }
-  
-  if (!validatePassword(loginForm.value.password)) {
-    errors.value.password = true
-    valid = false
-  } else {
-    errors.value.password = false
-  }
-  
-  // 如果驗證失敗，直接返回
-  if (!valid) return
-  
-  // 2. ✅ 實際執行登入（authStore.emailLogin 內部會處理載入狀態）
-  try {
-    const success = await authStore.emailLogin(loginForm.value.email, loginForm.value.password)
-    
-    if (success) {
-      // 3. 顯示成功動畫
-      showLoginSuccess.value = true
-      
-      // 4. 清除表單
-      loginForm.value.email = ''
-      loginForm.value.password = ''
-      
-      // 5. 跳轉到首頁
-      setTimeout(() => {
-        showLoginSuccess.value = false
-        router.push('/home')
-      }, 1500)
-    }
-    
-  } catch (error) {
-    console.error('登入過程發生錯誤:', error)
-    showLoginSuccess.value = false
-  }
-}
-
-const handleLineLogin = async () => {
-  await authStore.lineLogin()
-}
-
 // 驗證密碼格式
 const validatePassword = (password) => {
   if (!password || password.trim() === '') {
@@ -263,6 +213,50 @@ const validatePassword = (password) => {
   }
   
   return true
+}
+
+const handleLogin = async () => {
+  let valid = true
+
+  if (!validateEmail(loginForm.value.email)) {
+    errors.value.email = true
+    valid = false
+  } else {
+    errors.value.email = false
+  }
+
+  if (!validatePassword(loginForm.value.password)) {
+    errors.value.password = true
+    valid = false
+  } else {
+    errors.value.password = false
+  }
+
+  if (!valid) return
+
+  try {
+    const success = await authStore.emailLogin(loginForm.value.email, loginForm.value.password)
+    
+    if (success) {
+      showLoginSuccess.value = true
+
+      loginForm.value.email = ''
+      loginForm.value.password = ''
+
+      setTimeout(() => {
+        showLoginSuccess.value = false
+        router.push('/home')
+      }, 1500)
+    }
+
+  } catch (error) {
+    console.error('登入過程發生錯誤:', error)
+    showLoginSuccess.value = false
+  }
+}
+
+const handleLineLogin = async () => {
+  await authStore.lineLogin()
 }
 
 // 清除單一欄位的錯誤狀態
