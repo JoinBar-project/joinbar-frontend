@@ -44,7 +44,7 @@
               <input 
                 :type="field.type === 'password' ? (showPassword ? 'text' : 'password') : field.type" 
                 :placeholder="field.placeholder" 
-                v-model="form[field.model]"
+                v-model="registrationForm[field.model]"
                 @input="clearError(field.model)"
                 :class="[
                   'w-full outline-none placeholder-opacity-70 transition-colors text-sm',
@@ -66,8 +66,14 @@
               </button>
             </div>
 
+            <!-- 顯示具體的錯誤訊息 -->
             <div v-if="errors[field.model]" class="text-[var(--color-primary-orange)] text-xs ml-1">
-              {{ field.placeholder }}為必填欄位
+              <span v-if="field.model === 'username'">{{ usernameErrorMessage }}</span>
+              <span v-if="field.model === 'nickname'">{{ nicknameErrorMessage }}</span>
+              <span v-else-if="field.model === 'email'">{{ emailErrorMessage }}</span>
+              <span v-else-if="field.model === 'password'">{{ passwordErrorMessage }}</span>
+              <span v-else-if="field.model === 'birthday'">{{ birthdayErrorMessage }}</span>
+              <span v-else>{{ field.placeholder }}為必填欄位</span>
             </div>
           </div>
 
@@ -110,9 +116,9 @@
             <h3 class="text-base font-medium mb-2 text-[var(--color-secondary-green)]">酒吧類型</h3>
             <div class="grid grid-cols-3 gap-3 ">
               <button v-for="type in barTypes" :key="type" 
-                @click="toggleSelection(form.preferences.types, type)"
+                @click="toggleSelection(registrationForm.preferences.types, type)"
                 :class="['min-w-[80px] text-sm py-2 rounded-full border transition duration-200 cursor-pointer']"
-                :style="form.preferences.types.includes(type)
+                :style="registrationForm.preferences.types.includes(type)
                   ? 'background-color: var(--color-primary-orange); color: white; border-color: var(--color-primary-orange);'
                   : 'background-color: var(--color-icon-secondary); color: var(--color-black); border-color: var(--color-black);'">
                 {{ type }}
@@ -124,9 +130,9 @@
             <h3 class="text-base font-medium mb-2 text-[var(--color-secondary-green)]">酒吧氛圍</h3>
             <div class="grid grid-cols-3 gap-2">
               <button v-for="mood in barMoods" :key="mood"
-                @click="toggleSelection(form.preferences.moods, mood)"
+                @click="toggleSelection(registrationForm.preferences.moods, mood)"
                 :class="['min-w-[80px] text-sm py-2 rounded-full border transition duration-200 cursor-pointer']"
-                :style="form.preferences.moods.includes(mood)
+                :style="registrationForm.preferences.moods.includes(mood)
                   ? 'background-color: var(--color-primary-orange); color: white; border-color: var(--color-primary-orange);'
                   : 'background-color: var(--color-icon-secondary); color: var(--color-black); border-color: var(--color-black);'">
                 {{ mood }}
@@ -141,7 +147,7 @@
               <i class="fa-solid fa-arrow-left mr-1"></i> 返回
             </button>
             <button
-              @click="submitRegistration"
+              @click="handleEmailRegistration"
               class="px-4 py-2 bg-gradient-to-r from-[var(--color-secondary-green)] via-[#d8dbaf] to-[var(--color-primary-orange)] text-[var(--color-black)] rounded-lg font-medium shadow-md transition duration-300 transform hover:scale-105 hover:brightness-110 hover:shadow-lg">
               完成註冊
             </button>
@@ -155,84 +161,212 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
-const step = ref(1)
-const showPassword = ref(false)
-const showRegisterSuccess = ref(false)
+import { ref } from 'vue';
+const step = ref(1);
+const showPassword = ref(false);
+const showRegisterSuccess = ref(false);
 
-const form = ref({
-  name: '',
+const registrationForm = ref({
+  username: '',
   nickname: '',
+  email: '',
   password: '',
   birthday: '',
   preferences: {
     types: [],
     moods: []
   }
-})
+});
 
 const registerFields = [
-  { model: 'name', placeholder: ' 姓名', icon: 'fa-solid fa-user', type: 'text' },
-  { model: 'nickname', placeholder: '暱稱', icon: 'fa-solid fa-user-pen', type: 'text' },
+  { model: 'username', placeholder: ' 姓名', icon: 'fa-solid fa-user', type: 'text' },
+  { model: 'nickname', placeholder: '暱稱 (選填)', icon: 'fa-solid fa-user-pen', type: 'text' },
+  { model: 'email', placeholder: '電子郵件', icon: 'fa-solid fa-envelope', type: 'email' },
   { model: 'password', placeholder: ' 密碼', icon: 'fa-solid fa-key', type: 'password' },
-  { model: 'birthday', placeholder: ' 生日', icon: 'fa-solid fa-cake-candles', type: 'date' },
+  { model: 'birthday', placeholder: ' 生日 (選填)', icon: 'fa-solid fa-cake-candles', type: 'date' },
 ]
 
-const barTypes = ['運動酒吧', '音樂酒吧', '學生酒吧', '餐酒館', '暢飲店']
-const barMoods = ['熱鬧歡樂', '浪漫私密', '復古懷舊', '高級精緻', '輕鬆悠閒']
+const barTypes = ['運動酒吧', '音樂酒吧', '學生酒吧', '餐酒館', '暢飲店'];
+const barMoods = ['熱鬧歡樂', '浪漫私密', '復古懷舊', '高級精緻', '輕鬆悠閒'];
 
 // 紀錄每個欄位是否有錯誤
 const errors = ref({
-  name: false,
+  username: false,
   nickname: false,
+  email: false,
   password: false,
   birthday: false
-})
+});
 
-// 清除單一欄位的錯誤狀態
+// 錯誤訊息
+const usernameErrorMessage = ref('');
+const nicknameErrorMessage = ref('');
+const emailErrorMessage = ref('');
+const passwordErrorMessage = ref('');
+const birthdayErrorMessage = ref('');
+
 const clearError = (fieldName) => {
   if (errors.value[fieldName]) {
-    errors.value[fieldName] = false
+    errors.value[fieldName] = false;
+    
+    // 清除對應的錯誤訊息
+    if (fieldName === 'username') {
+      usernameErrorMessage.value = ''
+    } else if (fieldName === 'nickname') {
+      nicknameErrorMessage.value = ''
+    } else if (fieldName === 'email') {
+      emailErrorMessage.value = ''
+    } else if (fieldName === 'password') {
+      passwordErrorMessage.value = ''
+    } else if (fieldName === 'birthday') {
+      birthdayErrorMessage.value = ''
+    }
   }
 }
 
+const validateUsername = (username) => {
+  if (!username || username.trim() === '') {
+    usernameErrorMessage.value = '姓名為必填欄位';
+    return false;
+  }
+
+  return true;
+}
+
+const validateEmail = (email) => {
+  if (!email || email.trim() === '') {
+    emailErrorMessage.value = '電子郵件為必填欄位';
+    return false;
+  }
+  
+  if (!email.includes('@')) {
+    emailErrorMessage.value = '電子郵件格式不正確，必須包含@符號';
+    return false;
+  }
+
+  const hasEnglish = /[a-zA-Z]/.test(email)
+  if (!hasEnglish) {
+    emailErrorMessage.value = '電子郵件必須包含英文字母';
+    return false;
+  }
+  return true;
+}
+
+// 驗證密碼格式
+const validatePassword = (password) => {
+  if (!password || password.trim() === '') {
+    passwordErrorMessage.value = '密碼為必填欄位';
+    return false;
+  }
+
+  if (password.length < 8) {
+    passwordErrorMessage.value = '密碼至少需要8個字元';
+    return false;
+  }
+
+  const hasEnglish = /[a-zA-Z]/.test(password);
+  if (!hasEnglish) {
+    passwordErrorMessage.value = '密碼必須包含英文字母';
+    return false;
+  }
+
+  const hasNumber = /\d/.test(password)
+  if (!hasNumber) {
+    passwordErrorMessage.value = '密碼必須包含數字';
+    return false;
+  }
+  return true;
+}
+
+// 驗證生日格式
+const validateBirthday = (birthday) => {
+  if (!birthday || birthday.trim() === '') {
+    return true;
+  }
+
+  const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
+  if (!dateRegex.test(birthday)) {
+    birthdayErrorMessage.value = '生日格式錯誤，請使用 YYYY-MM-DD 格式';
+    return false;
+  }
+
+  // 檢查是否為未來日期
+  const birthDate = new Date(birthday);
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  birthDate.setHours(0, 0, 0, 0);
+  
+  if (birthDate >= today) {
+    birthdayErrorMessage.value = '生日必須是過去的日期';
+    return false;
+  }
+
+  return true;
+}
+
+
 const goToPreferences = () => {
   let valid = true
-  
-  // 檢查每個必填欄位
-  registerFields.forEach(field => {
-    if (!form.value[field.model] || form.value[field.model].trim() === '') {
-      errors.value[field.model] = true
-      valid = false
-    } else {
-      errors.value[field.model] = false
-    }
-  })
-  
+
+  if (!validateUsername(registrationForm.value.username)) {
+    errors.value.username = true;
+    valid = false;
+  } else {
+    errors.value.username = false;
+  }
+
+  if (!validateEmail(registrationForm.value.email)) {
+    errors.value.email = true;
+    valid = false;
+  } else {
+    errors.value.email = false;
+  }
+
+  if (!validatePassword(registrationForm.value.password)) {
+    errors.value.password = true;
+    valid = false;
+  } else {
+    errors.value.password = false;
+  }
+
+  if (!validateBirthday(registrationForm.value.birthday)) {
+    errors.value.birthday = true;
+    valid = false;
+  } else {
+    errors.value.birthday = false;
+  }
+
   // 如果有錯誤就不進入下一步
   if (!valid) {
     return
   }
-  
+
   step.value = 2
 }
 
 const toggleSelection = (arr, value) => {
-  const index = arr.indexOf(value)
-  if (index > -1) arr.splice(index, 1)
-  else arr.push(value)
+  const index = arr.indexOf(value);
+  if (index > -1) arr.splice(index, 1);
+  else arr.push(value);
 }
 
-const submitRegistration = () => {
-  console.log('送出資料：', form.value)
-  
+const handleEmailRegistration = async () => {
+  const userData = {
+    username: registrationForm.value.username,
+    nickname: registrationForm.value.nickname || undefined,  // 空值傳 undefined
+    email: registrationForm.value.email,
+    password: registrationForm.value.password,
+    birthday: registrationForm.value.birthday || undefined,  // 空值傳 undefined
+  }
+  console.log('送出資料：', userData);
+
   // 顯示成功通知
-  showRegisterSuccess.value = true
+  showRegisterSuccess.value = true;
   
   // 3秒後自動隱藏通知
   setTimeout(() => {
-    showRegisterSuccess.value = false
-  }, 3000)
+    showRegisterSuccess.value = false;
+  }, 3000);
 }
 </script>
 
