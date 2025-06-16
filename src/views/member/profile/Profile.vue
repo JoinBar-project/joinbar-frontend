@@ -50,7 +50,8 @@ const goToEdit = () => {
     <UserAvatar
       :avatar-url="profile.avatarUrl || '/default-user-avatar.png'"
       :display-name="profile.username"
-      :show-name="false" />
+      :show-name="false"
+      size="lg" />
     <ProfileForm
       :form="profile"
       :isEdit="false"
@@ -58,12 +59,12 @@ const goToEdit = () => {
       :barTypes="barTypes"
       :barMoods="barMoods"
       :toggleSelection="() => {}" />
-
+<div>{{ profile.avatarUrl }}</div>
     <button
       type="button"
       class="mt-6 px-4 py-2 bg-gray-800 text-white rounded cursor-pointer"
       @click="goToEdit">
-      編輯
+      編輯個人資料
     </button>
   </div>
 </template>

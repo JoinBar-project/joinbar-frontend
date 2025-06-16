@@ -42,7 +42,7 @@ const avatarURL = computed(() => {
           <UserAvatar
             :avatar-url="avatarURL"
             :display-name="user.username"
-            :show-name="false"
+            size="sm"
             :on-avatar-click="goToMember" />
           <span class="text-sm">嗨！{{ user.username }}</span>
         </div>
