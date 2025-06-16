@@ -1,6 +1,7 @@
 <script setup>
+import { computed } from 'vue';
 import { RouterLink, useRouter } from 'vue-router';
-import { useAuthStore } from '@/api/auth';
+import { useAuthStore } from '@/stores/authStore';
 import { storeToRefs } from 'pinia';
 
 const authStore = useAuthStore();
@@ -13,10 +14,12 @@ const handleLogout = () => {
   router.push('/login');
 };
 
-const profileLink = { name: 'MemberProfile', params: { id: user.value.id } };
-const eventLink = { name: 'MemberEventRecords', params: { id: user.value.id } };
-const barLink = { name: 'MemberBarFavorites', params: { id: user.value.id } };
-const ordersLink = { name: 'MemberOrderRecords', params: { id: user.value.id } };
+const userId = computed(() => user.value?.id);
+
+const profileLink = computed(() => ({ name: 'MemberProfile', params: { id: userId.value } }));
+const eventLink = computed(() => ({ name: 'MemberEventRecords', params: { id: userId.value } }));
+const barLink = computed(() => ({ name: 'MemberBarFavorites', params: { id: userId.value } }));
+const ordersLink = computed(() => ({ name: 'MemberOrderRecords', params: { id: userId.value } }));
 </script>
 
 <template>

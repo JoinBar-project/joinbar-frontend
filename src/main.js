@@ -5,14 +5,7 @@ import App from './App.vue'
 import router from './router'
 import '@/assets/main.css'
 import 'emoji-picker-element';
-import { useAuthStore } from '@/api/auth';
-
-// const pinia = createPinia().use(piniaPluginPersistedstate)
-
-// createApp(App)
-//   .use(pinia)
-//   .use(router)
-//   .mount('#app')
+import { useAuthStore } from '@/stores/authStore';
 
 const pinia = createPinia().use(piniaPluginPersistedstate);
 

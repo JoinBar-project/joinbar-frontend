@@ -1,9 +1,9 @@
 <script setup>
-import { useAuthStore } from '@/api/auth';
+import { watch, computed } from 'vue';
+import { useAuthStore } from '@/stores/authStore';
 import { useUserProfileStore } from '@/stores/userProfileStore';
 import { storeToRefs } from 'pinia';
-import { useRouter, useRoute } from 'vue-router';
-import { watch } from 'vue';
+import { useRouter } from 'vue-router';
 import ProfileForm from '@/components/member/ProfileForm.vue';
 import UserAvatar from '@/components/UserAvatar.vue';
 
@@ -11,13 +11,14 @@ const authStore = useAuthStore();
 const { user } = storeToRefs(authStore);
 
 const userProfileStore = useUserProfileStore();
-const { profile } = storeToRefs(userProfileStore);
+const { profile, isLoading } = storeToRefs(userProfileStore);
 
-const route = useRoute();
 const router = useRouter();
 
+const userId = computed(() => user.value?.id);
+
 watch(
-  () => user.value?.id,
+  userId,
   id => {
     if (id) userProfileStore.getUserProfile(id);
   },
@@ -33,14 +34,21 @@ const barTypes = ['運動酒吧', '音樂酒吧', '學生酒吧', '餐酒館', '
 const barMoods = ['熱鬧歡樂', '浪漫私密', '復古懷舊', '高級精緻', '輕鬆悠閒'];
 
 const goToEdit = () => {
-  router.push({ name: 'MemberProfileEdit', params: { id: user.value.id } });
+  router.push({ name: 'MemberProfileEdit', params: { id: userId.value } });
 };
 </script>
 
 <template>
-  <div class="max-w-md mx-auto mt-10 flex flex-col items-center">
+  <div
+    v-if="isLoading"
+    class="text-center py-10">
+    載入中...
+  </div>
+  <div
+    v-else
+    class="max-w-md mx-auto mt-10 flex flex-col items-center">
     <UserAvatar
-      :avatar-url="profile.avatar || '/default-user-avatar.png'"
+      :avatar-url="profile.avatarUrl || '/default-user-avatar.png'"
       :display-name="profile.username"
       :show-name="false" />
     <ProfileForm

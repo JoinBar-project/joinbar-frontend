@@ -1,6 +1,6 @@
 <script setup>
 import { useRouter } from 'vue-router';
-import { useAuthStore } from '@/api/auth';
+import { useAuthStore } from '@/stores/authStore';
 import { storeToRefs } from 'pinia';
 import { computed } from 'vue';
 import UserAvatar from '@/components/UserAvatar.vue';

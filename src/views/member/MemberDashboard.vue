@@ -1,3 +1,7 @@
+<script setup>
+import MemberSideNavBar from '@/components/member/MemberSideNavBar.vue';
+</script>
+
 <template>
   <div class="flex min-h-screen">
     <MemberSideNavBar />
@@ -7,10 +11,6 @@
     </div>
   </div>
 </template>
-
-<script setup>
-import MemberSideNavBar from '@/components/member/MemberSideNavBar.vue';
-</script>
 
 <style scoped>
 .page {

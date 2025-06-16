@@ -1,16 +1,15 @@
 <script setup>
-import { ref, watch } from 'vue';
-import { useAuthStore } from '@/api/auth';
+import { ref, watch,computed } from 'vue';
+import { useAuthStore } from '@/stores/authStore';
 import { useUserProfileStore } from '@/stores/userProfileStore';
 import { storeToRefs } from 'pinia';
 import { useRouter } from 'vue-router';
-import { patchUserProfileById } from '@/api/userProfile';
 import ProfileForm from '@/components/member/ProfileForm.vue';
 
 const authStore = useAuthStore();
 const { user } = storeToRefs(authStore);
 const userProfileStore = useUserProfileStore();
-const { profile } = storeToRefs(userProfileStore);
+const { profile, isLoading } = storeToRefs(userProfileStore);
 
 const router = useRouter();
 
@@ -24,8 +23,10 @@ const form = ref({
   },
 });
 
+const userId = computed(() => user.value?.id);
+
 watch(
-  () => user.value?.id,
+  userId,
   id => {
     if (id) userProfileStore.getUserProfile(id);
   },
@@ -61,31 +62,47 @@ const toggleSelection = (arr, value) => {
 
 const handleSubmit = async () => {
   try {
-    await userProfileStore.updateUserProfile(user.value?.id, form.value);
+    await userProfileStore.updateUserProfile(userId.value, form.value);
     alert('更新資料成功');
-    router.push({ name: 'MemberProfile', params: { id: user.value?.id } });
+    router.push({ name: 'MemberProfile', params: { id: userId.value } });
   } catch (err) {
-    alert('更新資料成功失敗');
+    alert('更新資料失敗');
   }
 };
 
 const cancel = () => {
-  router.push({ name: 'MemberProfile', params: { id: user.value?.id } });
+  router.push({ name: 'MemberProfile', params: { id: userId.value } });
 };
 </script>
 
 <template>
-  <form @submit.prevent="handleSubmit">
-    <ProfileForm
-      :form="form"
-      :isEdit="true"
-      :profileFields="profileFields"
-      :barTypes="barTypes"
-      :barMoods="barMoods"
-      :toggleSelection="toggleSelection" />
-    <div class="mt-6 flex justify-center gap-4">
-      <button type="submit" class="px-4 py-2 bg-green-600 text-white rounded">儲存</button>
-      <button type="button" @click="cancel" class="ml-2 px-4 py-2 bg-gray-400 text-white rounded">取消</button>
-    </div>
-  </form>
+  <div
+    v-if="isLoading"
+    class="text-center py-10">
+    載入中...
+  </div>
+  <div v-else>
+    <form @submit.prevent="handleSubmit">
+      <ProfileForm
+        :form="form"
+        :isEdit="true"
+        :profileFields="profileFields"
+        :barTypes="barTypes"
+        :barMoods="barMoods"
+        :toggleSelection="toggleSelection" />
+      <div class="mt-6 flex justify-center gap-4">
+        <button
+          type="submit"
+          class="px-4 py-2 bg-green-600 text-white rounded">
+          儲存
+        </button>
+        <button
+          type="button"
+          @click="cancel"
+          class="ml-2 px-4 py-2 bg-gray-400 text-white rounded">
+          取消
+        </button>
+      </div>
+    </form>
+  </div>
 </template>
