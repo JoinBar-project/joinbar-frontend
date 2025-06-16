@@ -8,25 +8,42 @@ import timezone from 'dayjs/plugin/timezone'
 dayjs.extend(utc)
 dayjs.extend(timezone)
 
+// API 配置
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000'
 
 export const useCartStore = defineStore('cart', () => {
-  const items = ref([])
+  const items = ref([])  // 確保初始化為陣列
   const loading = ref(false)
   const error = ref(null)
   
+  // 在開發環境中加入調試
+  if (import.meta.env.DEV) {
+    console.log('🔧 購物車 Store 初始化:', { items: items.value })
+  }
+  
+  // 判斷是否使用服務端購物車
   const useServerCart = computed(() => {
     return !!localStorage.getItem('auth_token')
   })
   
-  const itemCount = computed(() => 
-    items.value.reduce((total, item) => total + item.quantity, 0)
-  )
+  // 計算屬性 - 加入安全檢查
+  const itemCount = computed(() => {
+    if (!Array.isArray(items.value)) {
+      console.warn('⚠️ items.value 不是陣列:', items.value)
+      return 0
+    }
+    return items.value.reduce((total, item) => total + (item.quantity || 1), 0)
+  })
 
-  const totalPrice = computed(() => 
-    items.value.reduce((total, item) => total + (item.price * item.quantity), 0)
-  )
+  const totalPrice = computed(() => {
+    if (!Array.isArray(items.value)) {
+      console.warn('⚠️ items.value 不是陣列:', items.value)
+      return 0
+    }
+    return items.value.reduce((total, item) => total + ((item.price || 0) * (item.quantity || 1)), 0)
+  })
 
+  // API 請求封裝
   const apiCall = async (method, url, data = null) => {
     try {
       loading.value = true
@@ -98,6 +115,7 @@ export const useCartStore = defineStore('cart', () => {
     }
   }
 
+  // 本地購物車操作（保留原有邏輯）
   const isEventExpired = (event) => {
     if (!event.endDate) return false
     const now = dayjs().tz('Asia/Taipei')
@@ -144,6 +162,7 @@ export const useCartStore = defineStore('cart', () => {
     }
   }
 
+  // 本地添加商品
   const addItemLocally = (item) => {
     const existing = items.value.find((i) => String(i.id) === String(item.id))
     if (existing) {
@@ -163,6 +182,7 @@ export const useCartStore = defineStore('cart', () => {
     
     items.value.push(standardizedItem)
     
+    // 更新 localStorage
     localStorage.setItem('joinbar-cart', JSON.stringify(items.value))
     
     console.log('✅ 商品已加入本地購物車:', standardizedItem.name)
@@ -174,11 +194,13 @@ export const useCartStore = defineStore('cart', () => {
     }
   }
 
+  // 本地移除商品
   const removeItemLocally = (id) => {
     const index = items.value.findIndex((i) => String(i.id) === String(id))
     if (index !== -1) {
       const removedItem = items.value.splice(index, 1)[0]
       
+      // 更新 localStorage
       localStorage.setItem('joinbar-cart', JSON.stringify(items.value))
       
       console.log('✅ 商品已從本地購物車移除:', removedItem.name)
@@ -196,10 +218,12 @@ export const useCartStore = defineStore('cart', () => {
     }
   }
 
+  // 本地清空購物車
   const clearCartLocally = () => {
     const itemCount = items.value.length
     items.value = []
     
+    // 清除 localStorage
     localStorage.removeItem('joinbar-cart')
     
     console.log(`✅ 本地購物車已清空，移除了 ${itemCount} 個商品`)
@@ -211,27 +235,48 @@ export const useCartStore = defineStore('cart', () => {
     }
   }
 
+  // 載入本地購物車 - 加入安全檢查
   const loadLocalCart = () => {
     try {
       const saved = localStorage.getItem('joinbar-cart')
       if (saved) {
-        items.value = JSON.parse(saved)
-        console.log('✅ 載入本地購物車:', items.value.length)
+        const parsed = JSON.parse(saved)
+        // 確保解析的數據是陣列
+        if (Array.isArray(parsed)) {
+          items.value = parsed
+          console.log('✅ 載入本地購物車:', items.value.length)
+        } else {
+          console.warn('⚠️ 本地購物車數據格式錯誤，重置為空陣列')
+          items.value = []
+          localStorage.removeItem('joinbar-cart')
+        }
+      } else {
+        items.value = []
       }
     } catch (error) {
       console.error('載入本地購物車失敗:', error)
       items.value = []
+      // 清除可能損壞的數據
+      localStorage.removeItem('joinbar-cart')
     }
   }
 
+  // 服務端購物車操作 - 加入安全檢查
   const loadServerCart = async () => {
     try {
       const response = await apiCall('GET', '/')
-      items.value = response.items || []
-      console.log('✅ 載入服務端購物車成功:', items.value.length)
+      // 確保回應的 items 是陣列
+      if (response && Array.isArray(response.items)) {
+        items.value = response.items
+        console.log('✅ 載入服務端購物車成功:', items.value.length)
+      } else {
+        console.warn('⚠️ 服務端回應格式錯誤，設為空陣列')
+        items.value = []
+      }
       return response
     } catch (err) {
       console.error('載入服務端購物車失敗:', err)
+      items.value = [] // 確保失敗時也是陣列
       throw err
     }
   }
@@ -242,6 +287,7 @@ export const useCartStore = defineStore('cart', () => {
         eventId: item.id
       })
       
+      // 重新載入購物車
       await loadServerCart()
       
       return {
@@ -257,6 +303,7 @@ export const useCartStore = defineStore('cart', () => {
     try {
       await apiCall('DELETE', `/remove/${eventId}`)
       
+      // 更新本地狀態
       items.value = items.value.filter(item => item.eventId !== eventId)
       
       return {
@@ -281,7 +328,13 @@ export const useCartStore = defineStore('cart', () => {
     }
   }
 
+  // 統一的對外接口（混合模式） - 加入初始化
   const loadCart = async () => {
+    // 確保 items 初始化為陣列
+    if (!Array.isArray(items.value)) {
+      items.value = []
+    }
+    
     if (useServerCart.value) {
       try {
         return await loadServerCart()
@@ -301,6 +354,7 @@ export const useCartStore = defineStore('cart', () => {
         return await addItemToServer(item)
       } catch (error) {
         console.warn('服務端添加失敗，嘗試本地添加:', error.message)
+        // 網路問題時降級到本地
         if (error.message.includes('網路') || error.message.includes('連接')) {
           return addItemLocally(item)
         }
@@ -317,6 +371,7 @@ export const useCartStore = defineStore('cart', () => {
         return await removeItemFromServer(id)
       } catch (error) {
         console.warn('服務端移除失敗，嘗試本地移除:', error.message)
+        // 網路問題時降級到本地
         if (error.message.includes('網路') || error.message.includes('連接')) {
           return removeItemLocally(id)
         }
@@ -333,6 +388,7 @@ export const useCartStore = defineStore('cart', () => {
         return await clearServerCart()
       } catch (error) {
         console.warn('服務端清空失敗，嘗試本地清空:', error.message)
+        // 網路問題時降級到本地
         if (error.message.includes('網路') || error.message.includes('連接')) {
           return clearCartLocally()
         }
@@ -343,7 +399,11 @@ export const useCartStore = defineStore('cart', () => {
     }
   }
 
+  // 其他功能（保持不變） - 加入安全檢查
   const isInCart = (id) => {
+    if (!Array.isArray(items.value)) {
+      return false
+    }
     return items.value.some((item) => String(item.id) === String(id) || String(item.eventId) === String(id))
   }
 
@@ -356,7 +416,7 @@ export const useCartStore = defineStore('cart', () => {
       throw new Error('請選擇付款方式')
     }
 
-    if (items.value.length === 0) {
+    if (!Array.isArray(items.value) || items.value.length === 0) {
       throw new Error('購物車是空的')
     }
 
@@ -372,26 +432,34 @@ export const useCartStore = defineStore('cart', () => {
   const getCartSummary = computed(() => ({
     totalItems: itemCount.value,
     totalPrice: totalPrice.value,
-    isEmpty: items.value.length === 0,
+    isEmpty: !Array.isArray(items.value) || items.value.length === 0,
     mode: useServerCart.value ? 'server' : 'local'
   }))
 
+  // 兼容性方法
   const calcSubtotal = (item) => (item.price * item.quantity).toLocaleString()
 
   return {
+    // 狀態
     items,
     loading,
     error,
+    
+    // 計算屬性
     itemCount,
     totalPrice,
     getCartSummary,
     useServerCart,
+    
+    // 主要方法
     loadCart,
     addItem,
     removeItem,
     clearCart,
     isInCart,
     getOrderData,
+    
+    // 兼容性方法
     calcSubtotal
   }
 })

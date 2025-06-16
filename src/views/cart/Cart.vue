@@ -2,17 +2,34 @@
   <div class="cart-container">
     <h2>購物車</h2>
 
-    <div v-if="isLoading" class="loading-box">
+    <!-- 載入狀態 -->
+    <div v-if="isLoading || cart.loading" class="loading-box">
       <div class="spinner"></div>
       <p>載入中，請稍候...</p>
     </div>
 
+    <!-- 錯誤狀態 -->
+    <div v-else-if="cart.error" class="error-box">
+      <div class="error-content">
+        <span class="error-icon">⚠️</span>
+        <span class="error-message">{{ cart.error }}</span>
+      </div>
+      <div class="error-actions">
+        <button @click="handleRetry" class="retry-btn" :disabled="retrying">
+          {{ retrying ? '重試中...' : '重試' }}
+        </button>
+        <button @click="clearError" class="dismiss-btn">關閉</button>
+      </div>
+    </div>
+
+    <!-- 空購物車 -->
     <div v-else-if="cartItems.length === 0" class="empty-cart">
       <h3>購物車是空的</h3>
       <p class="empty-description">快去尋找喜歡的活動吧！</p>
       <button class="shop-btn" @click="goShopping">前往活動頁面</button>
     </div>
 
+    <!-- 購物車內容 -->
     <div v-else>
       <div class="cart-header">
         <div>商品</div>
@@ -22,15 +39,16 @@
         <div>操作</div>
       </div>
 
-      <div v-for="item in cartItems" :key="item.id" class="cart-row">
+      <div v-for="item in cartItems" :key="item.id || item.eventId" class="cart-row">
         <div class="product">
           <img
             class="product-img"
-            :src="item.image || 'https://placehold.co/80x80?text=No+Image'"
-            alt="活動圖片"
+            :src="item.imageUrl || item.image || 'https://placehold.co/80x80?text=No+Image'"
+            :alt="item.name"
           />
           <div class="product-info">
             <p class="product-name">{{ item.name }}</p>
+            <p class="product-bar" v-if="item.barName">{{ item.barName }}</p>
           </div>
         </div>
 
@@ -43,7 +61,13 @@
         <div class="subtotal">${{ calcSubtotal(item) }}</div>
 
         <div class="actions">
-          <button @click="removeItem(item.id)">刪除</button>
+          <button 
+            @click="handleRemoveItem(item)" 
+            class="remove-btn"
+            :disabled="cart.loading"
+          >
+            {{ cart.loading ? '處理中...' : '刪除' }}
+          </button>
         </div>
       </div>
 
@@ -51,8 +75,19 @@
         <p class="total-label">
           總金額：<strong>${{ totalPrice }}</strong>
         </p>
-        <button class="checkout-btn" @click="goToPayment">去買單</button>
+        <button 
+          class="checkout-btn" 
+          @click="goToPayment"
+          :disabled="cart.loading"
+        >
+          {{ cart.loading ? '處理中...' : '去買單' }}
+        </button>
       </div>
+    </div>
+
+    <!-- 成功提示 -->
+    <div v-if="successMessage" class="success-toast">
+      {{ successMessage }}
     </div>
   </div>
 </template>
@@ -65,20 +100,109 @@ import { useRouter } from 'vue-router'
 const cart = useCartStore()
 const router = useRouter()
 const isLoading = ref(true)
+const retrying = ref(false)
+const successMessage = ref('')
 
-onMounted(() => {
-  setTimeout(() => {
-    isLoading.value = false
-  }, 400)
+onMounted(async () => {
+  await loadCartData()
 })
 
-const cartItems = computed(() => cart.items)
-const removeItem = (id) => cart.removeItem(id)
+const loadCartData = async () => {
+  try {
+    isLoading.value = true
+    await cart.loadCart()
+    console.log('✅ 購物車載入成功')
+  } catch (error) {
+    console.error('❌ 購物車載入失敗:', error)
+    
+    // 如果是登入相關錯誤，導向登入頁
+    if (error.message.includes('請先登入') || error.message.includes('登入已過期')) {
+      const shouldLogin = confirm('您需要登入才能使用購物車同步功能。\n\n點擊「確定」前往登入頁面\n點擊「取消」使用本地購物車')
+      if (shouldLogin) {
+        router.push('/login')
+        return
+      }
+    }
+  } finally {
+    isLoading.value = false
+  }
+}
+
+const cartItems = computed(() => {
+  // 正確處理 Pinia store 的響應式數據
+  const items = cart.items
+  
+  // 如果是 Proxy 對象，檢查其 items 屬性
+  if (items && typeof items === 'object' && 'items' in items) {
+    console.warn('⚠️ cart.items 是嵌套對象，使用 items.items')
+    return Array.isArray(items.items) ? items.items : []
+  }
+  
+  // 正常情況：直接是陣列
+  if (Array.isArray(items)) {
+    return items
+  }
+  
+  console.warn('⚠️ cart.items 格式異常:', items)
+  return []
+})
+
+const totalPrice = computed(() => {
+  try {
+    const price = cart.totalPrice
+    if (typeof price === 'number') {
+      return price.toLocaleString()
+    }
+    return '0'
+  } catch (error) {
+    console.error('計算總價失敗:', error)
+    return '0'
+  }
+})
+
 const calcSubtotal = (item) => (item.price * item.quantity).toLocaleString()
-const totalPrice = computed(() =>
-  cartItems.value.reduce((acc, item) => acc + item.price * item.quantity, 0).toLocaleString(),
-)
+
+const handleRemoveItem = async (item) => {
+  try {
+    const itemId = item.eventId || item.id
+    const result = await cart.removeItem(itemId)
+    
+    if (result.success) {
+      showSuccessMessage(result.message)
+    }
+  } catch (error) {
+    alert('移除失敗：' + error.message)
+  }
+}
+
+const handleRetry = async () => {
+  retrying.value = true
+  try {
+    await loadCartData()
+    clearError()
+  } catch (error) {
+    console.error('重試失敗:', error)
+  } finally {
+    retrying.value = false
+  }
+}
+
+const clearError = () => {
+  cart.error = null
+}
+
+const showSuccessMessage = (message) => {
+  successMessage.value = message
+  setTimeout(() => {
+    successMessage.value = ''
+  }, 3000)
+}
+
 const goToPayment = () => {
+  if (cartItems.value.length === 0) {
+    alert('購物車是空的')
+    return
+  }
   router.push('/payment')
 }
 
@@ -92,6 +216,7 @@ const goShopping = () => {
   font-size: revert;
   font-weight: revert;
 }
+
 .cart-container {
   max-width: 1280px;
   margin: 48px auto;
@@ -101,15 +226,19 @@ const goShopping = () => {
   box-shadow: 0 0 16px rgba(0, 0, 0, 0.05);
   font-size: 15px;
 }
+
 .cart-container h2 {
   color: var(--color-text-selected, #f5d1c0);
   margin-bottom: 32px;
 }
+
+/* 載入狀態 */
 .loading-box {
   text-align: center;
   padding: 48px 0;
   color: var(--color-text-selected, #f5d1c0);
 }
+
 .spinner {
   margin: 16px auto;
   width: 40px;
@@ -119,11 +248,78 @@ const goShopping = () => {
   border-radius: 50%;
   animation: spin 0.8s linear infinite;
 }
+
 @keyframes spin {
   to {
     transform: rotate(360deg);
   }
 }
+
+/* 錯誤狀態 */
+.error-box {
+  background-color: rgba(235, 150, 164, 0.1);
+  border: 1px solid var(--color-text-warn, #eb96a4);
+  border-radius: 12px;
+  padding: 20px;
+  margin-bottom: 24px;
+}
+
+.error-content {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.error-icon {
+  font-size: 20px;
+}
+
+.error-message {
+  color: var(--color-text-warn, #eb96a4);
+  font-weight: 500;
+}
+
+.error-actions {
+  display: flex;
+  gap: 12px;
+}
+
+.retry-btn, .dismiss-btn {
+  padding: 8px 16px;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.retry-btn {
+  background-color: var(--color-select, #d17361);
+  color: white;
+  border: none;
+}
+
+.retry-btn:hover:not(:disabled) {
+  background-color: #b85d4a;
+}
+
+.retry-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.dismiss-btn {
+  background: transparent;
+  color: var(--color-text-warn, #eb96a4);
+  border: 1px solid var(--color-text-warn, #eb96a4);
+}
+
+.dismiss-btn:hover {
+  background-color: rgba(235, 150, 164, 0.1);
+}
+
+/* 購物車表格 */
 .cart-header {
   display: flex;
   padding: 16px 0;
@@ -131,14 +327,17 @@ const goShopping = () => {
   border-bottom: 1px solid var(--color-icon-secondary, #bcaea4);
   color: var(--color-text-selected, #f5d1c0);
 }
+
 .cart-header > div {
   flex: 1;
   text-align: center;
 }
+
 .cart-header > div:first-child {
   flex: 2;
   text-align: left;
 }
+
 .cart-row {
   display: flex;
   align-items: center;
@@ -146,22 +345,27 @@ const goShopping = () => {
   border-bottom: 1px solid #eee;
   color: var(--color-text-selected, #f5d1c0);
 }
+
 .cart-row:hover {
   background-color: rgba(245, 209, 192, 0.05);
 }
+
 .cart-row > div {
   flex: 1;
   text-align: center;
 }
+
 .cart-row > div:first-child {
   flex: 2;
   text-align: left;
 }
+
 .product {
   display: flex;
   align-items: center;
   gap: 16px;
 }
+
 .product-img {
   width: 80px;
   height: 80px;
@@ -169,24 +373,31 @@ const goShopping = () => {
   border-radius: 6px;
   background-color: #f0f0f0;
 }
+
 .product-name {
   font-size: 16px;
   font-weight: 600;
-  margin: 0;
+  margin: 0 0 4px 0;
   color: var(--color-text-selected, #f5d1c0);
 }
+
+.product-bar {
+  font-size: 14px;
+  color: var(--color-text-unselected, #937e7e);
+  margin: 0;
+}
+
 .qty-box {
   display: flex;
   justify-content: center;
   align-items: center;
-  gap: 8px;
 }
+
 .qty-box span {
-  width: 36px;
-  text-align: center;
   font-weight: 500;
 }
-.actions button {
+
+.remove-btn {
   border: 1px solid var(--color-select, #d17361);
   background-color: transparent;
   color: var(--color-select, #d17361);
@@ -196,10 +407,18 @@ const goShopping = () => {
   cursor: pointer;
   transition: all 0.2s;
 }
-.actions button:hover {
+
+.remove-btn:hover:not(:disabled) {
   background-color: var(--color-select, #d17361);
   color: white;
 }
+
+.remove-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* 總計區域 */
 .total-bar {
   display: flex;
   justify-content: flex-end;
@@ -207,14 +426,17 @@ const goShopping = () => {
   margin-top: 32px;
   gap: 16px;
 }
+
 .total-label {
   font-size: 19px;
   color: var(--color-text-selected, #f5d1c0);
   margin: 0;
 }
+
 .total-label strong {
   color: var(--color-text-selected, #f5d1c0);
 }
+
 .checkout-btn {
   background-color: var(--color-select, #d17361);
   color: white;
@@ -225,31 +447,36 @@ const goShopping = () => {
   cursor: pointer;
   transition: background-color 0.2s;
 }
-.checkout-btn:hover {
+
+.checkout-btn:hover:not(:disabled) {
   background-color: #b85d4a;
 }
 
+.checkout-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* 空購物車 */
 .empty-cart {
   text-align: center;
   padding: 80px 40px;
   color: var(--color-text-selected, #f5d1c0);
 }
-.empty-icon {
-  font-size: 80px;
-  margin-bottom: 24px;
-  opacity: 0.6;
-}
+
 .empty-cart h3 {
   font-size: 24px;
   margin-bottom: 16px;
   color: var(--color-text-selected, #f5d1c0);
 }
+
 .empty-description {
   font-size: 16px;
   margin-bottom: 32px;
   color: var(--color-text-unselected, #937e7e);
   line-height: 1.5;
 }
+
 .shop-btn {
   background-color: var(--color-select, #d17361);
   color: white;
@@ -261,7 +488,34 @@ const goShopping = () => {
   cursor: pointer;
   transition: background-color 0.2s;
 }
+
 .shop-btn:hover {
   background-color: #b85d4a;
+}
+
+/* 成功提示 */
+.success-toast {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  color: white;
+  padding: 12px 20px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  z-index: 1000;
+  animation: slideIn 0.3s ease-out;
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateX(100%);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
 }
 </style>
