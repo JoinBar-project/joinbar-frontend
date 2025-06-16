@@ -12,8 +12,8 @@
       >
         <div class="bar-card-image">
           <img
-            :src="bar.imageUrl || defaultPlaceholderImage"
-            :alt="bar.name"
+            :src="bar.images && bar.images.length > 0 ? bar.images[0] : (bar.imageUrl || defaultPlaceholderImage)"
+            :alt="bar.name || 'Bar'"
             class="bar-image"
             loading="lazy"
             @error="handleImageError"
@@ -40,7 +40,7 @@
           <h3 class="bar-name">{{ bar.name }}</h3>
           <div class="bar-rating-price">
             <span class="bar-rating">⭐️ {{ bar.rating || "N/A" }}</span>
-            <span class="bar-reviews"> ({{ bar.reviews || "0" }} 評論)</span>
+            <span class="bar-reviews"> ({{ bar.user_ratings_total || 0 }} 評論)</span>
             <span class="bar-price">NT$ {{ bar.priceRange || "???" }}</span>
           </div>
 
@@ -80,9 +80,9 @@ const handleImageError = (event) => {
 };
 
 const getOpeningHourText = (bar) => {
-  if (bar.openingHours?.weekday_text?.length > 0) {
-    return bar.openingHours.weekday_text[0];
-  } else if (bar.openingHours) {
+  if (bar.opening_hours?.weekday_text?.length > 0) {
+    return bar.opening_hours.weekday_text[0];
+  } else if (bar.opening_hours) {
     return "營業時間待提供";
   } else {
     return "未提供營業時間";
@@ -104,7 +104,10 @@ const emitToggleWishlist = (placeId) => {
 watch(
   () => props.bars,
   (newBars) => {
-    console.log("BarList 接收到的 bars prop 並更新列表，目前數量:", newBars.length);
+    console.log(
+      "BarList 接收到的 bars prop 並更新列表，目前數量:",
+      newBars.length
+    );
   },
   { immediate: true }
 );

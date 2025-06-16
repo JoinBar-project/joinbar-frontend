@@ -13,7 +13,15 @@
         <div class="content-flex-wrapper">
           <div class="image-gallery-container">
             <img
-              :src="currentImage"
+              v-if="bar.images && bar.images.length > 0"
+              :src="bar.images[currentImageIndex]"
+              alt="Bar Image"
+              class="main-image"
+              @error="handleImageError"
+            />
+            <img
+              v-else
+              :src="defaultImage"
               alt="Bar Image"
               class="main-image"
               @error="handleImageError"
@@ -28,7 +36,7 @@
             </div>
             <div class="image-dots">
               <span
-                v-for="(img, index) in bar.images"
+                v-for="(img, index) in bar.images || []"
                 :key="index"
                 :class="{ dot: true, active: index === currentImageIndex }"
                 @click="setCurrentImage(index)"
@@ -89,88 +97,17 @@
               <p>{{ bar.description || "暫無詳細介紹。" }}</p>
             </div>
 
-            <div class="fake-review-section">
-              <h3>熱門評論</h3>
-              <div class="review-card">
-                <div class="review-header">
-                  <img
-                    src="https://via.placeholder.com/40"
-                    alt="User Avatar"
-                    class="user-avatar"
-                  />
-                  <div class="user-info">
-                    <span class="user-name">新用戶</span>
-                    <span class="review-date">2024年05月20日</span>
-                  </div>
-                </div>
-                <p class="review-text">
-                  這家酒吧氛圍超好，調酒師也很專業，推薦他們的招牌特調！會再來！
-                </p>
-                <div class="review-actions">
-                  <span>👍 有用 (10)</span>
-                  <span>👎 不喜歡 (0)</span>
+            <div class="google-reviews">
+              <h3>Google 評論</h3>
+              <div v-if="bar.googleReviews && bar.googleReviews.length > 0">
+                <div v-for="(review, idx) in bar.googleReviews" :key="idx" class="review-item">
+                  <div class="review-author">{{ review.author_name || '匿名' }}</div>
+                  <div class="review-rating">⭐️ {{ review.rating || 'N/A' }}</div>
+                  <div class="review-text">{{ review.text || '（無評論內容）' }}</div>
+                  <div class="review-time">{{ review.relative_time_description || '' }}</div>
                 </div>
               </div>
-              <div class="review-card">
-                <div class="review-header">
-                  <img
-                    src="https://via.placeholder.com/40"
-                    alt="User Avatar"
-                    class="user-avatar"
-                  />
-                  <div class="user-info">
-                    <span class="user-name">另一個用戶</span>
-                    <span class="review-date">2024年05月18日</span>
-                  </div>
-                </div>
-                <p class="review-text">
-                  非常棒的體驗，服務人員態度親切，酒水品質一流！夜晚氛圍感十足，是放鬆的好去處。
-                </p>
-                <div class="review-actions">
-                  <span>👍 有用 (5)</span>
-                  <span>👎 不喜歡 (0)</span>
-                </div>
-              </div>
-              <div class="review-card">
-                <div class="review-header">
-                  <img
-                    src="https://via.placeholder.com/40"
-                    alt="User Avatar"
-                    class="user-avatar"
-                  />
-                  <div class="user-info">
-                    <span class="user-name">常造訪用戶</span>
-                    <span class="review-date">2024年05月15日</span>
-                  </div>
-                </div>
-                <p class="review-text">
-                  信義區的夜景真的無敵，這裡的視野很棒。調酒有創意，但價格偏高一些。整體還是很值得一去。
-                </p>
-                <div class="review-actions">
-                  <span>👍 有用 (7)</span>
-                  <span>👎 不喜歡 (1)</span>
-                </div>
-              </div>
-              <div class="review-card">
-                <div class="review-header">
-                  <img
-                    src="https://via.placeholder.com/40"
-                    alt="User Avatar"
-                    class="user-avatar"
-                  />
-                  <div class="user-info">
-                    <span class="user-name">老顧客</span>
-                    <span class="review-date">2024年05月10日</span>
-                  </div>
-                </div>
-                <p class="review-text">
-                  每次來都有驚喜，特別喜歡他們家的季節限定調酒。服務生會主動詢問口味偏好，很貼心。
-                </p>
-                <div class="review-actions">
-                  <span>👍 有用 (12)</span>
-                  <span>👎 不喜歡 (0)</span>
-                </div>
-              </div>
+              <div v-else>暫無評論。</div>
             </div>
           </div>
         </div>
@@ -554,7 +491,7 @@ const handleFileUpload = (event) => {
 .opening-hours-detail,
 .bar-tags-detail,
 .description-section,
-.fake-review-section {
+.google-reviews {
   margin-top: 20px;
   border-top: 1px solid #eee;
   padding-top: 15px;
@@ -562,7 +499,7 @@ const handleFileUpload = (event) => {
 .opening-hours-detail h3,
 .bar-tags-detail h3,
 .description-section h3,
-.fake-review-section h3 {
+.google-reviews h3 {
   font-size: 18px;
   font-weight: bold;
   color: #333;
@@ -591,11 +528,11 @@ const handleFileUpload = (event) => {
   border: 1px solid #91d5ff;
 }
 
-.fake-review-section {
+.google-reviews {
   padding-bottom: 15px;
 }
 
-.review-card {
+.review-item {
   background-color: #f9f9f9;
   border-radius: 8px;
   padding: 15px;
@@ -603,34 +540,14 @@ const handleFileUpload = (event) => {
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
 }
 
-.review-header {
-  display: flex;
-  align-items: center;
-  margin-bottom: 10px;
-}
-
-.user-avatar {
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
-  object-fit: cover;
-  margin-right: 10px;
-  border: 1px solid #ddd;
-}
-
-.user-info {
-  display: flex;
-  flex-direction: column;
-}
-
-.user-name {
+.review-author {
   font-weight: bold;
   color: #333;
   font-size: 16px;
 }
 
-.review-date {
-  font-size: 13px;
+.review-rating {
+  font-size: 14px;
   color: #777;
 }
 
@@ -641,11 +558,9 @@ const handleFileUpload = (event) => {
   margin-bottom: 10px;
 }
 
-.review-actions {
-  display: flex;
-  gap: 15px;
-  font-size: 14px;
-  color: #888;
+.review-time {
+  font-size: 13px;
+  color: #777;
 }
 
 .footer-actions {

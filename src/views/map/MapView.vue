@@ -30,6 +30,7 @@
           <button
             @click="handleSearch"
             class="btn search-bt map-control-button"
+            :disabled="!isReady"
           >
             <b>🔍 搜尋</b>
           </button>
@@ -41,6 +42,12 @@
         class="place-now-map map-control-button"
       >
         <b>📍 顯示我目前位置</b>
+      </button>
+      <button
+        @click="triggerSearchBarsInMapBounds(true)"
+        class="place-now-map map-control-button"
+      >
+        <b>🔎 搜尋此區域酒吧</b>
       </button>
     </div>
 
@@ -70,7 +77,7 @@
       @toggle-wishlist="handleToggleWishlistFromDetail"
     />
 
-    <div v-if="googleMapsLoading || isLoading" class="loading-overlay">
+    <div v-if="combinedLoading" class="loading-overlay">
       <div class="loader"></div>
       <p class="loading-message">載入中，請稍候...</p>
     </div>
@@ -89,44 +96,61 @@ import BarList from "../../components/map/BarList.vue";
 import BarDetailModal from "../../components/map/BarDetailModal.vue";
 import { useGoogleMaps } from "@/composable/useGoogleMaps";
 
+// --- 環境變數設定 ---
 const googleMapsApiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
-const myMapId = import.meta.env.MAP_ID;
+const myMapId = import.meta.env.VITE_MAP_ID;
 
-const isLoading = ref(false);
-const mapContainer = ref(null);
+// **新的酒吧圖標路徑**
+const barIconUrl = "/bar_icon.png"; // 假設您的 bar_icon.png 放在 public 資料夾根目錄
 
+// --- Template Refs ---
+const mapContainer = ref(null); // 用於綁定地圖的 DOM 元素
+
+// --- useGoogleMaps Composable ---
 const {
   map,
-  markers,
   infoWindow,
-  loading: googleMapsLoading,
+  loading: googleMapsLoading, // 地圖API載入狀態
+  isFetching, // 搜尋數據的載入狀態
   loadGoogleMapsAPI,
   initMap,
   showInfoWindow,
   closeInfoWindow,
   panTo,
   setZoom,
+  // 傳遞自定義的酒吧圖標 URL
   displayBarsOnMap,
   requestGeolocationPermission,
   getCurrentLocation: getMapCurrentLocation,
   getPlacePredictions,
   searchAndDisplayPlaces,
   panToAndShowBarInfo,
+  searchBarsInMapBounds,
+  clearMarkers,
+  google: googleMapsInstance, // 暴露 Google Maps API 實例 (readonly shallowRef)
+  isReady,
 } = useGoogleMaps(mapContainer, {
   googleMapsApiKey: googleMapsApiKey,
-  onLoading: () => {}, // 移除 console.log
   mapId: myMapId,
-  onLoaded: () => {}, // 移除 console.log
   onError: (msg) => {
     console.error("useGoogleMaps 錯誤:", msg);
-    alert(`地圖載入失敗：${msg}，請檢查API Key或網路。`);
+    alert(`地圖載入失敗：${msg}，請檢查API Key或網路連線。`);
   },
+  onMapIdle: async () => {
+    if (!isFetching.value && allBars.value.length === 0) {
+      console.log("MapView 響應地圖閒置事件，觸發地圖範圍內酒吧搜尋。");
+      await triggerSearchBarsInMapBounds(false); // 不顯示全屏加載遮罩
+    }
+  },
+  // 將酒吧圖標 URL 傳遞給 useGoogleMaps
+  barIconUrl: barIconUrl,
 });
 
+// --- 狀態管理 ---
 const isFilterPanelOpen = ref(false);
 const searchQuery = ref("");
 const suggestions = ref([]);
-const allBars = ref([]);
+const allBars = ref([]); // 儲存所有從 Google Places API 取得的酒吧數據
 const currentFilters = ref({
   address: "any",
   ratingSort: "any",
@@ -138,62 +162,94 @@ const currentFilters = ref({
   maxOpenMinute: 0,
   tags: [],
 });
-const selectedBar = ref(null);
+const selectedBar = ref(null); // 用於地圖資訊視窗和高亮
 const isBarDetailModalOpen = ref(false);
-const selectedBarForDetail = ref(null);
+const selectedBarForDetail = ref(null); // 用於 BarDetailModal
+const isLoading = ref(false);
+const googleBars = ref([]);
+
+// --- Computed Properties ---
+// 綜合地圖API載入和數據搜尋載入狀態
+const combinedLoading = computed(
+  () => googleMapsLoading.value || isFetching.value
+);
 
 const filteredBars = computed(() => {
-  let barsToFilter = [...allBars.value];
+  let bars = googleBars.value || [];
+  if (!Array.isArray(bars) || bars.length === 0) return [];
   const filters = currentFilters.value;
 
-  const districtTagsList = ["信義區", "大安區", "中山區", "松山區", "萬華區", "士林區"];
+  const districtTagsList = [
+    "信義區",
+    "大安區",
+    "中山區",
+    "松山區",
+    "萬華區",
+    "士林區",
+  ];
 
+  // 地址過濾
   if (filters.address !== "any") {
-    barsToFilter = barsToFilter.filter((bar) =>
-      bar.address.includes(filters.address)
+    bars = bars.filter((bar) =>
+      bar.address?.includes(filters.address)
     );
   }
 
+  // 標籤過濾 (包含區域標籤的特殊處理)
   if (filters.tags && filters.tags.length > 0) {
-    const nonDistrictTags = filters.tags.filter(tag => !districtTagsList.includes(tag));
-    const selectedDistrictTagsFromTagsFilter = filters.tags.filter(tag => districtTagsList.includes(tag));
+    const nonDistrictTags = filters.tags.filter(
+      (tag) => !districtTagsList.includes(tag)
+    );
+    const selectedDistrictTagsFromTagsFilter = filters.tags.filter((tag) =>
+      districtTagsList.includes(tag)
+    );
 
     if (nonDistrictTags.length > 0) {
-      barsToFilter = barsToFilter.filter((bar) =>
-        nonDistrictTags.every((tag) => bar.tags.includes(tag))
+      bars = bars.filter((bar) =>
+        nonDistrictTags.every((tag) => bar.tags?.includes(tag))
       );
     }
 
     if (selectedDistrictTagsFromTagsFilter.length > 0) {
+      // 如果地址篩選器已選擇，且與標籤中的區域不符，則返回空
       if (filters.address !== "any") {
         if (!selectedDistrictTagsFromTagsFilter.includes(filters.address)) {
           return [];
         }
       } else {
-        barsToFilter = barsToFilter.filter((bar) =>
-          selectedDistrictTagsFromTagsFilter.every(tag => {
-            return bar.address.includes(tag);
+        // 否則，根據標籤中的區域篩選
+        bars = bars.filter((bar) =>
+          selectedDistrictTagsFromTagsFilter.every((tag) => {
+            return bar.address?.includes(tag);
           })
         );
       }
     }
   }
 
-  if (map.value && window.google?.maps?.geometry?.spherical) {
+  // 距離過濾 (需要確保 Google Maps geometry 庫已載入)
+  if (map.value && googleMapsInstance.value?.maps?.geometry?.spherical) {
     const mapCenter = map.value.getCenter();
     if (mapCenter) {
-      const centerLatLng = new window.google.maps.LatLng(
+      const centerLatLng = new googleMapsInstance.value.LatLng(
         mapCenter.lat(),
         mapCenter.lng()
       );
-      barsToFilter = barsToFilter
+      bars = bars
         .map((bar) => {
-          const barLatLng = new window.google.maps.LatLng(
+          if (
+            !bar.location ||
+            typeof bar.location.lat === "undefined" ||
+            typeof bar.location.lng === "undefined"
+          ) {
+            return { ...bar, distance: Infinity }; // 無效位置設為無限遠
+          }
+          const barLatLng = new googleMapsInstance.value.LatLng(
             bar.location.lat,
             bar.location.lng
           );
           bar.distance =
-            window.google.maps.geometry.spherical.computeDistanceBetween(
+            googleMapsInstance.value.maps.geometry.spherical.computeDistanceBetween(
               centerLatLng,
               barLatLng
             );
@@ -209,23 +265,26 @@ const filteredBars = computed(() => {
     }
   }
 
+  // 開放時間過濾
   if (
     filters.minOpenHour !== 0 ||
     filters.minOpenMinute !== 0 ||
     filters.maxOpenHour !== 24 ||
     filters.maxOpenMinute !== 0
   ) {
-    barsToFilter = barsToFilter.filter((bar) => {
-      const openHoursText = bar.openingHours?.weekday_text?.[0] || "";
-      const timeMatch = openHoursText.match(/(\d{2}):(\d{2})\s*-\s*(\d{2}):(\d{2})/);
+    bars = bars.filter((bar) => {
+      const openHoursText = bar.opening_hours?.weekday_text?.[0] || "";
+      const timeMatch = openHoursText.match(
+        /(\d{2}):(\d{2})\s*-\s*(\d{2}):(\d{2})/
+      );
 
-      if (!timeMatch) return false;
+      if (!timeMatch) return false; // 無法解析時間
 
       let barOpenTime = dayjs(timeMatch[1] + ":" + timeMatch[2], "HH:mm");
       let barCloseTime = dayjs(timeMatch[3] + ":" + timeMatch[4], "HH:mm");
 
       if (barCloseTime.isBefore(barOpenTime)) {
-        barCloseTime = barCloseTime.add(1, "day");
+        barCloseTime = barCloseTime.add(1, "day"); // 處理跨夜時間
       }
 
       let filterOpenTime = dayjs()
@@ -236,26 +295,30 @@ const filteredBars = computed(() => {
         .minute(filters.maxOpenMinute);
 
       if (filters.maxOpenHour === 24 && filters.maxOpenMinute === 0) {
-        filterCloseTime = dayjs().endOf('day').add(1, 'minute');
+        filterCloseTime = dayjs().endOf("day").add(1, "minute"); // 處理到午夜的情況
       }
 
       if (filterCloseTime.isBefore(filterOpenTime)) {
-        filterCloseTime = filterCloseTime.add(1, "day");
+        filterCloseTime = filterCloseTime.add(1, "day"); // 處理跨夜篩選
       }
-      const isWithinHours = barOpenTime.isBefore(filterCloseTime) && barCloseTime.isAfter(filterOpenTime);
+      const isWithinHours =
+        barOpenTime.isBefore(filterCloseTime) &&
+        barCloseTime.isAfter(filterOpenTime);
       return isWithinHours;
     });
   }
 
+  // 評分排序
   if (filters.ratingSort === "highToLow") {
-    barsToFilter.sort((a, b) => b.rating - a.rating);
+    bars.sort((a, b) => (b.rating || 0) - (a.rating || 0));
   } else if (filters.ratingSort === "lowToHigh") {
-    barsToFilter.sort((a, b) => a.rating - b.rating);
+    bars.sort((a, b) => (a.rating || 0) - (b.rating || 0));
   }
 
-  return barsToFilter;
+  return bars;
 });
 
+// --- Debounced 函數 ---
 const debouncedSearchSuggestions = debounce(async () => {
   if (!searchQuery.value) {
     suggestions.value = [];
@@ -264,269 +327,234 @@ const debouncedSearchSuggestions = debounce(async () => {
   suggestions.value = await getPlacePredictions(searchQuery.value);
 }, 300);
 
+// --- Methods ---
+
+/**
+ * 選擇搜尋建議並觸發搜尋
+ * @param {object} suggestion - 選擇的建議對象
+ */
 async function selectSuggestion(suggestion) {
   searchQuery.value = suggestion.description;
-  suggestions.value = [];
-  await handleSearch();
+  suggestions.value = []; // 清空建議列表
+  await handleSearch(); // 執行搜尋
 }
 
+/**
+ * 處理手動搜尋按鈕點擊
+ */
 async function handleSearch() {
+  if (!isReady) {
+    alert('地圖尚未載入完成，請稍候再試');
+    return;
+  }
   if (!searchQuery.value) {
     alert("請輸入搜尋關鍵字");
     return;
   }
   isLoading.value = true;
   try {
-    await searchAndDisplayPlaces(searchQuery.value);
-  } catch (error) {
-    console.error("搜尋或顯示地點失敗:", error);
-    alert("搜尋失敗，請稍後再試。");
-  } finally {
+    const bars = await searchAndDisplayPlaces(searchQuery.value);
+    googleBars.value = bars;
     isLoading.value = false;
+  } catch (err) {
+    isLoading.value = false;
+    googleBars.value = [];
   }
 }
 
-async function handleGetCurrentLocation() {
-  isLoading.value = true;
+/**
+ * 觸發地圖範圍內的酒吧搜尋
+ * @param {boolean} showLoading - 是否顯示全屏加載遮罩 (由 isFetching 控制)
+ */
+async function triggerSearchBarsInMapBounds(showLoading = true) {
+  if (!map.value || !googleMapsInstance.value) {
+    console.warn("地圖或 Google Maps 實例未準備好，無法搜尋區域酒吧。");
+    return;
+  }
   try {
-    await getMapCurrentLocation(
-      document.querySelector(".bar-list-sidebar")?.offsetWidth || 0
-    );
+    console.log("開始搜尋地圖範圍內的酒吧...");
+    const bars = await searchBarsInMapBounds(showLoading);
+    allBars.value = bars.map((bar) => ({
+      ...bar,
+      isWishlisted: false,
+      photos: bar.photos || [],
+      thumbnailUrl:
+        bar.photos && bar.photos.length > 0
+          ? bar.photos[0].getUrl({ maxWidth: 400, maxHeight: 300 })
+          : "", // 列表顯示用
+    })); // 將搜尋到的酒吧更新到 allBars
+    console.log(`搜尋到 ${bars.length} 個酒吧。`);
+    if (bars.length === 0) {
+      alert("當前地圖範圍內沒有找到相關酒吧。");
+    }
+  } catch (error) {
+    console.error("搜尋區域酒吧失敗:", error);
+    alert("搜尋此區域酒吧失敗，請稍後再試。");
+    allBars.value = []; // 搜尋失敗也清空列表
+  }
+}
+
+/**
+ * 處理獲取目前位置
+ */
+async function handleGetCurrentLocation() {
+  try {
+    // 側邊欄寬度用於調整地圖中心，以確保定位點在可視區域
+    const sidebarWidth =
+      document.querySelector(".bar-list-sidebar")?.offsetWidth || 0;
+    await getMapCurrentLocation(sidebarWidth);
+    // 獲取位置後，立即觸發一次地圖範圍內的搜尋
+    await triggerSearchBarsInMapBounds(false); // 不顯示全屏加載遮罩
   } catch (err) {
     console.error("獲取目前位置失敗:", err);
     alert("無法獲取您的目前位置，請檢查瀏覽器權限設定。");
-  } finally {
-    isLoading.value = false;
   }
 }
 
+/**
+ * 處理過濾器變化
+ * @param {object} filters - 新的過濾器設定
+ */
 function handleFilterChanged(filters) {
   currentFilters.value = { ...filters };
 }
 
+/**
+ * 切換過濾面板的顯示狀態
+ */
 function toggleFilterPanel() {
   isFilterPanelOpen.value = !isFilterPanelOpen.value;
 }
 
-function handleBarSelected(bar) {
-  selectedBar.value = bar;
-  selectedBarForDetail.value = bar;
+/**
+ * 處理從 BarList 中選中酒吧
+ * @param {object} bar - 被選中的酒吧對象
+ */
+async function handleBarSelected(bar) {
+  selectedBarForDetail.value = bar || {};
   isBarDetailModalOpen.value = true;
-  panToAndShowBarInfo(bar);
 }
 
+/**
+ * 關閉酒吧詳細資訊彈窗
+ */
 function closeBarDetailModal() {
   isBarDetailModalOpen.value = false;
   selectedBarForDetail.value = null;
-  closeInfoWindow();
+  closeInfoWindow(); // 關閉地圖上的資訊視窗
 }
 
+/**
+ * 處理願望清單切換 (來自 BarList)
+ * @param {string} barId - 酒吧 ID
+ */
 function handleToggleWishlist(barId) {
   const barIndex = allBars.value.findIndex((b) => b.id === barId);
   if (barIndex > -1) {
     allBars.value[barIndex].isWishlisted =
       !allBars.value[barIndex].isWishlisted;
   }
+  // 如果詳細資訊彈窗打開，也更新其狀態
   if (selectedBarForDetail.value && selectedBarForDetail.value.id === barId) {
     selectedBarForDetail.value.isWishlisted =
       !selectedBarForDetail.value.isWishlisted;
   }
 }
 
+/**
+ * 處理願望清單切換 (來自 BarDetailModal)
+ * @param {string} barId - 酒吧 ID
+ */
 const handleToggleWishlistFromDetail = (barId) => {
-  handleToggleWishlist(barId);
+  handleToggleWishlist(barId); // 調用共同的處理函數
 };
 
-function fetchBarsData() {
-  allBars.value = [
-    {
-      id: "b001",
-      place_id: "ChIJ7-02o96jQjQR6c8b9j01314",
-      name: "微醺角落",
-      location: { lat: 25.0478, lng: 121.5172 },
-      rating: 4.5,
-      reviews: 120,
-      priceRange: "300-600",
-      tags: ["精釀啤酒", "放鬆氛圍", "平價", "中山區"],
-      openingHours: { weekday_text: ["週二至週日 18:00 - 01:00"] },
-      imageUrl: "",
-      description: "隱身巷弄中的小酒館，提供多款精釀啤酒，適合下班小酌。",
-      isWishlisted: false,
-      images: [],
-      address: "台北市中山區某某街123號",
-      phone: "02-1234-5678",
-      website: "https://www.example.com/bar001",
-    },
-    {
-      id: "b002",
-      place_id: "ChIJY52JzdyjQjQR6c8b9j01314",
-      name: "信義夜景酒吧",
-      location: { lat: 25.0336, lng: 121.5644 },
-      rating: 4.8,
-      reviews: 350,
-      priceRange: "800-1500",
-      tags: ["高空美景", "創意調酒", "約會小酌", "信義區"],
-      openingHours: { weekday_text: ["每日 20:00 - 02:00"] },
-      imageUrl: "",
-      description: "俯瞰台北市夜景的絕佳地點，提供精緻調酒與餐點，是約會首選。",
-      isWishlisted: false,
-      images: [],
-      address: "台北市信義區某某路456號",
-      phone: "02-9876-5432",
-      website: "https://www.example.com/bar002",
-    },
-    {
-      id: "b003",
-      place_id: "ChIJX52JzdyjQjQR6c8b9j01314",
-      name: "大安運動酒吧",
-      rating: 4.2,
-      reviews: 200,
-      priceRange: "400-900",
-      openingHours: { weekday_text: ["每日 17:00 - 03:00"] },
-      description: "提供多台大型螢幕轉播運動賽事，氛圍熱烈，適合與朋友一起看球",
-      tags: ["運動酒吧", "大型螢幕", "觀賽熱點", "美式", "大安區"],
-      imageUrl: "",
-      location: { lat: 25.038, lng: 121.543 },
-      isWishlisted: false,
-      images: [],
-      address: "台北市大安區某某街789號",
-      phone: "02-1122-3344",
-      website: "",
-    },
-    {
-      id: "b004",
-      place_id: "ChIJL52JzdyjQjQR6c8b9j01314",
-      name: "松山爵士吧",
-      location: { lat: 25.0505, lng: 121.5501 },
-      rating: 4.7,
-      reviews: 80,
-      priceRange: "600-1200",
-      tags: ["爵士樂", "現場表演", "復古", "調酒", "松山區"],
-      openingHours: { weekday_text: ["週三至週日 20:30 - 01:30"] },
-      imageUrl: "",
-      description: "每晚有現場爵士樂表演，提供多款經典調酒，適合品味人士。",
-      isWishlisted: false,
-      images: [],
-      address: "台北市松山區某某路100號",
-      phone: "02-5566-7788",
-      website: "https://www.example.com/bar004",
-    },
-    {
-      id: "b005",
-      place_id: "ChIJQ52JzdyjQjQR6c8b9j01314",
-      name: "萬華老屋酒吧",
-      location: { lat: 25.0375, lng: 121.5036 },
-      rating: 4.3,
-      reviews: 95,
-      priceRange: "350-700",
-      tags: ["老屋改造", "復古", "特色", "小酌", "萬華區"],
-      openingHours: { weekday_text: ["週一至週六 19:00 - 00:00"] },
-      imageUrl: "",
-      description: "由老屋改造的特色酒吧，保留復古元素，提供獨特調酒。",
-      isWishlisted: false,
-      images: [],
-      address: "台北市萬華區某某街1號",
-      phone: "",
-      website: "",
-    },
-    {
-      id: "b006",
-      place_id: "ChIJL52JzdyjQjQR6c8b9j01314",
-      name: "士林文青酒吧",
-      location: { lat: 25.0935, lng: 121.5235 },
-      rating: 4.6,
-      reviews: 150,
-      priceRange: "450-800",
-      tags: ["文青", "咖啡", "輕食", "獨立", "士林區"],
-      openingHours: { weekday_text: ["週二至週日 14:00 - 23:00"] },
-      imageUrl: "",
-      description: "結合咖啡與酒精，氛圍輕鬆，適合閱讀或安靜小酌。",
-      isWishlisted: false,
-      images: [],
-      address: "台北市士林區某某街20號",
-      phone: "02-1234-9876",
-      website: "https://www.example.com/bar006",
-    },
-    {
-      id: "b007",
-      place_id: "ChIJZ52JzdyjQjQR6c8b9j01314",
-      name: "信義餐酒館",
-      location: { lat: 25.041, lng: 121.567 },
-      rating: 4.9,
-      reviews: 90,
-      priceRange: "700-1300",
-      tags: ["秘密基地", "私密空間", "預約制", "信義區"],
-      openingHours: { weekday_text: ["週三至週六 21:00 - 03:00"] },
-      imageUrl: "",
-      description: "隱藏在城市中的秘密酒吧，需要預約才能進入，提供客製化調酒。",
-      isWishlisted: false,
-      images: [],
-      address: "台北市信義區某某街33號",
-      phone: "0912-345-678",
-      website: "",
-    },
-    {
-      id: "b008",
-      place_id: "ChIJG52JzdyjQjQR6c8b9j01314",
-      name: "大安居酒屋",
-      location: { lat: 25.037, lng: 121.545 },
-      rating: 4.4,
-      reviews: 250,
-      priceRange: "500-1000",
-      tags: ["居酒屋", "日式", "燒烤", "深夜食堂", "大安區"],
-      openingHours: { weekday_text: ["每日 18:00 - 00:00"] },
-      imageUrl: "",
-      description: "提供地道日式居酒屋氛圍，美味串燒與多種清酒。",
-      isWishlisted: false,
-      images: [],
-      address: "台北市大安區某某路88號",
-      phone: "02-7788-9900",
-      website: "https://www.example.com/bar008",
-    },
-  ];
-}
+// --- Watchers ---
 
-onMounted(async () => {
-  isLoading.value = true;
-  try {
-    await loadGoogleMapsAPI();
-    if (mapContainer.value) {
-      initMap();
-      fetchBarsData();
-      requestGeolocationPermission();
-    } else {
-      console.error("錯誤：地圖容器 ref 未綁定，無法初始化地圖。");
+// 監聽 mapContainer ref，確保 DOM 元素準備就緒後才初始化地圖
+// 這個 watch 會在 mapContainer 被設置 (DOM 元素可用) 後觸發
+watch(
+  mapContainer,
+  (newVal) => {
+    if (newVal) {
+      console.log("mapContainer DOM 元素已準備好。");
+      // 只有在 Google Maps API 已經載入，且地圖實例尚未初始化時才調用 initMap
+      if (googleMapsInstance.value && !map.value) {
+        console.log(
+          "mapContainer 和 Google Maps API 已準備好，嘗試初始化地圖..."
+        );
+        initMap();
+      }
     }
-  } catch (err) {
-    console.error("地圖或數據載入失敗:", err);
-    alert("初始化失敗，請檢查控制台錯誤。");
-  } finally {
-    isLoading.value = false;
+  },
+  { immediate: true } // 立即執行一次，以防 mapContainer 在組件掛載時已經有值
+);
+
+// 監聽 map 實例，當它準備好時，添加拖曳和縮放事件監聽器
+watch(map, (newMap) => {
+  if (newMap && googleMapsInstance.value) {
+    console.log("Map 實例已準備就緒，添加事件監聽器。");
+    // 監聽地圖拖曳結束，觸發區域內搜尋
+    newMap.addListener("dragend", async () => {
+      console.log("地圖拖曳結束。");
+      await triggerSearchBarsInMapBounds(false); // 拖曳結束後重新搜尋酒吧
+    });
+
+    // 監聽地圖縮放結束，觸發區域內搜尋
+    newMap.addListener("zoom_changed", async () => {
+      console.log("地圖縮放等級改變。");
+      await triggerSearchBarsInMapBounds(false); // 縮放結束後重新搜尋酒吧
+    });
   }
 });
 
+// 監聽 filteredBars 變化，更新地圖上的酒吧標記
 watch(
   filteredBars,
   (newBars) => {
-    if (map.value) {
+    if (map.value && googleMapsInstance.value) {
+      console.log(`filteredBars 變更，準備顯示 ${newBars.length} 個酒吧標記。`);
+      // 這裡調用 displayBarsOnMap，它會使用傳入的 barIconUrl
       displayBarsOnMap(newBars);
     } else {
-      console.warn("地圖實例尚未準備好，無法顯示酒吧標記。");
+      console.warn("地圖或 Google Maps 實例未準備好，無法顯示酒吧標記。");
     }
   },
-  { immediate: true }
+  { immediate: false } // 不在初始化時立即執行，等待地圖載入
 );
 
+// 監聽 selectedBar 變化，如果為空且詳細資訊彈窗未打開，則關閉資訊視窗
 watch(selectedBar, (newVal) => {
-  if (newVal && map.value && !isBarDetailModalOpen.value) {
-  } else if (!isBarDetailModalOpen.value) {
+  if (!newVal && !isBarDetailModalOpen.value) {
     closeInfoWindow();
+  }
+});
+
+// --- Lifecycle Hooks ---
+onMounted(async () => {
+  console.log("MapView component mounted.");
+  try {
+    // 1. 載入 Google Maps API，等待其完成
+    await loadGoogleMapsAPI();
+    console.log("Google Maps API 載入完成並可用。");
+
+    // 2. 確保 mapContainer ref 已經被設置，並且地圖尚未初始化，則手動觸發 initMap
+    if (mapContainer.value && !map.value) {
+      console.log("在 onMounted 中手動觸發 initMap...");
+      initMap();
+    }
+
+    // 3. 請求地理位置權限 (非同步但非阻塞)
+    requestGeolocationPermission();
+  } catch (err) {
+    console.error("MapView 初始化失敗:", err);
+    alert("初始化地圖或數據失敗，請檢查控制台錯誤。");
   }
 });
 </script>
 
 <style scoped>
-/* 樣式保持不變 */
+/* 樣式部分保持不變 */
 .map-view-container {
   display: flex;
   height: 100vh;
