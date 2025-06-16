@@ -8,7 +8,6 @@ export function useGoogleMaps(mapContainerRef, options) {
     onError,
     mapId,
     onMapIdle,
-    barIconUrl,
   } = options;
 
   const map = shallowRef(null);
@@ -25,6 +24,9 @@ export function useGoogleMaps(mapContainerRef, options) {
   let geocoderService = null;
   let directionsService = null;
   let directionsRenderer = null;
+
+  const barIconUrl = '/wine.png';
+  const nowIconUrl = '/now.png';
 
   /**
    * 載入 Google Maps JavaScript API
@@ -122,6 +124,7 @@ export function useGoogleMaps(mapContainerRef, options) {
           },
           strictBounds: false,
         },
+        scrollwheel: true,
       });
       placesService = new google.value.places.PlacesService(map.value);
       autocompleteService = new google.value.places.AutocompleteService();
@@ -193,7 +196,7 @@ export function useGoogleMaps(mapContainerRef, options) {
               location: pos,
               title: "您的目前位置",
               icon: {
-                url: "http://maps.google.com/mapfiles/ms/icons/blue-dot.png", // 藍色點標記
+                url: nowIconUrl, // 使用 now.png
                 scaledSize: new google.value.Size(40, 40),
                 anchor: new google.value.Point(20, 20),
               },
@@ -253,22 +256,18 @@ export function useGoogleMaps(mapContainerRef, options) {
 
     if (options.isCurrentLocation) {
       markerOptions.icon = {
-        url: "http://maps.google.com/mapfiles/ms/icons/blue-dot.png", // 藍色點標記
+        url: nowIconUrl, // 使用 now.png
         scaledSize: new google.value.Size(40, 40),
         anchor: new google.value.Point(20, 20),
       };
     } else if (options.isBarLike) {
       markerOptions.icon = {
-        url: barIconUrl, // 這裡您已經正確地使用了 barIconUrl
+        url: barIconUrl, // 只針對 bar 類型用 wine.png
         scaledSize: new google.value.Size(40, 40),
         anchor: new google.value.Point(20, 40),
       };
-    } else if (options.icon) {
-      markerOptions.icon = options.icon;
-    } else {
-      markerOptions.icon =
-        "http://maps.google.com/mapfiles/ms/icons/red-dot.png";
     }
+    // 其他型態不設 icon，使用 Google 預設
 
     const marker = new google.value.Marker(markerOptions);
 
@@ -866,6 +865,140 @@ export function useGoogleMaps(mapContainerRef, options) {
     return null;
   };
 
+  /**
+   * 以指定座標搜尋附近酒吧（正確多頁，僅回傳前10筆）
+   * @param {object} location {lat, lng}
+   * @param {number} radius 公尺
+   * @param {number} maxPages 最多抓幾頁
+   * @returns {Promise<Array>} 附近酒吧
+   */
+  const searchNearbyBarsByLocation = async (location, radius = 500, maxPages = 3) => {
+    if (!placesService || !google.value) return [];
+    let allResults = [];
+    let page = 0;
+    return new Promise((resolve) => {
+      const request = {
+        location: new google.value.LatLng(location.lat, location.lng),
+        radius,
+        type: ["bar", "night_club", "pub", "liquor_store", "cafe"],
+      };
+      const handleResults = (results, status, pagination) => {
+        if (status === google.value.places.PlacesServiceStatus.OK && results) {
+          allResults = allResults.concat(results);
+          page++;
+          if (pagination && pagination.hasNextPage && page < maxPages) {
+            setTimeout(() => {
+              pagination.nextPage();
+            }, 2000);
+          } else {
+            console.log('allResults', allResults)
+            Promise.all(
+              allResults.map(async (place) => {
+                try {
+                  const detail = await getPlaceDetails(place.place_id);
+                  return {
+                    id: detail.place_id,
+                    place_id: detail.place_id,
+                    name: detail.name,
+                    location: {
+                      lat: detail.geometry.location.lat(),
+                      lng: detail.geometry.location.lng(),
+                    },
+                    rating: detail.rating || 0,
+                    reviews: detail.user_ratings_total || 0,
+                    address: detail.formatted_address || "未知地址",
+                    priceRange:
+                      detail.price_level !== undefined
+                        ? `等級 ${detail.price_level}`
+                        : null,
+                    tags: detail.types
+                      ? detail.types.filter(
+                          (type) =>
+                            !["point_of_interest", "establishment"].includes(type)
+                        )
+                      : [],
+                    opening_hours: detail.opening_hours,
+                    imageUrl:
+                      detail.photos && detail.photos.length > 0
+                        ? detail.photos[0].getUrl({ maxWidth: 400, maxHeight: 400 })
+                        : "",
+                    images: detail.photos
+                      ? detail.photos.map((p) =>
+                          p.getUrl({ maxWidth: 800, maxHeight: 600 })
+                        )
+                      : [],
+                    description: "點擊查看更多詳情...",
+                    isWishlisted: false,
+                    phone: detail.international_phone_number || null,
+                    website: detail.website || null,
+                    url: detail.url,
+                    googleReviews: detail.reviews || [],
+                  };
+                } catch (e) {
+                  return place;
+                }
+              })
+            ).then((detailedBars) => {
+              resolve(detailedBars);
+            });
+          }
+        } else {
+          allResults = allResults.slice(0, 10);
+          Promise.all(
+            allResults.map(async (place) => {
+              try {
+                const detail = await getPlaceDetails(place.place_id);
+                return {
+                  id: detail.place_id,
+                  place_id: detail.place_id,
+                  name: detail.name,
+                  location: {
+                    lat: detail.geometry.location.lat(),
+                    lng: detail.geometry.location.lng(),
+                  },
+                  rating: detail.rating || 0,
+                  reviews: detail.user_ratings_total || 0,
+                  address: detail.formatted_address || "未知地址",
+                  priceRange:
+                    detail.price_level !== undefined
+                      ? `等級 ${detail.price_level}`
+                      : null,
+                  tags: detail.types
+                    ? detail.types.filter(
+                        (type) =>
+                          !["point_of_interest", "establishment"].includes(type)
+                      )
+                    : [],
+                  opening_hours: detail.opening_hours,
+                  imageUrl:
+                    detail.photos && detail.photos.length > 0
+                      ? detail.photos[0].getUrl({ maxWidth: 400, maxHeight: 400 })
+                      : "",
+                  images: detail.photos
+                    ? detail.photos.map((p) =>
+                        p.getUrl({ maxWidth: 800, maxHeight: 600 })
+                      )
+                    : [],
+                  description: "點擊查看更多詳情...",
+                  isWishlisted: false,
+                  phone: detail.international_phone_number || null,
+                  website: detail.website || null,
+                  url: detail.url,
+                  googleReviews: detail.reviews || [],
+                };
+              } catch (e) {
+                return place;
+              }
+            })
+          ).then((detailedBars) => {
+            resolve(detailedBars);
+          });
+        }
+      };
+      placesService.nearbySearch(request, handleResults);
+    });
+  };
+
   return {
     map: readonly(map),
     markers: readonly(markers),
@@ -887,6 +1020,7 @@ export function useGoogleMaps(mapContainerRef, options) {
     searchAndDisplayPlaces,
     panToAndShowBarInfo,
     searchBarsInMapBounds,
+    searchNearbyBarsByLocation,
     google: readonly(google),
     clearMarkers,
     calculateDistance,

@@ -43,12 +43,6 @@
       >
         <b>📍 顯示我目前位置</b>
       </button>
-      <button
-        @click="triggerSearchBarsInMapBounds(true)"
-        class="place-now-map map-control-button"
-      >
-        <b>🔎 搜尋此區域酒吧</b>
-      </button>
     </div>
 
     <aside class="bar-list-sidebar">
@@ -127,6 +121,7 @@ const {
   panToAndShowBarInfo,
   searchBarsInMapBounds,
   clearMarkers,
+  searchNearbyBarsByLocation,
   google: googleMapsInstance, // 暴露 Google Maps API 實例 (readonly shallowRef)
   isReady,
 } = useGoogleMaps(mapContainer, {
@@ -136,13 +131,6 @@ const {
     console.error("useGoogleMaps 錯誤:", msg);
     alert(`地圖載入失敗：${msg}，請檢查API Key或網路連線。`);
   },
-  onMapIdle: async () => {
-    if (!isFetching.value && allBars.value.length === 0) {
-      console.log("MapView 響應地圖閒置事件，觸發地圖範圍內酒吧搜尋。");
-      await triggerSearchBarsInMapBounds(false); // 不顯示全屏加載遮罩
-    }
-  },
-  // 將酒吧圖標 URL 傳遞給 useGoogleMaps
   barIconUrl: barIconUrl,
 });
 
@@ -167,6 +155,7 @@ const isBarDetailModalOpen = ref(false);
 const selectedBarForDetail = ref(null); // 用於 BarDetailModal
 const isLoading = ref(false);
 const googleBars = ref([]);
+const mainBarForSearch = ref(null); // 專門存搜尋主酒吧
 
 // --- Computed Properties ---
 // 綜合地圖API載入和數據搜尋載入狀態
@@ -176,7 +165,7 @@ const combinedLoading = computed(
 
 const filteredBars = computed(() => {
   let bars = googleBars.value || [];
-  if (!Array.isArray(bars) || bars.length === 0) return [];
+  if (!Array.isArray(bars)) bars = [];
   const filters = currentFilters.value;
 
   const districtTagsList = [
@@ -315,7 +304,13 @@ const filteredBars = computed(() => {
     bars.sort((a, b) => (a.rating || 0) - (b.rating || 0));
   }
 
-  return bars;
+  // 最上方插入 mainBarForSearch
+  const result = [];
+  if (mainBarForSearch.value) {
+    result.push(mainBarForSearch.value);
+  }
+  result.push(...bars);
+  return result;
 });
 
 // --- Debounced 函數 ---
@@ -353,44 +348,39 @@ async function handleSearch() {
   }
   isLoading.value = true;
   try {
-    const bars = await searchAndDisplayPlaces(searchQuery.value);
-    googleBars.value = bars;
+    // 1. 先搜尋
+    const mainBars = await searchAndDisplayPlaces(searchQuery.value);
+    // 判斷是否為「模糊搜尋」或「熱門關鍵字」
+    const fuzzyKeywords = ["bar", "酒吧", "pub", "night club", "cafe"];
+    const isFuzzy = fuzzyKeywords.some(k => searchQuery.value.toLowerCase().includes(k));
+    if (isFuzzy) {
+      // 模糊/熱門關鍵字：直接顯示所有搜尋結果
+      mainBarForSearch.value = null;
+      googleBars.value = mainBars;
+    } else {
+      // 精確搜尋＋附近 bar
+      mainBarForSearch.value = mainBars && mainBars.length > 0 ? mainBars[0] : null;
+      let relatedBars = [];
+      if (mainBarForSearch.value && mainBarForSearch.value.location) {
+        let radius = 600;
+        const maxRadius = 3000;
+        while (radius <= maxRadius) {
+          relatedBars = await searchNearbyBarsByLocation(mainBarForSearch.value.location, radius);
+          relatedBars = relatedBars.filter(bar => bar.place_id !== mainBarForSearch.value.place_id);
+          if (relatedBars.length > 0) break;
+          radius += 600;
+        }
+      }
+      googleBars.value = [
+        ...(mainBarForSearch.value ? [mainBarForSearch.value] : []),
+        ...relatedBars
+      ];
+    }
     isLoading.value = false;
   } catch (err) {
     isLoading.value = false;
+    mainBarForSearch.value = null;
     googleBars.value = [];
-  }
-}
-
-/**
- * 觸發地圖範圍內的酒吧搜尋
- * @param {boolean} showLoading - 是否顯示全屏加載遮罩 (由 isFetching 控制)
- */
-async function triggerSearchBarsInMapBounds(showLoading = true) {
-  if (!map.value || !googleMapsInstance.value) {
-    console.warn("地圖或 Google Maps 實例未準備好，無法搜尋區域酒吧。");
-    return;
-  }
-  try {
-    console.log("開始搜尋地圖範圍內的酒吧...");
-    const bars = await searchBarsInMapBounds(showLoading);
-    allBars.value = bars.map((bar) => ({
-      ...bar,
-      isWishlisted: false,
-      photos: bar.photos || [],
-      thumbnailUrl:
-        bar.photos && bar.photos.length > 0
-          ? bar.photos[0].getUrl({ maxWidth: 400, maxHeight: 300 })
-          : "", // 列表顯示用
-    })); // 將搜尋到的酒吧更新到 allBars
-    console.log(`搜尋到 ${bars.length} 個酒吧。`);
-    if (bars.length === 0) {
-      alert("當前地圖範圍內沒有找到相關酒吧。");
-    }
-  } catch (error) {
-    console.error("搜尋區域酒吧失敗:", error);
-    alert("搜尋此區域酒吧失敗，請稍後再試。");
-    allBars.value = []; // 搜尋失敗也清空列表
   }
 }
 
@@ -403,8 +393,6 @@ async function handleGetCurrentLocation() {
     const sidebarWidth =
       document.querySelector(".bar-list-sidebar")?.offsetWidth || 0;
     await getMapCurrentLocation(sidebarWidth);
-    // 獲取位置後，立即觸發一次地圖範圍內的搜尋
-    await triggerSearchBarsInMapBounds(false); // 不顯示全屏加載遮罩
   } catch (err) {
     console.error("獲取目前位置失敗:", err);
     alert("無法獲取您的目前位置，請檢查瀏覽器權限設定。");
@@ -497,13 +485,11 @@ watch(map, (newMap) => {
     // 監聽地圖拖曳結束，觸發區域內搜尋
     newMap.addListener("dragend", async () => {
       console.log("地圖拖曳結束。");
-      await triggerSearchBarsInMapBounds(false); // 拖曳結束後重新搜尋酒吧
     });
 
     // 監聽地圖縮放結束，觸發區域內搜尋
     newMap.addListener("zoom_changed", async () => {
       console.log("地圖縮放等級改變。");
-      await triggerSearchBarsInMapBounds(false); // 縮放結束後重新搜尋酒吧
     });
   }
 });
