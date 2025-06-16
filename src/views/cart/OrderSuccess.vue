@@ -183,13 +183,10 @@ function getStatusClass(status) {
   })[status] || 'status-default'
 }
 
-// 修復：改進訂單數據載入邏輯
 async function loadOrderData() {
   try {
-    // 多種方式獲取訂單 ID
     let orderId = route.query.orderId || route.params.orderId
     
-    // 如果沒有直接的 orderId，嘗試從 sessionStorage 獲取
     if (!orderId) {
       const pendingOrder = sessionStorage.getItem('pendingOrder')
       if (pendingOrder) {
@@ -197,14 +194,13 @@ async function loadOrderData() {
           const orderInfo = JSON.parse(pendingOrder)
           orderId = orderInfo.orderId
           console.log('📦 從 sessionStorage 獲取訂單 ID:', orderId)
-          sessionStorage.removeItem('pendingOrder') // 清理
+          sessionStorage.removeItem('pendingOrder') 
         } catch (e) {
           console.warn('⚠️ sessionStorage 數據解析失敗:', e)
         }
       }
     }
     
-    // 最後嘗試使用 orderNumber 作為 ID（如果後端支持）
     if (!orderId && route.params.orderNumber) {
       orderId = route.params.orderNumber
       console.log('📦 使用 orderNumber 作為 ID:', orderId)
@@ -230,8 +226,7 @@ async function loadOrderData() {
   } catch (err) {
     orderInfo.value = null
     console.error('❌ 載入訂單失敗:', err)
-    
-    // 提供更詳細的錯誤信息
+  
     if (err.message.includes('404') || err.message.includes('找不到')) {
       throw new Error('找不到該訂單，請檢查訂單編號是否正確')
     } else if (err.message.includes('401') || err.message.includes('登入')) {
@@ -322,7 +317,6 @@ onMounted(async () => {
   try {
     await loadOrderData()
   } catch (error) {
-    // 錯誤已在 loadOrderData 中處理
     console.error('❌ 初始載入失敗:', error)
   }
 })

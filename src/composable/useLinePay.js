@@ -14,7 +14,6 @@ export function useLinePay() {
      isLoading.value = true
      error.value = ''
 
-     // 參數驗證
      if (!orderId) {
        throw new Error('訂單 ID 不能為空')
      }
@@ -28,7 +27,7 @@ export function useLinePay() {
 
      const response = await axios.post(
        `${API_BASE_URL}/api/linepay/create`,
-       { orderId: String(orderId) }, // 確保是字符串
+       { orderId: String(orderId) }, 
        {
          headers: {
            'Authorization': `Bearer ${token}`,
@@ -42,7 +41,6 @@ export function useLinePay() {
        paymentUrl.value = response.data.data.paymentUrl
        transactionId.value = response.data.data.transactionId
        
-       // 驗證返回的數據
        if (!paymentUrl.value || !transactionId.value) {
          throw new Error('LINE Pay 返回數據不完整')
        }
@@ -170,7 +168,6 @@ export function useLinePay() {
 
    console.log('🔄 跳轉到 LINE Pay 頁面...', paymentUrl)
    
-   // 嘗試在新視窗開啟
    const paymentWindow = window.open(
      paymentUrl,
      'linePayWindow',
@@ -181,14 +178,10 @@ export function useLinePay() {
      console.log('彈出視窗被阻擋，在當前視窗跳轉')
      window.location.href = paymentUrl
    } else {
-     // 監聽彈出視窗關閉事件
      const checkClosed = setInterval(() => {
        if (paymentWindow.closed) {
          clearInterval(checkClosed)
          console.log('LINE Pay 視窗已關閉')
-         
-         // 可以在這裡觸發狀態檢查
-         // 或讓用戶手動檢查付款狀態
        }
      }, 1000)
    }

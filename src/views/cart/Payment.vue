@@ -189,7 +189,7 @@ const formErrors = ref({})
 
 onMounted(async () => {
  loadUserInfo()
- handleLinePayReturn() // 新增：處理 LINE Pay 回調
+ handleLinePayReturn() 
  setTimeout(() => {
    if (cart.items.length === 0) {
      alert('購物車是空的，即將返回購物車頁面')
@@ -265,7 +265,6 @@ function loadUserInfo() {
  }
 }
 
-// 新增：處理 LINE Pay 回調
 const handleLinePayReturn = () => {
  const urlParams = new URLSearchParams(window.location.search)
  const transactionId = urlParams.get('transactionId')
@@ -305,7 +304,6 @@ const submitOrder = async () => {
    const orderResponse = await createOrder(orderData)
    const order = orderResponse.order
    
-   // 修復：統一獲取訂單 ID
    const orderId = order.id || order.orderId
    if (!orderId) {
      throw new Error('訂單 ID 格式錯誤')
@@ -323,7 +321,6 @@ const submitOrder = async () => {
        const paymentResult = await createLinePayment(orderId)
        console.log('✅ LINE Pay 付款創建成功:', paymentResult.transactionId)
        
-       // 保存訂單信息到 sessionStorage
        sessionStorage.setItem('pendingOrder', JSON.stringify({
          orderId: orderId,
          orderNumber: order.orderNumber,
@@ -368,7 +365,6 @@ const submitOrder = async () => {
      console.log('🔄 Step 5/5: 清空購物車並跳轉...')
      cart.clearCart()
      
-     // 修復：統一路由跳轉
      router.push({
        name: 'OrderSuccess',
        params: { orderNumber: order.orderNumber },
@@ -589,14 +585,12 @@ const goBack = () => {
   margin-top: 16px;
  }
  
- /* === 修正後的付款按鈕樣式 === */
  .payment-options {
   display: flex;
   gap: 16px;
   margin-top: 16px;
  }
  
- /* 基本按鈕樣式 */
  .payment-btn {
   padding: 12px 20px;
   font-size: 16px;
@@ -620,7 +614,6 @@ const goBack = () => {
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
  }
 
- /* LINE Pay 按鈕 */
  .linepay-btn {
   background-color: var(--color-line-green, #25c916);
   color: white;
@@ -637,7 +630,6 @@ const goBack = () => {
               0 0 0 4px rgba(37, 201, 22, 0.2);
  }
 
- /* 信用卡按鈕 */
  .creditcard-btn {
   background-color: var(--color-creditcard, #ffd4d4);
   color: var(--color-creditcard-text, #333);
@@ -654,7 +646,6 @@ const goBack = () => {
               0 0 0 4px rgba(255, 212, 212, 0.3);
  }
  
- /* === 確認付款按鈕樣式 === */
  .checkout-btn {
   background-color: var(--color-select, #d17361);
   color: white;
@@ -825,7 +816,6 @@ const goBack = () => {
   color: var(--color-black, #1a1a1a);
  }
  
- /* 響應式設計 */
  @media (max-width: 768px) {
   .form-grid {
     grid-template-columns: 1fr;
