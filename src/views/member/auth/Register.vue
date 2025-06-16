@@ -69,7 +69,7 @@
             <!-- 顯示具體的錯誤訊息 -->
             <div v-if="errors[field.model]" class="text-[var(--color-primary-orange)] text-xs ml-1">
               <span v-if="field.model === 'username'">{{ usernameErrorMessage }}</span>
-              <span v-if="field.model === 'nickname'">{{ nicknameErrorMessage }}</span>
+              <span v-else-if="field.model === 'nickname'">{{ nicknameErrorMessage }}</span>
               <span v-else-if="field.model === 'email'">{{ emailErrorMessage }}</span>
               <span v-else-if="field.model === 'password'">{{ passwordErrorMessage }}</span>
               <span v-else-if="field.model === 'birthday'">{{ birthdayErrorMessage }}</span>

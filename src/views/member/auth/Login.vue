@@ -119,7 +119,7 @@
       <!-- 登入按鈕 -->
       <div class="flex justify-center">
         <button
-          @click="handleLogin"
+          @click="handleEmailLogin"
           :disabled="authStore.isLoading"
           class="w-full max-w-[180px] py-2 bg-gradient-to-r from-[var(--color-secondary-green)] via-[#d8dbaf] to-[var(--color-primary-orange)] text-[var(--color-black)] rounded-lg font-semibold mt-4 shadow-md transition duration-300 transform hover:scale-105 hover:brightness-110 hover:shadow-lg">
           <span v-if="authStore.isEmailLoading">登入中...</span>
@@ -170,6 +170,19 @@ const errors = ref({
 const emailErrorMessage = ref('')
 const passwordErrorMessage = ref('')
 
+const clearError = (fieldName) => {
+  if (errors.value[fieldName]) {
+    errors.value[fieldName] = false
+    
+    // 清除對應的錯誤訊息
+    if (fieldName === 'email') {
+      emailErrorMessage.value = ''
+    } else if (fieldName === 'password') {
+      passwordErrorMessage.value = ''
+    }
+  }
+}
+
 const validateEmail = (email) => {
   if (!email || email.trim() === '') {
     emailErrorMessage.value = '電子郵件為必填欄位'
@@ -217,7 +230,7 @@ const validatePassword = (password) => {
   return true
 }
 
-const handleLogin = async () => {
+const handleEmailLogin = async () => {
   let valid = true
 
   if (!validateEmail(loginForm.value.email)) {
@@ -259,13 +272,6 @@ const handleLogin = async () => {
 
 const handleLineLogin = async () => {
   await authStore.lineLogin()
-}
-
-// 清除單一欄位的錯誤狀態
-const clearError = (fieldName) => {
-  if (errors.value[fieldName]) {
-    errors.value[fieldName] = false
-  }
 }
 
 const useTestAccount = () => {
