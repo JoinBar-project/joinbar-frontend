@@ -140,7 +140,7 @@
 import { useCartStore } from '@/stores/cartStore'
 import { useOrder } from '@/composable/useOrder'
 import { useLinePay } from '@/composable/useLinePay'
-import { computed, ref, onMounted, watch } from 'vue'
+import { computed, ref, onMounted, onUnmounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import dayjs from 'dayjs'
 import utc from 'dayjs/plugin/utc'
@@ -189,7 +189,10 @@ const formErrors = ref({})
 
 onMounted(async () => {
  loadUserInfo()
- handleLinePayReturn() 
+ handleLinePayReturn()
+ 
+ window.addEventListener('message', handlePopupMessage)
+ 
  setTimeout(() => {
    if (cart.items.length === 0) {
      alert('購物車是空的，即將返回購物車頁面')
@@ -199,6 +202,10 @@ onMounted(async () => {
    
    isLoading.value = false
  }, 400)
+})
+
+onUnmounted(() => {
+ window.removeEventListener('message', handlePopupMessage)
 })
 
 const cartItems = computed(() => cart.items)
@@ -276,6 +283,48 @@ const handleLinePayReturn = () => {
  }
 }
 
+const handlePopupMessage = (event) => {
+ if (event.origin !== window.location.origin) {
+   console.warn('⚠️ 收到來自未知來源的消息:', event.origin)
+   return
+ }
+ 
+ console.log('📨 收到彈出視窗消息:', event.data)
+ 
+ if (event.data.type === 'LINEPAY_SUCCESS') {
+   console.log('✅ LINE Pay 付款成功！')
+   
+   alert(`🎉 LINE Pay 付款成功！\n\n訂單編號：${event.data.orderNumber}\n金額：$${formatAmount(event.data.totalAmount)}\n\n即將跳轉到訂單詳情頁面`)
+   
+   cart.clearCart()
+   
+   clearAllErrors()
+   
+   router.push({
+     name: 'OrderSuccess',
+     params: { orderNumber: event.data.orderNumber },
+     query: { orderId: event.data.orderId }
+   })
+   
+ } else if (event.data.type === 'LINEPAY_ERROR') {
+   console.error('❌ LINE Pay 付款失敗:', event.data.error)
+   
+   setError(`付款失敗: ${event.data.error}`)
+   
+   if (event.data.orderId) {
+     const retry = confirm('付款過程中發生錯誤。\n\n點擊「確定」檢查付款狀態\n點擊「取消」留在當前頁面')
+     if (retry) {
+       router.push(`/payment-waiting?orderId=${event.data.orderId}`)
+     }
+   }
+ }
+}
+
+const formatAmount = (amount) => {
+ if (!amount) return '0'
+ return Number(amount).toLocaleString()
+}
+
 const submitOrder = async () => {
  if (isSubmitting.value || !canSubmit.value) return
 
@@ -331,12 +380,11 @@ const submitOrder = async () => {
          `✅ 訂單創建成功！\n\n` +
          `訂單編號：${order.orderNumber}\n` +
          `金額：$${totalPrice.value}\n\n` +
-         `點擊「確定」跳轉到 LINE Pay 付款頁面\n` +
-         `完成付款後系統會自動確認訂單`
+         `點擊「確定」開啟 LINE Pay 付款頁面\n` +
+         `完成付款後請保持此頁面開啟，系統會自動處理後續流程`
        )
        
        if (confirmRedirect) {
-         cart.clearCart()
          redirectToLinePay(paymentResult.paymentUrl)
        } else {
          setError('已取消付款，訂單已創建但尚未付款')
