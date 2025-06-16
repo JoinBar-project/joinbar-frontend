@@ -11,7 +11,7 @@ const router = useRouter();
 
 const handleLogout = () => {
   clearAuthState();
-  router.push('/login');
+  router.push('/home');
 };
 
 const userId = computed(() => user.value?.id);
@@ -19,6 +19,7 @@ const userId = computed(() => user.value?.id);
 const profileLink = computed(() => ({ name: 'MemberProfile', params: { id: userId.value } }));
 const eventLink = computed(() => ({ name: 'MemberEventRecords', params: { id: userId.value } }));
 const barLink = computed(() => ({ name: 'MemberBarFavorites', params: { id: userId.value } }));
+const memberCardLink = computed(() => ({ name: 'MemberCard', params: { id: userId.value } }));
 const ordersLink = computed(() => ({ name: 'MemberOrderRecords', params: { id: userId.value } }));
 </script>
 
@@ -28,6 +29,7 @@ const ordersLink = computed(() => ({ name: 'MemberOrderRecords', params: { id: u
       <li><RouterLink :to="profileLink">會員資料</RouterLink></li>
       <li><RouterLink :to="eventLink">揪團活動紀錄</RouterLink></li>
       <li><RouterLink :to="barLink">我的酒吧收藏</RouterLink></li>
+      <li><RouterLink :to="memberCardLink">酒友卡</RouterLink></li>
       <li><RouterLink :to="ordersLink">訂單紀錄</RouterLink></li>
       <li><button @click="handleLogout" class="cursor-pointer">登出</button></li>
     </ul>

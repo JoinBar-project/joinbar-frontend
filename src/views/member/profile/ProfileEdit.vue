@@ -93,13 +93,13 @@ const cancel = () => {
       <div class="mt-6 flex justify-center gap-4">
         <button
           type="submit"
-          class="px-4 py-2 bg-green-600 text-white rounded">
+          class="px-4 py-2 bg-green-600 text-white rounded cursor-pointer">
           儲存
         </button>
         <button
           type="button"
           @click="cancel"
-          class="ml-2 px-4 py-2 bg-gray-400 text-white rounded">
+          class="ml-2 px-4 py-2 bg-gray-400 text-white rounded cursor-pointer">
           取消
         </button>
       </div>

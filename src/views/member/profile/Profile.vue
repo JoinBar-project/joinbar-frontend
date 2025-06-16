@@ -61,7 +61,7 @@ const goToEdit = () => {
 
     <button
       type="button"
-      class="mt-6 px-4 py-2 bg-gray-800 text-white rounded"
+      class="mt-6 px-4 py-2 bg-gray-800 text-white rounded cursor-pointer"
       @click="goToEdit">
       編輯
     </button>

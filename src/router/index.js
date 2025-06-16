@@ -1,20 +1,19 @@
 import { createRouter, createWebHistory } from 'vue-router';
 
-import Home from '@/views/home/Home.vue'
-import Event from '@/views/events/Event.vue'
-import EventInfo from '@/views/events/EventInfo.vue'
-import MapView from '@/views/map/MapView.vue'
-import Member from '@/views/member/auth/Member.vue'
+import Home from '@/views/home/Home.vue';
+import Event from '@/views/events/Event.vue';
+import EventInfo from '@/views/events/EventInfo.vue';
+import MapView from '@/views/map/MapView.vue';
+import Member from '@/views/member/auth/Member.vue';
 import MemberDashboard from '@/views/member/MemberDashboard.vue';
-import Reviews from '@/views/reviews/Reviews.vue'
-import Subscription from '@/views/sub/Subscription.vue'
-import Cart from '@/views/cart/Cart.vue'
-import Payment from "@/views/cart/Payment.vue"
-import OrderSuccess from '@/views/cart/OrderSuccess.vue'
-import Login from "@/views/member/auth/Login.vue"
-import Register from "@/views/member/auth/Register.vue";
-import NotFound from '../views/NotFound.vue'
-
+import Reviews from '@/views/reviews/Reviews.vue';
+import Subscription from '@/views/sub/Subscription.vue';
+import Cart from '@/views/cart/Cart.vue';
+import Payment from '@/views/cart/Payment.vue';
+import OrderSuccess from '@/views/cart/OrderSuccess.vue';
+import Login from '@/views/member/auth/Login.vue';
+import Register from '@/views/member/auth/Register.vue';
+import NotFound from '../views/NotFound.vue';
 
 const routes = [
   { path: '/', redirect: '/home' },
@@ -39,7 +38,7 @@ const routes = [
       {
         path: 'profile/edit',
         name: 'MemberProfileEdit',
-        component: ()=> import("@/views/member/profile/ProfileEdit.vue")
+        component: () => import('@/views/member/profile/ProfileEdit.vue'),
       },
       {
         path: 'event-records',
@@ -50,6 +49,11 @@ const routes = [
         path: 'bar-favorites',
         name: 'MemberBarFavorites',
         component: () => import('@/views/member/profile/BarFavorites.vue'),
+      },
+      {
+        path: 'membercard',
+        name: 'MemberCard',
+        component: () => import('@/views/member/profile/MemberCard.vue'),
       },
       {
         path: 'order-records',
@@ -72,4 +76,4 @@ const router = createRouter({
   routes,
 });
 
-export default router
+export default router;
