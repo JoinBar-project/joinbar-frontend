@@ -21,14 +21,11 @@
       <div v-else-if="paymentStatus === 'success'" class="success-section">
         <div class="success-icon">✅</div>
         <h2>付款確認成功！</h2>
-        <p>您的訂單已確認，感謝您的購買</p>
+        <p>您的訂單已確認，正在跳轉到訂單詳情...</p>
         <div class="order-info" v-if="orderData">
           <p><strong>訂單編號：</strong>{{ orderData.orderNumber }}</p>
           <p><strong>付款金額：</strong>${{ formatAmount(orderData.totalAmount) }}</p>
         </div>
-        <button @click="goToOrderSuccess" class="btn-success">
-          查看訂單詳情
-        </button>
       </div>
 
       <div v-else-if="paymentStatus === 'failed'" class="failed-section">
@@ -42,38 +39,19 @@
           <button @click="goToPayment" class="btn-back">
             返回付款頁面
           </button>
-          <button @click="contactSupport" class="btn-support">
-            聯繫客服
-          </button>
         </div>
       </div>
 
       <div v-else-if="paymentStatus === 'timeout'" class="timeout-section">
         <div class="timeout-icon">⏰</div>
         <h2>付款狀態確認超時</h2>
-        <p>
-          我們無法立即確認您的付款狀態，但這不代表付款失敗。
-          <br>
-          請稍後查看訂單狀態，或聯繫客服協助處理。
-        </p>
+        <p>請稍後查看訂單狀態，或重新檢查。</p>
         <div class="action-buttons">
-          <button @click="goToOrders" class="btn-orders">
-            查看我的訂單
-          </button>
           <button @click="retryCheck" class="btn-retry" :disabled="isChecking">
             重新檢查
           </button>
         </div>
       </div>
-    </div>
-
-    <div class="info-section">
-      <h3>付款說明</h3>
-      <ul>
-        <li>付款完成後，系統通常會在 1-3 分鐘內確認</li>
-        <li>如果長時間未確認，請不要重複付款</li>
-        <li>遇到問題可以聯繫客服協助處理</li>
-      </ul>
     </div>
   </div>
 </template>
@@ -85,19 +63,20 @@ import { useOrder } from '@/composable/useOrder'
 
 const route = useRoute()
 const router = useRouter()
-const { pollPaymentStatus, formatAmount } = useOrder()
+const { getOrderDetails, formatAmount } = useOrder()
 
 const isChecking = ref(true)
 const paymentStatus = ref('checking')
 const errorMessage = ref('')
 const orderData = ref(null)
 const currentAttempt = ref(0)
-const maxAttempts = ref(30)
-
-let pollInterval = null
+const maxAttempts = ref(15)
+const checkInterval = ref(null)
 
 onMounted(async () => {
   const orderId = route.query.orderId
+  
+  console.log('🔄 PaymentWaiting 啟動:', { orderId })
   
   if (!orderId) {
     paymentStatus.value = 'failed'
@@ -110,8 +89,8 @@ onMounted(async () => {
 })
 
 onUnmounted(() => {
-  if (pollInterval) {
-    clearInterval(pollInterval)
+  if (checkInterval.value) {
+    clearInterval(checkInterval.value)
   }
 })
 
@@ -119,27 +98,80 @@ const startPaymentCheck = async (orderId) => {
   try {
     isChecking.value = true
     paymentStatus.value = 'checking'
+    currentAttempt.value = 0
     
-    const result = await pollPaymentStatus(orderId, maxAttempts.value, 2000, true)
+    const success = await checkOrderStatus(orderId)
+    if (success) return
     
-    if (result.success) {
-      paymentStatus.value = 'success'
-      orderData.value = result.order
-    } else if (result.status === 'timeout') {
-      paymentStatus.value = 'timeout'
-    } else {
-      paymentStatus.value = 'failed'
-      errorMessage.value = result.message || '付款確認失敗'
-    }
-    
-    currentAttempt.value = result.attempts || 0
+    checkInterval.value = setInterval(async () => {
+      currentAttempt.value++
+      console.log(`🔄 第 ${currentAttempt.value} 次檢查...`)
+      
+      const success = await checkOrderStatus(orderId)
+      
+      if (success || currentAttempt.value >= maxAttempts.value) {
+        clearInterval(checkInterval.value)
+        
+        if (!success) {
+          paymentStatus.value = 'timeout'
+          isChecking.value = false
+        }
+      }
+    }, 3000)
     
   } catch (error) {
-    console.error('Payment check failed:', error)
+    console.error('❌ 付款檢查失敗:', error)
     paymentStatus.value = 'failed'
     errorMessage.value = error.message || '系統錯誤'
-  } finally {
     isChecking.value = false
+  }
+}
+
+const checkOrderStatus = async (orderId) => {
+  try {
+    const response = await getOrderDetails(orderId)
+    const order = response.order
+    
+    console.log(`📊 訂單狀態: ${order.status}`)
+    
+    if (['confirmed', 'paid'].includes(order.status)) {
+      console.log('✅ 付款確認成功！')
+      paymentStatus.value = 'success'
+      orderData.value = order
+      isChecking.value = false
+      
+      setTimeout(() => {
+        console.log('🔄 跳轉到訂單成功頁面...')
+        router.replace({
+          name: 'OrderSuccess',
+          params: { orderNumber: order.orderNumber },
+          query: { orderId: order.id || order.orderId }
+        })
+      }, 1500)
+      
+      return true
+    }
+    
+    if (['cancelled', 'expired', 'refunded'].includes(order.status)) {
+      paymentStatus.value = 'failed'
+      errorMessage.value = `訂單${order.status === 'cancelled' ? '已取消' : order.status === 'expired' ? '已過期' : '已退款'}`
+      isChecking.value = false
+      return true
+    }
+    
+    return false
+    
+  } catch (error) {
+    console.error('❌ 檢查訂單狀態失敗:', error)
+    
+    if (currentAttempt.value < 5) {
+      return false
+    }
+    
+    paymentStatus.value = 'failed'
+    errorMessage.value = '無法獲取訂單狀態'
+    isChecking.value = false
+    return true
   }
 }
 
@@ -147,26 +179,15 @@ const retryCheck = async () => {
   const orderId = route.query.orderId
   if (orderId) {
     currentAttempt.value = 0
+    if (checkInterval.value) {
+      clearInterval(checkInterval.value)
+    }
     await startPaymentCheck(orderId)
-  }
-}
-
-const goToOrderSuccess = () => {
-  if (orderData.value) {
-    router.push(`/order-success/${orderData.value.orderNumber}?orderId=${orderData.value.id}`)
   }
 }
 
 const goToPayment = () => {
   router.push('/payment')
-}
-
-const goToOrders = () => {
-  router.push('/member/orders')
-}
-
-const contactSupport = () => {
-  alert('客服功能開發中，請發送郵件到 support@joinbar.com')
 }
 </script>
 
@@ -184,7 +205,6 @@ const contactSupport = () => {
   padding: 48px;
   text-align: center;
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
-  margin-bottom: 32px;
 }
 
 .checking-section h2,
@@ -235,16 +255,8 @@ const contactSupport = () => {
   transition: width 0.3s ease;
 }
 
-.success-icon {
-  font-size: 64px;
-  margin-bottom: 16px;
-}
-
-.failed-icon {
-  font-size: 64px;
-  margin-bottom: 16px;
-}
-
+.success-icon,
+.failed-icon,
 .timeout-icon {
   font-size: 64px;
   margin-bottom: 16px;
@@ -265,32 +277,20 @@ const contactSupport = () => {
 
 .action-buttons {
   display: flex;
-  gap: 12px;
+  gap: 16px;
   justify-content: center;
   flex-wrap: wrap;
   margin-top: 24px;
 }
 
-.btn-success,
 .btn-retry,
-.btn-back,
-.btn-support,
-.btn-orders {
+.btn-back {
   padding: 12px 20px;
   border-radius: 8px;
   font-weight: 600;
   cursor: pointer;
   border: none;
   transition: all 0.2s;
-}
-
-.btn-success {
-  background: #dc2626;
-  color: white;
-}
-
-.btn-success:hover {
-  background: #b91c1c;
 }
 
 .btn-retry {
@@ -314,49 +314,6 @@ const contactSupport = () => {
 
 .btn-back:hover {
   background: #4b5563;
-}
-
-.btn-support {
-  background: #1d4ed8;
-  color: white;
-}
-
-.btn-support:hover {
-  background: #1e40af;
-}
-
-.btn-orders {
-  background: #7c3aed;
-  color: white;
-}
-
-.btn-orders:hover {
-  background: #6d28d9;
-}
-
-.info-section {
-  background: white;
-  border-radius: 16px;
-  padding: 24px;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
-}
-
-.info-section h3 {
-  margin: 0 0 16px 0;
-  font-size: 18px;
-  font-weight: 600;
-  color: #1f2937;
-}
-
-.info-section ul {
-  margin: 0;
-  padding-left: 20px;
-}
-
-.info-section li {
-  margin: 8px 0;
-  color: #6b7280;
-  line-height: 1.5;
 }
 
 .error-message {

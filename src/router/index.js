@@ -15,7 +15,6 @@ import Login from "@/views/member/auth/Login.vue"
 import Register from "@/views/member/auth/Register.vue"
 import NotFound from '../views/NotFound.vue'
 
-
 const routes = [
   { path: '/', redirect: '/home' },
   { path: '/home', name: 'Home', component: Home },
@@ -31,13 +30,34 @@ const routes = [
   { path: '/payment', name: 'Payment', component: Payment },
   { path: '/payment-waiting', name: 'PaymentWaiting', component: PaymentWaiting },
   { path: '/order-success/:orderNumber', name: 'OrderSuccess', component: OrderSuccess, props: true },
+  // 404 路由放到最後，並且更精確
   { path: '/404', name: 'NotFound', component: NotFound },
-  { path: '/:pathMatch(.*)*', redirect: '/404' }
+  { 
+    path: '/:pathMatch(.*)*', 
+    name: 'Catch-All',
+    component: NotFound,
+    // 可以改成直接使用組件而不是 redirect，避免重複跳轉
+  }
 ]
 
 const router = createRouter({
   history: createWebHistory(),
   routes,
+})
+
+// 添加路由守衛來調試
+router.beforeEach((to, from, next) => {
+  console.log('🔄 路由跳轉:', {
+    from: from.path,
+    to: to.path,
+    query: to.query
+  })
+  next()
+})
+
+// 處理路由錯誤
+router.onError((error) => {
+  console.error('❌ 路由錯誤:', error)
 })
 
 export default router
