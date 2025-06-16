@@ -187,13 +187,50 @@ const validateEmail = (email) => {
   
   return true
 }
-const handleEmailLogin = async () => {
-  const success = await authStore.emailLogin(loginForm.value.email, loginForm.value.password)
+
+const handleLogin = async () => {
+  let valid = true
   
-  if (success) {
-    loginForm.value.email = ''
-    loginForm.value.password = ''
-    router.push('/home')
+  // 1. 表單驗證
+  if (!validateEmail(loginForm.value.email)) {
+    errors.value.email = true
+    valid = false
+  } else {
+    errors.value.email = false
+  }
+  
+  if (!validatePassword(loginForm.value.password)) {
+    errors.value.password = true
+    valid = false
+  } else {
+    errors.value.password = false
+  }
+  
+  // 如果驗證失敗，直接返回
+  if (!valid) return
+  
+  // 2. ✅ 實際執行登入（authStore.emailLogin 內部會處理載入狀態）
+  try {
+    const success = await authStore.emailLogin(loginForm.value.email, loginForm.value.password)
+    
+    if (success) {
+      // 3. 顯示成功動畫
+      showLoginSuccess.value = true
+      
+      // 4. 清除表單
+      loginForm.value.email = ''
+      loginForm.value.password = ''
+      
+      // 5. 跳轉到首頁
+      setTimeout(() => {
+        showLoginSuccess.value = false
+        router.push('/home')
+      }, 1500)
+    }
+    
+  } catch (error) {
+    console.error('登入過程發生錯誤:', error)
+    showLoginSuccess.value = false
   }
 }
 
@@ -234,35 +271,6 @@ const clearError = (fieldName) => {
     errors.value[fieldName] = false
   }
 }
-
-const handleLogin = () => {
-  let valid = true
-  
-  if (!validateEmail(loginForm.value.email)) {
-    errors.value.email = true
-    valid = false
-  } else {
-    errors.value.email = false
-  }
-  
-
-  if (!validatePassword(loginForm.value.password)) {
-    errors.value.password = true
-    valid = false
-  } else {
-    errors.value.password = false
-  }
-  
-  // 如果有錯誤就不登入
-  if (!valid) return
-  
-  
-  showLoginSuccess.value = true
-
-  setTimeout(() => {
-    showLoginSuccess.value = false
-    }, 3000)
-  }
 
 const useTestAccount = () => {
   loginForm.value.email = 'admin@test.com'
