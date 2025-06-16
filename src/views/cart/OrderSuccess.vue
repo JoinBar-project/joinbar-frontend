@@ -183,10 +183,38 @@ function getStatusClass(status) {
   })[status] || 'status-default'
 }
 
+// 修復：改進訂單數據載入邏輯
 async function loadOrderData() {
   try {
-    const orderId = route.query.orderId || route.params.orderId
-    if (!orderId) throw new Error('缺少訂單 ID')
+    // 多種方式獲取訂單 ID
+    let orderId = route.query.orderId || route.params.orderId
+    
+    // 如果沒有直接的 orderId，嘗試從 sessionStorage 獲取
+    if (!orderId) {
+      const pendingOrder = sessionStorage.getItem('pendingOrder')
+      if (pendingOrder) {
+        try {
+          const orderInfo = JSON.parse(pendingOrder)
+          orderId = orderInfo.orderId
+          console.log('📦 從 sessionStorage 獲取訂單 ID:', orderId)
+          sessionStorage.removeItem('pendingOrder') // 清理
+        } catch (e) {
+          console.warn('⚠️ sessionStorage 數據解析失敗:', e)
+        }
+      }
+    }
+    
+    // 最後嘗試使用 orderNumber 作為 ID（如果後端支持）
+    if (!orderId && route.params.orderNumber) {
+      orderId = route.params.orderNumber
+      console.log('📦 使用 orderNumber 作為 ID:', orderId)
+    }
+    
+    if (!orderId) {
+      throw new Error('無法獲取訂單 ID，請檢查 URL 參數')
+    }
+    
+    console.log('🔄 載入訂單詳情:', orderId)
     const response = await getOrderDetails(orderId)
     orderInfo.value = response.order
     
@@ -197,17 +225,33 @@ async function loadOrderData() {
         status: orderInfo.value.status
       })
     }
+    
+    console.log('✅ 訂單詳情載入完成')
   } catch (err) {
     orderInfo.value = null
     console.error('❌ 載入訂單失敗:', err)
+    
+    // 提供更詳細的錯誤信息
+    if (err.message.includes('404') || err.message.includes('找不到')) {
+      throw new Error('找不到該訂單，請檢查訂單編號是否正確')
+    } else if (err.message.includes('401') || err.message.includes('登入')) {
+      throw new Error('登入已過期，請重新登入後查看訂單')
+    } else {
+      throw err
+    }
   }
 }
 
 async function handleRetry() {
   retrying.value = true
   clearOrderError()
-  await loadOrderData()
-  retrying.value = false
+  try {
+    await loadOrderData()
+  } catch (error) {
+    console.error('❌ 重試失敗:', error)
+  } finally {
+    retrying.value = false
+  }
 }
 
 async function copyToClipboard(text) {
@@ -274,7 +318,14 @@ function fallbackShare(text) {
   }
 }
 
-onMounted(loadOrderData)
+onMounted(async () => {
+  try {
+    await loadOrderData()
+  } catch (error) {
+    // 錯誤已在 loadOrderData 中處理
+    console.error('❌ 初始載入失敗:', error)
+  }
+})
 </script>
 
 <style scoped>
