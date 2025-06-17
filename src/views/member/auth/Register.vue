@@ -86,8 +86,12 @@
             <button class="btn bg-white text-black border-[#e5e5e5] border-2 flex items-center px-4 py-2 rounded-lg hover:shadow-md transition">
               <img src="/google.svg" alt="Google" class="w-5 h-5 mr-2" /> register for Google 
             </button>
-            <button class="btn bg-[var(--color-line-green)] text-white border-[var(--color-line-green-dark)] border-2 flex items-center px-4 py-2 rounded-lg hover:shadow-md transition">
-              <img src="/line.svg" alt="LINE" class="w-5 h-5 mr-2" /> register for LINE
+            <button @click="handleLineLogin" 
+                    :disabled="authStore.isLoading" 
+                    class="btn bg-[var(--color-line-green)] text-white border-[var(--color-line-green-dark)] border-2 flex items-center px-4 py-2 rounded-lg hover:shadow-md transition">
+                    <img src="/line.svg" alt="LINE" class="w-5 h-5 mr-2" />
+                    <span v-if="authStore.isLineLoading">載入中...</span>
+                    <span v-else>Register for LINE</span>
             </button>
           </div>
 
@@ -398,6 +402,21 @@ const handleEmailRegistration = async () => {
     showRegisterSuccess.value = false
   }
 }
+
+const handleLineLogin = async () => {
+  await authStore.lineLogin()
+}
+
+// 組件掛載時檢查 LINE 登入狀態
+onMounted(async () => {
+  // 初始化 store
+  authStore.init()
+  // 檢查 LINE 登入回調
+  const result = await authStore.checkLineCallback()
+  if (result?.success) {
+    router.push(result.redirect)
+  }
+})
 </script>
 
 <style scoped>
