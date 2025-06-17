@@ -107,7 +107,12 @@ function selectBar(bar) {
   console.log('點擊酒吧卡片:', bar)
 }
 
-
+function emitToggleWishlist(bar) {
+  const index = mockFavorites.value.findIndex(b => b.id === bar.id)
+  if (index !== -1) {
+    mockFavorites.value.splice(index, 1)
+  }
+}
 
 const defaultPlaceholderImage = '/bar-placeholder.jpg'
 
