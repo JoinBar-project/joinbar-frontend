@@ -142,25 +142,27 @@
       </div>
     </div>
 
-    <div v-if="copyToast" class="copy-toast">
+    <div
+      v-if="copyToast"
+      class="copy-toast">
       {{ copyToast }}
     </div>
   </div>
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
-import { useRoute, useRouter, RouterLink } from 'vue-router'
-import { useOrder } from '@/composable/useOrder'
-import dayjs from 'dayjs'
-import utc from 'dayjs/plugin/utc'
-import timezone from 'dayjs/plugin/timezone'
+import { ref, onMounted } from 'vue';
+import { useRoute, useRouter, RouterLink } from 'vue-router';
+import { useOrder } from '@/composables/useOrder';
+import dayjs from 'dayjs';
+import utc from 'dayjs/plugin/utc';
+import timezone from 'dayjs/plugin/timezone';
 
-dayjs.extend(utc)
-dayjs.extend(timezone)
+dayjs.extend(utc);
+dayjs.extend(timezone);
 
-const route = useRoute()
-const router = useRouter()
+const route = useRoute();
+const router = useRouter();
 
 const {
   getOrderDetails,
@@ -309,24 +311,26 @@ async function loadOrderData() {
 }
 
 function formatDateTime(dateString) {
-  if (!dateString) return '-'
-  return dayjs(dateString).tz('Asia/Taipei').format('YYYY年MM月DD日 HH:mm')
+  if (!dateString) return '-';
+  return dayjs(dateString).tz('Asia/Taipei').format('YYYY年MM月DD日 HH:mm');
 }
 
 function formatEventTime(dateString) {
-  if (!dateString) return '-'
-  return dayjs(dateString).tz('Asia/Taipei').format('MM月DD日 HH:mm')
+  if (!dateString) return '-';
+  return dayjs(dateString).tz('Asia/Taipei').format('MM月DD日 HH:mm');
 }
 
 function getStatusClass(status) {
-  return ({
-    pending: 'status-pending',
-    paid: 'status-paid',
-    confirmed: 'status-confirmed',
-    cancelled: 'status-cancelled',
-    refunded: 'status-refunded',
-    expired: 'status-expired'
-  })[status] || 'status-default'
+  return (
+    {
+      pending: 'status-pending',
+      paid: 'status-paid',
+      confirmed: 'status-confirmed',
+      cancelled: 'status-cancelled',
+      refunded: 'status-refunded',
+      expired: 'status-expired',
+    }[status] || 'status-default'
+  );
 }
 
 async function handleRetry() {
@@ -343,34 +347,36 @@ async function handleRetry() {
 
 async function copyToClipboard(text) {
   try {
-    await navigator.clipboard.writeText(text)
-    showToast('✅ 訂單編號已複製')
+    await navigator.clipboard.writeText(text);
+    showToast('✅ 訂單編號已複製');
   } catch (err) {
     try {
-      const textArea = document.createElement('textarea')
-      textArea.value = text
-      document.body.appendChild(textArea)
-      textArea.select()
-      document.execCommand('copy')
-      document.body.removeChild(textArea)
-      showToast('✅ 訂單編號已複製')
+      const textArea = document.createElement('textarea');
+      textArea.value = text;
+      document.body.appendChild(textArea);
+      textArea.select();
+      document.execCommand('copy');
+      document.body.removeChild(textArea);
+      showToast('✅ 訂單編號已複製');
     } catch {
-      showToast('❌ 複製失敗，請手動複製')
+      showToast('❌ 複製失敗，請手動複製');
     }
   }
 }
 
 function showToast(msg) {
-  copyToast.value = msg
-  setTimeout(() => { copyToast.value = '' }, 2000)
+  copyToast.value = msg;
+  setTimeout(() => {
+    copyToast.value = '';
+  }, 2000);
 }
 
 function goToEvents() {
-  router.push('/event')
+  router.push('/event');
 }
 
 function goToCart() {
-  router.push('/cart')
+  router.push('/cart');
 }
 
 function goToOrders() {
@@ -875,27 +881,27 @@ function fallbackShare(text) {
     margin: 24px 16px;
     padding: 24px;
   }
-  
+
   .info-card {
     padding: 20px;
   }
-  
+
   .card-header {
     flex-direction: column;
     align-items: flex-start;
     gap: 12px;
   }
-  
+
   .info-row {
     flex-direction: column;
     align-items: flex-start;
     gap: 4px;
   }
-  
+
   .value {
     text-align: left;
   }
-  
+
   .event-item {
     flex-direction: column;
     gap: 12px;
@@ -908,7 +914,7 @@ function fallbackShare(text) {
   .action-buttons {
     flex-direction: column;
   }
-  
+
   .copy-toast {
     left: 16px;
     right: 16px;

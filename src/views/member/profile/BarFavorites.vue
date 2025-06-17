@@ -1,0 +1,1 @@
+<template>BarFavorites.vue</template>

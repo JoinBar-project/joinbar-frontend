@@ -1,15 +1,19 @@
 <template>
   <div class="cart-container">
-    <button class="btn btn-sm mb-4" @click="goBack">
+    <button
+      class="btn btn-sm mb-4"
+      @click="goBack">
       ← 返回購物車
     </button>
     <h2>付款資訊</h2>
- 
-    <div v-if="isLoading" class="loading-box">
+
+    <div
+      v-if="isLoading"
+      class="loading-box">
       <div class="spinner"></div>
       <p>載入中，請稍候...</p>
     </div>
- 
+
     <div v-else>
       <div class="cart-header">
         <div>活動</div>
@@ -17,74 +21,85 @@
         <div>數量</div>
         <div>小計</div>
       </div>
- 
-      <div v-for="item in cartItems" :key="item.id" class="cart-row">
+
+      <div
+        v-for="item in cartItems"
+        :key="item.id"
+        class="cart-row">
         <div class="product">
-          <img 
-            class="product-img" 
-            :src="item.image || 'https://placehold.co/80x80'" 
-            :alt="item.name"
-          />
+          <img
+            class="product-img"
+            :src="item.image || 'https://placehold.co/80x80'"
+            :alt="item.name" />
           <div class="product-info">
             <p class="product-name">{{ item.name }}</p>
           </div>
         </div>
- 
+
         <div class="price">${{ item.price }}</div>
         <div class="quantity text-center">{{ item.quantity }}</div>
         <div class="subtotal">${{ calcSubtotal(item) }}</div>
       </div>
- 
+
       <div class="customer-section section-spacing">
         <h3>客戶資訊</h3>
         <div class="form-grid">
           <div class="form-group">
             <label for="customerName">姓名 *</label>
-            <input 
+            <input
               id="customerName"
               v-model="customerInfo.name"
               type="text"
               class="form-input"
               :class="{ 'input-error': formErrors.name }"
               placeholder="請輸入您的姓名"
-              required
-            />
-            <span v-if="formErrors.name" class="error-text">{{ formErrors.name }}</span>
+              required />
+            <span
+              v-if="formErrors.name"
+              class="error-text"
+              >{{ formErrors.name }}</span
+            >
           </div>
-          
+
           <div class="form-group">
             <label for="customerPhone">電話 *</label>
-            <input 
+            <input
               id="customerPhone"
               v-model="customerInfo.phone"
               type="tel"
               class="form-input"
               :class="{ 'input-error': formErrors.phone }"
               placeholder="請輸入您的電話號碼"
-              required
-            />
-            <span v-if="formErrors.phone" class="error-text">{{ formErrors.phone }}</span>
+              required />
+            <span
+              v-if="formErrors.phone"
+              class="error-text"
+              >{{ formErrors.phone }}</span
+            >
           </div>
-          
+
           <div class="form-group">
             <label for="customerEmail">電子郵件 *</label>
-            <input 
+            <input
               id="customerEmail"
               v-model="customerInfo.email"
               type="email"
               class="form-input"
               :class="{ 'input-error': formErrors.email }"
               placeholder="請輸入您的電子郵件"
-              required
-            />
-            <span v-if="formErrors.email" class="error-text">{{ formErrors.email }}</span>
+              required />
+            <span
+              v-if="formErrors.email"
+              class="error-text"
+              >{{ formErrors.email }}</span
+            >
           </div>
         </div>
       </div>
- 
+
       <div class="payment-method section-spacing">
         <h3>選擇付款方式</h3>
-        
+
         <div class="payment-options">
           <button 
             class="payment-btn linepay-btn"
@@ -104,11 +119,13 @@
             信用卡
           </button>
         </div>
- 
-        <div v-if="paymentMethodError" class="payment-error">
+
+        <div
+          v-if="paymentMethodError"
+          class="payment-error">
           {{ paymentMethodError }}
         </div>
- 
+
         <div class="total-bar section-spacing">
           <p class="total-label">
             總金額：<strong>${{ totalPrice }}</strong>
@@ -116,10 +133,11 @@
           <button 
             class="checkout-btn"
             :class="{ 'btn-disabled': !canSubmit || isSubmitting || orderLoading }"
-            :disabled="!canSubmit || isSubmitting || orderLoading" 
-            @click="submitOrder"
-          >
-            <span v-if="isSubmitting || orderLoading" class="loading loading-spinner loading-sm"></span>
+            :disabled="!canSubmit || isSubmitting || orderLoading"
+            @click="submitOrder">
+            <span
+              v-if="isSubmitting || orderLoading"
+              class="loading loading-spinner loading-sm"></span>
             {{ getSubmitButtonText() }}
           </button>
         </div>
@@ -130,7 +148,11 @@
           <span class="error-icon">⚠️</span>
           <span>{{ errorMessage || orderError || linePayError }}</span>
         </div>
-        <button @click="clearAllErrors" class="error-close">✕</button>
+        <button
+          @click="clearAllErrors"
+          class="error-close">
+          ✕
+        </button>
       </div>
     </div>
   </div>
@@ -546,15 +568,15 @@ const goBack = () => {
   border-top: 4px solid var(--color-select, #d17361);
   border-radius: 50%;
   animation: spin 0.8s linear infinite;
- }
- 
- @keyframes spin {
+}
+
+@keyframes spin {
   to {
     transform: rotate(360deg);
   }
- }
- 
- .cart-header {
+}
+
+.cart-header {
   display: flex;
   padding: 16px 0;
   font-weight: bold;
@@ -565,14 +587,14 @@ const goBack = () => {
  .cart-header > div {
   flex: 1;
   text-align: center;
- }
- 
- .cart-header > div:first-child {
+}
+
+.cart-header > div:first-child {
   flex: 2;
   text-align: left;
- }
- 
- .cart-row {
+}
+
+.cart-row {
   display: flex;
   align-items: center;
   padding: 16px 0;
@@ -587,28 +609,28 @@ const goBack = () => {
  .cart-row > div {
   flex: 1;
   text-align: center;
- }
- 
- .cart-row > div:first-child {
+}
+
+.cart-row > div:first-child {
   flex: 2;
   text-align: left;
- }
- 
- .product {
+}
+
+.product {
   display: flex;
   align-items: center;
   gap: 16px;
- }
- 
- .product-img {
+}
+
+.product-img {
   width: 80px;
   height: 80px;
   object-fit: cover;
   border-radius: 6px;
   background-color: #f0f0f0;
- }
- 
- .product-name {
+}
+
+.product-name {
   font-size: 16px;
   font-weight: 600;
   margin: 0;
@@ -621,9 +643,9 @@ const goBack = () => {
   align-items: center;
   margin-top: 32px;
   gap: 16px;
- }
- 
- .total-label {
+}
+
+.total-label {
   font-size: 19px;
   color: var(--color-text-selected, #f5d1c0);
  }
@@ -631,15 +653,15 @@ const goBack = () => {
  .payment-method {
   font-size: 15px;
   margin-top: 16px;
- }
- 
- .payment-options {
+}
+
+.payment-options {
   display: flex;
   gap: 16px;
   margin-top: 16px;
- }
- 
- .payment-btn {
+}
+
+.payment-btn {
   padding: 12px 20px;
   font-size: 16px;
   font-weight: 500;
@@ -744,19 +766,19 @@ const goBack = () => {
   display: flex;
   align-items: center;
   justify-content: space-between;
- }
- 
- .error-content {
+}
+
+.error-content {
   display: flex;
   align-items: center;
   gap: 8px;
- }
- 
- .error-icon {
+}
+
+.error-icon {
   font-size: 18px;
- }
- 
- .error-close {
+}
+
+.error-close {
   background: none;
   border: none;
   color: var(--color-text-warn, #eb96a4);
@@ -789,14 +811,14 @@ const goBack = () => {
   grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
   gap: 16px;
   margin-bottom: 16px;
- }
- 
- .form-group {
+}
+
+.form-group {
   display: flex;
   flex-direction: column;
- }
- 
- .form-group label {
+}
+
+.form-group label {
   font-size: 14px;
   font-weight: 500;
   margin-bottom: 4px;

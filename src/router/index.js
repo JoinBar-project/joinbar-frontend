@@ -1,10 +1,11 @@
-import { createRouter, createWebHistory } from 'vue-router'
+import { createRouter, createWebHistory } from 'vue-router';
 
 import Home from '@/views/home/Home.vue'
 import Event from '@/views/events/Event.vue'
 import EventInfo from '@/views/events/EventInfo.vue'
 import MapView from '@/views/map/MapView.vue'
 import Member from '@/views/member/auth/Member.vue'
+import MemberDashboard from '@/views/member/MemberDashboard.vue';
 import Reviews from '@/views/reviews/Reviews.vue'
 import Subscription from '@/views/sub/Subscription.vue'
 import Cart from '@/views/cart/Cart.vue'
@@ -24,11 +25,50 @@ const routes = [
   { path: '/event/:id', name: 'EventInformation', component: EventInfo },
   { path: '/map', name: 'Map', component: MapView },
   { path: '/member', name: 'Member', component: Member },
+  {
+    path: '/member/:id',
+    name: 'MemberDashboard',
+    // meta: { requiresAuth: true },
+    component: MemberDashboard,
+    children: [
+      {
+        path: 'profile',
+        name: 'MemberProfile',
+        component: () => import('@/views/member/profile/Profile.vue'),
+      },
+      {
+        path: 'profile/edit',
+        name: 'MemberProfileEdit',
+        component: () => import('@/views/member/profile/ProfileEdit.vue'),
+      },
+      {
+        path: 'event-records',
+        name: 'MemberEventRecords',
+        component: () => import('@/views/member/profile/EventRecords.vue'),
+      },
+      {
+        path: 'bar-favorites',
+        name: 'MemberBarFavorites',
+        component: () => import('@/views/member/profile/BarFavorites.vue'),
+      },
+      {
+        path: 'membercard',
+        name: 'MemberCard',
+        component: () => import('@/views/member/profile/MemberCard.vue'),
+      },
+      {
+        path: 'order-records',
+        name: 'MemberOrderRecords',
+        component: () => import('@/views/member/profile/OrderRecords.vue'),
+      },
+    ],
+  },
   { path: '/reviews', name: 'Reviews', component: Reviews },
   { path: '/subscription', name: 'Subscription', component: Subscription },
   { path: '/cart', name: 'Cart', component: Cart },
   { path: '/payment', name: 'Payment', component: Payment },
   { path: '/payment-waiting', name: 'PaymentWaiting', component: PaymentWaiting },
+  { path: '/sub', name: 'EventInformation', component: EventInfo },
   { path: '/order-success/:orderNumber', name: 'OrderSuccess', component: OrderSuccess, props: true },
   // 404 路由放到最後，並且更精確
   { path: '/404', name: 'NotFound', component: NotFound },
@@ -43,7 +83,7 @@ const routes = [
 const router = createRouter({
   history: createWebHistory(),
   routes,
-})
+});
 
 // 添加路由守衛來調試
 router.beforeEach((to, from, next) => {
