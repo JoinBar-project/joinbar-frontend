@@ -1,10 +1,10 @@
 <script setup>
-import { useEventForm } from '@/composable/useEventForm'
-import { watch } from 'vue'
-import Hashtag from './Hashtag.vue'
+import { useEventForm } from '@/composables/useEventForm';
+import { watch } from 'vue';
+import Hashtag from './Hashtag.vue';
 
-const emit = defineEmits(['update', 'delete' ,'cancel'])
-const props = defineProps({ eventId: String })
+const emit = defineEmits(['update', 'delete', 'cancel']);
+const props = defineProps({ eventId: String });
 
 const {
   eventName,
@@ -17,41 +17,42 @@ const {
   eventHashtags,
   handleUpdate,
   handleDelete,
-  loadEvent 
-} = useEventForm(props.eventId)
+  loadEvent,
+} = useEventForm(props.eventId);
 
 watch(
   () => props.eventId,
-  (newId) => {
-    if (newId) loadEvent(newId)
+  newId => {
+    if (newId) loadEvent(newId);
   },
   { immediate: true }
-)
+);
 
 async function onUpdate() {
   try {
-    const success = await handleUpdate(props.eventId)
+    const success = await handleUpdate(props.eventId);
     if (success) {
-      emit('update')
+      emit('update');
     }
   } catch (error) {
-    console.error('更新失敗:', error)
+    console.error('更新失敗:', error);
   }
 }
 
 async function onDelete() {
   try {
-    await handleDelete(props.eventId)
-    emit('delete')
+    await handleDelete(props.eventId);
+    emit('delete');
   } catch (error) {
-    console.error('刪除失敗:', error)
+    console.error('刪除失敗:', error);
   }
 }
-
 </script>
 
 <template>
-  <section class="event-form" id="edit-event">
+  <section
+    class="event-form"
+    id="edit-event">
     <div class="form-header">編輯中</div>
     <div class="form-container">
       <div class="form-image-upload">
@@ -61,39 +62,78 @@ async function onDelete() {
         <div class="form-left">
           <div class="form-row">
             <label for="event-name">活動名稱</label>
-            <input type="text" id="event-name" v-model="eventName" placeholder="請輸入活動名稱" />
+            <input
+              type="text"
+              id="event-name"
+              v-model="eventName"
+              placeholder="請輸入活動名稱" />
           </div>
           <div class="form-row">
             <label for="bar-name">酒吧名稱</label>
-            <input type="text" id="bar-name" v-model="barName" placeholder="請輸入酒吧名稱" />
+            <input
+              type="text"
+              id="bar-name"
+              v-model="barName"
+              placeholder="請輸入酒吧名稱" />
           </div>
           <div class="event-location">
-            {{eventLocation}}
+            {{ eventLocation }}
           </div>
           <div class="form-row">
             <label for="event-start-date">開始日期</label>
-            <input type="datetime-local" id="event-start-date" v-model="eventStartDate" />
+            <input
+              type="datetime-local"
+              id="event-start-date"
+              v-model="eventStartDate" />
           </div>
           <div class="form-row">
             <label for="event-end-date">結束日期</label>
-            <input type="datetime-local" id="event-end-date" v-model="eventEndDate" />
+            <input
+              type="datetime-local"
+              id="event-end-date"
+              v-model="eventEndDate" />
           </div>
           <div class="form-row">
             <label for="event-price">價格</label>
-            <input type="number" id="event-price" v-model="eventPrice" placeholder="請輸入價格" />
+            <input
+              type="number"
+              id="event-price"
+              v-model="eventPrice"
+              placeholder="請輸入價格" />
           </div>
           <div class="form-row">
             <label for="event-people">參加人數</label>
-            <input type="number" id="event-people" v-model="eventPeople" min="1" step="1" max="30"/>
+            <input
+              type="number"
+              id="event-people"
+              v-model="eventPeople"
+              min="1"
+              step="1"
+              max="30" />
           </div>
           <Hashtag v-model="eventHashtags" />
         </div>
         <div class="form-right"></div>
       </div>
       <div class="form-bottom">
-        <button type="button" class="btn-delete" @click="onDelete">刪除活動</button>
-        <button type="button" class="btn-cancle" @click="$emit('cancel')">取消修改</button>
-        <button type="button" class="btn-confirm" @click="onUpdate">完成發佈</button>
+        <button
+          type="button"
+          class="btn-delete"
+          @click="onDelete">
+          刪除活動
+        </button>
+        <button
+          type="button"
+          class="btn-cancle"
+          @click="$emit('cancel')">
+          取消修改
+        </button>
+        <button
+          type="button"
+          class="btn-confirm"
+          @click="onUpdate">
+          完成發佈
+        </button>
       </div>
     </div>
   </section>

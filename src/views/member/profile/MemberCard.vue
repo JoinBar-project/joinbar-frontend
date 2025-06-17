@@ -1,0 +1,1 @@
+<template>MemberCard.vue</template>
