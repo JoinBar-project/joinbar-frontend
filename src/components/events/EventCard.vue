@@ -4,7 +4,8 @@ import 'dayjs/locale/zh-tw'
 import weekday from 'dayjs/plugin/weekday'
 import localizedFormat from 'dayjs/plugin/localizedFormat'
 import updateLocale from 'dayjs/plugin/updateLocale'
-import ModalEdit from '@/components/events/ModalEdit.vue'
+// import ModalEdit from '@/components/events/ModalEdit.vue'
+import OpenInfo from '@/components/events/OpenInfo.vue'
 import { useTagStore } from '@/stores/tag'
 
 dayjs.extend(localizedFormat)
@@ -59,11 +60,12 @@ function sliceChinese(str, n) {
             #{{ getTagName(tagId) }}
           </span>
         </div>
-        <ModalEdit
+        <OpenInfo :event-id="props.event.id" />
+        <!-- <ModalEdit
           v-if="props.event.id"
           :event-id="props.event.id"
           @update="emit('update')"
-        />
+        /> -->
       </div>
     </div>
   </div>
