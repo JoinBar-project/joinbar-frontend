@@ -1,11 +1,13 @@
 <script setup>
 import NavBar from '@/components/NavBar.vue'
+import Footer from '@/components/Footer.vue'
 </script>
 
 <template>
   <div>
     <NavBar />
     <router-view />
+    <Footer />
   </div>
 </template>
 
@@ -14,6 +16,7 @@ body {
   margin: 0;
   font-family: Arial, sans-serif;
   overflow-x: hidden; /* 防止水平滾動條 */
+  padding-bottom: 200px;
 }
 
 .home {
