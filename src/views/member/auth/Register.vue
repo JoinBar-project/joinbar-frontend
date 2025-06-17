@@ -363,12 +363,26 @@ const toggleSelection = (arr, value) => {
 }
 
 const handleEmailRegistration = async () => {
+  const preferencesData = {
+    sport: registrationForm.value.preferences.types.includes('運動酒吧'),
+    music: registrationForm.value.preferences.types.includes('音樂酒吧'),
+    student: registrationForm.value.preferences.types.includes('學生酒吧'),
+    bistro: registrationForm.value.preferences.types.includes('餐酒館'),
+    drink: registrationForm.value.preferences.types.includes('暢飲店'),
+    joy: registrationForm.value.preferences.moods.includes('熱鬧歡樂'),
+    romantic: registrationForm.value.preferences.moods.includes('浪漫私密'),
+    oldschool: registrationForm.value.preferences.moods.includes('復古懷舊'),
+    highlevel: registrationForm.value.preferences.moods.includes('高級精緻'),
+    easy: registrationForm.value.preferences.moods.includes('輕鬆悠閒')
+  };
+
   const userData = {
     username: registrationForm.value.username,
     nickname: registrationForm.value.nickname || undefined,
     email: registrationForm.value.email,
     password: registrationForm.value.password,
     birthday: registrationForm.value.birthday || undefined,
+    preferences: preferencesData 
   }
   console.log('送出資料：', userData);
 
