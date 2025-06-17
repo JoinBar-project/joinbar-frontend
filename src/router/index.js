@@ -67,7 +67,7 @@ const routes = [
   { path: '/subscription', name: 'Subscription', component: Subscription },
   { path: '/cart', name: 'Cart', component: Cart },
   { path: '/payment', name: 'Payment', component: Payment },
-  { path: '/sub', name: 'EventInformation', component: EventInfo },
+  { path: '/sub', name: 'Subscription', component: Subscription },
   { path: '/order-success/:orderNumber', name: 'OrderSuccess', component: OrderSuccess, props: true },
   { path: '/404', name: 'NotFound', component: NotFound },
   { path: '/:pathMatch(.*)*', redirect: '/404' },
