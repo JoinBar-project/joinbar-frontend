@@ -99,7 +99,7 @@ onUnmounted(() => {
 <style scoped>
 
 .title{
-  text-shadow: 2px 2px 8px rgba(0,0,0,2);
+  text-shadow: 2px 2px 8px rgba(0,0,0,1);
 }
 
 </style>
