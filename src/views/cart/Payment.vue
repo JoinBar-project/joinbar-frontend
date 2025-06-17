@@ -160,8 +160,8 @@
  
  <script setup>
 import { useCartStore } from '@/stores/cartStore'
-import { useOrder } from '@/composable/useOrder'
-import { useLinePay } from '@/composable/useLinePay'
+import { useOrder } from '@/composables/useOrder'
+import { useLinePay } from '@/composables/useLinePay'
 import { computed, ref, onMounted, onUnmounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import dayjs from 'dayjs'
