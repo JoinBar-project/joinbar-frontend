@@ -1,4 +1,4 @@
-<template>檔案有問題先註解掉</template>
+<template></template>
 <!-- <template>
   <div class="map-view-container">
     <div class="top-left-controls">
