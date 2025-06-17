@@ -148,7 +148,7 @@ import { useRouter } from 'vue-router';
 import { useAuthStore } from '@/stores/authStore'
 import Swal from 'sweetalert2';
 
-const authStore = useAuthStore()
+const authStore = useAuthStore();
 const router = useRouter();
 
 const isLogin = ref(true);
@@ -255,8 +255,10 @@ const handleEmailLogin = async () => {
     if (success) {
       showLoginSuccess.value = true
 
-      loginForm.value.email = ''
-      loginForm.value.password = ''
+      loginForm.value = {
+        email: '',
+        password: ''
+      }
 
       setTimeout(() => {
         showLoginSuccess.value = false

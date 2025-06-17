@@ -148,8 +148,10 @@
             </button>
             <button
               @click="handleEmailRegistration"
+              :disabled="authStore.isLoading"
               class="px-4 py-2 bg-gradient-to-r from-[var(--color-secondary-green)] via-[#d8dbaf] to-[var(--color-primary-orange)] text-[var(--color-black)] rounded-lg font-medium shadow-md transition duration-300 transform hover:scale-105 hover:brightness-110 hover:shadow-lg">
-              完成註冊
+              <span v-if="authStore.isEmailLoading">註冊中...</span>
+              <span v-else>完成註冊</span>
             </button>
           </div>
         </div>
@@ -161,10 +163,16 @@
 </template>
 
 <script setup>
-import { ref } from 'vue';
+import { ref, onMounted } from 'vue';
+import { useRouter } from 'vue-router';
+import { useAuthStore } from '@/stores/authStore'
+
 const step = ref(1);
 const showPassword = ref(false);
 const showRegisterSuccess = ref(false);
+
+const authStore = useAuthStore();
+const router = useRouter();
 
 const registrationForm = ref({
   username: '',
@@ -353,20 +361,42 @@ const toggleSelection = (arr, value) => {
 const handleEmailRegistration = async () => {
   const userData = {
     username: registrationForm.value.username,
-    nickname: registrationForm.value.nickname || undefined,  // 空值傳 undefined
+    nickname: registrationForm.value.nickname || undefined,
     email: registrationForm.value.email,
     password: registrationForm.value.password,
-    birthday: registrationForm.value.birthday || undefined,  // 空值傳 undefined
+    birthday: registrationForm.value.birthday || undefined,
   }
   console.log('送出資料：', userData);
 
-  // 顯示成功通知
-  showRegisterSuccess.value = true;
-  
-  // 3秒後自動隱藏通知
-  setTimeout(() => {
-    showRegisterSuccess.value = false;
-  }, 3000);
+  try {
+    const success = await authStore.emailRegistration(userData);
+
+    if (success) {
+      showRegisterSuccess.value = true
+
+      registrationForm.value = {
+        username: '',
+        nickname: '',
+        email: '',
+        password: '',
+        birthday: '',
+        preferences: {
+          types: [],
+          moods: []
+        }
+      };
+
+      step.value = 1;
+
+      setTimeout(() => {
+        showRegisterSuccess.value = false;
+        router.push('/login')
+      }, 3000)
+    }
+  } catch(err) {
+    console.error('註冊失敗:', err);
+    showRegisterSuccess.value = false
+  }
 }
 </script>
 

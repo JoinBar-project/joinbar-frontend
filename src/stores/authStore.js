@@ -1,18 +1,19 @@
 import { defineStore } from 'pinia';
 import { ref, computed } from 'vue';
 import Swal from 'sweetalert2';
-import { verifyAuth, resendVerification, login, getLineAuthUrl } from '../api/auth';
+import { verifyAuth, resendVerification, register, login, getLineAuthUrl } from '../api/auth';
 
 export const useAuthStore = defineStore('auth', () => {
   const user = ref(null); 
   const accessToken = ref(null);
   const refreshToken = ref(null);
   const isEmailLoading = ref(false);
+  const isEmailRegistering = ref(false);
   const isLineLoading = ref(false);
   const errorMessage = ref('');
 
   const currentUser = computed(() => user.value);
-  const isLoading = computed(() => isEmailLoading.value || isLineLoading.value);
+  const isLoading = computed(() => isEmailLoading.value || isLineLoading.value || isEmailRegistering.value);
 
   const isAuthenticated = computed(() => {
   // 有用戶資訊就算已認證（不管是 token 還是 cookie）
@@ -226,6 +227,66 @@ export const useAuthStore = defineStore('auth', () => {
     }
   }
 
+  async function emailRegistration(userData) {
+    clearError();
+
+    if (!userData.username || !userData.email || !userData.password) {
+      await Swal.fire({
+        title: '請填寫完整資訊',
+        text: '請輸入姓名、電子郵件和密碼',
+        icon: 'warning',
+        confirmButtonText: '確認'
+      });
+      return false;
+    }
+    setLoading('email', true);
+
+    try {
+      const resp = await register(userData);
+      console.log('註冊成功:', resp.data);
+
+      await Swal.fire({
+      title: '註冊成功！',
+      html: `
+        <div class="text-left">
+          <p class="mb-3">帳號建立成功！驗證信已寄送至：</p>
+          <p class="font-mono bg-gray-100 p-2 rounded text-sm mb-3">${userData.email}</p>
+          <div class="bg-blue-50 p-3 rounded-lg text-sm">
+            <p class="text-blue-700 mb-2">
+              <i class="fas fa-info-circle mr-1"></i>
+              接下來請：
+            </p>
+            <ol class="text-blue-600 ml-4 space-y-1">
+              <li>1. 檢查您的信箱（包含垃圾信件夾）</li>
+              <li>2. 點擊信件中的驗證連結</li>
+              <li>3. 驗證完成後即可正常登入</li>
+            </ol>
+          </div>
+        </div>
+      `,
+      icon: 'success',
+      confirmButtonText: '我知道了',
+      confirmButtonColor: '#860914',
+      width: '500px'
+    });
+      return true;
+    } catch(err) {
+      const errorInfo = handleError(err, '註冊失敗');
+
+      await Swal.fire({
+        title: errorInfo.title,
+        text: errorInfo.message,
+        icon: 'error',
+        confirmButtonText: '確認'
+      });
+  
+      return false;
+  
+    } finally {
+      setLoading('email', false);
+    }  
+  }  
+
   async function emailLogin(email, password) {
     clearError();
 
@@ -432,6 +493,7 @@ export const useAuthStore = defineStore('auth', () => {
     isEmailLoading,
     isLineLoading,
     errorMessage,
+    isEmailRegistering,
 
     // 計算屬性
     isAuthenticated,
@@ -441,6 +503,7 @@ export const useAuthStore = defineStore('auth', () => {
     // 方法
     init,
     clearError,
+    emailRegistration,
     emailLogin,
     lineLogin,
     checkLineCallback,
