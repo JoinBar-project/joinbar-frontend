@@ -1,32 +1,23 @@
 <script setup>
-import { useEventForm } from '@/composable/useEventForm'
-import Hashtag from './Hashtag.vue'
+import { useEventForm } from '@/composables/useEventForm';
+import Hashtag from './Hashtag.vue';
 
-const emit = defineEmits(['submit'])
+const emit = defineEmits(['submit']);
 
-const {
-  eventName,
-  barName,
-  eventLocation,
-  eventStartDate,
-  eventEndDate,
-  eventPrice,
-  eventPeople,
-  eventHashtags,
-  handleCreate
-} = useEventForm()
+const { eventName, barName, eventLocation, eventStartDate, eventEndDate, eventPrice, eventPeople, eventHashtags, handleCreate } = useEventForm();
 
 function onSubmit() {
-  const success = handleCreate()
+  const success = handleCreate();
   if (success) {
-    emit('submit')
+    emit('submit');
   }
 }
 </script>
 
 <template>
-  <section class="event-form" id="new-event">
-    
+  <section
+    class="event-form"
+    id="new-event">
     <div class="form-header">建立新活動</div>
     <div class="form-container">
       <div class="form-image-upload">
@@ -36,37 +27,65 @@ function onSubmit() {
         <div class="form-left">
           <div class="form-row">
             <label for="event-name">活動名稱</label>
-            <input type="text" id="event-name" v-model="eventName" placeholder="請輸入活動名稱" />
+            <input
+              type="text"
+              id="event-name"
+              v-model="eventName"
+              placeholder="請輸入活動名稱" />
           </div>
           <div class="form-row">
             <label for="bar-name">酒吧名稱</label>
-            <input type="text" id="bar-name" v-model="barName" placeholder="請輸入酒吧名稱" />
+            <input
+              type="text"
+              id="bar-name"
+              v-model="barName"
+              placeholder="請輸入酒吧名稱" />
           </div>
           <div class="event-location">
-            {{eventLocation}}
+            {{ eventLocation }}
           </div>
           <div class="form-row">
             <label for="event-start-date">開始日期</label>
-            <input type="datetime-local" id="event-start-date" v-model="eventStartDate" />
+            <input
+              type="datetime-local"
+              id="event-start-date"
+              v-model="eventStartDate" />
           </div>
           <div class="form-row">
             <label for="event-end-date">結束日期</label>
-            <input type="datetime-local" id="event-end-date" v-model="eventEndDate" />
+            <input
+              type="datetime-local"
+              id="event-end-date"
+              v-model="eventEndDate" />
           </div>
           <div class="form-row">
             <label for="event-price">價格</label>
-            <input type="number" id="event-price" v-model="eventPrice" placeholder="請輸入價格" />
+            <input
+              type="number"
+              id="event-price"
+              v-model="eventPrice"
+              placeholder="請輸入價格" />
           </div>
           <div class="form-row">
             <label for="event-time">參加人數</label>
-            <input type="number" id="event-people" v-model="eventPeople" min="1" step="1" max="30"/>
+            <input
+              type="number"
+              id="event-people"
+              v-model="eventPeople"
+              min="1"
+              step="1"
+              max="30" />
           </div>
           <Hashtag v-model="eventHashtags" />
         </div>
         <div class="form-right"></div>
       </div>
       <div class="form-bottom">
-        <button type="button" @click="onSubmit">發佈</button>
+        <button
+          type="button"
+          @click="onSubmit">
+          發佈
+        </button>
       </div>
     </div>
   </section>

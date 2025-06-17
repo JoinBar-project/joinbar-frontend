@@ -1,0 +1,1 @@
+<template>EventRecords.vue</template>
