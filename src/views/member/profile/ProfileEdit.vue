@@ -7,6 +7,7 @@ import { useUserProfileStore } from '@/stores/userProfileStore';
 import { useSuccessAlert } from '@/composables/useSuccessAlert';
 import ProfileForm from '@/components/member/ProfileForm.vue';
 import UserAvatar from '@/components/UserAvatar.vue';
+import { uploadUserAvatar } from '@/api/uploadUserAvatar';
 
 const authStore = useAuthStore();
 const userProfileStore = useUserProfileStore();
@@ -102,12 +103,22 @@ const cancel = () => {
     class="text-center py-10">
     載入中...
   </div>
-  <div v-else>
+  <div v-else class="flex flex-col items-center">
     <div class="flex flex-col items-center mb-6">
       <UserAvatar
         :avatar-url="profile.avatarUrl || '/default-user-avatar.png'"
         :display-name="profile.username"
         size="lg" />
+    </div>
+    <div>
+      <label
+        for="avatar"
+        class="bg-[var(--color-black)] text-[var(--color-secondary-pink)] p-2 rounded"
+        >上傳頭像</label>
+      <input
+        type="file"
+        hidden
+        id="avatar" />
     </div>
     <form @submit.prevent="handleSubmit">
       <ProfileForm
@@ -117,7 +128,7 @@ const cancel = () => {
         :barTypes="barTypes"
         :barMoods="barMoods"
         :toggleSelection="toggleSelection" />
-      <div class="mt-6 flex justify-center gap-4">
+      <div class="mt-6 ">
         <button
           type="submit"
           class="px-4 py-2 bg-green-600 text-white rounded cursor-pointer">
@@ -127,7 +138,7 @@ const cancel = () => {
           type="button"
           @click="cancel"
           class="ml-2 px-4 py-2 bg-gray-400 text-white rounded cursor-pointer">
-          取消修改
+          取消
         </button>
       </div>
     </form>

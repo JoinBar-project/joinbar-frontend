@@ -16,7 +16,6 @@
     "daisyui": "^5.0.43",
     "dayjs": "^1.11.13",
     "emoji-picker-element": "^1.26.3",
-    "firebase": "^11.9.1",
     "lodash": "^4.17.21",
     "pinia": "^3.0.1",
     "pinia-plugin-persistedstate": "^4.3.0",
