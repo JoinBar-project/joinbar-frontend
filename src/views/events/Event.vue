@@ -37,6 +37,7 @@ async function handleEventUpdate() {
   <div class="page">
     <h1>酒吧活動</h1>
     <p>探索附近的酒吧活動。</p>
+    <router-link :to="`/event/7340628595934498816`">查看活動</router-link>
     <ModalCreate />
     <div class="event-list">
       <EventCard

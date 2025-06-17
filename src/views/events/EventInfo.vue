@@ -15,9 +15,11 @@ const notFound = ref(false)
 const eventTags = ref([])
 
 
+
 onMounted( async() => {
   try{
       const res = await axios.get(`/api/event/${eventId}`)
+      console.log('取得的 eventId:', eventId)
       const data = res.data
 
       event.value = data.event
@@ -27,15 +29,17 @@ onMounted( async() => {
       console.log('活動標籤:', data.tags)
 
   }catch(err){
-    if( err.response && err.response.status == 404){
-      notFound.value = true
-    }else{
-      errorMsg.value = '取得活動資料失敗'
-      console.error('取得活動資料失敗', err)
-    }
-  }finally{
-    isLoading.value = false
-    }
+    console.log('活動資料:', data.event)
+    // if( err.response && err.response.status == 404){
+    //   notFound.value = true
+    // }else{
+    //   errorMsg.value = '取得活動資料失敗'
+    //   console.error('取得活動資料失敗', err)
+    // }
+  // }finally{
+  //   isLoading.value = false
+  //   }
+  }
 })
 
 const isFree = computed(() => {
@@ -45,6 +49,7 @@ const isFree = computed(() => {
 </script>
 
 <template>
+
   <div>
     <p v-if="isLoading">載入中，請稍後...</p>
     <p v-else-if="notFound">找不到活動</p>
@@ -52,12 +57,7 @@ const isFree = computed(() => {
 
     <EventInfoFree v-else-if="isFree" :event="event" :tags="eventTags" />
     <EventInfoPay v-else :event="event" :tags="eventTags" />
-
-
   </div>
-
-
-
 
 </template>
 
