@@ -35,8 +35,6 @@ async function handleEventUpdate() {
 
 <template>
   <div class="page">
-    <h1>酒吧活動</h1>
-    <p>探索附近的酒吧活動。</p>
     <ModalCreate />
     <div class="event-list">
       <EventCard
@@ -50,6 +48,9 @@ async function handleEventUpdate() {
 </template>
 
 <style scoped>
+.page {
+  padding: 20px;
+}
 .event-list {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
