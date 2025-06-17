@@ -64,6 +64,18 @@
         </div>
       </div>
     </div>
+
+    <!-- Modal 彈窗 -->
+    <transition name="fade">
+      <div
+        v-if="showModal"
+        class="fixed inset-0 z-50 bg-black/50 flex justify-center items-center"
+        @click.self="closeModal">
+        <div class="relative max-w-3xl w-full bg-[var(--color-black)] rounded-xl overflow-hidden shadow-2xl">
+          <FavoriteDetailCard v-if="selectedBar" :bar="selectedBar" />
+        </div>
+      </div>
+    </transition>
   </div>
 </template>
 
@@ -71,6 +83,18 @@
 import { ref, computed } from 'vue';
 import { useWishlistStore } from '@/stores/wishlist';
 import FavoriteDetailCard from '@/components/member/FavoriteDetailCard.vue';
+
+const selectedBar = ref(null)
+const showModal = ref(false)
+
+function selectBar(bar) {
+  selectedBar.value = bar
+  showModal.value = true
+}
+
+function closeModal() {
+  showModal.value = false
+}
 
 const mockFavorites = ref(
   Array.from({ length: 10 }, (_, i) => ({
@@ -88,10 +112,6 @@ const mockFavorites = ref(
 )
 
 const bars = computed(() => mockFavorites.value)
-
-function selectBar(bar) {
-  console.log('點擊酒吧卡片:', bar)
-}
 
 function emitToggleWishlist(bar) {
   const index = mockFavorites.value.findIndex(b => b.id === bar.id)
@@ -133,3 +153,12 @@ function getOpeningHourText(bar) {
 //   console.log('顯示詳細酒吧資訊:', bar)
 // }
 </script>
+
+<style scoped>
+.fade-enter-active, .fade-leave-active {
+  transition: opacity 0.2s ease;
+}
+.fade-enter-from, .fade-leave-to {
+  opacity: 0;
+}
+</style>
