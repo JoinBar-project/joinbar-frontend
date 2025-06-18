@@ -195,7 +195,8 @@
             <div class="tooltip" data-tip="導航">
               <button
                 class="w-11 h-11 rounded-xl border border-gray-200 bg-white flex items-center justify-center cursor-pointer transition-all hover:bg-gray-50 hover:border-gray-300 hover:-translate-y-0.5">
-                <i class="fa-regular fa-paper-plane text-lg text-gray-600"></i>
+                <i class="fa-regular fa-paper-plane text-lg text-gray-600"
+                @click="navigateToBar"></i>
               </button>
             </div>
 
@@ -251,10 +252,12 @@
 <script setup>
 import { ref, watch, computed } from 'vue'
 import { useRouter } from 'vue-router'
+import { useGoogleMapNavigation } from '@/composables/useGoogleMapNavigation';
 
 const props = defineProps({ bar: Object })
 const emit = defineEmits(['close', 'toggle-wishlist'])
 const router = useRouter()
+const { navigateToBar } = useGoogleMapNavigation();
 
 // 圖片切換邏輯
 const currentImageIndex = ref(0)
