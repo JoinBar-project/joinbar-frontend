@@ -4,6 +4,7 @@ import Home from '@/views/home/Home.vue';
 import Event from '@/views/events/Event.vue';
 import EventInfo from '@/views/events/EventInfo.vue';
 import MapView from '@/views/map/MapView.vue';
+import MemberDashboard from '@/views/member/MemberDashboard.vue';
 import Member from '@/views/member/auth/Member.vue';
 import Reviews from '@/views/reviews/Reviews.vue';
 import Subscription from '@/views/sub/Subscription.vue';
