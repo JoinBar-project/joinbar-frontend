@@ -50,10 +50,11 @@ onUnmounted(() => {
         <a href="#"><i class="fab fa-twitter"></i></a>
         <a href="#"><i class="fab fa-instagram"></i></a>
       </div>
+      <div class="copyright">
+        &copy; 2025 JoinBar. All rights reserved.
+      </div>
     </div>
-    <div class="footer-bottom">
-      &copy; 2025 JoinBar. All rights reserved.
-    </div>
+
   </footer>
 </template>
 
@@ -101,8 +102,8 @@ onUnmounted(() => {
   @apply text-white bg-white/20 -translate-y-0.5;
 }
 
-.footer-bottom {
-  @apply text-center text-sm opacity-80 mx-auto max-w-[300px] border-t border-white/10 pt-4;
+.copyright {
+  @apply text-center text-sm opacity-80 mx-auto max-w-[300px] pl-4;
 }
 
 </style>
