@@ -140,7 +140,9 @@
             </button>
           </div>
 
-          <button class="bg-gradient-to-r from-amber-400 to-amber-600 text-white border-0 rounded-xl px-6 py-3 font-semibold cursor-pointer flex items-center gap-2 transition-all hover:from-amber-500 hover:to-amber-700 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-amber-500/40" @click="goToBarActivities">
+          <button
+            class="bg-gradient-to-r from-[var(--color-secondary-green)] via-[#d8dbaf] to-[var(--color-primary-orange)] text-[var(--color-black)] border-0 rounded-xl px-6 py-3 font-semibold cursor-pointer flex items-center gap-2 transition-all hover:scale-105 hover:brightness-110 hover:shadow-lg"
+            @click="goToBarActivities">
             <span>發起活動</span>
             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <line x1="12" y1="5" x2="12" y2="19"/>
