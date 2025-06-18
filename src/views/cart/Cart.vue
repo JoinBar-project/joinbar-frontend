@@ -2,13 +2,11 @@
   <div class="cart-container">
     <h2>購物車</h2>
 
-    <!-- 載入狀態 -->
     <div v-if="isLoading || cart.loading" class="loading-box">
       <div class="spinner"></div>
       <p>載入中，請稍候...</p>
     </div>
 
-    <!-- 錯誤狀態 -->
     <div v-else-if="cart.error" class="error-box">
       <div class="error-content">
         <span class="error-icon">⚠️</span>
@@ -22,14 +20,12 @@
       </div>
     </div>
 
-    <!-- 空購物車 -->
     <div v-else-if="cartItems.length === 0" class="empty-cart">
       <h3>購物車是空的</h3>
       <p class="empty-description">快去尋找喜歡的活動吧！</p>
       <button class="shop-btn" @click="goShopping">前往活動頁面</button>
     </div>
 
-    <!-- 購物車內容 -->
     <div v-else>
       <div class="cart-header">
         <div>商品</div>
@@ -85,7 +81,6 @@
       </div>
     </div>
 
-    <!-- 成功提示 -->
     <div v-if="successMessage" class="success-toast">
       {{ successMessage }}
     </div>
@@ -115,7 +110,6 @@ const loadCartData = async () => {
   } catch (error) {
     console.error('❌ 購物車載入失敗:', error)
     
-    // 如果是登入相關錯誤，導向登入頁
     if (error.message.includes('請先登入') || error.message.includes('登入已過期')) {
       const shouldLogin = confirm('您需要登入才能使用購物車同步功能。\n\n點擊「確定」前往登入頁面\n點擊「取消」使用本地購物車')
       if (shouldLogin) {
@@ -129,16 +123,13 @@ const loadCartData = async () => {
 }
 
 const cartItems = computed(() => {
-  // 正確處理 Pinia store 的響應式數據
   const items = cart.items
   
-  // 如果是 Proxy 對象，檢查其 items 屬性
   if (items && typeof items === 'object' && 'items' in items) {
     console.warn('⚠️ cart.items 是嵌套對象，使用 items.items')
     return Array.isArray(items.items) ? items.items : []
   }
   
-  // 正常情況：直接是陣列
   if (Array.isArray(items)) {
     return items
   }
@@ -232,7 +223,6 @@ const goShopping = () => {
   margin-bottom: 32px;
 }
 
-/* 載入狀態 */
 .loading-box {
   text-align: center;
   padding: 48px 0;
@@ -255,7 +245,6 @@ const goShopping = () => {
   }
 }
 
-/* 錯誤狀態 */
 .error-box {
   background-color: rgba(235, 150, 164, 0.1);
   border: 1px solid var(--color-text-warn, #eb96a4);
@@ -319,7 +308,6 @@ const goShopping = () => {
   background-color: rgba(235, 150, 164, 0.1);
 }
 
-/* 購物車表格 */
 .cart-header {
   display: flex;
   padding: 16px 0;
@@ -418,7 +406,6 @@ const goShopping = () => {
   cursor: not-allowed;
 }
 
-/* 總計區域 */
 .total-bar {
   display: flex;
   justify-content: flex-end;
@@ -457,7 +444,6 @@ const goShopping = () => {
   cursor: not-allowed;
 }
 
-/* 空購物車 */
 .empty-cart {
   text-align: center;
   padding: 80px 40px;
@@ -493,7 +479,6 @@ const goShopping = () => {
   background-color: #b85d4a;
 }
 
-/* 成功提示 */
 .success-toast {
   position: fixed;
   bottom: 20px;
