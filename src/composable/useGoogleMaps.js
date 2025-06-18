@@ -4,12 +4,6 @@ let googleMapsLoading = false;
 let googleMapsLoaded = false;
 let googleMapsLoadPromise = null;
 
-/**
- @param {Ref<HTMLElement>} mapContainerRef
- @param {Object} options
- @param {string} options.googleMapsApiKey
- @param {string} [options.mapId]
-*/
 export function useGoogleMaps(mapContainerRef, options) {
   const {
     googleMapsApiKey,
@@ -143,9 +137,6 @@ export function useGoogleMaps(mapContainerRef, options) {
     return googleMapsLoadPromise;
   };
 
-  /**
-   * 初始化 Google Map 
-   */
   const initMap = () => {
     if (!mapContainerRef.value || !window.google || !window.google.maps) {
       error.value = "地圖容器或 API 未載入。";
@@ -183,9 +174,6 @@ export function useGoogleMaps(mapContainerRef, options) {
     geocoder.value = new window.google.maps.Geocoder();
   };
 
-  /**
-   * @param {'all' | 'bars' | 'search'} [type='all']
-   */
   const clearMarkers = (type = "all") => {
     if (type === "bars" || type === "all") {
       markers.value.forEach((marker) => marker.setMap(null));
@@ -197,16 +185,6 @@ export function useGoogleMaps(mapContainerRef, options) {
     }
   };
 
-  /**
-   * 在地圖上添加標記
-   @param {google.maps.LatLngLiteral | google.maps.LatLng} position
-   @param {string} title
-   @param {function(google.maps.Marker): void} [onClickCallback]
-   @param {string} [iconUrl]
-   @param {'bars' | 'search' | 'currentLocation' | string} [markerType='bars']
-   @param {Object} [placeData=null]
-   @param {Object} [markerOptions={}]
-   */
   const addMarker = (
     position,
     title,
@@ -384,9 +362,6 @@ export function useGoogleMaps(mapContainerRef, options) {
     }
   };
 
-  /**
-   * 請求瀏覽器地理定位權限
-   */
   const requestGeolocationPermission = () => {
     if (!navigator.geolocation) {
       console.warn("Browser does not support geolocation access");
@@ -564,14 +539,6 @@ export function useGoogleMaps(mapContainerRef, options) {
     });
   };
 
-  /**
-   * Google Places API 文字搜尋
-   * @param {string} query
-   * @param {google.maps.LatLngLiteral | google.maps.LatLng | null} [location=null]
-   * @param {number | null} [radius=null]
-   * @param {string} [region="tw"]
-   * @param {google.maps.LatLngBounds | null} [bounds=null]
-   */
   const textSearch = (query, location = null, radius = null, region = "tw", bounds = null) => {
     return new Promise((resolve, reject) => {
       if (!placesService.value || !map.value) {
@@ -644,7 +611,7 @@ export function useGoogleMaps(mapContainerRef, options) {
           const predictions = await getPlacePredictions(potentialCityOrDistrict + " 台灣", "tw");
           if (predictions && predictions.length > 0) {
               // 選擇最相關的預測，並獲取其詳細信息
-              const placeDetails = await getPlaceDetails(predictions[0].place_id);
+              const placeDetails = await getPlaceDetails(predictions[0].placeId);
               if (placeDetails && placeDetails.geometry) {
                   targetLocation = placeDetails.geometry.location;
                   targetBounds = placeDetails.geometry.viewport;
@@ -758,7 +725,6 @@ export function useGoogleMaps(mapContainerRef, options) {
     });
   };
 
-  // 清理資源
   onUnmounted(() => {
     clearMarkers();
     if (currentMarker.value) {
@@ -771,7 +737,6 @@ export function useGoogleMaps(mapContainerRef, options) {
     geocoder.value = null;
   });
 
-  // 暴露給外部組件使用的狀態和函數
   return {
     map,
     markers,

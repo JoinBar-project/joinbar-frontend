@@ -114,9 +114,9 @@ const {
   panToAndShowBarInfo,
 } = useGoogleMaps(mapContainer, {
   googleMapsApiKey: googleMapsApiKey,
-  onLoading: () => {}, // 移除 console.log
+  onLoading: () => {},
   mapId: myMapId,
-  onLoaded: () => {}, // 移除 console.log
+  onLoaded: () => {},
   onError: (msg) => {
     console.error("useGoogleMaps 錯誤:", msg);
     alert(`地圖載入失敗：${msg}，請檢查API Key或網路。`);
