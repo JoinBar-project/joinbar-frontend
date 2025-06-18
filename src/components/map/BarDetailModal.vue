@@ -783,4 +783,29 @@ const getTagLabel = (tag) => {
     height: 18px;
   }
 }
+
+.action-icon-button[data-tooltip] {
+  position: relative;
+}
+.action-icon-button[data-tooltip]:hover::after {
+  content: attr(data-tooltip);
+  position: absolute;
+  bottom: 110%;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #333;
+  color: #fff;
+  padding: 5px 12px;
+  border-radius: 6px;
+  font-size: 13px;
+  white-space: nowrap;
+  z-index: 20;
+  opacity: 1;
+  pointer-events: none;
+  transition: opacity 0.2s;
+}
+.action-icon-button[data-tooltip]::after {
+  opacity: 0;
+  pointer-events: none;
+}
 </style>

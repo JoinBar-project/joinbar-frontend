@@ -48,48 +48,10 @@
     <aside class="bar-list-sidebar">
       <div class="bar-list-scroll-area">
         <BarList
-          :bars="paginatedBars"
+          :bars="filteredBars"
           @bar-selected="handleBarSelected"
           @toggle-wishlist="handleToggleWishlist"
         />
-        
-        <!-- 分頁控制 -->
-        <div v-if="paginationInfo.totalItems > 0" class="pagination-container">
-          <div class="pagination-info">
-            顯示 {{ paginationInfo.startIndex }}-{{ paginationInfo.endIndex }} 筆，共 {{ paginationInfo.totalItems }} 筆
-          </div>
-          <div class="pagination-controls">
-            <button 
-              @click="prevPage"
-              :disabled="!hasPrevPage"
-              class="pagination-button"
-              :class="{ 'disabled': !hasPrevPage }"
-            >
-              ← 上一頁
-            </button>
-            
-            <div class="page-numbers">
-              <button 
-                v-for="page in getVisiblePageNumbers()" 
-                :key="page"
-                @click="goToPage(page)"
-                class="page-number"
-                :class="{ 'active': page === paginationInfo.currentPage }"
-              >
-                {{ page }}
-              </button>
-            </div>
-            
-            <button 
-              @click="nextPage"
-              :disabled="!lastPagination || !lastPagination.hasNextPage"
-              class="pagination-button"
-              :class="{ 'disabled': !lastPagination || !lastPagination.hasNextPage }"
-            >
-              下一頁 →
-            </button>
-          </div>
-        </div>
       </div>
     </aside>
 
@@ -99,7 +61,9 @@
       v-if="isFilterPanelOpen"
       @filter-changed="handleFilterChanged"
       @close-panel="toggleFilterPanel"
+      @tag-click="handleTagClick"
       :initial-filters="currentFilters"
+      :selected-tag="selectedTag"
     />
 
     <BarDetailModal
@@ -127,12 +91,11 @@ import FilterPanel from "../../components/map/FilterPanel.vue";
 import BarList from "../../components/map/BarList.vue";
 import BarDetailModal from "../../components/map/BarDetailModal.vue";
 
-// 引入 useGoogleMaps composable，它現在會自動導向到 index.js
-import { useGoogleMaps } from "@/composable/useGoogleMaps";
-// 引入 Google Maps 常數，用於過濾 tags
-import { COMMON_PLACE_TYPES_TO_EXCLUDE } from "@/composable/googleMapsConstants"; // <-- 新增：引入常數
 
-// --- 環境變數設定 ---
+import { useGoogleMaps } from "@/composable/useGoogleMaps/userIndex";
+import { COMMON_PLACE_TYPES_TO_EXCLUDE } from "@/composable/googleMapsConstants";
+import placeTypeMap from '@/composable/placeTypeMap';
+
 const googleMapsApiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
 const myMapId = import.meta.env.VITE_MAP_ID;
 
@@ -179,7 +142,7 @@ const currentFilters = ref({
   address: "current_location",
   ratingSort: "any",
   minDistance: 0,
-  maxDistance: 5000,
+  maxDistance: 10000,
   minOpenHour: 0,
   minOpenMinute: 0,
   maxOpenHour: 24,
@@ -192,18 +155,7 @@ const selectedBarForDetail = ref(null); // 用於 BarDetailModal
 const isLoading = ref(false);
 const googleBars = ref([]); // <-- 這個變數將是篩選的來源
 const mainBarForSearch = ref(null); // 專門存搜尋主酒吧
-
-// --- 分頁相關狀態 ---
-const currentPage = ref(1);
-const itemsPerPage = 20;
-const hasNextPage = ref(false);
-const hasPrevPage = ref(false);
-const totalPages = ref(1);
-// --- Google API 分頁狀態 ---
-let lastPagination = null;
-let lastSearchType = null; // 'nearby' | 'text'
-let lastSearchQuery = '';
-let lastSearchLocation = null;
+const selectedTag = ref(null); // 新增：目前選中的標籤
 
 // --- Computed Properties ---
 const combinedLoading = computed(
@@ -236,7 +188,6 @@ const filteredBars = computed(() => {
       bars = bars.filter((bar) => bar.address?.includes(filters.address));
     }
   }
-  // 如果是 current_location，直接顯示所有資料，不做地點過濾
 
   // 標籤過濾 (包含區域標籤的特殊處理)
   if (filters.tags && filters.tags.length > 0) {
@@ -258,7 +209,7 @@ const filteredBars = computed(() => {
         // 檢查是否有任何選定的區域標籤與地址篩選器匹配
         let addressArr = Array.isArray(filters.address) ? filters.address : [filters.address];
         const hasMatchingDistrict = selectedDistrictTagsFromTagsFilter.some(tag =>
-          addressArr.some(addr => addr.includes(tag))
+        addressArr.some(addr => addr.includes(tag))
         );
         if (!hasMatchingDistrict) {
           return [];
@@ -277,7 +228,7 @@ const filteredBars = computed(() => {
   if (map && typeof googleMapsInstance === 'function' && googleMapsInstance() && googleMapsInstance().maps && googleMapsInstance().maps.geometry && googleMapsInstance().maps.geometry.spherical) {
     const mapCenter = map.value.getCenter && map.value.getCenter();
     if (mapCenter) {
-      const centerLatLng = new googleMapsInstance().LatLng(
+      const centerLatLng = new window.google.maps.LatLng(
         mapCenter.lat(),
         mapCenter.lng()
       );
@@ -290,7 +241,7 @@ const filteredBars = computed(() => {
           ) {
             return { ...bar, distance: Infinity };
           }
-          const barLatLng = new googleMapsInstance().LatLng(
+          const barLatLng = new window.google.maps.LatLng(
             bar.location.lat,
             bar.location.lng
           );
@@ -394,32 +345,6 @@ const filteredBars = computed(() => {
   return result;
 });
 
-// --- 分頁相關 Computed ---
-const paginatedBars = computed(() => {
-  const allBars = filteredBars.value;
-  const startIndex = (currentPage.value - 1) * itemsPerPage;
-  const endIndex = startIndex + itemsPerPage;
-  return allBars.slice(startIndex, endIndex);
-});
-
-const paginationInfo = computed(() => {
-  const allBars = filteredBars.value;
-  const total = allBars.length;
-  totalPages.value = Math.ceil(total / itemsPerPage);
-  hasNextPage.value = currentPage.value < totalPages.value;
-  hasPrevPage.value = currentPage.value > 1;
-  
-  return {
-    currentPage: currentPage.value,
-    totalPages: totalPages.value,
-    totalItems: total,
-    hasNextPage: hasNextPage.value,
-    hasPrevPage: hasPrevPage.value,
-    startIndex: (currentPage.value - 1) * itemsPerPage + 1,
-    endIndex: Math.min(currentPage.value * itemsPerPage, total)
-  };
-});
-
 // --- Debounced 函數 ---
 const debouncedSearchSuggestions = debounce(async () => {
   if (!searchQuery.value) {
@@ -441,7 +366,6 @@ async function selectSuggestion(suggestion) {
   isLoading.value = true; // 設置載入狀態
   clearMarkers("all"); // 清除所有舊標記
   closeInfoWindow(); // 關閉資訊視窗
-  resetPagination(); // 重置分頁
 
   try {
     const detail = await getPlaceDetails(suggestion.place_id);
@@ -491,57 +415,114 @@ async function selectSuggestion(suggestion) {
       alert("無法獲取選定地點的詳細資訊。");
     }
   } catch (error) {
-    console.error("選擇建議地點失敗:", error);
     alert("獲取地點詳細資訊失敗，請重試。");
   } finally {
     isLoading.value = false;
   }
 }
 
-/**
- * 處理手動搜尋按鈕點擊
- */
-async function handleSearch(isNextPage = false) {
+async function handleSearch() {
   if (!isReady.value) {
     alert("地圖尚未載入完成，請稍候再試");
     return;
   }
-  if (!searchQuery.value && !isNextPage) {
+  if (!searchQuery.value) {
     alert("請輸入搜尋關鍵字");
     return;
   }
   isLoading.value = true;
   clearMarkers("all");
   closeInfoWindow();
-  if (!isNextPage) resetPagination();
 
   try {
-    let mainBars, pagination;
-    if (isNextPage && lastPagination && lastPagination.hasNextPage) {
-      // 下一頁：呼叫 Google API 的 nextPage
-      await new Promise((resolve) => {
-        lastPagination.nextPage();
-        // 需監聽 handleResults 回傳，這裡用 setTimeout 模擬等待
-        setTimeout(resolve, 1200);
-      });
-      // 重新查詢，取得新一頁資料
-      const result = await searchAndDisplayPlaces(lastSearchQuery, itemsPerPage);
-      mainBars = result.results;
-      pagination = result.pagination;
-    } else {
-      // 首頁或重新查詢
-      const result = await searchAndDisplayPlaces(searchQuery.value, itemsPerPage);
-      mainBars = result.results;
-      pagination = result.pagination;
-      lastSearchQuery = searchQuery.value;
-      lastSearchType = 'text';
+    let mainBars = [];
+    let typeForNearby = "establishment";
+    const q = searchQuery.value.trim().toLowerCase();
+    if (["bar", "酒吧", "pub", "night club", "夜店", "交易吧", "intention"].some(k => q.includes(k))) {
+      typeForNearby = ["bar", "night_club", "pub", "liquor_store"];
+    } else if (["小吃", "餐廳", "美食", "food", "restaurant", "吃飯", "吃吃"].some(k => q.includes(k))) {
+      typeForNearby = ["restaurant", "food"];
     }
-    lastPagination = pagination;
+
+    const result = await searchAndDisplayPlaces(searchQuery.value);
+    mainBars = result && result.results ? result.results : [];
+    // 若沒結果且屬於常見類型，fallback nearbySearch
+    if ((!mainBars || mainBars.length === 0) && typeForNearby) {
+      const google = googleMapsInstance.value;
+      let center = null;
+      if (map.value && map.value.getCenter) {
+        const c = map.value.getCenter();
+        center = new window.google.maps.LatLng(c.lat(), c.lng());
+      } else {
+        center = new window.google.maps.LatLng(25.0478, 121.5170); // fallback 台北車站
+      }
+      const fallbackRequest = {
+        location: center,
+        radius: 5000,
+        type: typeForNearby,
+      };
+      const service = new google.places.PlacesService(map.value);
+      mainBars = await new Promise((resolve) => {
+        service.nearbySearch(fallbackRequest, async (results, status) => {
+          if (status === google.places.PlacesServiceStatus.OK && results) {
+            const detailedBars = await Promise.all(
+              results.slice(0, 20).map(async (place) => {
+                try {
+                  const detail = await getPlaceDetails(place.place_id);
+                  const tags = Array.isArray(detail.types)
+                    ? detail.types.filter(type => !COMMON_PLACE_TYPES_TO_EXCLUDE.includes(type))
+                    : [];
+                  const isOpen = detail.opening_hours ? detail.opening_hours.isOpen() : null;
+                  const isBarLike = Array.isArray(detail.types)
+                    ? detail.types.some(type => BAR_PLACE_TYPES.includes(type))
+                    : false;
+                  return {
+                    id: detail.place_id,
+                    place_id: detail.place_id,
+                    name: detail.name,
+                    location: {
+                      lat: detail.geometry.location.lat(),
+                      lng: detail.geometry.location.lng(),
+                    },
+                    rating: detail.rating || 0,
+                    reviews: detail.user_ratings_total || 0,
+                    address: detail.formatted_address || "未知地址",
+                    tags: tags,
+                    opening_hours: detail.opening_hours,
+                    is_open: isOpen,
+                    imageUrl:
+                      detail.photos && detail.photos.length > 0
+                        ? detail.photos[0].getUrl({ maxWidth: 400, maxHeight: 400 })
+                        : "",
+                    images: detail.photos
+                      ? detail.photos.map((p) => p.getUrl({ maxWidth: 800, maxHeight: 600 }))
+                      : [],
+                    description: "點擊查看更多詳情...",
+                    isWishlisted: false,
+                    phone: detail.international_phone_number || null,
+                    website: detail.website || null,
+                    url: detail.url,
+                    googleReviews: detail.reviews || [],
+                    isBarLike: isBarLike,
+                  };
+                } catch (e) {
+                  return place;
+                }
+              })
+            );
+            resolve(detailedBars);
+          } else {
+            resolve([]);
+          }
+        });
+      });
+    }
+    // 統一顯示所有結果
     if (mainBars && mainBars.length > 0) {
       mainBarForSearch.value = null;
       googleBars.value = mainBars;
-      if (googleMapsInstance.value && googleBars.value[0] && googleBars.value[0].location) {
-        panTo(googleBars.value[0].location, 15);
+      if (googleMapsInstance.value && mainBars[0] && mainBars[0].location) {
+        panTo(mainBars[0].location, 15);
       }
     } else {
       mainBarForSearch.value = null;
@@ -551,7 +532,6 @@ async function handleSearch(isNextPage = false) {
   } catch (err) {
     mainBarForSearch.value = null;
     googleBars.value = [];
-    console.error("搜尋地點失敗:", err);
     alert("搜尋失敗，請稍後再試。");
   } finally {
     isLoading.value = false;
@@ -561,52 +541,29 @@ async function handleSearch(isNextPage = false) {
 /**
  * 處理獲取目前位置
  */
-async function handleGetCurrentLocation(isNextPage = false) {
+async function handleGetCurrentLocation() {
   isLoading.value = true;
-  let gotLocation = false;
-  if (!isNextPage) resetPagination();
   try {
     clearMarkers("all");
     closeInfoWindow();
     const sidebarWidth = document.querySelector('.bar-list-sidebar')?.offsetWidth || 0;
     const currentLocation = await getMapCurrentLocation(sidebarWidth);
     if (currentLocation) {
-      gotLocation = true;
-      lastSearchLocation = currentLocation;
       // 以目前位置為中心搜尋附近酒吧
-      let bars, pagination;
-      if (isNextPage && lastPagination && lastPagination.hasNextPage) {
-        await new Promise((resolve) => {
-          lastPagination.nextPage();
-          setTimeout(resolve, 1200);
-        });
-        const result = await searchBarsInMapBounds(false, itemsPerPage);
-        bars = result.results;
-        pagination = result.pagination;
-      } else {
-        const result = await searchBarsInMapBounds(false, itemsPerPage);
-        bars = result.results;
-        pagination = result.pagination;
-        lastSearchType = 'nearby';
-      }
-      lastPagination = pagination;
+      const bars = await searchBarsInMapBounds(false);
       googleBars.value = bars;
     }
   } catch (err) {
     // 定位失敗 fallback 台北車站
     const google = googleMapsInstance.value;
     if (google && map.value) {
-      const fallbackLocation = new google.LatLng(25.0478, 121.5170);
+      const fallbackLocation = new window.google.maps.LatLng(25.0478, 121.5170);
       map.value.setCenter(fallbackLocation);
       map.value.setZoom(15);
-      const result = await searchBarsInMapBounds(false, itemsPerPage);
-      googleBars.value = result.results;
-      lastPagination = result.pagination;
-      lastSearchType = 'nearby';
+      const bars = await searchBarsInMapBounds(false);
+      googleBars.value = bars;
     }
-    if (!gotLocation) {
-      alert("無法獲取您的目前位置，請檢查瀏覽器權限設定或已自動顯示台北車站附近酒吧。");
-    }
+    alert("無法獲取您的目前位置，請檢查瀏覽器權限設定");
   } finally {
     isLoading.value = false;
   }
@@ -618,8 +575,6 @@ async function handleGetCurrentLocation(isNextPage = false) {
  */
 function handleFilterChanged(filters) {
   currentFilters.value = { ...filters };
-  // 當篩選器變化時，重置分頁到第一頁
-  resetPagination();
   // 當篩選器變化時，filteredBars 會自動重新計算，並觸發 displayBarsOnMap
 }
 
@@ -628,81 +583,6 @@ function handleFilterChanged(filters) {
  */
 function toggleFilterPanel() {
   isFilterPanelOpen.value = !isFilterPanelOpen.value;
-}
-
-// --- 分頁控制函數 ---
-async function nextPage() {
-  if (lastPagination && lastPagination.hasNextPage) {
-    isLoading.value = true;
-    await new Promise((resolve) => {
-      lastPagination.nextPage();
-      setTimeout(resolve, 1200);
-    });
-    // 取得新一頁資料後，searchAndDisplayPlaces/searchBarsInMapBounds 會自動更新 googleBars
-    // 不要重新查詢
-    isLoading.value = false;
-  } else if (hasNextPage.value) {
-    currentPage.value++;
-  }
-}
-
-function prevPage() {
-  // Google Places API 沒有 prevPage，僅本地分頁可用
-  if (hasPrevPage.value) {
-    currentPage.value--;
-  }
-}
-
-function goToPage(page) {
-  if (page >= 1 && page <= totalPages.value) {
-    currentPage.value = page;
-  }
-}
-
-function resetPagination() {
-  currentPage.value = 1;
-}
-
-// 計算要顯示的頁碼
-function getVisiblePageNumbers() {
-  const current = paginationInfo.value.currentPage;
-  const total = paginationInfo.value.totalPages;
-  const pages = [];
-  
-  if (total <= 7) {
-    // 如果總頁數少於等於7，顯示所有頁碼
-    for (let i = 1; i <= total; i++) {
-      pages.push(i);
-    }
-  } else {
-    // 如果總頁數大於7，顯示當前頁附近的頁碼
-    if (current <= 4) {
-      // 當前頁在前4頁
-      for (let i = 1; i <= 5; i++) {
-        pages.push(i);
-      }
-      pages.push('...');
-      pages.push(total);
-    } else if (current >= total - 3) {
-      // 當前頁在後4頁
-      pages.push(1);
-      pages.push('...');
-      for (let i = total - 4; i <= total; i++) {
-        pages.push(i);
-      }
-    } else {
-      // 當前頁在中間
-      pages.push(1);
-      pages.push('...');
-      for (let i = current - 1; i <= current + 1; i++) {
-        pages.push(i);
-      }
-      pages.push('...');
-      pages.push(total);
-    }
-  }
-  
-  return pages;
 }
 
 /**
@@ -725,17 +605,17 @@ async function handleBarSelected(bar) {
   isBarDetailModalOpen.value = true;
   if (bar.location && map && googleMapsInstance()) {
     panTo(bar.location);
-    const tempMarker = new googleMapsInstance().Marker({
-      position: new googleMapsInstance().LatLng(
+    const tempMarker = new window.google.maps.Marker({
+      position: new window.google.maps.LatLng(
         bar.location.lat,
         bar.location.lng
       ),
       map: map,
       title: bar.name,
       icon: {
-        url: "/wine.png",
-        scaledSize: new googleMapsInstance().Size(40, 40),
-        anchor: new googleMapsInstance().Point(20, 40),
+        url: bar.isBarLike ? "/wine.png" : "/MapMarker.png",
+        scaledSize: new window.google.maps.Size(40, 40),
+        anchor: new window.google.maps.Point(20, 40),
       },
     });
     const infoContent = formatBarInfoWindowContent(bar);
@@ -783,6 +663,19 @@ const handleToggleWishlistFromDetail = (barId) => {
   handleToggleWishlist(barId); // 調用共同的處理函數
 };
 
+// --- 新增：標籤點擊觸發搜尋 ---
+function handleTagClick(tag) {
+  if (!tag) {
+    selectedTag.value = null;
+    searchQuery.value = "";
+    googleBars.value = []; // 或重新載入預設資料
+  } else {
+    selectedTag.value = tag;
+    searchQuery.value = tag;
+    handleSearch();
+  }
+}
+
 // --- Watchers ---
 
 // 監聽 mapContainer ref，確保 DOM 元素準備就緒後才初始化地圖
@@ -790,7 +683,6 @@ watch(
   mapContainer,
   (newVal) => {
     if (newVal && typeof googleMapsInstance === 'function' && googleMapsInstance()) {
-      console.log("mapContainer DOM 元素已準備好且 Google Maps API 已載入。嘗試初始化地圖...");
       initMap();
     }
   },
@@ -800,10 +692,8 @@ watch(
 // 監聽地圖初始化完成
 watch(isReady, (ready) => {
   if (ready && map && typeof googleMapsInstance === 'function' && googleMapsInstance()) {
-    console.log("地圖初始化完成，添加事件監聽器。");
     const onMapIdleHandler = async () => {
       if (!isFetching.value && !isLoading.value) {
-        console.log("地圖閒置，重新搜尋範圍內的酒吧。");
         const barsInBounds = await searchBarsInMapBounds(false);
         googleBars.value = barsInBounds;
       }
@@ -819,10 +709,7 @@ watch(
   filteredBars,
   (newBars) => {
     if (map && typeof googleMapsInstance === 'function' && googleMapsInstance()) {
-      console.log(`filteredBars 變更，準備顯示 ${newBars.length} 個酒吧標記。`);
       displayBarsOnMap(newBars, formatBarInfoWindowContent);
-    } else {
-      console.warn("地圖或 Google Maps 實例未準備好，無法顯示酒吧標記。");
     }
   },
   { immediate: false }
@@ -858,14 +745,14 @@ onMounted(async () => {
         // 定位失敗 fallback 台北車站
         const google = googleMapsInstance.value;
         if (google && map.value) {
-          const fallbackLocation = new google.LatLng(25.0478, 121.5170);
+          const fallbackLocation = new window.google.maps.LatLng(25.0478, 121.5170);
           map.value.setCenter(fallbackLocation);
           map.value.setZoom(15);
           const bars = await searchBarsInMapBounds(false);
           googleBars.value = bars;
         }
         if (!gotLocation) {
-          alert("無法獲取您的目前位置，已自動顯示台北車站附近酒吧。");
+          alert("無法獲取您的目前位置");
         }
       }
     } else {
@@ -878,6 +765,46 @@ onMounted(async () => {
     isLoading.value = false;
   }
 });
+
+function getTypeForKeyword(q) {
+  if (["bar", "酒吧", "pub", "night club", "夜店", "交易吧", "intention"].some(k => q.includes(k))) {
+    return ["bar", "night_club", "pub", "liquor_store"];
+  } else if (["小吃", "餐廳", "美食", "food", "restaurant", "吃飯", "吃吃"].some(k => q.includes(k))) {
+    return ["restaurant", "food"];
+  } else if (["咖啡", "咖啡廳", "coffee"].some(k => q.includes(k))) {
+    return ["cafe"];
+  } else if (["飲料", "手搖", "bubble tea", "tea"].some(k => q.includes(k))) {
+    return ["cafe", "food"];
+  } else if (["超市", "market", "超商", "便利商店"].some(k => q.includes(k))) {
+    return ["supermarket", "convenience_store"];
+  } else if (["健身", "gym", "運動"].some(k => q.includes(k))) {
+    return ["gym"];
+  } else if (["ktv", "KTV", "卡拉ok", "唱歌"].some(k => q.includes(k))) {
+    return ["night_club"];
+  } else if (["飯店", "旅館", "hotel", "住宿"].some(k => q.includes(k))) {
+    return ["lodging"];
+  } else if (["書店", "書局", "book"].some(k => q.includes(k))) {
+    return ["book_store"];
+  } else if (["藥局", "pharmacy"].some(k => q.includes(k))) {
+    return ["pharmacy"];
+  } else if (["醫院", "hospital"].some(k => q.includes(k))) {
+    return ["hospital"];
+  } else if (["銀行", "atm", "提款機"].some(k => q.includes(k))) {
+    return ["bank", "atm"];
+  } else if (["加油站", "gas"].some(k => q.includes(k))) {
+    return ["gas_station"];
+  } else if (["停車場", "parking"].some(k => q.includes(k))) {
+    return ["parking"];
+  } else if (["動物", "寵物", "zoo", "pet"].some(k => q.includes(k))) {
+    return ["zoo", "pet_store"];
+  } else if (["藝文", "藝廊", "美術館", "museum", "art"].some(k => q.includes(k))) {
+    return ["art_gallery", "museum"];
+  } else if (["景點", "地標", "park", "公園"].some(k => q.includes(k))) {
+    return ["park", "point_of_interest"];
+  }
+  // ...可依需求再擴充
+  return "establishment";
+}
 </script>
 
 <style scoped>
@@ -1213,87 +1140,5 @@ onMounted(async () => {
   .search-panel-map {
     width: 100%;
   }
-}
-
-/* 分頁控制樣式 */
-.pagination-container {
-  padding: 16px;
-  background-color: #ffffff;
-  border-top: 1px solid #e5e7eb;
-  margin-top: auto;
-}
-
-.pagination-info {
-  text-align: center;
-  color: #6b7280;
-  font-size: 14px;
-  margin-bottom: 12px;
-}
-
-.pagination-controls {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-}
-
-.pagination-button {
-  padding: 8px 12px;
-  border: 1px solid #d1d5db;
-  background-color: #ffffff;
-  color: #374151;
-  border-radius: 6px;
-  cursor: pointer;
-  font-size: 14px;
-  transition: all 0.2s;
-  white-space: nowrap;
-}
-
-.pagination-button:hover:not(.disabled) {
-  background-color: #f3f4f6;
-  border-color: #9ca3af;
-}
-
-.pagination-button.disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-  background-color: #f9fafb;
-  color: #9ca3af;
-}
-
-.page-numbers {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-}
-
-.page-number {
-  padding: 8px 12px;
-  border: 1px solid #d1d5db;
-  background-color: #ffffff;
-  color: #374151;
-  border-radius: 6px;
-  cursor: pointer;
-  font-size: 14px;
-  min-width: 40px;
-  text-align: center;
-  transition: all 0.2s;
-}
-
-.page-number:hover:not(.active) {
-  background-color: #f3f4f6;
-  border-color: #9ca3af;
-}
-
-.page-number.active {
-  background-color: #decdd5;
-  border-color: #decdd5;
-  color: #3a3435;
-  font-weight: 600;
-}
-
-.page-number:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
 }
 </style>

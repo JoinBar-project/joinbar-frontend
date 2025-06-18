@@ -43,5 +43,4 @@ export const BAR_PLACE_TYPES = [
   "night_club",
   "pub",
   "liquor_store",
-  "cafe",
 ];

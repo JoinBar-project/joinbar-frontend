@@ -1,7 +1,5 @@
-// src/composable/useGoogleMaps/index.js
-import { readonly } from "vue";
-import { createGoogleMapsCore } from "./core";
-import { createGoogleMapsPlaces } from "./places";
+import { createGoogleMapsCore } from "./userCore";
+import { createGoogleMapsPlaces } from "./userPlaces";
 
 export function useGoogleMaps(mapContainerRef, options) {
   const coreMap = createGoogleMapsCore(mapContainerRef, options);

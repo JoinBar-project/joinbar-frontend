@@ -76,7 +76,7 @@
           @input="updateDistance"
           class="range-number-input"
           min="0"
-          max="5000"
+          max="10000"
         />
         <span>-</span>
         <input
@@ -85,7 +85,7 @@
           @input="updateDistance"
           class="range-number-input"
           min="0"
-          max="5000"
+          max="10000"
         />
       </div>
       <input
@@ -94,12 +94,12 @@
         @input="updateDistanceRange"
         class="range-slider"
         min="0"
-        max="5000"
+        max="10000"
         step="100"
       />
       <div class="range-labels">
         <span>0</span>
-        <span>5000</span>
+        <span>10000</span>
       </div>
     </div>
 
@@ -136,18 +136,18 @@
     </div>
 
     <div class="filter-section">
-      <label class="filter-label">熱門推薦</label>
+      <label class="filter-label">標籤</label>
       <div class="tags-grid">
         <button
-          v-for="tag in popularTags"
-          :key="tag"
+          v-for="([type, label], idx) in tagList"
+          :key="type"
           :class="{
-            'tag-button-active': filters.tags.includes(tag),
-            'tag-button': !filters.tags.includes(tag),
+            'tag-button-active': props.selectedTag === type,
+            'tag-button': props.selectedTag !== type,
           }"
-          @click="toggleTag(tag)"
+          @click="handleTagClick(type)"
         >
-          {{ tag }}
+          {{ label }}
         </button>
       </div>
     </div>
@@ -162,8 +162,9 @@
 
 <script setup>
 import { ref, defineEmits, watch, defineProps, computed } from "vue";
+import placeTypeMap from '@/composable/placeTypeMap';
 
-const emit = defineEmits(["filter-changed", "close-panel"]);
+const emit = defineEmits(["filter-changed", "close-panel", "tag-click"]);
 
 const props = defineProps({
   initialFilters: {
@@ -172,7 +173,7 @@ const props = defineProps({
       address: "current_location",
       ratingSort: "any",
       minDistance: 0,
-      maxDistance: 5000,
+      maxDistance: 10000,
       minOpenHour: 0,
       minOpenMinute: 0,
       maxOpenHour: 24,
@@ -180,9 +181,16 @@ const props = defineProps({
       tags: [],
     }),
   },
+  selectedTag: {
+    type: String,
+    default: null,
+  },
 });
 
 const filters = ref({ ...props.initialFilters });
+// 取 placeTypeMap 常見類型（前 20 筆或常用類型）
+const tagList = computed(() => Object.entries(placeTypeMap).slice(0, 20));
+
 const popularTags = [
   "信義區",
   "大安區",
@@ -258,7 +266,7 @@ const appliedFiltersForDisplay = computed(() => {
     });
   }
 
-  if (filters.value.minDistance !== 0 || filters.value.maxDistance !== 5000) {
+  if (filters.value.minDistance !== 0 || filters.value.maxDistance !== 10000) {
     const min = filters.value.minDistance;
     const max = filters.value.maxDistance;
     displayFilters.push({
@@ -333,7 +341,7 @@ const removeAppliedFilter = (type, value) => {
       break;
     case "distance":
       filters.value.minDistance = 0;
-      filters.value.maxDistance = 5000;
+      filters.value.maxDistance = 10000;
       break;
     case "openHour":
       filters.value.minOpenHour = 0;
@@ -357,11 +365,11 @@ const updateDistance = () => {
   }
   filters.value.minDistance = Math.max(
     0,
-    Math.min(filters.value.minDistance, 5000)
+    Math.min(filters.value.minDistance, 10000)
   );
   filters.value.maxDistance = Math.max(
     0,
-    Math.min(filters.value.maxDistance, 5000)
+    Math.min(filters.value.maxDistance, 10000)
   );
   applyFilters();
 };
@@ -423,7 +431,7 @@ const resetFilters = () => {
     address: "current_location",
     ratingSort: "any",
     minDistance: 0,
-    maxDistance: 5000,
+    maxDistance: 10000,
     minOpenHour: 0,
     minOpenMinute: 0,
     maxOpenHour: 24,
@@ -459,6 +467,15 @@ watch(
   },
   { deep: true, immediate: true }
 );
+
+// --- 新增：標籤點擊 ---
+function handleTagClick(tag) {
+  if (props.selectedTag === tag) {
+    emit('tag-click', null); // 取消選取
+  } else {
+    emit('tag-click', tag);
+  }
+}
 </script>
 
 <style scoped>
