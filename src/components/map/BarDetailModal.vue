@@ -13,15 +13,7 @@
         <div class="content-flex-wrapper">
           <div class="image-gallery-container">
             <img
-              v-if="bar.images && bar.images.length > 0"
-              :src="bar.images[currentImageIndex]"
-              alt="Bar Image"
-              class="main-image"
-              @error="handleImageError"
-            />
-            <img
-              v-else
-              :src="defaultImage"
+              :src="currentImage"
               alt="Bar Image"
               class="main-image"
               @error="handleImageError"
@@ -36,7 +28,7 @@
             </div>
             <div class="image-dots">
               <span
-                v-for="(img, index) in bar.images || []"
+                v-for="(img, index) in bar.images"
                 :key="index"
                 :class="{ dot: true, active: index === currentImageIndex }"
                 @click="setCurrentImage(index)"
@@ -56,7 +48,6 @@
                 }}
                 評論)</span
               >
-              <span class="price-range">NT$ {{ bar.priceRange || "???" }}</span>
             </div>
 
             <div class="contact-info">
@@ -76,10 +67,18 @@
             <div class="opening-hours-detail">
               <h3>營業時間</h3>
               <p>
-                {{ bar.openingHours?.weekday_text?.[0] || "未提供營業時間" }}
+                <span v-html="currentOpenStatus"></span>
               </p>
+              <ul v-if="bar.opening_hours && bar.opening_hours.weekday_text">
+                <li
+                  v-for="(text, index) in bar.opening_hours.weekday_text"
+                  :key="index"
+                >
+                  {{ text }}
+                </li>
+              </ul>
+              <p v-else>未提供詳細營業時間</p>
             </div>
-
             <div v-if="bar.tags && bar.tags.length" class="bar-tags-detail">
               <h3>特色標籤</h3>
               <div class="tags-wrapper">
@@ -97,17 +96,25 @@
               <p>{{ bar.description || "暫無詳細介紹。" }}</p>
             </div>
 
-            <div class="google-reviews">
-              <h3>Google 評論</h3>
-              <div v-if="bar.googleReviews && bar.googleReviews.length > 0">
-                <div v-for="(review, idx) in bar.googleReviews" :key="idx" class="review-item">
-                  <div class="review-author">{{ review.author_name || '匿名' }}</div>
-                  <div class="review-rating">⭐️ {{ review.rating || 'N/A' }}</div>
-                  <div class="review-text">{{ review.text || '（無評論內容）' }}</div>
-                  <div class="review-time">{{ review.relative_time_description || '' }}</div>
+            <!-- 動態 Google 評論區塊 -->
+            <div class="google-review-section">
+              <h3>熱門評論</h3>
+              <template v-if="bar.googleReviews && bar.googleReviews.length">
+                <div class="review-card" v-for="(review, idx) in bar.googleReviews.slice(0, 5)" :key="idx">
+                  <div class="review-header">
+                    <img :src="review.profile_photo_url || 'https://via.placeholder.com/40'" alt="User Avatar" class="user-avatar" />
+                    <div class="user-info">
+                      <span class="user-name">{{ review.author_name || '匿名用戶' }}</span>
+                      <span class="review-date">{{ formatReviewDate(review.time) }}</span>
+                    </div>
+                  </div>
+                  <p class="review-text">{{ review.text }}</p>
+                  <div class="review-actions">
+                    <span>👍 有用 ({{ review.rating || 0 }})</span>
+                  </div>
                 </div>
-              </div>
-              <div v-else>暫無評論。</div>
+              </template>
+              <p v-else>暫無 Google 評論</p>
             </div>
           </div>
         </div>
@@ -180,7 +187,7 @@
 </template>
 
 <script setup>
-import { ref, watch, computed } from "vue";
+import { ref, watch, computed, inject } from "vue"; // 引入 inject
 import { useRouter } from "vue-router";
 
 const props = defineProps({
@@ -198,11 +205,24 @@ const currentImageIndex = ref(0);
 const defaultImage =
   "https://placehold.co/800x600/decdd5/860914?text=No+Image+Available";
 
+// 注入 google 物件，這是在 App.vue 或更高層級提供的
+const { google } = inject("coreMapRefs", { google: ref(null) }); // 提供一個 fallback，避免未注入時報錯
+
 const currentImage = computed(() => {
   if (props.bar.images && props.bar.images.length > 0) {
     return props.bar.images[currentImageIndex.value];
   }
   return props.bar.imageUrl || defaultImage;
+});
+
+// 計算屬性用於判斷當前營業狀態
+const currentOpenStatus = computed(() => {
+  if (props.bar.opening_hours && google.value) {
+    // 確保 google 物件已載入且 opening_hours 存在
+    return props.bar.opening_hours.isOpen()
+      ? '<span style="color: green;">營業中</span>'
+      : '<span style="color: red;">休息中</span>';
+  }
 });
 
 watch(
@@ -277,6 +297,12 @@ const handleFileUpload = (event) => {
     }
   }
 };
+
+function formatReviewDate(unixTime) {
+  if (!unixTime) return '';
+  const date = new Date(unixTime * 1000);
+  return `${date.getFullYear()}年${date.getMonth() + 1}月${date.getDate()}日`;
+}
 </script>
 
 <style scoped>
@@ -467,10 +493,6 @@ const handleFileUpload = (event) => {
 .rating-text {
   font-weight: 500;
 }
-.price-range {
-  font-weight: 600;
-  color: #daa258;
-}
 
 .contact-info p {
   margin-bottom: 8px;
@@ -491,7 +513,7 @@ const handleFileUpload = (event) => {
 .opening-hours-detail,
 .bar-tags-detail,
 .description-section,
-.google-reviews {
+.google-review-section {
   margin-top: 20px;
   border-top: 1px solid #eee;
   padding-top: 15px;
@@ -499,7 +521,7 @@ const handleFileUpload = (event) => {
 .opening-hours-detail h3,
 .bar-tags-detail h3,
 .description-section h3,
-.google-reviews h3 {
+.google-review-section h3 {
   font-size: 18px;
   font-weight: bold;
   color: #333;
@@ -510,6 +532,17 @@ const handleFileUpload = (event) => {
   font-size: 15px;
   line-height: 1.6;
   color: #444;
+}
+/* 新增或修改 ul/li 樣式 */
+.opening-hours-detail ul {
+  list-style: none; /* 移除預設的列表樣式 */
+  padding: 0;
+  margin: 5px 0 0 0;
+}
+.opening-hours-detail li {
+  font-size: 15px;
+  color: #444;
+  margin-bottom: 3px;
 }
 
 .bar-tags-detail .tags-wrapper {
@@ -528,11 +561,11 @@ const handleFileUpload = (event) => {
   border: 1px solid #91d5ff;
 }
 
-.google-reviews {
+.google-review-section {
   padding-bottom: 15px;
 }
 
-.review-item {
+.review-card {
   background-color: #f9f9f9;
   border-radius: 8px;
   padding: 15px;
@@ -540,14 +573,34 @@ const handleFileUpload = (event) => {
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
 }
 
-.review-author {
+.review-header {
+  display: flex;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.user-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  object-fit: cover;
+  margin-right: 10px;
+  border: 1px solid #ddd;
+}
+
+.user-info {
+  display: flex;
+  flex-direction: column;
+}
+
+.user-name {
   font-weight: bold;
   color: #333;
   font-size: 16px;
 }
 
-.review-rating {
-  font-size: 14px;
+.review-date {
+  font-size: 13px;
   color: #777;
 }
 
@@ -558,9 +611,11 @@ const handleFileUpload = (event) => {
   margin-bottom: 10px;
 }
 
-.review-time {
-  font-size: 13px;
-  color: #777;
+.review-actions {
+  display: flex;
+  gap: 15px;
+  font-size: 14px;
+  color: #888;
 }
 
 .footer-actions {

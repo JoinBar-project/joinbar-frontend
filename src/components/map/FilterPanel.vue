@@ -37,19 +37,19 @@
     <div class="filter-section">
       <label for="addressFilter" class="filter-label">地點</label>
       <select
-      id="addressFilter"
-      v-model="filters.address"
-      @change="applyFilters"
-      class="filter-select"
+        id="addressFilter"
+        v-model="filters.address"
+        @change="applyFilters"
+        class="filter-select"
       >
-      <option value="any">任何地方</option>
-      <option value="信義區">信義區</option>
-      <option value="大安區">大安區</option>
-      <option value="中山區">中山區</option>
-      <option value="松山區">松山區</option>
-      <option value="萬華區">萬華區</option>
-      <option value="士林區">士林區</option>
-    </select>
+        <option value="any">任何地方</option>
+        <option value="信義區">信義區</option>
+        <option value="大安區">大安區</option>
+        <option value="中山區">中山區</option>
+        <option value="松山區">松山區</option>
+        <option value="萬華區">萬華區</option>
+        <option value="士林區">士林區</option>
+      </select>
     </div>
 
     <div class="filter-section">
@@ -200,7 +200,14 @@ const popularTags = [
   "爵士樂",
   "復古",
 ];
-const districtTags = ["信義區", "大安區", "中山區", "松山區", "萬華區", "士林區"];
+const districtTags = [
+  "信義區",
+  "大安區",
+  "中山區",
+  "松山區",
+  "萬華區",
+  "士林區",
+];
 const openTime = ref("00:00");
 const closeTime = ref("23:59");
 
@@ -208,8 +215,11 @@ const closeTime = ref("23:59");
 const appliedFiltersForDisplay = computed(() => {
   const displayFilters = [];
 
-  if (Array.isArray(filters.value.address) && filters.value.address.length > 0) {
-    filters.value.address.forEach(addr => {
+  if (
+    Array.isArray(filters.value.address) &&
+    filters.value.address.length > 0
+  ) {
+    filters.value.address.forEach((addr) => {
       displayFilters.push({
         label: `地點: ${addr}`,
         type: "address",
@@ -254,7 +264,7 @@ const appliedFiltersForDisplay = computed(() => {
   let currentMaxMinute = filters.value.maxOpenMinute;
 
   if (currentMaxHour === 24 && currentMaxMinute === 0) {
-    currentMaxHour = 0; 
+    currentMaxHour = 0;
   }
 
   if (
@@ -301,7 +311,9 @@ const removeAppliedFilter = (type, value) => {
   switch (type) {
     case "address":
       if (Array.isArray(filters.value.address)) {
-        filters.value.address = filters.value.address.filter(addr => addr !== value);
+        filters.value.address = filters.value.address.filter(
+          (addr) => addr !== value
+        );
       } else {
         filters.value.address = [];
       }
@@ -325,7 +337,7 @@ const removeAppliedFilter = (type, value) => {
       filters.value.tags = filters.value.tags.filter((t) => t !== value);
       break;
   }
-  applyFilters(); 
+  applyFilters();
 };
 
 // 更新距離數值輸入框並同步篩選
@@ -356,13 +368,11 @@ const updateOpenHours = () => {
   let [maxOpenHour, maxOpenMinute] = closeTime.value.split(":").map(Number);
 
   if (maxOpenHour === 0 && maxOpenMinute === 0 && closeTime.value === "00:00") {
-
-      if (openTime.value !== "00:00") { 
-         maxOpenHour = 24;
-         maxOpenMinute = 0;
-      }
+    if (openTime.value !== "00:00") {
+      maxOpenHour = 24;
+      maxOpenMinute = 0;
+    }
   }
-
 
   filters.value.minOpenHour = minOpenHour;
   filters.value.minOpenMinute = minOpenMinute;
@@ -373,10 +383,9 @@ const updateOpenHours = () => {
   const endMinutes = maxOpenHour * 60 + maxOpenMinute;
 
   if (startMinutes > endMinutes && endMinutes !== 0) {
-
-      filters.value.maxOpenHour = minOpenHour;
-      filters.value.maxOpenMinute = minOpenMinute;
-      closeTime.value = openTime.value;
+    filters.value.maxOpenHour = minOpenHour;
+    filters.value.maxOpenMinute = minOpenMinute;
+    closeTime.value = openTime.value;
   }
 
   applyFilters();
@@ -432,7 +441,7 @@ watch(
 
     let displayMaxHour = newFilters.maxOpenHour;
     if (displayMaxHour === 24 && newFilters.maxOpenMinute === 0) {
-        displayMaxHour = 0;
+      displayMaxHour = 0;
     }
 
     openTime.value = `${String(newFilters.minOpenHour).padStart(2, "0")}:${String(newFilters.minOpenMinute).padStart(2, "0")}`;

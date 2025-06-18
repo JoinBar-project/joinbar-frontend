@@ -12,7 +12,11 @@
       >
         <div class="bar-card-image">
           <img
-            :src="bar.images && bar.images.length > 0 ? bar.images[0] : (bar.imageUrl || defaultPlaceholderImage)"
+            :src="
+              bar.images && bar.images.length > 0
+                ? bar.images[0]
+                : bar.imageUrl || defaultPlaceholderImage
+            "
             :alt="bar.name || 'Bar'"
             class="bar-image"
             loading="lazy"
@@ -40,16 +44,15 @@
           <h3 class="bar-name">{{ bar.name }}</h3>
           <div class="bar-rating-price">
             <span class="bar-rating">⭐️ {{ bar.rating || "N/A" }}</span>
-            <span class="bar-reviews"> ({{ bar.user_ratings_total || 0 }} 評論)</span>
-            <span class="bar-price">NT$ {{ bar.priceRange || "???" }}</span>
+            <span class="bar-reviews"> ({{ bar.reviews || 0 }} 評論)</span>
           </div>
 
           <div v-if="bar.tags && bar.tags.length" class="bar-tags">
-            <span v-for="tag in bar.tags" :key="tag" class="bar-tag">{{
+            <span v-for="tag in bar.tags || []" :key="tag" class="bar-tag">{{
+              // <-- 這裡添加 || []
               tag
             }}</span>
           </div>
-
           <div class="bar-hours">
             {{ getOpeningHourText(bar) }}
           </div>
@@ -83,6 +86,8 @@ const getOpeningHourText = (bar) => {
   if (bar.opening_hours?.weekday_text?.length > 0) {
     return bar.opening_hours.weekday_text[0];
   } else if (bar.opening_hours) {
+    // 這裡可以考慮提供更通用的「無特定文字格式」時的處理
+    // 例如：如果只有 periods 數據而沒有 weekday_text
     return "營業時間待提供";
   } else {
     return "未提供營業時間";
@@ -235,12 +240,6 @@ watch(
   margin-left: 4px;
   font-size: 14px;
   color: #4a5568;
-}
-
-.bar-price {
-  font-size: 16px;
-  font-weight: 600;
-  color: #ea580c;
 }
 
 .bar-tags {
