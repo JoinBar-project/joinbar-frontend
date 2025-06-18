@@ -78,7 +78,6 @@ const placeTypeMap = {
   synagogue: '猶太教堂',
   storage: '倉儲',
   travel_agency: '旅行社',
-  // ...可依需求再擴充
 };
 
 export default placeTypeMap; 

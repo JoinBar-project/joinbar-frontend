@@ -35,7 +35,6 @@ export function createGoogleMapsCore(mapContainerRef, options) {
           onLoaded && onLoaded();
           resolve();
         } else {
-          // 確保回調只設置一次
           if (!window.initMapCallback) {
             window.initMapCallback = () => {
               loading = false;
@@ -79,7 +78,6 @@ export function createGoogleMapsCore(mapContainerRef, options) {
       return;
     }
     if (!window.google || !window.google.maps) {
-      // 若 google 尚未載入，主動 await 載入
       await loadGoogleMapsAPI();
     }
     if (!window.google || !window.google.maps) {
@@ -111,7 +109,6 @@ export function createGoogleMapsCore(mapContainerRef, options) {
       });
       console.log('[DEBUG] 地圖物件:', map);
 
-      // 在這裡才初始化 infoWindow
       infoWindow = new window.google.maps.InfoWindow({
         content: "",
         pixelOffset: new window.google.maps.Size(0, -30),
@@ -244,7 +241,6 @@ export function createGoogleMapsCore(mapContainerRef, options) {
     const marker = new window.google.maps.Marker(markerOptions);
 
     if (options.infoContent || options.data) {
-      // 確保 infoWindow 已經初始化才添加事件監聽器
       if (infoWindow) {
         marker.addListener("click", () => {
           const content = options.infoContent;
@@ -276,7 +272,6 @@ export function createGoogleMapsCore(mapContainerRef, options) {
       });
       searchMarkers = [];
     }
-    // 在嘗試關閉之前，確保 infoWindow 已經存在且有 close 方法
     closeInfoWindow();
   };
 
@@ -290,7 +285,6 @@ export function createGoogleMapsCore(mapContainerRef, options) {
   };
 
   const closeInfoWindow = () => {
-    // 增加更嚴謹的檢查，確保 infoWindow 及其 .close 方法存在
     if (infoWindow && typeof infoWindow.close === 'function') {
       infoWindow.close();
     } else {
@@ -362,10 +356,6 @@ export function createGoogleMapsCore(mapContainerRef, options) {
         map.setZoom(15);
       } else {
         map.fitBounds(bounds);
-        // 這段邏輯可能會導致縮放過大，根據實際需求調整
-        // if (map.getZoom() > 17) {
-        //   map.setZoom(17);
-        // }
       }
     }
   };
@@ -412,15 +402,12 @@ export function createGoogleMapsCore(mapContainerRef, options) {
     closeInfoWindow();
 
     try {
-      // 直接用 Google Places API 搜尋所有地點
       const mainBars = await searchAndDisplayPlaces(searchQuery.value);
 
       if (mainBars && mainBars.length > 0) {
-        // 不再做 bar 判斷，直接顯示所有結果
         mainBarForSearch.value = null;
         googleBars.value = mainBars.slice(0, 20);
 
-        // 地圖定位到第一個結果
         if (googleMapsInstance() && googleBars.value.length > 0 && googleBars.value[0].location) {
           panTo(googleBars.value[0].location, 15);
         }

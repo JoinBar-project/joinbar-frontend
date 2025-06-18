@@ -49,7 +49,6 @@
 
           <div v-if="bar.tags && bar.tags.length" class="bar-tags">
             <span v-for="tag in bar.tags || []" :key="tag" class="bar-tag">{{
-              // <-- 這裡添加 || []
               getTagLabel(tag)
             }}</span>
           </div>
@@ -87,8 +86,6 @@ const getOpeningHourText = (bar) => {
   if (bar.opening_hours?.weekday_text?.length > 0) {
     return bar.opening_hours.weekday_text[0];
   } else if (bar.opening_hours) {
-    // 這裡可以考慮提供更通用的「無特定文字格式」時的處理
-    // 例如：如果只有 periods 數據而沒有 weekday_text
     return "營業時間待提供";
   } else {
     return "未提供營業時間";

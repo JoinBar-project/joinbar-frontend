@@ -191,23 +191,6 @@ const filters = ref({ ...props.initialFilters });
 // 取 placeTypeMap 常見類型（前 20 筆或常用類型）
 const tagList = computed(() => Object.entries(placeTypeMap).slice(0, 20));
 
-const popularTags = [
-  "信義區",
-  "大安區",
-  "中山區",
-  "精釀啤酒",
-  "創意調酒",
-  "運動酒吧",
-  "秘密基地",
-  "約會小酌",
-  "現場表演",
-  "高空美景",
-  "大型螢幕",
-  "觀賽熱點",
-  "居酒屋",
-  "爵士樂",
-  "復古",
-];
 const districtTags = [
   "信義區",
   "大安區",
@@ -216,6 +199,7 @@ const districtTags = [
   "萬華區",
   "士林區",
 ];
+
 const openTime = ref("00:00");
 const closeTime = ref("23:59");
 
@@ -324,7 +308,6 @@ const appliedFiltersForDisplay = computed(() => {
   return displayFilters;
 });
 
-// 移除已套用的單一篩選條件
 const removeAppliedFilter = (type, value) => {
   switch (type) {
     case "address":
@@ -358,7 +341,6 @@ const removeAppliedFilter = (type, value) => {
   applyFilters();
 };
 
-// 更新距離數值輸入框並同步篩選
 const updateDistance = () => {
   if (filters.value.minDistance > filters.value.maxDistance) {
     filters.value.minDistance = filters.value.maxDistance;
@@ -447,7 +429,6 @@ const closePanel = () => {
   emit("close-panel");
 };
 
-// 更新本地篩選狀態
 watch(
   () => props.initialFilters,
   (newFilters) => {
@@ -468,10 +449,9 @@ watch(
   { deep: true, immediate: true }
 );
 
-// --- 新增：標籤點擊 ---
 function handleTagClick(tag) {
   if (props.selectedTag === tag) {
-    emit('tag-click', null); // 取消選取
+    emit('tag-click', null);
   } else {
     emit('tag-click', tag);
   }
