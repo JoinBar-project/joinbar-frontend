@@ -1,7 +1,7 @@
 import { defineStore } from 'pinia';
 import { ref, computed } from 'vue';
 import Swal from 'sweetalert2';
-import { verifyAuth, resendVerification, register, login, getLineAuthUrl } from '../api/auth';
+import { verifyAuth, resendVerification, login, getLineAuthUrl, register } from '../api/auth';
 
 export const useAuthStore = defineStore('auth', () => {
   const user = ref(null); 
@@ -418,6 +418,7 @@ export const useAuthStore = defineStore('auth', () => {
     const urlParams = new URLSearchParams(window.location.search);
     const success = urlParams.get('success');
     const error = urlParams.get('error');
+    const source = urlParams.get('source');
 
     if (success === 'true') {
       try {
@@ -434,13 +435,53 @@ export const useAuthStore = defineStore('auth', () => {
           // 同步到 localStorag 用於頁面重新整理時快速載入
           localStorage.setItem('user', JSON.stringify(userData));
           console.log('LINE 登入用戶資訊已同步:', userData);
-        }
-        await Swal.fire({
-          title: 'LINE 登入成功!',
-          text: `歡迎 ${user.value?.lineDisplayName || user.value?.username || ''}`,
-          icon: 'success',
-          confirmButtonText: '開始使用'
-        });
+        
+          // 檢查用戶是否有偏好設定
+          const hasPreferences = userData.hasPreferences;
+          
+          if (!hasPreferences) {
+            // 新用戶或沒有偏好設定的用戶
+            const result = await Swal.fire({
+              title: 'LINE 登入成功！',
+              html: `
+                <p>歡迎 ${userData.lineDisplayName || userData.username || ''}！</p>
+                <p style="color: #f39c12; margin-top: 10px;">
+                  <i class="fa-solid fa-info-circle"></i> 
+                  您尚未設定酒吧偏好，建議前往個人設定完成設定以獲得更好的推薦體驗
+                </p>
+              `,
+              icon: 'success',
+              confirmButtonText: '開始使用',
+              showCancelButton: true,
+              cancelButtonText: '立即設定',
+              reverseButtons: true,
+              customClass: {
+                cancelButton: 'swal2-confirm',
+                confirmButton: 'swal2-cancel'
+              }
+            });
+
+            window.history.replaceState({}, document.title, window.location.pathname);
+
+            if (result.dismiss === Swal.DismissReason.cancel) {
+              // 用戶選擇立即設定，導向偏好設定頁面
+              return { success: true, redirect: '/preferences?from=line-login' };
+            } else {
+              // 用戶選擇開始使用，導向主頁
+              return { success: true, redirect: '/home' };
+            }
+          } else {
+            // 已有偏好設定的用戶
+            await Swal.fire({
+              title: 'LINE 登入成功！',
+              text: `歡迎回來 ${userData.lineDisplayName || userData.username || ''}！`,
+              icon: 'success',
+              confirmButtonText: '開始使用',
+              timer: 2000,
+              timerProgressBar: true
+            });
+          }
+        }  
 
         window.history.replaceState({}, document.title, window.location.pathname);
         return { success: true, redirect: '/home' };
