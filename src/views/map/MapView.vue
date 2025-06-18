@@ -1,3 +1,4 @@
+<template></template>
 <!-- <template>
   <div class="map-view-container">
     <div class="top-left-controls">
