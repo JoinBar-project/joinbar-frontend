@@ -53,12 +53,7 @@ const isFree = computed(() => {
     <EventInfoFree v-else-if="isFree" :event="event" :tags="eventTags" />
     <EventInfoPay v-else :event="event" :tags="eventTags" />
 
-
   </div>
-
-
-
-
 </template>
 
 

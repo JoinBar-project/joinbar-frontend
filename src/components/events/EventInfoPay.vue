@@ -5,6 +5,7 @@ import { useRouter } from 'vue-router';
 import { toRef, computed } from 'vue';
 import EventHoster from './EventHoster.vue';
 import MessageBoard from './MessageBoard.vue';
+import ModalEdit from '@/components/events/ModalEdit.vue'
 
 const props = defineProps({
   event: Object,
@@ -147,19 +148,25 @@ const buyNow = () => {
               </p>
             </div>
           </div>
-
-          <button
-            @click="addToCart"
-            type="button"
-            class="event-btn event-btn-cart">
-            {{ isInCart ? '✓ 已在購物車' : '加入購物車' }}
-          </button>
-          <button
-            @click="buyNow"
-            type="button"
-            class="event-btn event-btn-pay">
-            立即付費參加
-          </button>
+          <div class="edit-btn-container">
+            <button
+              @click="addToCart"
+              type="button"
+              class="event-btn event-btn-cart">
+              {{ isInCart ? '✓ 已在購物車' : '加入購物車' }}
+            </button>
+            <button
+              @click="buyNow"
+              type="button"
+              class="event-btn event-btn-pay">
+              立即報名
+            </button>
+            <ModalEdit
+              v-if="props.event.id"
+              :event-id="props.event.id"
+              @update="emit('update')"
+            />
+          </div>
         </div>
       </div>
     </div>
@@ -170,6 +177,12 @@ const buyNow = () => {
 </template>
 
 <style scoped>
+@reference "tailwindcss";
+
+.edit-btn-container {
+  @apply flex;
+}
+
 .event-information-section {
   max-width: 100vw;
   padding-top: 2%;
@@ -280,6 +293,7 @@ const buyNow = () => {
   background-color: #860914;
   color: #ecd8d8;
   padding: 8px 16px 10px 16px;
+  transition: background-color 0.3s ease, color 0.3s ease;
 }
 
 .event-btn-pay:hover {
@@ -290,10 +304,11 @@ const buyNow = () => {
   background-color: white;
   padding: 8px 28px 10px 28px;
   cursor: pointer;
+  transition: background-color 0.3s ease, color 0.3s ease;
 }
 
 .event-btn-cart:hover {
-  background-color: var(--color-primary-orange);
+  background-color: #bbb;
   color: white;
   padding: 8px 28px 10px 28px;
   cursor: pointer;

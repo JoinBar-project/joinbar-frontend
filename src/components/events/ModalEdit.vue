@@ -29,15 +29,16 @@ function handleDelete() {
     <AlertModal
       :visible="showAlert"
       @accept="handleAlertAccept"
-      @deny="handleAlertDeny" />
-    <div class="edit-btn-container">
+      @deny="handleAlertDeny" 
+    />
+    <!-- <div class="edit-btn-container"> -->
       <button
         class="btn-open-form btn-edit"
         @click="showForm = true"
         :disabled="!props.eventId">
         編輯活動
       </button>
-    </div>
+    <!-- </div> -->
     <transition name="popup">
       <div
         v-if="showForm"
@@ -69,20 +70,20 @@ function handleDelete() {
 <style scoped>
 @reference "tailwindcss";
 
+.btn-open-form {
+  @apply mt-[30px] mr-[30px] rounded-[20px] border-0 text-[24px] text-center shadow-md cursor-pointer transition-colors duration-200;
+}
+
+.btn-edit  {
+  @apply px-[16px] pt-[8px] pb-[10px] text-white bg-[var(--color-secondary-green)] hover:bg-[#8b8d6c];
+}
+
 .edit-btn-container {
   @apply flex justify-end;
 }
 
-.btn-open-form {
-  @apply flex justify-center mt-2 w-32 py-2 text-white rounded-2xl cursor-pointer;
-}
-
 .btn-create {
   background-color: var(--color-primary-red);
-}
-
-.btn-edit {
-  background-color: var(--color-primary-orange);
 }
 
 .popup-overlay {
