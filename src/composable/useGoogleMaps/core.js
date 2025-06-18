@@ -231,6 +231,12 @@ export function createGoogleMapsCore(mapContainerRef, options) {
         scaledSize: new window.google.maps.Size(40, 40),
         anchor: new window.google.maps.Point(20, 40),
       };
+    } else {
+      markerOptions.icon = {
+        url: "/MapMarker.png",
+        scaledSize: new window.google.maps.Size(40, 40),
+        anchor: new window.google.maps.Point(20, 40),
+      };
     }
 
     const marker = new window.google.maps.Marker(markerOptions);
@@ -335,7 +341,7 @@ export function createGoogleMapsCore(mapContainerRef, options) {
             location: bar.location,
             title: bar.name,
             data: bar,
-            isBarLike: true,
+            isBarLike: bar.isBarLike === true,
             infoContent: formatBarInfoWindowContent(bar),
           },
           "bars"
@@ -390,6 +396,47 @@ export function createGoogleMapsCore(mapContainerRef, options) {
     return window.google && window.google.maps ? window.google.maps : null;
   }
 
+  async function handleSearch() {
+    if (!isReady.value) {
+      alert("地圖尚未載入完成，請稍候再試");
+      return;
+    }
+    if (!searchQuery.value) {
+      alert("請輸入搜尋關鍵字");
+      return;
+    }
+    isLoading.value = true;
+    clearMarkers("all");
+    closeInfoWindow();
+
+    try {
+      // 直接用 Google Places API 搜尋所有地點
+      const mainBars = await searchAndDisplayPlaces(searchQuery.value);
+
+      if (mainBars && mainBars.length > 0) {
+        // 不再做 bar 判斷，直接顯示所有結果
+        mainBarForSearch.value = null;
+        googleBars.value = mainBars.slice(0, 20);
+
+        // 地圖定位到第一個結果
+        if (googleMapsInstance() && googleBars.value.length > 0 && googleBars.value[0].location) {
+          panTo(googleBars.value[0].location, 15);
+        }
+      } else {
+        mainBarForSearch.value = null;
+        googleBars.value = [];
+        alert("查無結果。");
+      }
+    } catch (err) {
+      mainBarForSearch.value = null;
+      googleBars.value = [];
+      console.error("搜尋地點失敗:", err);
+      alert("搜尋失敗，請稍後再試。");
+    } finally {
+      isLoading.value = false;
+    }
+  }
+
   return {
     map: getMap,
     markers,
@@ -415,5 +462,6 @@ export function createGoogleMapsCore(mapContainerRef, options) {
     panTo,
     setZoom,
     displayBarsOnMap,
+    handleSearch,
   };
 }

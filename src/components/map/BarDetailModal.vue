@@ -14,7 +14,7 @@
           <div class="image-gallery-container">
             <img
               :src="currentImage"
-              alt="Bar Image"
+              alt="未提供圖片"
               class="main-image"
               @error="handleImageError"
             />
@@ -187,7 +187,7 @@
 </template>
 
 <script setup>
-import { ref, watch, computed, inject } from "vue"; // 引入 inject
+import { ref, watch, computed } from "vue";
 import { useRouter } from "vue-router";
 
 const props = defineProps({
@@ -205,8 +205,8 @@ const currentImageIndex = ref(0);
 const defaultImage =
   "https://placehold.co/800x600/decdd5/860914?text=No+Image+Available";
 
-// 注入 google 物件，這是在 App.vue 或更高層級提供的
-const { google } = inject("coreMapRefs", { google: ref(null) }); // 提供一個 fallback，避免未注入時報錯
+// 直接使用 window.google，因為 Google Maps API 已經載入到全域
+const google = computed(() => window.google && window.google.maps ? window.google.maps : null);
 
 const currentImage = computed(() => {
   if (props.bar.images && props.bar.images.length > 0) {
@@ -220,8 +220,8 @@ const currentOpenStatus = computed(() => {
   if (props.bar.opening_hours && google.value) {
     // 確保 google 物件已載入且 opening_hours 存在
     return props.bar.opening_hours.isOpen()
-      ? '<span style="color: green;">營業中</span>'
-      : '<span style="color: red;">休息中</span>';
+      ? '<span style="color: green;">正在營業中</span>'
+      : '<span style="color: red;">目前休息中</span>';
   }
 });
 

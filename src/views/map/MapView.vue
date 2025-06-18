@@ -138,7 +138,7 @@ const isFilterPanelOpen = ref(false);
 const searchQuery = ref("");
 const suggestions = ref([]);
 const currentFilters = ref({
-  address: "any",
+  address: [],
   ratingSort: "any",
   minDistance: 0,
   maxDistance: 5000,
@@ -175,8 +175,10 @@ const filteredBars = computed(() => {
   ];
 
   // 地址過濾
-  if (filters.address !== "any") {
-    bars = bars.filter((bar) => bar.address?.includes(filters.address));
+  if (filters.address && filters.address.length > 0) {
+    bars = bars.filter((bar) => 
+      filters.address.some(addr => bar.address?.includes(addr))
+    );
   }
 
   // 標籤過濾 (包含區域標籤的特殊處理)
@@ -195,8 +197,12 @@ const filteredBars = computed(() => {
     }
 
     if (selectedDistrictTagsFromTagsFilter.length > 0) {
-      if (filters.address !== "any") {
-        if (!selectedDistrictTagsFromTagsFilter.includes(filters.address)) {
+      if (filters.address && filters.address.length > 0) {
+        // 檢查是否有任何選定的區域標籤與地址篩選器匹配
+        const hasMatchingDistrict = selectedDistrictTagsFromTagsFilter.some(tag =>
+          filters.address.some(addr => addr.includes(tag))
+        );
+        if (!hasMatchingDistrict) {
           return [];
         }
       } else {
@@ -420,182 +426,92 @@ async function handleSearch() {
     return;
   }
   isLoading.value = true;
-  clearMarkers("all"); // 在每次搜尋開始前，確保徹底清除所有地圖標記。
-  closeInfoWindow(); // 同步關閉可能開啟的資訊視窗
+  clearMarkers("all");
+  closeInfoWindow();
 
   try {
-    const mainBars = await searchAndDisplayPlaces(searchQuery.value);
-
-    const fuzzyKeywords = ["bar", "酒吧", "pub", "night club", "cafe"];
-    const isFuzzy = fuzzyKeywords.some((k) =>
-      searchQuery.value.toLowerCase().includes(k)
-    );
-
-    let combinedBars = [];
-
-    if (isFuzzy) {
-      // 模糊/熱門關鍵字：直接顯示所有搜尋結果
-      mainBarForSearch.value = null;
-      combinedBars = mainBars;
-    } else {
-      // 精確搜尋＋附近 bar
-      mainBarForSearch.value =
-        mainBars && mainBars.length > 0 ? mainBars[0] : null;
-      let relatedBars = [];
-
-      // **主要修改點：確保 mainBarForSearch.value 和其 location 屬性存在**
-      // 將 searchNearbyBarsByLocation 的邏輯替換為直接呼叫 Places API 的附近搜尋
-      if (mainBarForSearch.value && mainBarForSearch.value.location) {
-        let radius = 500; // 初始半徑
-        const maxRadius = 3000; // 最大半徑
-        const targetNearbyCount = 19; // 目標從附近搜尋獲取多少筆 (20 - 1 主搜尋結果)
-
-        // 使用 PlacesService 進行附近搜尋
-        const service = new googleMapsInstance().places.PlacesService(
-          map.value
-        );
-        const barPlaceTypes = [
-          "bar",
-          "night_club",
-          "pub",
-          "liquor_store",
-          "cafe",
-        ]; // 定義酒吧相關類型
-
-        while (radius <= maxRadius && relatedBars.length < targetNearbyCount) {
-          const request = {
-            location: new googleMapsInstance().LatLng(
-              mainBarForSearch.value.location.lat,
-              mainBarForSearch.value.location.lng
-            ),
-            radius: radius,
-            type: barPlaceTypes, // 搜尋酒吧相關類型
-          };
-
-          const nearbyResults = await new Promise((res, rej) => {
-            service.nearbySearch(request, (results, status) => {
-              if (
-                status ===
-                  googleMapsInstance().places.PlacesServiceStatus.OK &&
-                results
-              ) {
-                // 對每個結果獲取詳細資訊
-                Promise.all(
-                  results.map(async (place) => {
-                    try {
-                      const detail = await getPlaceDetails(place.place_id);
-                      return {
-                        id: detail.place_id,
-                        place_id: detail.place_id,
-                        name: detail.name,
-                        location: {
-                          lat: detail.geometry.location.lat(),
-                          lng: detail.geometry.location.lng(),
-                        },
-                        rating: detail.rating || 0,
-                        reviews: detail.user_ratings_total || 0,
-                        address: detail.formatted_address || "未知地址",
-                        priceRange:
-                          detail.price_level !== undefined
-                            ? `等級 ${detail.price_level}`
-                            : null,
-                        tags: detail.types
-                          ? detail.types.filter(
-                              (type) =>
-                                !COMMON_PLACE_TYPES_TO_EXCLUDE.includes(type)
-                            )
-                          : [],
-                        opening_hours: detail.opening_hours,
-                        imageUrl:
-                          detail.photos && detail.photos.length > 0
-                            ? detail.photos[0].getUrl({
-                                maxWidth: 400,
-                                maxHeight: 400,
-                              })
-                            : "",
-                        images: detail.photos
-                          ? detail.photos.map((p) =>
-                              p.getUrl({ maxWidth: 800, maxHeight: 600 })
-                            )
-                          : [],
-                        description: "點擊查看更多詳情...",
-                        isWishlisted: false,
-                        phone: detail.international_phone_number || null,
-                        website: detail.website || null,
-                        url: detail.url,
-                        googleReviews: detail.reviews || [],
-                      };
-                    } catch (e) {
-                      console.warn(`獲取 ${place.name} 詳細資料失敗:`, e);
-                      return place;
-                    }
-                  })
-                ).then(res);
-              } else if (
-                status ===
-                googleMapsInstance().places.PlacesServiceStatus.ZERO_RESULTS
-              ) {
-                res([]);
-              } else {
-                rej(new Error("Nearby search failed: " + status));
-              }
-            });
-          });
-
-          nearbyResults.forEach((bar) => {
-            // 避免重複添加主搜尋結果，以及避免重複添加已找到的附近酒吧
-            if (
-              bar.place_id !== mainBarForSearch.value.place_id &&
-              !relatedBars.some(
-                (existingBar) => existingBar.place_id === bar.place_id
-              )
-            ) {
-              relatedBars.push(bar);
-            }
-          });
-          if (relatedBars.length >= targetNearbyCount) break; // 如果找到了足夠的數量，就停止擴大半徑
-
-          radius += 500; // 每次增加 500 公尺
-        }
-      } else if (mainBars && mainBars.length > 0) {
-        // 如果精確搜尋有結果，但第一個結果沒有有效的location（極少數情況），
-        // 或者不是精確搜尋但有其他結果，直接將這些結果作為主結果
-        combinedBars = mainBars.slice(0, 20); // 取前20個結果
-        mainBarForSearch.value = null; // 清除主搜尋結果標識，避免混淆
-      }
-
-      combinedBars = [
-        ...(mainBarForSearch.value ? [mainBarForSearch.value] : []),
-        ...relatedBars,
-      ];
-      // 限制總結果數為 20 筆
-      combinedBars = combinedBars.slice(0, 20);
-    }
-
-    // --- 新增：確保所有 bar 物件都帶有 isBarLike 屬性 ---
-    const BAR_LIKE_TYPES = ["bar", "night_club", "pub", "liquor_store", "cafe"];
-    googleBars.value = combinedBars.map(bar => {
-      if (typeof bar.isBarLike === 'boolean') return bar;
-      // 根據 tags 或 types 判斷
-      const types = bar.tags || bar.types || [];
-      return {
-        ...bar,
-        isBarLike: types.some(type => BAR_LIKE_TYPES.includes(type)),
+    // 1. 先用 textSearch 查詢
+    let mainBars = await searchAndDisplayPlaces(searchQuery.value);
+    // 2. 若沒結果且屬於 bar 關鍵字，fallback nearbySearch
+    const barKeywords = ["bar", "酒吧", "pub", "night club", "夜店", "交易吧", "intention"];
+    const isBarKeyword = barKeywords.some(k => searchQuery.value.toLowerCase().includes(k));
+    if ((!mainBars || mainBars.length === 0) && isBarKeyword) {
+      // 以台北車站為中心搜尋
+      const google = googleMapsInstance.value;
+      const fallbackLocation = new google.LatLng(25.0478, 121.5170);
+      const fallbackRequest = {
+        location: fallbackLocation,
+        radius: 5000,
+        type: BAR_PLACE_TYPES,
       };
-    });
-
-    // 更新 googleBars，這會觸發 filteredBars 的重新計算
-    googleBars.value = googleBars.value;
-
-    if (googleMapsInstance()) {
-      if (mainBarForSearch.value && mainBarForSearch.value.location) {
-        panTo(mainBarForSearch.value.location, 15); // 移到主搜尋結果並適當縮放
-      } else if (googleBars.value.length > 0) {
-        // 如果沒有主搜尋結果但有其他結果，嘗試將地圖中心移到第一個結果
-        panTo(googleBars.value[0].location, 14);
-      } else {
-        console.log("搜尋無結果，地圖保持現狀或可考慮重設。");
+      const service = new google.places.PlacesService(map.value);
+      mainBars = await new Promise((resolve) => {
+        service.nearbySearch(fallbackRequest, async (results, status) => {
+          if (status === google.places.PlacesServiceStatus.OK && results) {
+            const detailedBars = await Promise.all(
+              results.slice(0, 20).map(async (place) => {
+                try {
+                  const detail = await getPlaceDetails(place.place_id);
+                  const tags = Array.isArray(detail.types)
+                    ? detail.types.filter(type => !COMMON_PLACE_TYPES_TO_EXCLUDE.includes(type))
+                    : [];
+                  const isOpen = detail.opening_hours ? detail.opening_hours.isOpen() : null;
+                  const isBarLike = Array.isArray(detail.types)
+                    ? detail.types.some(type => BAR_PLACE_TYPES.includes(type))
+                    : false;
+                  return {
+                    id: detail.place_id,
+                    place_id: detail.place_id,
+                    name: detail.name,
+                    location: {
+                      lat: detail.geometry.location.lat(),
+                      lng: detail.geometry.location.lng(),
+                    },
+                    rating: detail.rating || 0,
+                    reviews: detail.user_ratings_total || 0,
+                    address: detail.formatted_address || "未知地址",
+                    tags: tags,
+                    opening_hours: detail.opening_hours,
+                    is_open: isOpen,
+                    imageUrl:
+                      detail.photos && detail.photos.length > 0
+                        ? detail.photos[0].getUrl({ maxWidth: 400, maxHeight: 400 })
+                        : "",
+                    images: detail.photos
+                      ? detail.photos.map((p) => p.getUrl({ maxWidth: 800, maxHeight: 600 }))
+                      : [],
+                    description: "點擊查看更多詳情...",
+                    isWishlisted: false,
+                    phone: detail.international_phone_number || null,
+                    website: detail.website || null,
+                    url: detail.url,
+                    googleReviews: detail.reviews || [],
+                    isBarLike: isBarLike,
+                  };
+                } catch (e) {
+                  return place;
+                }
+              })
+            );
+            resolve(detailedBars);
+          } else {
+            resolve([]);
+          }
+        });
+      });
+    }
+    // 3. 統一顯示所有結果
+    if (mainBars && mainBars.length > 0) {
+      mainBarForSearch.value = null;
+      googleBars.value = mainBars.slice(0, 20);
+      // 地圖定位到第一個結果
+      if (googleMapsInstance.value && googleBars.value[0] && googleBars.value[0].location) {
+        panTo(googleBars.value[0].location, 15);
       }
+    } else {
+      mainBarForSearch.value = null;
+      googleBars.value = [];
+      alert("查無結果。");
     }
   } catch (err) {
     mainBarForSearch.value = null;
@@ -1081,7 +997,6 @@ onMounted(async () => {
   flex-grow: 1;
   height: 100%;
   min-height: 400px;
-  border: 2px solid red;
   background-color: #e0e0e0;
 }
 

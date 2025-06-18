@@ -138,7 +138,6 @@ export function createGoogleMapsPlaces(coreMapRefs) {
               }, 1000);
             } else {
               const finalResults = allResults.slice(0, maxResults);
-
               Promise.all(
                 finalResults.map(async (place) => {
                   try {
@@ -205,7 +204,88 @@ export function createGoogleMapsPlaces(coreMapRefs) {
           } else if (
             status === google.places.PlacesServiceStatus.ZERO_RESULTS
           ) {
-            resolve([]);
+            // Fallback: 如果是 bar/酒吧/指定 bar 店名，改用 nearbySearch + BAR_PLACE_TYPES
+            const barKeywords = ["bar", "酒吧", "pub", "night club", "夜店", "交易吧", "intention"];
+            if (barKeywords.some(k => query.toLowerCase().includes(k))) {
+              // 以台北車站為中心搜尋
+              const fallbackLocation = new google.LatLng(25.0478, 121.5170);
+              const fallbackRequest = {
+                location: fallbackLocation,
+                radius: 5000,
+                type: BAR_PLACE_TYPES,
+              };
+              placesService.nearbySearch(fallbackRequest, async (results, status) => {
+                if (status === google.places.PlacesServiceStatus.OK && results) {
+                  const finalResults = results.slice(0, maxResults);
+                  Promise.all(
+                    finalResults.map(async (place) => {
+                      try {
+                        const detail = await getPlaceDetails(place.place_id);
+                        const tags = Array.isArray(detail.types)
+                          ? detail.types.filter(
+                              (type) => !COMMON_PLACE_TYPES_TO_EXCLUDE.includes(type)
+                            )
+                          : [];
+                        const isOpen = detail.opening_hours ? detail.opening_hours.isOpen() : null;
+                        const isBarLike = Array.isArray(detail.types)
+                          ? detail.types.some((type) => BAR_PLACE_TYPES.includes(type))
+                          : false;
+                        return {
+                          id: detail.place_id,
+                          place_id: detail.place_id,
+                          name: detail.name,
+                          location: {
+                            lat: detail.geometry.location.lat(),
+                            lng: detail.geometry.location.lng(),
+                          },
+                          rating: detail.rating || 0,
+                          reviews: detail.user_ratings_total || 0,
+                          address: detail.formatted_address || "未知地址",
+                          tags: tags,
+                          opening_hours: detail.opening_hours,
+                          is_open: isOpen,
+                          imageUrl:
+                            detail.photos && detail.photos.length > 0
+                              ? detail.photos[0].getUrl({
+                                  maxWidth: 400,
+                                  maxHeight: 400,
+                                })
+                              : "",
+                          images: detail.photos
+                            ? detail.photos.map((p) =>
+                                p.getUrl({ maxWidth: 800, maxHeight: 600 })
+                              )
+                            : [],
+                          description: "點擊查看更多詳情...",
+                          isWishlisted: false,
+                          phone: detail.international_phone_number || null,
+                          website: detail.website || null,
+                          url: detail.url,
+                          googleReviews: detail.reviews || [],
+                          isBarLike: isBarLike,
+                        };
+                      } catch (e) {
+                        console.warn(`獲取 ${place.name} 詳細資料失敗:`, e);
+                        onError &&
+                          onError(`獲取 ${place.name} 詳細資料失敗: ${e.message}`);
+                        return {
+                          id: place.place_id,
+                          place_id: place.place_id,
+                          name: place.name,
+                          location: place.geometry?.location ? { lat: place.geometry.location.lat(), lng: place.geometry.location.lng() } : null,
+                        };
+                      }
+                    })
+                  ).then((detailedBars) => {
+                    resolve(detailedBars);
+                  });
+                } else {
+                  resolve([]);
+                }
+              });
+            } else {
+              resolve([]);
+            }
           } else {
             const errorMessage = `Places 搜尋失敗: ${status}`;
             console.error(errorMessage, results);
