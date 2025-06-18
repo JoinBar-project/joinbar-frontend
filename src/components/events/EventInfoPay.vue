@@ -95,9 +95,7 @@ const buyNow = () => {
 
     <div class="event-information-card">
       <div class="event-img">
-        <img
-          src="@/components/events/picture/酒吧示意圖.jpg"
-          alt="酒吧示意圖" />
+        <img :src="props.event.imageUrl" alt="活動圖片" />
       </div>
 
       <div class="event-content-box">
