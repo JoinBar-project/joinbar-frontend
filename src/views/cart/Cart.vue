@@ -96,26 +96,26 @@ const goShopping = () => {
   max-width: 1280px;
   margin: 48px auto;
   padding: 40px;
-  background-color: #fff;
+  background-color: var(--color-black, #1a1a1a);
   border-radius: 20px;
   box-shadow: 0 0 16px rgba(0, 0, 0, 0.05);
   font-size: 15px;
 }
 .cart-container h2 {
-  color: var(--color-black);
+  color: var(--color-text-selected, #f5d1c0);
   margin-bottom: 32px;
 }
 .loading-box {
   text-align: center;
   padding: 48px 0;
-  color: var(--color-black);
+  color: var(--color-text-selected, #f5d1c0);
 }
 .spinner {
   margin: 16px auto;
   width: 40px;
   height: 40px;
   border: 4px solid #eee;
-  border-top: 4px solid var(--color-primary-red);
+  border-top: 4px solid var(--color-select, #d17361);
   border-radius: 50%;
   animation: spin 0.8s linear infinite;
 }
@@ -128,8 +128,8 @@ const goShopping = () => {
   display: flex;
   padding: 16px 0;
   font-weight: bold;
-  border-bottom: 1px solid #ddd;
-  color: var(--color-black);
+  border-bottom: 1px solid var(--color-icon-secondary, #bcaea4);
+  color: var(--color-text-selected, #f5d1c0);
 }
 .cart-header > div {
   flex: 1;
@@ -144,9 +144,10 @@ const goShopping = () => {
   align-items: center;
   padding: 16px 0;
   border-bottom: 1px solid #eee;
+  color: var(--color-text-selected, #f5d1c0);
 }
 .cart-row:hover {
-  background-color: #fafafa;
+  background-color: rgba(245, 209, 192, 0.05);
 }
 .cart-row > div {
   flex: 1;
@@ -172,7 +173,7 @@ const goShopping = () => {
   font-size: 16px;
   font-weight: 600;
   margin: 0;
-  color: var(--color-black);
+  color: var(--color-text-selected, #f5d1c0);
 }
 .qty-box {
   display: flex;
@@ -186,9 +187,9 @@ const goShopping = () => {
   font-weight: 500;
 }
 .actions button {
-  border: 1px solid var(--color-primary-red);
-  color: var(--color-primary-red);
-  background: white;
+  border: 1px solid var(--color-select, #d17361);
+  background-color: transparent;
+  color: var(--color-select, #d17361);
   padding: 6px 12px;
   font-size: 13px;
   border-radius: 4px;
@@ -196,7 +197,7 @@ const goShopping = () => {
   transition: all 0.2s;
 }
 .actions button:hover {
-  background-color: var(--color-primary-red);
+  background-color: var(--color-select, #d17361);
   color: white;
 }
 .total-bar {
@@ -208,14 +209,14 @@ const goShopping = () => {
 }
 .total-label {
   font-size: 19px;
-  color: var(--color-black);
+  color: var(--color-text-selected, #f5d1c0);
   margin: 0;
 }
 .total-label strong {
-  color: var(--color-black);
+  color: var(--color-text-selected, #f5d1c0);
 }
 .checkout-btn {
-  background-color: var(--color-primary-red);
+  background-color: var(--color-select, #d17361);
   color: white;
   border: none;
   padding: 10px 24px;
@@ -225,13 +226,13 @@ const goShopping = () => {
   transition: background-color 0.2s;
 }
 .checkout-btn:hover {
-  background-color: var(--color-secondary-pink);
+  background-color: #b85d4a;
 }
 
 .empty-cart {
   text-align: center;
   padding: 80px 40px;
-  color: var(--color-black);
+  color: var(--color-text-selected, #f5d1c0);
 }
 .empty-icon {
   font-size: 80px;
@@ -241,16 +242,16 @@ const goShopping = () => {
 .empty-cart h3 {
   font-size: 24px;
   margin-bottom: 16px;
-  color: var(--color-black);
+  color: var(--color-text-selected, #f5d1c0);
 }
 .empty-description {
   font-size: 16px;
   margin-bottom: 32px;
-  color: #666;
+  color: var(--color-text-unselected, #937e7e);
   line-height: 1.5;
 }
 .shop-btn {
-  background-color: var(--color-primary-red);
+  background-color: var(--color-select, #d17361);
   color: white;
   border: none;
   padding: 12px 32px;
@@ -261,6 +262,6 @@ const goShopping = () => {
   transition: background-color 0.2s;
 }
 .shop-btn:hover {
-  background-color: var(--color-secondary-pink);
+  background-color: #b85d4a;
 }
 </style>
