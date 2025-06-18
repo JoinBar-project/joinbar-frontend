@@ -86,8 +86,7 @@
                   v-for="(tag, index) in bar.tags"
                   :key="index"
                   class="detail-tag"
-                  >{{ tag }}</span
-                >
+                >{{ getTagLabel(tag) }}</span>
               </div>
             </div>
 
@@ -111,6 +110,7 @@
                   <p class="review-text">{{ review.text }}</p>
                   <div class="review-actions">
                     <span>👍 有用 ({{ review.rating || 0 }})</span>
+                    <span>👎 不喜歡 ({{ review.rating || 0 }})</span>
                   </div>
                 </div>
               </template>
@@ -124,6 +124,7 @@
             <button
               class="action-icon-button upload-photo-button"
               @click="triggerFileUpload"
+              data-tooltip="上傳照片"
             >
               <img
                 src="@/assets/icons/mapicons/add-photo-icon.svg"
@@ -139,14 +140,14 @@
               @change="handleFileUpload"
             />
 
-            <button class="action-icon-button share-button">
+            <button class="action-icon-button share-button" data-tooltip="分享">
               <img
                 src="@/assets/icons/mapicons/share-icon.svg"
                 alt="分享"
                 class="icon"
               />
             </button>
-            <button class="action-icon-button navigate-button">
+            <button class="action-icon-button navigate-button" data-tooltip="導航">
               <img
                 src="@/assets/icons/mapicons/navigation-icon.svg"
                 alt="導航"
@@ -157,6 +158,7 @@
               class="action-icon-button wishlist-detail-button"
               @click.stop="toggleFavorite"
               :aria-label="bar.isWishlisted ? '取消收藏' : '加入收藏'"
+              :data-tooltip="bar.isWishlisted ? '取消收藏' : '加入收藏'"
             >
               <svg
                 xmlns="http://www.w3.org/2000/svg"
@@ -189,6 +191,7 @@
 <script setup>
 import { ref, watch, computed } from "vue";
 import { useRouter } from "vue-router";
+import placeTypeMap from '@/composable/placeTypeMap';
 
 const props = defineProps({
   bar: {
@@ -303,6 +306,10 @@ function formatReviewDate(unixTime) {
   const date = new Date(unixTime * 1000);
   return `${date.getFullYear()}年${date.getMonth() + 1}月${date.getDate()}日`;
 }
+
+const getTagLabel = (tag) => {
+  return placeTypeMap[tag] || tag;
+};
 </script>
 
 <style scoped>

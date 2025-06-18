@@ -42,7 +42,7 @@
         @change="applyFilters"
         class="filter-select"
       >
-        <option value="any">任何地方</option>
+        <option value="current_location">你的位置</option>
         <option value="信義區">信義區</option>
         <option value="大安區">大安區</option>
         <option value="中山區">中山區</option>
@@ -169,7 +169,7 @@ const props = defineProps({
   initialFilters: {
     type: Object,
     default: () => ({
-      address: [],
+      address: "current_location",
       ratingSort: "any",
       minDistance: 0,
       maxDistance: 5000,
@@ -225,6 +225,16 @@ const appliedFiltersForDisplay = computed(() => {
         type: "address",
         value: addr,
       });
+    });
+  } else if (
+    typeof filters.value.address === "string" && 
+    filters.value.address !== "current_location" && 
+    filters.value.address !== "any"
+  ) {
+    displayFilters.push({
+      label: `地點: ${filters.value.address}`,
+      type: "address",
+      value: filters.value.address,
     });
   }
 
@@ -315,7 +325,7 @@ const removeAppliedFilter = (type, value) => {
           (addr) => addr !== value
         );
       } else {
-        filters.value.address = [];
+        filters.value.address = "current_location";
       }
       break;
     case "ratingSort":
@@ -410,7 +420,7 @@ const applyFilters = () => {
 
 const resetFilters = () => {
   filters.value = {
-    address: "any",
+    address: "current_location",
     ratingSort: "any",
     minDistance: 0,
     maxDistance: 5000,

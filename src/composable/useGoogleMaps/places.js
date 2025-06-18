@@ -100,11 +100,12 @@ export function createGoogleMapsPlaces(coreMapRefs) {
       const errorMessage = "PlacesService 或 Google Maps API 未初始化。";
       console.error(errorMessage);
       onError && onError(errorMessage);
-      return [];
+      return { results: [], pagination: null };
     }
 
     if (coreMapRefs.isFetching) coreMapRefs.isFetching.value = true;
     let allResults = [];
+    let lastPagination = null;
 
     try {
       return await new Promise((resolve, reject) => {
@@ -128,6 +129,7 @@ export function createGoogleMapsPlaces(coreMapRefs) {
         const handleResults = async (results, status, pagination) => {
           if (status === google.places.PlacesServiceStatus.OK && results) {
             allResults = allResults.concat(results);
+            lastPagination = pagination;
             if (
               pagination &&
               pagination.hasNextPage &&
@@ -198,94 +200,13 @@ export function createGoogleMapsPlaces(coreMapRefs) {
                   }
                 })
               ).then((detailedBars) => {
-                resolve(detailedBars);
+                resolve({ results: detailedBars, pagination: lastPagination });
               });
             }
           } else if (
             status === google.places.PlacesServiceStatus.ZERO_RESULTS
           ) {
-            // Fallback: 如果是 bar/酒吧/指定 bar 店名，改用 nearbySearch + BAR_PLACE_TYPES
-            const barKeywords = ["bar", "酒吧", "pub", "night club", "夜店", "交易吧", "intention"];
-            if (barKeywords.some(k => query.toLowerCase().includes(k))) {
-              // 以台北車站為中心搜尋
-              const fallbackLocation = new google.LatLng(25.0478, 121.5170);
-              const fallbackRequest = {
-                location: fallbackLocation,
-                radius: 5000,
-                type: BAR_PLACE_TYPES,
-              };
-              placesService.nearbySearch(fallbackRequest, async (results, status) => {
-                if (status === google.places.PlacesServiceStatus.OK && results) {
-                  const finalResults = results.slice(0, maxResults);
-                  Promise.all(
-                    finalResults.map(async (place) => {
-                      try {
-                        const detail = await getPlaceDetails(place.place_id);
-                        const tags = Array.isArray(detail.types)
-                          ? detail.types.filter(
-                              (type) => !COMMON_PLACE_TYPES_TO_EXCLUDE.includes(type)
-                            )
-                          : [];
-                        const isOpen = detail.opening_hours ? detail.opening_hours.isOpen() : null;
-                        const isBarLike = Array.isArray(detail.types)
-                          ? detail.types.some((type) => BAR_PLACE_TYPES.includes(type))
-                          : false;
-                        return {
-                          id: detail.place_id,
-                          place_id: detail.place_id,
-                          name: detail.name,
-                          location: {
-                            lat: detail.geometry.location.lat(),
-                            lng: detail.geometry.location.lng(),
-                          },
-                          rating: detail.rating || 0,
-                          reviews: detail.user_ratings_total || 0,
-                          address: detail.formatted_address || "未知地址",
-                          tags: tags,
-                          opening_hours: detail.opening_hours,
-                          is_open: isOpen,
-                          imageUrl:
-                            detail.photos && detail.photos.length > 0
-                              ? detail.photos[0].getUrl({
-                                  maxWidth: 400,
-                                  maxHeight: 400,
-                                })
-                              : "",
-                          images: detail.photos
-                            ? detail.photos.map((p) =>
-                                p.getUrl({ maxWidth: 800, maxHeight: 600 })
-                              )
-                            : [],
-                          description: "點擊查看更多詳情...",
-                          isWishlisted: false,
-                          phone: detail.international_phone_number || null,
-                          website: detail.website || null,
-                          url: detail.url,
-                          googleReviews: detail.reviews || [],
-                          isBarLike: isBarLike,
-                        };
-                      } catch (e) {
-                        console.warn(`獲取 ${place.name} 詳細資料失敗:`, e);
-                        onError &&
-                          onError(`獲取 ${place.name} 詳細資料失敗: ${e.message}`);
-                        return {
-                          id: place.place_id,
-                          place_id: place.place_id,
-                          name: place.name,
-                          location: place.geometry?.location ? { lat: place.geometry.location.lat(), lng: place.geometry.location.lng() } : null,
-                        };
-                      }
-                    })
-                  ).then((detailedBars) => {
-                    resolve(detailedBars);
-                  });
-                } else {
-                  resolve([]);
-                }
-              });
-            } else {
-              resolve([]);
-            }
+            resolve({ results: [], pagination: null });
           } else {
             const errorMessage = `Places 搜尋失敗: ${status}`;
             console.error(errorMessage, results);
@@ -293,13 +214,12 @@ export function createGoogleMapsPlaces(coreMapRefs) {
             reject(new Error(errorMessage));
           }
         };
-
         placesService.textSearch(request, handleResults);
       });
     } catch (err) {
       console.error("searchAndDisplayPlaces 發生錯誤:", err);
       onError && onError("搜尋地點時發生錯誤，請稍後再試。");
-      return [];
+      return { results: [], pagination: null };
     } finally {
       if (coreMapRefs.isFetching) coreMapRefs.isFetching.value = false;
     }
@@ -316,7 +236,7 @@ export function createGoogleMapsPlaces(coreMapRefs) {
       const errorMessage = "地圖、PlacesService 或 Google Maps API 未準備好。";
       console.warn(errorMessage);
       onError && onError(errorMessage);
-      return [];
+      return { results: [], pagination: null };
     }
 
     if (showLoadingOverlay) {
@@ -330,10 +250,11 @@ export function createGoogleMapsPlaces(coreMapRefs) {
       }
       console.warn("無法取得地圖邊界。");
       onError && onError("無法取得地圖邊界，請稍後再試。");
-      return [];
+      return { results: [], pagination: null };
     }
 
     let allResults = [];
+    let lastPagination = null;
 
     try {
       return await new Promise((resolve, reject) => {
@@ -346,6 +267,7 @@ export function createGoogleMapsPlaces(coreMapRefs) {
         const handleResults = async (results, status, pagination) => {
           if (status === google.places.PlacesServiceStatus.OK && results) {
             allResults = allResults.concat(results);
+            lastPagination = pagination;
             if (
               pagination &&
               pagination.hasNextPage &&
@@ -416,13 +338,13 @@ export function createGoogleMapsPlaces(coreMapRefs) {
                   }
                 })
               ).then((detailedBars) => {
-                resolve(detailedBars);
+                resolve({ results: detailedBars, pagination: lastPagination });
               });
             }
           } else if (
             status === google.places.PlacesServiceStatus.ZERO_RESULTS
           ) {
-            resolve([]);
+            resolve({ results: [], pagination: null });
           } else {
             const errorMessage = `Places 搜尋失敗: ${status}`;
             console.error(errorMessage, results);
@@ -435,7 +357,7 @@ export function createGoogleMapsPlaces(coreMapRefs) {
     } catch (err) {
       console.error("searchBarsInMapBounds 發生錯誤:", err);
       onError && onError("搜尋地點時發生錯誤，請稍後再試。");
-      return [];
+      return { results: [], pagination: null };
     } finally {
       if (showLoadingOverlay) {
         if (coreMapRefs.isFetching) coreMapRefs.isFetching.value = false;

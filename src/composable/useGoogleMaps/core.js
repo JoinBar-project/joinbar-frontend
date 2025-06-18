@@ -195,11 +195,13 @@ export function createGoogleMapsCore(mapContainerRef, options) {
             case error.UNKNOWN_ERROR:
               msg = "發生未知錯誤。";
               break;
+            default:
+              msg = `獲取目前位置失敗: ${error.message}`;
           }
-          console.error("獲取目前位置失敗:", error);
           onError && onError(msg);
           reject(new Error(msg));
-        }
+        },
+        { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
       );
     });
   };

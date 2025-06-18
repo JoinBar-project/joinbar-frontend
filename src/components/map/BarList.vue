@@ -50,7 +50,7 @@
           <div v-if="bar.tags && bar.tags.length" class="bar-tags">
             <span v-for="tag in bar.tags || []" :key="tag" class="bar-tag">{{
               // <-- 這裡添加 || []
-              tag
+              getTagLabel(tag)
             }}</span>
           </div>
           <div class="bar-hours">
@@ -64,6 +64,7 @@
 
 <script setup>
 import { watch, ref } from "vue";
+import placeTypeMap from "@/composable/placeTypeMap";
 
 const props = defineProps({
   bars: {
@@ -104,6 +105,10 @@ const emitToggleWishlist = (placeId) => {
     return;
   }
   emit("toggle-wishlist", placeId);
+};
+
+const getTagLabel = (tag) => {
+  return placeTypeMap[tag] || tag;
 };
 
 watch(
