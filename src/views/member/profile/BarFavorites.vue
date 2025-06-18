@@ -72,7 +72,7 @@
         class="fixed inset-0 z-50 bg-black/50 flex justify-center items-center"
         @click.self="closeModal">
         <div class="relative max-w-3xl w-full bg-[var(--color-black)] rounded-xl overflow-hidden shadow-2xl">
-          <FavoriteDetailCard v-if="selectedBar" :bar="selectedBar" />
+          <FavoriteDetailCard v-if="selectedBar" :bar="selectedBar" @close="closeModal" @toggle-wishlist="toggleWishlist" />
         </div>
       </div>
     </transition>
@@ -94,6 +94,7 @@ function selectBar(bar) {
 
 function closeModal() {
   showModal.value = false
+  selectedBar.value = null
 }
 
 const mockFavorites = ref(
