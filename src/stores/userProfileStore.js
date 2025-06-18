@@ -11,6 +11,7 @@ export const useUserProfileStore = defineStore('userProfile', () => {
   });
 
   const isLoading = ref(false);
+  
   const getUserProfile = async (id) => {
     isLoading.value = true;
 

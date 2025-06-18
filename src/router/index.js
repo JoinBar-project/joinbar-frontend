@@ -9,12 +9,12 @@ import MemberDashboard from '@/views/member/MemberDashboard.vue';
 import Reviews from '@/views/reviews/Reviews.vue'
 import Subscription from '@/views/sub/Subscription.vue'
 import Cart from '@/views/cart/Cart.vue'
-import Payment from "@/views/cart/Payment.vue"
+import Payment from '@/views/cart/Payment.vue' 
+import PaymentWaiting from '@/views/cart/PaymentWaiting.vue'
 import OrderSuccess from '@/views/cart/OrderSuccess.vue'
 import Login from "@/views/member/auth/Login.vue"
-import Register from "@/views/member/auth/Register.vue";
+import Register from "@/views/member/auth/Register.vue"
 import NotFound from '../views/NotFound.vue'
-
 
 const routes = [
   { path: '/', redirect: '/home' },
@@ -67,15 +67,37 @@ const routes = [
   { path: '/subscription', name: 'Subscription', component: Subscription },
   { path: '/cart', name: 'Cart', component: Cart },
   { path: '/payment', name: 'Payment', component: Payment },
+  { path: '/payment-waiting', name: 'PaymentWaiting', component: PaymentWaiting },
   { path: '/sub', name: 'EventInformation', component: EventInfo },
   { path: '/order-success/:orderNumber', name: 'OrderSuccess', component: OrderSuccess, props: true },
+  // 404 路由放到最後，並且更精確
   { path: '/404', name: 'NotFound', component: NotFound },
-  { path: '/:pathMatch(.*)*', redirect: '/404' },
-];
+  { 
+    path: '/:pathMatch(.*)*', 
+    name: 'Catch-All',
+    component: NotFound,
+    // 可以改成直接使用組件而不是 redirect，避免重複跳轉
+  }
+]
 
 const router = createRouter({
   history: createWebHistory(),
   routes,
 });
 
-export default router;
+// 添加路由守衛來調試
+router.beforeEach((to, from, next) => {
+  console.log('🔄 路由跳轉:', {
+    from: from.path,
+    to: to.path,
+    query: to.query
+  })
+  next()
+})
+
+// 處理路由錯誤
+router.onError((error) => {
+  console.error('❌ 路由錯誤:', error)
+})
+
+export default router
