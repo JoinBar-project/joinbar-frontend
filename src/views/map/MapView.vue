@@ -87,7 +87,7 @@ dayjs.extend(isBetween);
 import FilterPanel from "../../components/map/FilterPanel.vue";
 import BarList from "../../components/map/BarList.vue";
 import BarDetailModal from "../../components/map/BarDetailModal.vue";
-import { useGoogleMaps } from "@/composable/useGoogleMaps";
+import { useGoogleMaps } from "@/composables/useGoogleMaps";
 
 const googleMapsApiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
 const myMapId = import.meta.env.MAP_ID;
