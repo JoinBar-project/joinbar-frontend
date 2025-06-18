@@ -71,7 +71,6 @@ const props = defineProps({
 
 const emit = defineEmits(["bar-selected", "toggle-wishlist"]);
 
-// 圖片載入優化與錯誤處理相關
 const defaultPlaceholderImage =
   "https://placehold.co/300x200/decdd5/860914?text=Bar+Image";
 
@@ -81,8 +80,8 @@ const handleImageError = (event) => {
 };
 
 const getOpeningHourText = (bar) => {
-  if (bar.openingHours?.weekdayText?.length > 0) {
-    return bar.openingHours.weekdayText[0];
+  if (bar.openingHours?.weekday_text?.length > 0) {
+    return bar.openingHours.weekday_text[0];
   } else if (bar.openingHours) {
     return "營業時間待提供";
   } else {
@@ -90,25 +89,22 @@ const getOpeningHourText = (bar) => {
   }
 };
 
-// 事件處理函式
-// 選中酒吧並發送事件給父組件
 const selectBar = (bar) => {
   emit("bar-selected", bar);
 };
 
-// 切換酒吧的收藏狀態，現在直接發出事件
 const emitToggleWishlist = (placeId) => {
   if (!placeId) {
     console.warn("無法收藏/取消收藏，因為 place_id 不存在。");
     return;
   }
-  emit("toggle-wishlist", { placeId, isFavorite: isFavorite(placeId) });
+  emit("toggle-wishlist", placeId);
 };
 
 watch(
   () => props.bars,
   (newBars) => {
-    console.log("BarList 接收到的 bars prop 並更新列表:", newBars.length);
+    console.log("BarList 接收到的 bars prop 並更新列表，目前數量:", newBars.length);
   },
   { immediate: true }
 );
@@ -124,6 +120,9 @@ watch(
   color: #6b7280;
   padding: 32px;
   font-size: 18px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .bar-cards-list {
@@ -157,14 +156,14 @@ watch(
   height: 180px;
   overflow: hidden;
   position: relative;
+  border-top-left-radius: 12px;
+  border-top-right-radius: 12px;
 }
 
 .bar-image {
   width: 100%;
   height: 100%;
-  aspect-ratio: 1 / 1;
-  border-top-left-radius: 12px;
-  border-top-right-radius: 12px;
+  object-fit: cover;
 }
 
 .wishlist-button {
