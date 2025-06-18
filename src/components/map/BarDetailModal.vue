@@ -180,6 +180,7 @@
             <button
               class="action-icon-button upload-photo-button"
               @click="triggerFileUpload"
+              data-tooltip="上傳照片"
             >
               <img
                 src="@/assets/icons/mapicons/add-photo-icon.svg"
@@ -195,14 +196,14 @@
               @change="handleFileUpload"
             />
 
-            <button class="action-icon-button share-button">
+            <button class="action-icon-button share-button" data-tooltip="分享">
               <img
                 src="@/assets/icons/mapicons/share-icon.svg"
                 alt="分享"
                 class="icon"
               />
             </button>
-            <button class="action-icon-button navigate-button">
+            <button class="action-icon-button navigate-button" data-tooltip="導航">
               <img
                 src="@/assets/icons/mapicons/navigation-icon.svg"
                 alt="導航"
@@ -213,6 +214,7 @@
               class="action-icon-button wishlist-detail-button"
               @click.stop="toggleFavorite"
               :aria-label="bar.isWishlisted ? '取消收藏' : '加入收藏'"
+              :data-tooltip="bar.isWishlisted ? '取消收藏' : '加入收藏'"
             >
               <svg
                 xmlns="http://www.w3.org/2000/svg"
@@ -305,8 +307,8 @@ const closeModal = () => {
 };
 
 const toggleFavorite = () => {
-  if (props.bar.place_id) {
-    emit("toggle-wishlist", props.bar.place_id);
+  if (props.bar.placeId) {
+    emit("toggle-wishlist", props.bar.placeId);
   } else if (props.bar.id) {
     emit("toggle-wishlist", props.bar.id);
   }
@@ -805,5 +807,32 @@ const handleFileUpload = (event) => {
     width: 18px;
     height: 18px;
   }
+}
+
+.action-icon-button[data-tooltip] {
+  position: relative;
+}
+
+.action-icon-button[data-tooltip]:hover::after {
+  content: attr(data-tooltip);
+  position: absolute;
+  bottom: 110%;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #333;
+  color: #fff;
+  padding: 5px 12px;
+  border-radius: 6px;
+  font-size: 13px;
+  white-space: nowrap;
+  z-index: 20;
+  opacity: 1;
+  pointer-events: none;
+  transition: opacity 0.2s;
+}
+
+.action-icon-button[data-tooltip]::after {
+  opacity: 0;
+  pointer-events: none;
 }
 </style>

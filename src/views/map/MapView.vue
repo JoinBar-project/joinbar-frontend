@@ -341,7 +341,7 @@ function fetchBarsData() {
   allBars.value = [
     {
       id: "b001",
-      place_id: "ChIJ7-02o96jQjQR6c8b9j01314",
+      placeId: "ChIJ7-02o96jQjQR6c8b9j01314",
       name: "微醺角落",
       location: { lat: 25.0478, lng: 121.5172 },
       rating: 4.5,
@@ -359,7 +359,7 @@ function fetchBarsData() {
     },
     {
       id: "b002",
-      place_id: "ChIJY52JzdyjQjQR6c8b9j01314",
+      placeId: "ChIJY52JzdyjQjQR6c8b9j01314",
       name: "信義夜景酒吧",
       location: { lat: 25.0336, lng: 121.5644 },
       rating: 4.8,
@@ -377,7 +377,7 @@ function fetchBarsData() {
     },
     {
       id: "b003",
-      place_id: "ChIJX52JzdyjQjQR6c8b9j01314",
+      placeId: "ChIJX52JzdyjQjQR6c8b9j01314",
       name: "大安運動酒吧",
       rating: 4.2,
       reviews: 200,
@@ -395,7 +395,7 @@ function fetchBarsData() {
     },
     {
       id: "b004",
-      place_id: "ChIJL52JzdyjQjQR6c8b9j01314",
+      placeId: "ChIJL52JzdyjQjQR6c8b9j01314",
       name: "松山爵士吧",
       location: { lat: 25.0505, lng: 121.5501 },
       rating: 4.7,
@@ -413,7 +413,7 @@ function fetchBarsData() {
     },
     {
       id: "b005",
-      place_id: "ChIJQ52JzdyjQjQR6c8b9j01314",
+      placeId: "ChIJQ52JzdyjQjQR6c8b9j01314",
       name: "萬華老屋酒吧",
       location: { lat: 25.0375, lng: 121.5036 },
       rating: 4.3,
@@ -431,7 +431,7 @@ function fetchBarsData() {
     },
     {
       id: "b006",
-      place_id: "ChIJL52JzdyjQjQR6c8b9j01314",
+      placeId: "ChIJL52JzdyjQjQR6c8b9j01314",
       name: "士林文青酒吧",
       location: { lat: 25.0935, lng: 121.5235 },
       rating: 4.6,
@@ -449,7 +449,7 @@ function fetchBarsData() {
     },
     {
       id: "b007",
-      place_id: "ChIJZ52JzdyjQjQR6c8b9j01314",
+      placeId: "ChIJZ52JzdyjQjQR6c8b9j01314",
       name: "信義餐酒館",
       location: { lat: 25.041, lng: 121.567 },
       rating: 4.9,
@@ -467,7 +467,7 @@ function fetchBarsData() {
     },
     {
       id: "b008",
-      place_id: "ChIJG52JzdyjQjQR6c8b9j01314",
+      placeId: "ChIJG52JzdyjQjQR6c8b9j01314",
       name: "大安居酒屋",
       location: { lat: 25.037, lng: 121.545 },
       rating: 4.4,
