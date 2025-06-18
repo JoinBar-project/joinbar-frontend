@@ -478,6 +478,33 @@ const syncPaymentStatus = async (orderId) => {
   }
 }
 
+const getUserOrderHistory = async () => {
+  try {
+    isLoading.value = true
+    error.value = ''
+    console.log('🔄 載入用戶訂單歷史...')
+    const response = await apiClient.get('/api/orders/history')
+    
+    if (response.data.orders) {
+      orderHistory.value = response.data.orders
+      if (response.data.summary) {
+        stats.totalOrders = response.data.summary.totalOrders
+        stats.totalAmount = response.data.summary.totalAmount
+        stats.pendingCount = response.data.summary.pendingCount
+        stats.completedCount = response.data.summary.confirmedCount
+      }
+    }
+    console.log('✅ 訂單歷史載入成功:', response.data.total)
+    return response.data
+  } catch (err) {
+    const errorMessage = handleApiError(err, '載入訂單歷史失敗')
+    error.value = errorMessage
+    throw new Error(errorMessage)
+  } finally {
+    isLoading.value = false
+  }
+}
+
 return {
   isLoading,
   error,
@@ -510,6 +537,7 @@ return {
   apiClient,
   processLinePayPayment,
   pollPaymentStatus,
-  syncPaymentStatus
+  syncPaymentStatus,
+  getUserOrderHistory
 }
 }
