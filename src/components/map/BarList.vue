@@ -80,7 +80,6 @@ const handleImageError = (event) => {
   event.target.onerror = null;
 };
 
-// 營業時間格式化函式
 const getOpeningHourText = (bar) => {
   if (bar.openingHours?.weekdayText?.length > 0) {
     return bar.openingHours.weekdayText[0];
