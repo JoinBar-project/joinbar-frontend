@@ -62,7 +62,7 @@ export function useEventForm(eventId = null) {
       maxPeople: Number(eventPeople.value),
       imageUrl: eventImageUrl.value,
       price: isAdmin.value ? Number(eventPrice.value) : 0,
-      hostUser: 1, // 暫時寫死測試帳號，等會員系統建置完成
+      hostUser: userId,
       tags: [...eventHashtags.value]
     }
   }
