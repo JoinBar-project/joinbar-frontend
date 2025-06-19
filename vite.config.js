@@ -1,9 +1,8 @@
-import { defineConfig } from "vite";
-import vue from "@vitejs/plugin-vue";
-import path from "path";
-import vueDevTools from "vite-plugin-vue-devtools";
-import tailwindcss from "@tailwindcss/vite";
-
+import { defineConfig } from 'vite';
+import vue from '@vitejs/plugin-vue';
+import path from 'path';
+import vueDevTools from 'vite-plugin-vue-devtools';
+import tailwindcss from '@tailwindcss/vite';
 
 export default defineConfig({
   plugins: [
@@ -16,10 +15,10 @@ export default defineConfig({
     }),
     tailwindcss({
       content: [
-        "./index.html",
-        "./src/**/*.{vue,js,ts,jsx,tsx}",
-        "./src/views/**/*.vue",
-        "./src/components/**/*.vue"
+        './index.html',
+        './src/**/*.{vue,js,ts,jsx,tsx}',
+        './src/views/**/*.vue',
+        './src/components/**/*.vue'
       ]
     }),
     vueDevTools()
@@ -31,8 +30,7 @@ export default defineConfig({
   },
   server: {
     proxy: {
-      '/api':'http://localhost:3000'
-      }
-    }
-  }
-)
+      '/api': 'http://localhost:3000',
+    },
+  },
+});

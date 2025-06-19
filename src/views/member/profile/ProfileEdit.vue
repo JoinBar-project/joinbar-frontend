@@ -65,7 +65,10 @@ const toggleSelection = (arr, value) => {
 const handleSubmit = async () => {
   try {
     await userProfileStore.updateUserProfile(userId.value, form.value);
+    authStore.updateAuthUser(form.value); // 同步更新 authStore 的使用者資料
+
     triggerAlert();
+    
     setTimeout(() => {
       router.push({ name: 'MemberProfile', params: { id: userId.value } });
     }, 1500);
