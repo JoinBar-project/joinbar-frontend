@@ -94,7 +94,6 @@ import BarDetailModal from "../../components/map/BarDetailModal.vue";
 
 import { useGoogleMaps } from "@/composable/useGoogleMaps/userIndex";
 import { COMMON_PLACE_TYPES_TO_EXCLUDE } from "@/composable/googleMapsConstants";
-import placeTypeMap from '@/composable/placeTypeMap';
 
 const googleMapsApiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
 const myMapId = import.meta.env.VITE_MAP_ID;
