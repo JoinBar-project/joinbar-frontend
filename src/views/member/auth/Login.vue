@@ -250,30 +250,45 @@ const handleEmailLogin = async () => {
   if (!valid) return
 
   try {
-    const success = await authStore.emailLogin(loginForm.value.email, loginForm.value.password)
+    const result = await authStore.emailLogin(loginForm.value.email, loginForm.value.password);
     
-    if (success) {
-      showLoginSuccess.value = true
-
-      loginForm.value = {
-        email: '',
-        password: ''
-      }
-
+    if (result.success) {
+      showLoginSuccess.value = true;
+      loginForm.value = { email: '', password: '' };
+      
       setTimeout(() => {
-        showLoginSuccess.value = false
-        router.push('/home')
-      }, 1500)
+        showLoginSuccess.value = false;
+        router.push('/home');
+      }, 1500);
+    } else {
+      await Swal.fire({
+        title: '登入失敗',
+        text: result.error,
+        icon: 'error',
+        confirmButtonText: '確認'
+      });
     }
-
   } catch (error) {
-    console.error('登入過程發生錯誤:', error)
-    showLoginSuccess.value = false
+    console.error('登入過程發生錯誤:', error);
+    await Swal.fire({
+      title: '發生錯誤',
+      text: '發生未知錯誤，請稍後再試',
+      icon: 'error',
+      confirmButtonText: '確認'
+    });
   }
-}
+};
 
 const handleLineLogin = async () => {
-  await authStore.lineLogin()
+  const result = await authStore.lineLogin()
+  if (!result.success) {
+    await Swal.fire({
+      title: 'LINE 登入失敗',
+      text: result.error,
+      icon: 'error',
+      confirmButtonText: '確認'
+    });
+  }
 }
 
 const useTestAccount = () => {

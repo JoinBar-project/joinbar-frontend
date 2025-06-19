@@ -357,19 +357,15 @@ export const useAuthStore = defineStore('auth', () => {
           // 重新寄送驗證信
           await handleResendVerification(email);
         }
-        return false;
+        return { success: false, needVerification: true, handled: true };
       }
 
-      const errorInfo = handleError(err, '登入失敗');
-
-      await Swal.fire({
-        title: errorInfo.title,
-        text: errorInfo.message,
-        icon: 'error',
-        confirmButtonText: '確認'
-      });
-
-      return false;
+      let errorMessage = '登入失敗';
+      if (err.response?.status === 401) {
+        errorMessage = '電子郵件或密碼錯誤';
+      }
+  
+      return { success: false, error: errorMessage };
 
     } finally {
       setLoading('email', false);
