@@ -169,7 +169,8 @@
 <script setup>
 import { ref, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
-import { useAuthStore } from '@/stores/authStore'
+import { useAuthStore } from '@/stores/authStore';
+import Swal from 'sweetalert2';
 
 const step = ref(1);
 const showPassword = ref(false);
@@ -387,9 +388,9 @@ const handleEmailRegistration = async () => {
   console.log('送出資料：', userData);
 
   try {
-    const success = await authStore.emailSignup(userData);
+    const result = await authStore.emailSignup(userData);
 
-    if (success) {
+    if (result.success) {
       showRegisterSuccess.value = true
 
       registrationForm.value = {
@@ -410,15 +411,37 @@ const handleEmailRegistration = async () => {
         showRegisterSuccess.value = false;
         router.push('/login')
       }, 3000)
+    } else {
+      await Swal.fire({
+        title: '註冊失敗',
+        text: result.error,
+        icon: 'error',
+        confirmButtonText: '確認'
+      });
     }
   } catch(err) {
     console.error('註冊失敗:', err);
-    showRegisterSuccess.value = false
+    showRegisterSuccess.value = false;
+    await Swal.fire({
+      title: '發生錯誤',
+      text: '發生未知錯誤，請稍後再試',
+      icon: 'error',
+      confirmButtonText: '確認'
+    });
   }
 }
 
 const handleLineLogin = async () => {
-  await authStore.lineLogin()
+  const result = await authStore.lineLogin();
+
+  if (!result.success) {
+    await Swal.fire({
+      title: 'LINE 登入失敗',
+      text: result.error,
+      icon: 'error',
+      confirmButtonText: '確認'
+    });
+  }
 }
 
 // 組件掛載時檢查 LINE 登入狀態

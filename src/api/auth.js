@@ -15,9 +15,7 @@ export const lineLogin = () => apiClient.get('/auth/line/url');
 export const emailSignup = (userData) => apiClient.post('/auth/signup', userData);
 
 // 儲存酒吧偏好設定
-export const saveBarTags = (userId, preferencesData) => 
-  apiClient.post(`/barTags/user/${userId}`, preferencesData);
+export const saveBarTags = (userId, preferencesData) => apiClient.post(`/barTags/user/${userId}`, preferencesData);
 
 // 取得用戶酒吧偏好設定
-export const getBarTags = (userId) => 
-  apiClient.get(`/barTags/user/${userId}`);
+export const getBarTags = (userId) => apiClient.get(`/barTags/user/${userId}`);

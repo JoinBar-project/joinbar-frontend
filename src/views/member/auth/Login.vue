@@ -309,14 +309,19 @@ const useTestAccount = () => {
 
 // 組件掛載時檢查 LINE 登入狀態
 onMounted(async () => {
-  // 初始化 store
-  authStore.init()
-  // 檢查 LINE 登入回調
-  const result = await authStore.checkLineCallback()
-  if (result?.success) {
-    router.push(result.redirect)
+  const urlParams = new URLSearchParams(window.location.search);
+  const isLineCallback = urlParams.get('success') || urlParams.get('error');
+
+  if (isLineCallback) {
+    console.log('處理 LINE 登入回調...');
+    const result = await authStore.checkLineCallback();
+    if (result?.success) {
+      router.push(result.redirect);
+    }
+  } else {
+    authStore.init();
   }
-})
+});
 </script>
 
 <style scoped>
