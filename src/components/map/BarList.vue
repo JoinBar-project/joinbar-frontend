@@ -63,7 +63,7 @@
 
 <script setup>
 import { watch, ref } from "vue";
-import placeTypeMap from "@/composable/placeTypeMap";
+import placeTypeMap from "@/composables/placeTypeMap";
 
 const props = defineProps({
   bars: {

@@ -161,8 +161,8 @@
 </template>
 
 <script setup>
-import { ref, defineEmits, watch, defineProps, computed } from "vue";
-import placeTypeMap from '@/composable/placeTypeMap';
+import { ref, watch, computed } from "vue";
+import placeTypeMap from '@/composables/placeTypeMap';
 
 const emit = defineEmits(["filter-changed", "close-panel", "tag-click"]);
 

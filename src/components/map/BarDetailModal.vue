@@ -190,7 +190,7 @@
 <script setup>
 import { ref, watch, computed } from "vue";
 import { useRouter } from "vue-router";
-import placeTypeMap from '@/composable/placeTypeMap';
+import placeTypeMap from '@/composables/placeTypeMap';
 
 const props = defineProps({
   bar: {
@@ -261,8 +261,8 @@ const closeModal = () => {
 };
 
 const toggleFavorite = () => {
-  if (props.bar.place_id) {
-    emit("toggle-wishlist", props.bar.place_id);
+  if (props.bar.placeId) {
+    emit("toggle-wishlist", props.bar.placeId);
   } else if (props.bar.id) {
     emit("toggle-wishlist", props.bar.id);
   }
