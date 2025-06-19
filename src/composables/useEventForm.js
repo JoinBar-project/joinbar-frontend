@@ -1,5 +1,6 @@
-import { ref, watch, onMounted } from 'vue'
+import { ref, watch } from 'vue'
 import { useEventStore } from '@/stores/event'
+import axios from 'axios'
 
 export function useEventForm(eventId = null) {
   const eventStore = useEventStore()
@@ -72,21 +73,32 @@ export function useEventForm(eventId = null) {
   async function loadEvent(id) {
     if (!id) return
     
-    await eventStore.fetchEvent(id)
-    const data = eventStore.event
-
-    console.log('[loadEvent]', data) 
-    
-    if (data) {
-      eventName.value = data.name || ''
-      barName.value = data.barName || ''
-      eventLocation.value = data.location || ''
-      eventStartDate.value = toDatetimeLocal(data.startAt)
-      eventEndDate.value = toDatetimeLocal(data.endAt)
-      eventImageUrl.value = data.imageUrl || ''
-      eventPrice.value = data.price || ''
-      eventPeople.value = data.maxPeople || ''
-      eventHashtags.value = eventStore.tagIds || []  // ✅ 從 tagIds 取得
+    try {
+      // 使用 EventStore 載入活動基本資料
+      await eventStore.fetchEvent(id)
+      const data = eventStore.event
+      
+      // 取得標籤資料，優先使用 EventStore，否則直接呼叫 API
+      let tagIds = eventStore.tagIds
+      if (!tagIds || tagIds === undefined) {
+        const apiRes = await axios.get(`/api/event/${id}`)
+        tagIds = apiRes.data.tags || []
+      }
+      
+      if (data) {
+        eventName.value = data.name || ''
+        barName.value = data.barName || ''
+        eventLocation.value = data.location || ''
+        eventStartDate.value = toDatetimeLocal(data.startAt)
+        eventEndDate.value = toDatetimeLocal(data.endAt)
+        eventImageUrl.value = data.imageUrl || ''
+        eventPrice.value = data.price || ''
+        eventPeople.value = data.maxPeople || ''
+        
+        eventHashtags.value = tagIds || []
+      }
+    } catch (error) {
+      console.error('載入活動失敗:', error)
     }
   }
   

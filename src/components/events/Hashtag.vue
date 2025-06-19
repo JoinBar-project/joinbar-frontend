@@ -1,5 +1,6 @@
 <script setup>
-import { ref, watch } from 'vue'
+import { ref, watch, onMounted } from 'vue'
+
 const emit = defineEmits(['update:modelValue'])
 
 const props = defineProps({
@@ -19,14 +20,32 @@ const selectedTags = ref([])
 const modalOpen = ref(false)
 const warning = ref('')
 
+function initializeSelectedTags() {
+  if (props.modelValue && Array.isArray(props.modelValue) && props.modelValue.length > 0) {
+    if (typeof props.modelValue[0] === 'object' && props.modelValue[0].id !== undefined) {
+      selectedTags.value = props.modelValue.filter(tag => 
+        options.value.some(option => option.id === tag.id)
+      )
+    } else {
+      selectedTags.value = options.value.filter(option => 
+        props.modelValue.includes(option.id)
+      )
+    }
+  } else {
+    selectedTags.value = []
+  }
+}
+
 function openModal() {
   modalOpen.value = true
   warning.value = ''
 }
+
 function closeModal() {
   modalOpen.value = false
   warning.value = ''
 }
+
 function toggleTag(tag) {
   const idx = selectedTags.value.findIndex(t => t.id === tag.id)
   if (idx === -1) {
@@ -41,17 +60,32 @@ function toggleTag(tag) {
   }
   emit('update:modelValue', selectedTags.value.map(tag => tag.id))
 }
+
 function confirmTags() {
   emit('update:modelValue', selectedTags.value.map(tag => tag.id))
   closeModal()
 }
+
 function removeTag(tag) {
   toggleTag(tag)
 }
 
-// 同步：modelValue（id陣列）→ selectedTags（物件陣列）
-watch(() => props.modelValue, (val) => {
-  selectedTags.value = options.value.filter(option => val.includes(option.id))
+watch(() => props.modelValue, (newVal) => {
+  if (newVal && Array.isArray(newVal) && newVal.length > 0) {
+    if (typeof newVal[0] === 'object' && newVal[0].id !== undefined) {
+      selectedTags.value = newVal.filter(tag => 
+        options.value.some(option => option.id === tag.id)
+      )
+    } else {
+      selectedTags.value = options.value.filter(option => newVal.includes(option.id))
+    }
+  } else {
+    selectedTags.value = []
+  }
+}, { immediate: true, deep: true })
+
+onMounted(() => {
+  initializeSelectedTags()
 })
 </script>
 
@@ -61,12 +95,14 @@ watch(() => props.modelValue, (val) => {
     <div style="display:flex;align-items:center;gap:8px;width:100%;flex-wrap:wrap;">
       <button type="button" class="btn-hashtag-modal" @click="openModal">選擇</button>
       <div class="selected-tags">
+        <div v-if="selectedTags.length === 0" class="no-tags-info" style="color: #666; font-size: 12px;">
+          目前無選擇標籤
+        </div>
         <span v-for="tag in selectedTags" :key="tag.id" class="selected-tag">
           {{ tag.name }}
           <span class="remove-tag" @click="removeTag(tag)">×</span>
         </span>
       </div>
-      
     </div>
 
     <!-- Modal -->
@@ -175,5 +211,9 @@ watch(() => props.modelValue, (val) => {
 .warning {
   @apply text-sm mr-2;
   color: #c9475d;
+}
+
+.no-tags-info {
+  @apply text-xs text-gray-500;
 }
 </style>
