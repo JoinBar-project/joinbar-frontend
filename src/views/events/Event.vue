@@ -18,7 +18,7 @@ onMounted(() => {
 const sortedEvents = computed(() => {
   return [...events.value]
     .filter(event => event && event.status !== 2) // 過濾刪除活動
-    .sort((a, b) => new Date(b.startDate) - new Date(a.startDate))
+    .sort((a, b) => new Date(b.startAt) - new Date(a.startAt))
 })
 
 

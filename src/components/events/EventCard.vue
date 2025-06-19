@@ -49,7 +49,7 @@ function sliceChinese(str, n) {
   <div class="event-card">
     <img :src="props.event.imageUrl" alt="活動圖片" class="event-img"/>
     <div class="event-info">
-      <p class="time">{{ formatEventDate(props.event.startDate) }} ~ {{ formatEventDate(props.event.endDate) }}</p>
+      <p class="time">{{ formatEventDate(props.event.startAt) }} ~ {{ formatEventDate(props.event.endAt) }}</p>
       <h3 class="title">{{ props.event.name }}</h3>
       <p>
         <span class="location">📍{{ sliceChinese(props.event.location, 6) }}</span>｜<span class="bar-name">{{ props.event.barName }}</span>
