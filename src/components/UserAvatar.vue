@@ -21,7 +21,7 @@ defineProps({
   <div @click="onAvatarClick">
     <img
       :src="avatarUrl || defaultAvatar"
-      alt="user-avatarURL"
+      alt="user-avatarUrl"
       :class="[sizeClass[size], 'object-cover rounded-full border-2 border-white']" />
   </div>
 </template>

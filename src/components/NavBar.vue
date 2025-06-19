@@ -16,8 +16,8 @@ const goToMember = () => {
   });
 };
 
-const avatarURL = computed(() => {
-  return user.value.avatar || '/default-user-avatar.png';
+const avatarUrl = computed(() => {
+  return user.value.avatarUrl || '/default-user-avatar.png';
 });
 </script>
 
@@ -40,7 +40,7 @@ const avatarURL = computed(() => {
           v-if="isAuthenticated"
           class="cursor-pointer flex flex-col items-center gap-1">
           <UserAvatar
-            :avatar-url="avatarURL"
+            :avatar-url="avatarUrl"
             :display-name="user.username"
             size="sm"
             :on-avatar-click="goToMember" />

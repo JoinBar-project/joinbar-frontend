@@ -7,12 +7,12 @@ import { useUserProfileStore } from '@/stores/userProfileStore';
 import { useSuccessAlert } from '@/composables/useSuccessAlert';
 import ProfileForm from '@/components/member/ProfileForm.vue';
 import UserAvatar from '@/components/UserAvatar.vue';
-import { uploadUserAvatar } from '@/api/uploadUserAvatar';
 
 const authStore = useAuthStore();
 const userProfileStore = useUserProfileStore();
 const { user } = storeToRefs(authStore);
 const { profile, isLoading } = storeToRefs(userProfileStore);
+const { updateUserAvatar } = userProfileStore;
 const router = useRouter();
 const { showAlert, triggerAlert } = useSuccessAlert();
 
@@ -27,7 +27,18 @@ const form = ref({
 });
 
 const userId = computed(() => user.value?.id);
+const avatarFile = ref(null);
+const avatarPreview = ref('');
 
+const handleAvatarChange = event => {
+  const file = event.target.files[0];
+  if (file && file.type.startsWith('image/')) {
+    avatarFile.value = file;
+    avatarPreview.value = URL.createObjectURL(file); // 頭像即時預覽
+  } else {
+    alert('請選擇圖片檔案');
+  }
+};
 watch(
   userId,
   id => {
@@ -43,6 +54,7 @@ watch(
       form.value.username = newProfile.username || '';
       form.value.nickname = newProfile.nickname || '';
       form.value.birthday = newProfile.birthday || '';
+      form.value.avatarUrl = newProfile.avatarUrl;
       form.value.preferences = newProfile.preferences || { types: [], moods: [] };
     }
   },
@@ -66,10 +78,13 @@ const toggleSelection = (arr, value) => {
 const handleSubmit = async () => {
   try {
     await userProfileStore.updateUserProfile(userId.value, form.value);
-    authStore.updateAuthUser(form.value); // 同步更新 authStore 的使用者資料
-
+    if (avatarFile.value) {
+      await updateUserAvatar(userId.value, avatarFile.value);
+      form.value.avatarUrl = userProfileStore.profile.avatarUrl;
+    }
+    authStore.updateAuthUser(form.value);
     triggerAlert();
-    
+
     setTimeout(() => {
       router.push({ name: 'MemberProfile', params: { id: userId.value } });
     }, 1500);
@@ -106,22 +121,26 @@ const cancel = () => {
     class="text-center py-10">
     載入中...
   </div>
-  <div v-else class="flex flex-col items-center">
+  <div
+    v-else
+    class="flex flex-col items-center">
     <div class="flex flex-col items-center mb-6">
       <UserAvatar
-        :avatar-url="profile.avatarUrl || '/default-user-avatar.png'"
+        :avatar-url="avatarPreview || profile.avatarUrl || '/default-user-avatar.png'"
         :display-name="profile.username"
         size="lg" />
     </div>
     <div>
       <label
         for="avatar"
-        class="bg-[var(--color-black)] text-[var(--color-secondary-pink)] p-2 rounded"
-        >上傳頭像</label>
+        class="bg-[var(--color-black)] text-[var(--color-secondary-pink)] p-2 rounded cursor-pointer"
+        >上傳頭像</label
+      >
       <input
         type="file"
         hidden
-        id="avatar" />
+        id="avatar"
+        @change="handleAvatarChange" />
     </div>
     <form @submit.prevent="handleSubmit">
       <ProfileForm
@@ -131,7 +150,7 @@ const cancel = () => {
         :barTypes="barTypes"
         :barMoods="barMoods"
         :toggleSelection="toggleSelection" />
-      <div class="mt-6 ">
+      <div class="mt-6">
         <button
           type="submit"
           class="px-4 py-2 bg-green-600 text-white rounded cursor-pointer">

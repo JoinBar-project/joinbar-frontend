@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia';
 import { ref } from 'vue';
-import { getUserProfileById, patchUserProfileById } from '@/api/userProfile.js';
+import { getUserProfileById, patchUserProfileById, patchUserAvatar } from '@/api/userProfile.js';
 
 export const useUserProfileStore = defineStore('userProfile', () => {
   const profile = ref({
@@ -43,10 +43,25 @@ export const useUserProfileStore = defineStore('userProfile', () => {
     }
   };
 
+  const updateUserAvatar = async (id, file) => {
+    isLoading.value = true;
+    try {
+      const { data } = await patchUserAvatar(id, file);
+      profile.value.avatarUrl = data.avatarUrl;
+      console.log('會員頭像更新成功', data);
+    } catch (err) {
+      console.error('會員頭像更新失敗', err);
+      throw err;
+    } finally {
+      isLoading.value = false;
+    }
+  };
+
   return {
     profile,
     getUserProfile,
     updateUserProfile,
+    updateUserAvatar,
     isLoading,
   };
 });

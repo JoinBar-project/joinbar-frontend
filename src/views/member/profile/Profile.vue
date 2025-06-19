@@ -59,10 +59,9 @@ const goToEdit = () => {
       :barTypes="barTypes"
       :barMoods="barMoods"
       :toggleSelection="() => {}" />
-<div>{{ profile.avatarUrl }}</div>
     <button
       type="button"
-      class="mt-6 px-4 py-2 bg-gray-800 text-white rounded cursor-pointer"
+      class="m-6 px-4 py-2 bg-gray-800 text-white rounded cursor-pointer"
       @click="goToEdit">
       編輯個人資料
     </button>
