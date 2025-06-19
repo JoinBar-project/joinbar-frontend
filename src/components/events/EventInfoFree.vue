@@ -1,8 +1,9 @@
 <script setup>
 import { useEvent } from '@/composables/useEvent.js';
-import { toRef } from 'vue';
+import { toRef, computed } from 'vue';
 import EventHoster from './EventHoster.vue';
 import MessageBoard from './MessageBoard.vue';
+import ModalEdit from '@/components/events/ModalEdit.vue'
 
 const props = defineProps({
   event: Object,
@@ -55,47 +56,62 @@ const { isJoin, joinedNum, toggleJoin, isOver24hr, showModal, formattedEventTime
                 {{ tag.name }}
               </div>
             </div>
+
             <div>
-              <h3 class="event-title">{{ props.event.name }}</h3>
+
+              <h3 class="event-title">
+                {{ props.event.name }}
+              </h3>
+
               <div
                 v-if="formattedEventTime"
                 class="event-content-info">
                 <i class="fa-solid fa-calendar"></i>
                 <p>活動時間：{{ formattedEventTime }}</p>
               </div>
+
               <div class="event-content-info">
                 <i class="fa-solid fa-wine-glass"></i>
-
                 <p>店名：{{ props.event.barName }}</p>
               </div>
+
               <div class="event-content-info">
                 <i class="fa-solid fa-location-dot"></i>
                 <p>地址：{{ props.event.location }}</p>
               </div>
+
               <div class="event-content-info">
                 <i class="fa-solid fa-user"></i>
                 <p>
                   目前報名人數： <span>{{ joinedNum }}</span> ｜ 報名人數上限：<span>{{ props.event.maxPeople || '無報名人數限制' }}</span>
                 </p>
               </div>
+
             </div>
-            <button
-              @click="toggleJoin()"
-              :disabled="isJoin"
-              :class="{ 'opacity-50 cursor-not-allowed': isJoin }"
-              type="button"
-              class="event-btn event-btn-free">
-              {{ isJoin ? '已報名' : '參加活動' }}
-            </button>
-            <button
-              v-if="isJoin"
-              @click="openCancelModal()"
-              :disabled="!isOver24hr"
-              :class="['event-btn-free', isOver24hr ? 'cursor-pointer' : 'cursor-not-allowed opacity-50']"
-              type="button"
-              class="event-btn-free">
-              取消報名
-            </button>
+            <div class="edit-btn-container">
+              <button
+                @click="toggleJoin()"
+                :disabled="isJoin"
+                :class="{ 'opacity-50 cursor-not-allowed': isJoin }"
+                type="button"
+                class="event-btn event-btn-free">
+                {{ isJoin ? '已報名' : '參加活動' }}
+              </button>
+              <button
+                v-if="isJoin"
+                @click="openCancelModal()"
+                :disabled="!isOver24hr"
+                :class="['event-btn-free', isOver24hr ? 'cursor-pointer' : 'cursor-not-allowed opacity-50']"
+                type="button"
+                class="event-btn-free">
+                取消報名
+              </button>
+              <ModalEdit
+                v-if="props.event.id"
+                :event-id="props.event.id"
+                @update="emit('update')"
+              />
+            </div>
           </div>
         </div>
       </div>
