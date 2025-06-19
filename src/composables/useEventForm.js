@@ -28,9 +28,9 @@ export function useEventForm(eventId = null) {
   
   function toDatetimeLocal(dtString) {
     if (!dtString) return ''
-    const d = new Date(dtString)
-    const pad = n => n.toString().padStart(2, '0')
-    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`
+    // 取出前 16 字元，格式類似 "2025-06-20 10:04:17" → "2025-06-20T10:04"
+    const trimmed = dtString.trim().replace(' ', 'T').slice(0, 16)
+    return trimmed
   }
   
   function validateForm() {
@@ -74,17 +74,19 @@ export function useEventForm(eventId = null) {
     
     await eventStore.fetchEvent(id)
     const data = eventStore.event
+
+    console.log('[loadEvent]', data) 
     
-    if (data && data.stringModel) {
-      eventName.value = data.stringModel.name || ''
-      barName.value = data.stringModel.barName || ''
-      eventLocation.value = data.stringModel.location || ''
-      eventStartDate.value = toDatetimeLocal(data.stringModel.startDate)
-      eventEndDate.value = toDatetimeLocal(data.stringModel.endDate)
-      eventImageUrl.value = data.stringModel.imageUrl || ''
-      eventPrice.value = data.stringModel.price || ''
-      eventPeople.value = data.stringModel.maxPeople || ''
-      eventHashtags.value = data.tagIds || []
+    if (data) {
+      eventName.value = data.name || ''
+      barName.value = data.barName || ''
+      eventLocation.value = data.location || ''
+      eventStartDate.value = toDatetimeLocal(data.startAt)
+      eventEndDate.value = toDatetimeLocal(data.endAt)
+      eventImageUrl.value = data.imageUrl || ''
+      eventPrice.value = data.price || ''
+      eventPeople.value = data.maxPeople || ''
+      eventHashtags.value = eventStore.tagIds || []  // ✅ 從 tagIds 取得
     }
   }
   
@@ -130,12 +132,16 @@ export function useEventForm(eventId = null) {
     }
   }
   
-  if (eventId) {
-    onMounted(() => {
-      loadEvent(eventId)
-    })
-  }
-  
+  watch(
+    () => eventId,
+    (newId) => {
+      if (newId) {
+        loadEvent(newId)
+      }
+    },
+    { immediate: true }
+  )
+
   return {
     eventName,
     barName,

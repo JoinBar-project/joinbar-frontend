@@ -6,6 +6,7 @@ axios.defaults.baseURL = 'http://localhost:3000'
 
 export const useEventStore = defineStore('event', () => {
   const event = ref(null)
+  const tagIds = ref([])
   const events = ref([])
   const loading = ref(false)
   const error = ref(null)
@@ -76,7 +77,8 @@ export const useEventStore = defineStore('event', () => {
     loading.value = true
     try {
       const res = await axios.get(`/api/event/${id}`)
-      event.value = res.data
+      event.value = res.data.event
+      tagIds.value = res.data.tags || []
       error.value = null
     } catch (e) {
       error.value = e.response?.data?.message || e.message
