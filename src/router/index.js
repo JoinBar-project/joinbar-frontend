@@ -12,6 +12,7 @@ import Payment from "@/views/cart/Payment.vue"
 import OrderSuccess from '@/views/cart/OrderSuccess.vue'
 import Login from "@/views/member/auth/Login.vue"
 import Register from "@/views/member/auth/Register.vue";
+import Preferences from '@/components/Preferences.vue'
 import NotFound from '../views/NotFound.vue'
 
 
@@ -29,6 +30,7 @@ const routes = [
   { path: '/cart', name: 'Cart', component: Cart },
   { path: '/payment', name: 'Payment', component: Payment },
   { path: '/order-success/:orderNumber', name: 'OrderSuccess', component: OrderSuccess, props: true },
+  { path: '/preferences', name: 'Preferences', component: Preferences, meta: { requiresAuth: true } },
   { path: '/404', name: 'NotFound', component: NotFound },
   { path: '/:pathMatch(.*)*', redirect: '/404' }
 ]

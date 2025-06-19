@@ -7,9 +7,17 @@ export const verifyAuth = () => apiClient.get('/auth/verify');
 export const resendVerification = (email) => apiClient.post('/auth/resend-verification', { email });
 
 // 電子郵件登入
-export const login = (email, password) => apiClient.post('/auth/login', { email, password });
+export const emaillogin = (email, password) => apiClient.post('/auth/login', { email, password });
 
 // 取得 LINE 登入授權 URL
-export const getLineAuthUrl = () => apiClient.get('/auth/line/url');
+export const lineLogin = () => apiClient.get('/auth/line/url');
 
-export const register = (userData) => apiClient.post('/auth/signup', userData);
+export const emailSignup = (userData) => apiClient.post('/auth/signup', userData);
+
+// 儲存酒吧偏好設定
+export const saveBarTags = (userId, preferencesData) => 
+  apiClient.post(`/barTags/user/${userId}`, preferencesData);
+
+// 取得用戶酒吧偏好設定
+export const getBarTags = (userId) => 
+  apiClient.get(`/barTags/user/${userId}`);

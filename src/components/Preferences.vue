@@ -128,6 +128,155 @@
 </template>
 
 <script setup>
+import { ref, computed, onMounted } from 'vue';
+import { useRouter, useRoute } from 'vue-router';
+import { useAuthStore } from '@/stores/authStore';
+import { getBarTags } from '@/api/auth';
+
+const router = useRouter();
+const route = useRoute();
+const authStore = useAuthStore();
+
+const isLoading = ref(false);
+const showSuccess = ref(false);
+
+// 檢查是否為首次設定
+const isFirstTime = computed(() => {
+  return route.query['first-time'] === 'true' || route.query.from === 'line-login';
+});
+
+// 歡迎訊息
+const welcomeMessage = computed(() => {
+  if (route.query.from === 'line-login') {
+    return '請選擇您喜歡的酒吧類型和氛圍，我們將為您推薦最適合的聚會場所！';
+  }
+  return isFirstTime.value 
+    ? '選擇您的偏好，讓我們為您推薦最棒的酒吧體驗！'
+    : '調整您的偏好設定，更新個人化推薦內容';
+});
+
+// 偏好設定資料
+const preferences = ref({
+  types: [],
+  moods: []
+});
+
+// 酒吧類型選項
+const barTypes = [
+  { key: 'sport', label: '運動酒吧', icon: 'fa-solid fa-football' },
+  { key: 'music', label: '音樂酒吧', icon: 'fa-solid fa-music' },
+  { key: 'student', label: '學生酒吧', icon: 'fa-solid fa-graduation-cap' },
+  { key: 'bistro', label: '餐酒館', icon: 'fa-solid fa-utensils' },
+  { key: 'drink', label: '暢飲店', icon: 'fa-solid fa-beer' }
+];
+
+// 酒吧氛圍選項
+const barMoods = [
+  { key: 'joy', label: '熱鬧歡樂', icon: 'fa-solid fa-party-horn' },
+  { key: 'romantic', label: '浪漫私密', icon: 'fa-solid fa-heart' },
+  { key: 'oldschool', label: '復古懷舊', icon: 'fa-solid fa-record-vinyl' },
+  { key: 'highlevel', label: '高級精緻', icon: 'fa-solid fa-crown' },
+  { key: 'easy', label: '輕鬆悠閒', icon: 'fa-solid fa-leaf' }
+];
+
+// 切換選擇
+const toggleSelection = (arr, value) => {
+  const index = arr.indexOf(value);
+  if (index > -1) {
+    arr.splice(index, 1);
+  } else {
+    arr.push(value);
+  }
+};
+
+const handleSavePreferences = async () => {
+	const preferencesData = {
+      sport: preferences.value.types.includes('sport'),
+      music: preferences.value.types.includes('music'),
+      student: preferences.value.types.includes('student'),
+      bistro: preferences.value.types.includes('bistro'),
+      drink: preferences.value.types.includes('drink'),
+      joy: preferences.value.moods.includes('joy'),
+      romantic: preferences.value.moods.includes('romantic'),
+      oldschool: preferences.value.moods.includes('oldschool'),
+      highlevel: preferences.value.moods.includes('highlevel'),
+      easy: preferences.value.moods.includes('easy')
+    };
+
+	try {
+		const success = await authStore.saveBarTags(preferencesData);
+
+		if (success) {
+      showSuccess.value = true;
+
+      setTimeout(() => {
+        showSuccess.value = false;
+        if (isFirstTime.value) {
+          router.push('/home');
+        } else {
+          router.go(-1);
+        }
+      }, 1500);
+    }
+	} catch(err) {
+		console.error('儲存偏好設定失敗:', err);
+		showSuccess.value = false;
+	} finally {
+    isLoading.value = false;
+  }
+}
+
+// 跳過偏好設定
+const skipPreferences = () => {
+  if (isFirstTime.value) {
+    router.push('/home');
+  } else {
+    router.go(-1);
+  }
+};
+
+// 載入現有偏好設定
+const loadExistingPreferences = async () => {
+  try {
+    const user = authStore.user;
+    if (!user?.id) return;
+
+    const response = await getBarTags(user.id);
+    const data = response.data;
+
+    // 轉換後端格式為前端格式
+    preferences.value.types = [];
+    preferences.value.moods = [];
+
+    if (data.sport) preferences.value.types.push('sport');
+    if (data.music) preferences.value.types.push('music');
+    if (data.student) preferences.value.types.push('student');
+    if (data.bistro) preferences.value.types.push('bistro');
+    if (data.drink) preferences.value.types.push('drink');
+    
+    if (data.joy) preferences.value.moods.push('joy');
+    if (data.romantic) preferences.value.moods.push('romantic');
+    if (data.oldschool) preferences.value.moods.push('oldschool');
+    if (data.highlevel) preferences.value.moods.push('highlevel');
+    if (data.easy) preferences.value.moods.push('easy');
+
+  } catch (error) {
+    console.error('載入偏好設定失敗:', error);
+  }
+};
+
+onMounted(async () => {
+  // 確保用戶已登入
+  if (!authStore.isAuthenticated) {
+    router.push('/login');
+    return;
+  }
+
+  // 如果不是首次設定，載入現有偏好
+  if (!isFirstTime.value) {
+    await loadExistingPreferences();
+  }
+});
 </script>
 
 <style scoped>

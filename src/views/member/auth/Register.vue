@@ -387,7 +387,7 @@ const handleEmailRegistration = async () => {
   console.log('送出資料：', userData);
 
   try {
-    const success = await authStore.emailRegistration(userData);
+    const success = await authStore.emailSignup(userData);
 
     if (success) {
       showRegisterSuccess.value = true

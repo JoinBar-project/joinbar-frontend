@@ -1,7 +1,7 @@
 import { defineStore } from 'pinia';
 import { ref, computed } from 'vue';
 import Swal from 'sweetalert2';
-import { verifyAuth, resendVerification, login, getLineAuthUrl, register } from '../api/auth';
+import { verifyAuth, resendVerification, emaillogin as emailLoginAPI, lineLogin as lineLoginAPI, emailSignup as emailSignupAPI, saveBarTags as saveBarTagsAPI } from '../api/auth';
 
 export const useAuthStore = defineStore('auth', () => {
   const user = ref(null); 
@@ -227,7 +227,7 @@ export const useAuthStore = defineStore('auth', () => {
     }
   }
 
-  async function emailRegistration(userData) {
+  async function emailSignup(userData) {
     clearError();
 
     if (!userData.username || !userData.email || !userData.password) {
@@ -242,7 +242,7 @@ export const useAuthStore = defineStore('auth', () => {
     setLoading('email', true);
 
     try {
-      const resp = await register(userData);
+      const resp = await emailSignupAPI(userData);
       console.log('註冊成功:', resp.data);
 
       await Swal.fire({
@@ -303,7 +303,7 @@ export const useAuthStore = defineStore('auth', () => {
     setLoading('email', true);
 
     try {
-      const resp = await login(email, password);
+      const resp = await emailLoginAPI(email, password);
 
       console.log('登入成功:', resp.data);
 
@@ -387,7 +387,7 @@ export const useAuthStore = defineStore('auth', () => {
     clearError();
 
     try {
-      const resp = await getLineAuthUrl();
+      const resp = await lineLoginAPI();
       console.log('LINE 授權 URL 取得成功:', resp.data)
 
       if (resp.data.authUrl) {
@@ -518,6 +518,47 @@ export const useAuthStore = defineStore('auth', () => {
     return null
   }
 
+  async function saveBarTags(preferences) {
+    clearError();
+    
+    try {
+      // 檢查用戶是否存在
+      if (!user.value?.id) {
+        throw new Error('用戶資訊不存在');
+      }
+  
+      console.log('儲存偏好設定:', preferences);
+
+      const resp = await saveBarTagsAPI(user.value.id, preferences);
+      console.log('偏好設定儲存成功:', resp.data);
+      
+      await Swal.fire({
+        title: '偏好設定已儲存！',
+        text: '您的酒吧偏好已成功更新',
+        icon: 'success',
+        confirmButtonText: '開始使用',
+        timer: 2000,
+        timerProgressBar: true
+      });
+      
+      return true;
+      
+    } catch(err) {
+      console.error('儲存偏好設定失敗:', err);
+      
+      const errorInfo = handleError(err, '儲存偏好設定失敗');
+      
+      await Swal.fire({
+        title: errorInfo.title,
+        text: errorInfo.message,
+        icon: 'error',
+        confirmButtonText: '確認'
+      });
+
+      return false;
+    }
+  }  
+
   // 區分登入方式
   const loginMethod = computed(() => {
     if (!user.value) return null;
@@ -544,13 +585,14 @@ export const useAuthStore = defineStore('auth', () => {
     // 方法
     init,
     clearError,
-    emailRegistration,
+    emailSignup,
     emailLogin,
     lineLogin,
     checkLineCallback,
     setLoading,
     clearAuthState,
     checkAuthStatus,
-    handleResendVerification
+    handleResendVerification,
+    saveBarTags
   }
 })
