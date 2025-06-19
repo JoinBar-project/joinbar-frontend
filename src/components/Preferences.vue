@@ -132,6 +132,7 @@ import { ref, computed, onMounted } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
 import { useAuthStore } from '@/stores/authStore';
 import { getBarTags } from '@/api/auth';
+import Swal from 'sweetalert2';
 
 const router = useRouter();
 const route = useRoute();
@@ -190,24 +191,35 @@ const toggleSelection = (arr, value) => {
 };
 
 const handleSavePreferences = async () => {
-	const preferencesData = {
-      sport: preferences.value.types.includes('sport'),
-      music: preferences.value.types.includes('music'),
-      student: preferences.value.types.includes('student'),
-      bistro: preferences.value.types.includes('bistro'),
-      drink: preferences.value.types.includes('drink'),
-      joy: preferences.value.moods.includes('joy'),
-      romantic: preferences.value.moods.includes('romantic'),
-      oldschool: preferences.value.moods.includes('oldschool'),
-      highlevel: preferences.value.moods.includes('highlevel'),
-      easy: preferences.value.moods.includes('easy')
-    };
+  isLoading.value = true;
+  
+  const preferencesData = {
+    sport: preferences.value.types.includes('sport'),
+    music: preferences.value.types.includes('music'),
+    student: preferences.value.types.includes('student'),
+    bistro: preferences.value.types.includes('bistro'),
+    drink: preferences.value.types.includes('drink'),
+    joy: preferences.value.moods.includes('joy'),
+    romantic: preferences.value.moods.includes('romantic'),
+    oldschool: preferences.value.moods.includes('oldschool'),
+    highlevel: preferences.value.moods.includes('highlevel'),
+    easy: preferences.value.moods.includes('easy')
+  };
 
-	try {
-		const success = await authStore.saveBarTags(preferencesData);
+  try {
+    const result = await authStore.saveBarTags(preferencesData);
 
-		if (success) {
+    if (result.success) {
       showSuccess.value = true;
+
+      await Swal.fire({
+        title: '偏好設定已儲存！',
+        text: '您的酒吧偏好已成功更新',
+        icon: 'success',
+        confirmButtonText: '開始使用',
+        timer: 2000,
+        timerProgressBar: true
+      });
 
       setTimeout(() => {
         showSuccess.value = false;
@@ -217,14 +229,29 @@ const handleSavePreferences = async () => {
           router.go(-1);
         }
       }, 1500);
+
+    } else {
+      await Swal.fire({
+        title: '儲存失敗',
+        text: result.error,
+        icon: 'error',
+        confirmButtonText: '確認'
+      });
     }
-	} catch(err) {
-		console.error('儲存偏好設定失敗:', err);
-		showSuccess.value = false;
-	} finally {
+  } catch(err) {
+    console.error('儲存偏好設定失敗:', err);
+    showSuccess.value = false;
+    
+    await Swal.fire({
+      title: '發生錯誤',
+      text: '發生未知錯誤，請稍後再試',
+      icon: 'error',
+      confirmButtonText: '確認'
+    });
+  } finally {
     isLoading.value = false;
   }
-}
+};
 
 // 跳過偏好設定
 const skipPreferences = () => {

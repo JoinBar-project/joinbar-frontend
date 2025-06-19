@@ -315,13 +315,7 @@ export const useAuthStore = defineStore('auth', () => {
       localStorage.setItem('refresh_token', refreshToken.value);
       localStorage.setItem('user', JSON.stringify(user.value));
 
-      await Swal.fire({
-        title: '登入成功!',
-        icon: 'success',
-        confirmButtonText: '開始使用'
-      });
-
-      return true;
+      return { success: true, user: resp.data.user };
 
     } catch(err) {
       //信箱未驗證
@@ -526,36 +520,15 @@ export const useAuthStore = defineStore('auth', () => {
       if (!user.value?.id) {
         throw new Error('用戶資訊不存在');
       }
-  
-      console.log('儲存偏好設定:', preferences);
 
       const resp = await saveBarTagsAPI(user.value.id, preferences);
-      console.log('偏好設定儲存成功:', resp.data);
       
-      await Swal.fire({
-        title: '偏好設定已儲存！',
-        text: '您的酒吧偏好已成功更新',
-        icon: 'success',
-        confirmButtonText: '開始使用',
-        timer: 2000,
-        timerProgressBar: true
-      });
-      
-      return true;
+      return { success: true, data: resp.data };
       
     } catch(err) {
       console.error('儲存偏好設定失敗:', err);
-      
-      const errorInfo = handleError(err, '儲存偏好設定失敗');
-      
-      await Swal.fire({
-        title: errorInfo.title,
-        text: errorInfo.message,
-        icon: 'error',
-        confirmButtonText: '確認'
-      });
 
-      return false;
+      return { success: false, error: err.response?.data?.message || '儲存失敗，請稍後再試' };
     }
   }  
 
