@@ -95,7 +95,6 @@
               <p>{{ bar.description || "暫無詳細介紹。" }}</p>
             </div>
 
-            <!-- 動態 Google 評論區塊 -->
             <div class="google-review-section">
               <h3>熱門評論</h3>
               <template v-if="bar.googleReviews && bar.googleReviews.length">
@@ -208,7 +207,6 @@ const currentImageIndex = ref(0);
 const defaultImage =
   "https://placehold.co/800x600/decdd5/860914?text=No+Image+Available";
 
-// 直接使用 window.google，因為 Google Maps API 已經載入到全域
 const google = computed(() => window.google && window.google.maps ? window.google.maps : null);
 
 const currentImage = computed(() => {
@@ -218,10 +216,8 @@ const currentImage = computed(() => {
   return props.bar.imageUrl || defaultImage;
 });
 
-// 計算屬性用於判斷當前營業狀態
 const currentOpenStatus = computed(() => {
   if (props.bar.opening_hours && google.value) {
-    // 確保 google 物件已載入且 opening_hours 存在
     return props.bar.opening_hours.isOpen()
       ? '<span style="color: green;">正在營業中</span>'
       : '<span style="color: red;">目前休息中</span>';
@@ -540,9 +536,9 @@ const getTagLabel = (tag) => {
   line-height: 1.6;
   color: #444;
 }
-/* 新增或修改 ul/li 樣式 */
+
 .opening-hours-detail ul {
-  list-style: none; /* 移除預設的列表樣式 */
+  list-style: none;
   padding: 0;
   margin: 5px 0 0 0;
 }

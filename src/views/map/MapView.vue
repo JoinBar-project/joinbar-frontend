@@ -99,32 +99,30 @@ import placeTypeMap from '@/composable/placeTypeMap';
 const googleMapsApiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
 const myMapId = import.meta.env.VITE_MAP_ID;
 
-// --- Template Refs ---
-const mapContainer = ref(null); // 用於綁定地圖的 DOM 元素
+const mapContainer = ref(null);
 
-// --- useGoogleMaps Composable ---
 const {
   map,
   infoWindow,
-  loading: googleMapsLoading, // 地圖API載入狀態
-  isFetching, // 搜尋數據的載入狀態
+  loading: googleMapsLoading,
+  isFetching,
   loadGoogleMapsAPI,
   initMap,
   showInfoWindow,
   closeInfoWindow,
   panTo,
   setZoom,
-  displayBarsOnMap, // <-- 這個函式現在需要第二個參數
+  displayBarsOnMap,
   requestGeolocationPermission,
   getCurrentLocation: getMapCurrentLocation,
   getPlacePredictions,
-  searchAndDisplayPlaces, // 已優化多頁獲取
-  searchBarsInMapBounds, // 已優化多頁獲取
-  clearMarkers, // <-- 注意這裡，我們會直接使用這個函數
-  google: googleMapsInstance, // 暴露 Google Maps API 實例 (readonly shallowRef)
+  searchAndDisplayPlaces,
+  searchBarsInMapBounds,
+  clearMarkers,
+  google: googleMapsInstance,
   isReady,
-  formatBarInfoWindowContent, // <-- 新增：從 useGoogleMaps 導出 formatBarInfoWindowContent
-  getPlaceDetails, // <-- 新增：從 useGoogleMaps 導出 getPlaceDetails
+  formatBarInfoWindowContent,
+  getPlaceDetails,
 } = useGoogleMaps(mapContainer, {
   googleMapsApiKey: googleMapsApiKey,
   mapId: myMapId,
@@ -134,7 +132,6 @@ const {
   },
 });
 
-// --- 狀態管理 ---
 const isFilterPanelOpen = ref(false);
 const searchQuery = ref("");
 const suggestions = ref([]);
@@ -149,15 +146,14 @@ const currentFilters = ref({
   maxOpenMinute: 0,
   tags: [],
 });
-const selectedBar = ref(null); // 用於地圖資訊視窗和高亮
+const selectedBar = ref(null);
 const isBarDetailModalOpen = ref(false);
-const selectedBarForDetail = ref(null); // 用於 BarDetailModal
+const selectedBarForDetail = ref(null);
 const isLoading = ref(false);
-const googleBars = ref([]); // <-- 這個變數將是篩選的來源
-const mainBarForSearch = ref(null); // 專門存搜尋主酒吧
-const selectedTag = ref(null); // 新增：目前選中的標籤
+const googleBars = ref([]);
+const mainBarForSearch = ref(null);
+const selectedTag = ref(null);
 
-// --- Computed Properties ---
 const combinedLoading = computed(
   () => googleMapsLoading.value || isFetching.value || isLoading.value
 );
@@ -176,7 +172,6 @@ const filteredBars = computed(() => {
     "士林區",
   ];
 
-  // 地址過濾
   if (filters.address && filters.address !== "current_location") {
     if (Array.isArray(filters.address)) {
       if (filters.address.length > 0) {
@@ -189,7 +184,6 @@ const filteredBars = computed(() => {
     }
   }
 
-  // 標籤過濾 (包含區域標籤的特殊處理)
   if (filters.tags && filters.tags.length > 0) {
     const nonDistrictTags = filters.tags.filter(
       (tag) => !districtTagsList.includes(tag)
@@ -206,7 +200,6 @@ const filteredBars = computed(() => {
 
     if (selectedDistrictTagsFromTagsFilter.length > 0) {
       if (filters.address && filters.address !== "current_location") {
-        // 檢查是否有任何選定的區域標籤與地址篩選器匹配
         let addressArr = Array.isArray(filters.address) ? filters.address : [filters.address];
         const hasMatchingDistrict = selectedDistrictTagsFromTagsFilter.some(tag =>
         addressArr.some(addr => addr.includes(tag))
@@ -224,7 +217,6 @@ const filteredBars = computed(() => {
     }
   }
 
-  // 距離過濾 (需要確保 Google Maps geometry 庫已載入)
   if (map && typeof googleMapsInstance === 'function' && googleMapsInstance() && googleMapsInstance().maps && googleMapsInstance().maps.geometry && googleMapsInstance().maps.geometry.spherical) {
     const mapCenter = map.value.getCenter && map.value.getCenter();
     if (mapCenter) {
@@ -427,7 +419,6 @@ async function handleSearch() {
 
     const result = await searchAndDisplayPlaces(searchQuery.value);
     mainBars = result && result.results ? result.results : [];
-    // 若沒結果且屬於常見類型，fallback nearbySearch
     if ((!mainBars || mainBars.length === 0) && typeForNearby) {
       const google = googleMapsInstance.value;
       let center = null;
@@ -526,7 +517,6 @@ async function handleGetCurrentLocation() {
     const sidebarWidth = document.querySelector('.bar-list-sidebar')?.offsetWidth || 0;
     const currentLocation = await getMapCurrentLocation(sidebarWidth);
     if (currentLocation) {
-      // 以目前位置為中心搜尋附近酒吧
       const bars = await searchBarsInMapBounds(false);
       googleBars.value = bars;
     }
@@ -554,7 +544,6 @@ function toggleFilterPanel() {
 }
 
 async function handleBarSelected(bar) {
-  // 若 bar 已有 googleReviews，直接顯示；否則自動補抓詳細資料
   if (bar.place_id && (!bar.googleReviews || bar.googleReviews.length === 0)) {
     try {
       const detail = await getPlaceDetails(bar.place_id);
@@ -598,7 +587,6 @@ function handleToggleWishlist(barId) {
   if (barIndex > -1) {
     const updatedBar = { ...googleBars.value[barIndex] };
     updatedBar.isWishlisted = !updatedBar.isWishlisted;
-    // 替換陣列中的物件，以確保 Vue 偵測到變化
     googleBars.value.splice(barIndex, 1, updatedBar);
   }
   if (
@@ -673,7 +661,6 @@ onMounted(async () => {
     if (mapContainer.value) {
       await initMap();
       requestGeolocationPermission();
-      // 進入頁面自動取得目前位置並搜尋附近酒吧
       let gotLocation = false;
       try {
         const sidebarWidth = document.querySelector('.bar-list-sidebar')?.offsetWidth || 0;
