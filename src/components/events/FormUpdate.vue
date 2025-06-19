@@ -18,6 +18,7 @@ const {
   handleUpdate,
   handleDelete,
   loadEvent,
+  isAdmin,
 } = useEventForm(props.eventId);
 
 watch(
@@ -93,7 +94,7 @@ async function onDelete() {
               id="event-end-date"
               v-model="eventEndDate" />
           </div>
-          <div class="form-row">
+          <div class="form-row" v-if="isAdmin">
             <label for="event-price">價格</label>
             <input
               type="number"
@@ -125,7 +126,7 @@ async function onDelete() {
         <button
           type="button"
           class="btn-cancle"
-          @click="$emit('cancel')">
+          @click="emit('cancel')">
           取消修改
         </button>
         <button

@@ -1,8 +1,13 @@
-import { ref, watch } from 'vue'
+import { ref, watch, computed } from 'vue'
+import { useAuthStore } from '@/stores/authStore'
 import { useEventStore } from '@/stores/event'
 import axios from 'axios'
 
 export function useEventForm(eventId = null) {
+  const authStore = useAuthStore()
+  const userRole = computed(() => authStore.user?.role || 'user')
+  const isAdmin = computed(() => userRole === 'admin')
+  const userId = authStore.user?.id || null
   const eventStore = useEventStore()
   
   const eventName = ref('')
@@ -35,12 +40,16 @@ export function useEventForm(eventId = null) {
   }
   
   function validateForm() {
-    return eventName.value &&
-           barName.value &&
-           eventStartDate.value &&
-           eventEndDate.value &&
-           eventPrice.value &&
-           eventPeople.value
+    const basicValid =
+      eventName.value &&
+      barName.value &&
+      eventStartDate.value &&
+      eventEndDate.value &&
+      eventPeople.value
+
+    const priceValid = isAdmin.value ? eventPrice.value !== '' && !isNaN(eventPrice.value) : true
+
+    return basicValid && priceValid
   }
   
   function createPayload() {
@@ -52,7 +61,7 @@ export function useEventForm(eventId = null) {
       endDate: eventEndDate.value,
       maxPeople: Number(eventPeople.value),
       imageUrl: eventImageUrl.value,
-      price: Number(eventPrice.value),
+      price: isAdmin.value ? Number(eventPrice.value) : 0,
       hostUser: 1, // 暫時寫死測試帳號，等會員系統建置完成
       tags: [...eventHashtags.value]
     }
@@ -164,6 +173,7 @@ export function useEventForm(eventId = null) {
     eventPrice,
     eventPeople,
     eventHashtags,
+    isAdmin,
     
     showForm,
     showAlert,
