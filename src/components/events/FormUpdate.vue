@@ -1,6 +1,7 @@
 <script setup>
+import { ref, watch } from 'vue';
+import axios from 'axios';
 import { useEventForm } from '@/composables/useEventForm';
-import { watch } from 'vue';
 import Hashtag from './Hashtag.vue';
 
 const emit = defineEmits(['update', 'delete', 'cancel']);
@@ -21,6 +22,8 @@ const {
   isAdmin,
 } = useEventForm(props.eventId);
 
+const imageFile = ref(null);
+
 watch(
   () => props.eventId,
   newId => {
@@ -31,12 +34,37 @@ watch(
 
 async function onUpdate() {
   try {
-    const success = await handleUpdate(props.eventId);
-    if (success) {
-      emit('update');
+    const formData = new FormData();
+
+    formData.append('name', eventName.value);
+    formData.append('bar_name', barName.value);
+    formData.append('location', eventLocation.value);
+    formData.append('start_at', eventStartDate.value);
+    formData.append('end_at', eventEndDate.value);
+    formData.append('price', eventPrice.value);
+    formData.append('max_people', eventPeople.value);
+
+    // 加入圖片（如果有）
+    if (imageFile.value) {
+      formData.append('image', imageFile.value);
     }
+
+    // 加入 tagIds
+    const tagIds = eventHashtags.value.map(tag => tag.id);
+    tagIds.forEach(id => formData.append('tagIds', id)); // 支援多選
+
+    const token = localStorage.getItem('token');
+    console.log('token:', token)
+    await axios.put(`/api/event/update/${props.eventId}`, formData, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+
+    emit('update');
   } catch (error) {
-    console.error('更新失敗:', error);
+    console.error('更新失敗:', error.response?.data || error);
   }
 }
 
