@@ -43,9 +43,7 @@ const { isJoin, joinedNum, toggleJoin, isOver24hr, showModal, formattedEventTime
     <div class="event-information-section">
       <div class="event-information-card">
         <div class="event-img">
-          <img
-            src="@/components/events/picture/酒吧示意圖.jpg"
-            alt="酒吧示意圖" />
+          <img :src="props.event.imageUrl" alt="活動圖片" />
         </div>
         <div class="event-content-box">
           <div class="event-map"></div>
@@ -93,9 +91,9 @@ const { isJoin, joinedNum, toggleJoin, isOver24hr, showModal, formattedEventTime
               v-if="isJoin"
               @click="openCancelModal()"
               :disabled="!isOver24hr"
-              :class="['event-btn event-btn-free', isOver24hr ? 'cursor-pointer' : 'cursor-not-allowed opacity-50']"
+              :class="['event-btn-free', isOver24hr ? 'cursor-pointer' : 'cursor-not-allowed opacity-50']"
               type="button"
-              class="event-btn event-btn-free">
+              class="event-btn-free">
               取消報名
             </button>
           </div>
@@ -108,6 +106,12 @@ const { isJoin, joinedNum, toggleJoin, isOver24hr, showModal, formattedEventTime
 </template>
 
 <style scoped>
+@reference "tailwindcss";
+
+.edit-btn-container {
+  @apply flex;
+}
+
 .event-information-section {
   max-width: 100vw;
   padding-top: 2%;
@@ -210,7 +214,7 @@ const { isJoin, joinedNum, toggleJoin, isOver24hr, showModal, formattedEventTime
   margin-bottom: 20px;
 }
 
-.event-btn {
+.event-btn-free {
   margin-right: 30px;
   margin-top: 30px;
   border-radius: 20px;
@@ -218,11 +222,9 @@ const { isJoin, joinedNum, toggleJoin, isOver24hr, showModal, formattedEventTime
   font-size: 24px;
   text-align: center;
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
-}
-
-.event-btn-free {
   background-color: white;
   padding: 8px 45px 10px 45px;
+  transition: background-color 0.3s ease, color 0.3s ease;
 }
 
 .event-btn-free:hover {

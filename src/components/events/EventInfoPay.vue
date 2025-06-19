@@ -69,30 +69,29 @@ const buyNow = () => {
 </script>
 
 <template>
-  <div>
-    <div :class="['modal', { 'modal-open': showModal }]">
-      <div class="modal-box">
-        <h3 class="text-lg font-bold">確認取消報名</h3>
-        <p class="py-4">
-          您確定要取消這次報名嗎？<br />
-          <span>取消後如人數額滿或是活動開始前24小時內都將無法報名</span>，<br />
-          請再次確認您的選擇。
-        </p>
-        <div class="modal-action">
-          <button
-            class="btn"
-            @click="closeModal">
-            放棄取消
-          </button>
-          <button
-            class="btn"
-            @click="handleConfirmCancel">
-            確認取消
-          </button>
-        </div>
+  <div :class="['modal', { 'modal-open': showModal }]">
+    <div class="modal-box">
+      <h3 class="text-lg font-bold">確認取消報名</h3>
+      <p class="py-4">
+        您確定要取消這次報名嗎？<br />
+        <span>取消後如人數額滿或是活動開始前24小時內都將無法報名</span>，<br />
+        請再次確認您的選擇。
+      </p>
+      <div class="modal-action">
+        <button
+          class="btn"
+          @click="closeModal">
+          放棄取消
+        </button>
+        <button
+          class="btn"
+          @click="handleConfirmCancel">
+          確認取消
+        </button>
       </div>
     </div>
-
+  </div>
+  <div class="event-information-section">
     <div class="event-information-card">
       <div class="event-img">
         <img :src="props.event.imageUrl" alt="活動圖片" />
@@ -110,7 +109,6 @@ const buyNow = () => {
             </div>
           </div>
 
-          <div>
             <h3 class="event-title">
               {{ props.event.name }}
             </h3>
@@ -145,7 +143,7 @@ const buyNow = () => {
                 目前報名人數： <span>{{ joinedNum }}</span> ｜ 報名人數上限：<span>{{ props.event.maxPeople || '無報名人數限制' }}</span>
               </p>
             </div>
-          </div>
+
           <div class="edit-btn-container">
             <button
               @click="addToCart"
@@ -164,14 +162,13 @@ const buyNow = () => {
               :event-id="props.event.id"
               @update="emit('update')"
             />
-          </div>
+        </div>
         </div>
       </div>
     </div>
-
-    <EventHoster />
-    <MessageBoard v-if="isJoin" />
   </div>
+  <EventHoster />
+  <MessageBoard v-if="isJoin" />
 </template>
 
 <style scoped>
