@@ -2,122 +2,85 @@
   <div class="orders-container">
     <div class="orders-header">
       <h1>我的訂單</h1>
-      <div class="orders-stats">
-        <div class="stat-item">
-          <span class="stat-number">{{ stats.totalOrders }}</span>
-          <span class="stat-label">總訂單</span>
-        </div>
-        <div class="stat-item">
-          <span class="stat-number">${{ formattedTotalAmount }}</span>
-          <span class="stat-label">總金額</span>
-        </div>
+      <div class="stats">
+        <span>總計 {{ orders.length }} 筆訂單</span>
       </div>
     </div>
 
-    <div v-if="isLoading" class="loading-section">
+    <div v-if="isLoading" class="loading">
       <div class="spinner"></div>
-      <p>載入訂單中...</p>
+      <p>載入中...</p>
     </div>
 
-    <div v-else-if="error" class="error-section">
-      <div class="error-icon">❌</div>
-      <h3>載入失敗</h3>
+    <div v-else-if="error" class="error">
       <p>{{ error }}</p>
-      <button @click="loadOrders" class="retry-btn">重新載入</button>
+      <button @click="loadOrders" class="btn">重新載入</button>
     </div>
 
-    <div v-else-if="orders.length === 0" class="empty-orders">
+    <div v-else-if="orders.length === 0" class="empty">
       <h3>還沒有訂單</h3>
-      <p>快去尋找喜歡的活動吧！</p>
-      <button @click="goToEvents" class="go-shopping-btn">開始購物</button>
+      <button @click="goToEvents" class="btn">開始購物</button>
     </div>
 
     <div v-else>
-      <div class="filters-section">
-        <div class="filter-group">
-          <label for="status-filter">訂單狀態</label>
-          <select id="status-filter" v-model="statusFilter" class="filter-select">
-            <option value="">所有狀態</option>
-            <option value="pending">待付款</option>
-            <option value="confirmed">已確認</option>
-            <option value="paid">已付款</option>
-            <option value="cancelled">已取消</option>
-            <option value="refunded">已退款</option>
-          </select>
-        </div>
-
-        <div class="filter-group">
-          <label for="payment-filter">付款方式</label>
-          <select id="payment-filter" v-model="paymentMethodFilter" class="filter-select">
-            <option value="">所有方式</option>
-            <option value="linepay">LINE Pay</option>
-            <option value="creditcard">信用卡</option>
-          </select>
-        </div>
-
-        <div class="filter-group">
-          <label for="date-filter">日期範圍</label>
-          <select id="date-filter" v-model="dateRangeFilter" class="filter-select">
-            <option value="">所有時間</option>
-            <option value="today">今天</option>
-            <option value="week">本週</option>
-            <option value="month">本月</option>
-            <option value="quarter">近三個月</option>
-          </select>
-        </div>
-
-        <div class="filter-group search-group">
-          <label for="search-input">搜尋</label>
-          <input 
-            id="search-input"
-            v-model="searchKeyword" 
-            type="text" 
-            placeholder="訂單編號或活動名稱"
-            class="search-input"
-          />
-        </div>
-
-        <div class="filter-actions">
-          <button @click="clearFilters" class="clear-filters-btn">
-            🗑️ 清除篩選
-          </button>
-        </div>
+      <div class="filters">
+        <select v-model="statusFilter">
+          <option value="">所有狀態</option>
+          <option value="pending">待付款</option>
+          <option value="confirmed">已確認</option>
+          <option value="cancelled">已取消</option>
+        </select>
+        
+        <input 
+          v-model="searchKeyword" 
+          type="text" 
+          placeholder="搜尋訂單編號"
+          class="search"
+        />
+        
+        <button @click="clearFilters" class="btn-clear">清除</button>
       </div>
 
-      <div class="filter-results">
-        <div class="results-info">
-          <span class="results-count">
-            顯示 <strong>{{ filteredOrders.length }}</strong> / {{ orders.length }} 筆訂單
-          </span>
-          <span v-if="hasActiveFilters" class="active-filters">
-            (已套用篩選條件)
-          </span>
-        </div>
+      <div class="order-list">
+        <div 
+          v-for="order in filteredOrders" 
+          :key="order.id" 
+          class="order-card"
+          :class="order.status"
+        >
+          <div class="order-header">
+            <div>
+              <h3>{{ order.orderNumber }}</h3>
+              <p>{{ formatDate(order.createdAt) }}</p>
+            </div>
+            <span class="status">{{ getStatusText(order.status) }}</span>
+          </div>
 
-        <div class="sort-options">
-          <label for="sort-select">排序：</label>
-          <select id="sort-select" v-model="sortBy" class="sort-select">
-            <option value="newest">最新訂單</option>
-            <option value="oldest">最舊訂單</option>
-            <option value="amount-high">金額高→低</option>
-            <option value="amount-low">金額低→高</option>
-            <option value="status">依狀態</option>
-          </select>
-        </div>
-      </div>
+          <div class="order-content">
+            <div class="order-info">
+              <span>總金額：<strong>${{ formatAmount(order.totalAmount) }}</strong></span>
+              <span v-if="order.paymentMethod">付款：{{ getPaymentText(order.paymentMethod) }}</span>
+            </div>
 
-      <div class="orders-content">
-        <p>篩選功能已準備好！下一步將實現訂單列表顯示</p>
-        <div class="debug-info">
-          <h4>除錯資訊：</h4>
-          <ul>
-            <li>狀態篩選：{{ statusFilter || '無' }}</li>
-            <li>付款方式：{{ paymentMethodFilter || '無' }}</li>
-            <li>日期範圍：{{ dateRangeFilter || '無' }}</li>
-            <li>搜尋關鍵字：{{ searchKeyword || '無' }}</li>
-            <li>排序方式：{{ sortBy }}</li>
-            <li>篩選後數量：{{ filteredOrders.length }}</li>
-          </ul>
+            <div v-if="order.items?.length" class="items">
+              <h4>購買項目 ({{ order.items.length }})</h4>
+              <div v-for="item in order.items" :key="item.id" class="item">
+                <span class="item-name">{{ item.eventName }}</span>
+                <span class="item-price">${{ formatAmount(item.price) }}</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="order-actions">
+            <button @click="viewOrder(order.id)" class="btn">查看詳情</button>
+            <button 
+              v-if="order.status === 'pending'" 
+              @click="cancelOrder(order.id)"
+              class="btn-danger"
+            >
+              取消訂單
+            </button>
+          </div>
         </div>
       </div>
     </div>
@@ -125,7 +88,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, watch } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useOrder } from '@/composables/useOrder'
 import dayjs from 'dayjs'
@@ -136,93 +99,28 @@ const {
   getUserOrderHistory,
   isLoading,
   error,
-  clearError,
-  stats,
-  formattedTotalAmount
+  clearError
 } = useOrder()
 
 const orders = ref([])
-
 const statusFilter = ref('')
-const paymentMethodFilter = ref('')
-const dateRangeFilter = ref('')
 const searchKeyword = ref('')
-const sortBy = ref('newest')
-
-const hasActiveFilters = computed(() => {
-  return statusFilter.value || 
-         paymentMethodFilter.value || 
-         dateRangeFilter.value || 
-         searchKeyword.value.trim()
-})
 
 const filteredOrders = computed(() => {
-  let filtered = [...orders.value]
+  let filtered = orders.value
 
   if (statusFilter.value) {
     filtered = filtered.filter(order => order.status === statusFilter.value)
   }
 
-  if (paymentMethodFilter.value) {
-    filtered = filtered.filter(order => order.paymentMethod === paymentMethodFilter.value)
-  }
-
-  if (dateRangeFilter.value) {
-    const now = dayjs()
-    let startDate
-
-    switch (dateRangeFilter.value) {
-      case 'today':
-        startDate = now.startOf('day')
-        break
-      case 'week':
-        startDate = now.startOf('week')
-        break
-      case 'month':
-        startDate = now.startOf('month')
-        break
-      case 'quarter':
-        startDate = now.subtract(3, 'month')
-        break
-    }
-
-    if (startDate) {
-      filtered = filtered.filter(order => 
-        dayjs(order.createdAt).isAfter(startDate)
-      )
-    }
-  }
-
   if (searchKeyword.value.trim()) {
-    const keyword = searchKeyword.value.trim().toLowerCase()
-    filtered = filtered.filter(order => {
-      const orderNumber = order.orderNumber?.toLowerCase() || ''
-      const eventNames = order.items?.map(item => item.eventName?.toLowerCase()).join(' ') || ''
-      
-      return orderNumber.includes(keyword) || eventNames.includes(keyword)
-    })
+    const keyword = searchKeyword.value.toLowerCase()
+    filtered = filtered.filter(order => 
+      order.orderNumber?.toLowerCase().includes(keyword)
+    )
   }
 
-  switch (sortBy.value) {
-    case 'newest':
-      filtered.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
-      break
-    case 'oldest':
-      filtered.sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt))
-      break
-    case 'amount-high':
-      filtered.sort((a, b) => parseFloat(b.totalAmount) - parseFloat(a.totalAmount))
-      break
-    case 'amount-low':
-      filtered.sort((a, b) => parseFloat(a.totalAmount) - parseFloat(b.totalAmount))
-      break
-    case 'status':
-      const statusOrder = { pending: 1, paid: 2, confirmed: 3, cancelled: 4, refunded: 5 }
-      filtered.sort((a, b) => (statusOrder[a.status] || 99) - (statusOrder[b.status] || 99))
-      break
-  }
-
-  return filtered
+  return filtered.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
 })
 
 const loadOrders = async () => {
@@ -230,330 +128,313 @@ const loadOrders = async () => {
     clearError()
     const response = await getUserOrderHistory()
     orders.value = response.orders
-    console.log('✅ 載入了', response.total, '筆訂單')
   } catch (err) {
-    console.error('❌ 載入訂單失敗:', err)
+    console.error('載入訂單失敗:', err)
   }
 }
 
 const clearFilters = () => {
   statusFilter.value = ''
-  paymentMethodFilter.value = ''
-  dateRangeFilter.value = ''
   searchKeyword.value = ''
-  sortBy.value = 'newest'
-  console.log('🗑️ 已清除所有篩選條件')
+}
+
+const formatDate = (dateString) => {
+  return dayjs(dateString).format('YYYY/MM/DD HH:mm')
+}
+
+const formatAmount = (amount) => {
+  return Number(amount).toLocaleString()
+}
+
+const getStatusText = (status) => {
+  const statusMap = {
+    pending: '待付款',
+    confirmed: '已確認',
+    cancelled: '已取消',
+    paid: '已付款'
+  }
+  return statusMap[status] || status
+}
+
+const getPaymentText = (method) => {
+  const methodMap = {
+    linepay: 'LINE Pay',
+    creditcard: '信用卡'
+  }
+  return methodMap[method] || method
+}
+
+const viewOrder = (orderId) => {
+  router.push({ name: 'OrderSuccess', query: { orderId } })
+}
+
+const cancelOrder = async (orderId) => {
+  if (!confirm('確定要取消這個訂單嗎？')) return
+  
+  try {
+    alert('訂單取消功能開發中...')
+  } catch (err) {
+    alert('取消失敗：' + err.message)
+  }
 }
 
 const goToEvents = () => {
   router.push('/event')
 }
 
-watch([statusFilter, paymentMethodFilter, dateRangeFilter, searchKeyword, sortBy], () => {
-  console.log('📊 篩選條件變化:', {
-    status: statusFilter.value,
-    payment: paymentMethodFilter.value,
-    date: dateRangeFilter.value,
-    search: searchKeyword.value,
-    sort: sortBy.value,
-    resultCount: filteredOrders.value.length
-  })
-}, { deep: true })
-
 onMounted(() => {
   loadOrders()
 })
 </script>
 
-
 <style scoped>
 .orders-container {
-  max-width: 1200px;
+  max-width: 800px;
   margin: 0 auto;
-  padding: 24px;
+  padding: 20px;
 }
 
 .orders-header {
   display: flex;
   justify-content: space-between;
-  align-items: flex-start;
-  margin-bottom: 32px;
-  padding-bottom: 24px;
-  border-bottom: 2px solid #f1f5f9;
+  align-items: center;
+  margin-bottom: 30px;
+  padding-bottom: 20px;
+  border-bottom: 1px solid #eee;
 }
 
 .orders-header h1 {
   margin: 0;
-  color: #1f2937;
-  font-size: 28px;
-  font-weight: 700;
+  color: #333;
 }
 
-.orders-stats {
-  display: flex;
-  gap: 24px;
+.stats {
+  color: #666;
+  font-size: 14px;
 }
 
-.stat-item {
+.loading, .error, .empty {
   text-align: center;
-  padding: 16px;
-  background: #f8fafc;
-  border-radius: 12px;
-  min-width: 100px;
-}
-
-.stat-number {
-  display: block;
-  font-size: 24px;
-  font-weight: 700;
-  color: #dc2626;
-  margin-bottom: 4px;
-}
-
-.stat-label {
-  font-size: 12px;
-  color: #64748b;
-}
-
-.loading-section, 
-.error-section, 
-.empty-orders {
-  text-align: center;
-  padding: 80px 40px;
-  color: #6b7280;
+  padding: 60px 20px;
+  color: #666;
 }
 
 .spinner {
-  margin: 0 auto 24px auto;
-  width: 40px;
-  height: 40px;
-  border: 4px solid #f3f4f6;
-  border-top: 4px solid #dc2626;
+  width: 30px;
+  height: 30px;
+  border: 3px solid #f3f3f3;
+  border-top: 3px solid #333;
   border-radius: 50%;
   animation: spin 1s linear infinite;
+  margin: 0 auto 20px auto;
 }
 
 @keyframes spin {
   to { transform: rotate(360deg); }
 }
 
-.error-icon {
-  font-size: 64px;
-  margin-bottom: 24px;
+.filters {
+  display: flex;
+  gap: 15px;
+  margin-bottom: 25px;
+  padding: 20px;
+  background: #f8f9fa;
+  border-radius: 8px;
+  align-items: center;
 }
 
-.retry-btn, 
-.go-shopping-btn {
-  background: #dc2626;
+.filters select,
+.filters input {
+  padding: 8px 12px;
+  border: 1px solid #ddd;
+  border-radius: 5px;
+  font-size: 14px;
+}
+
+.search {
+  flex: 1;
+  min-width: 200px;
+}
+
+.btn-clear {
+  background: #6c757d;
   color: white;
   border: none;
-  padding: 12px 24px;
-  border-radius: 8px;
-  font-weight: 600;
+  padding: 8px 15px;
+  border-radius: 5px;
   cursor: pointer;
-  margin-top: 16px;
+  font-size: 14px;
 }
 
-.retry-btn:hover, 
-.go-shopping-btn:hover {
-  background: #b91c1c;
+.btn-clear:hover {
+  background: #5a6268;
 }
 
-.filters-section {
-  background: #f8fafc;
-  border-radius: 16px;
-  padding: 24px;
-  margin-bottom: 24px;
-  border: 1px solid #e2e8f0;
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: 20px;
-  align-items: end;
-}
-
-.filter-group {
+.order-list {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 20px;
 }
 
-.filter-group label {
-  font-size: 14px;
-  font-weight: 500;
-  color: #374151;
-}
-
-.filter-select,
-.search-input {
-  padding: 10px 12px;
-  border: 1px solid #d1d5db;
-  border-radius: 8px;
-  font-size: 14px;
+.order-card {
   background: white;
-  transition: border-color 0.2s, box-shadow 0.2s;
-}
-
-.filter-select:focus,
-.search-input:focus {
-  outline: none;
-  border-color: #dc2626;
-  box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.1);
-}
-
-.search-group {
-  min-width: 250px;
-}
-
-.search-input::placeholder {
-  color: #9ca3af;
-}
-
-.filter-actions {
-  display: flex;
-  align-items: flex-end;
-}
-
-.clear-filters-btn {
-  background: #6b7280;
-  color: white;
-  border: none;
-  padding: 10px 16px;
+  border: 1px solid #e9ecef;
   border-radius: 8px;
-  font-size: 14px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: background-color 0.2s;
-  white-space: nowrap;
+  overflow: hidden;
+  transition: box-shadow 0.2s;
 }
 
-.clear-filters-btn:hover {
-  background: #4b5563;
+.order-card:hover {
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
 }
 
-.filter-results {
+.order-card.pending { border-left: 4px solid #ffc107; }
+.order-card.confirmed { border-left: 4px solid #28a745; }
+.order-card.cancelled { border-left: 4px solid #dc3545; }
+
+.order-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 24px;
-  padding: 16px 20px;
-  background: white;
-  border-radius: 12px;
-  border: 1px solid #e5e7eb;
+  padding: 20px;
+  background: #f8f9fa;
+  border-bottom: 1px solid #e9ecef;
 }
 
-.results-info {
-  display: flex;
-  align-items: center;
-  gap: 8px;
+.order-header h3 {
+  margin: 0 0 5px 0;
+  font-size: 16px;
+  color: #333;
+  font-family: monospace;
 }
 
-.results-count {
-  color: #374151;
+.order-header p {
+  margin: 0;
   font-size: 14px;
+  color: #666;
 }
 
-.results-count strong {
-  color: #dc2626;
-  font-weight: 600;
-}
-
-.active-filters {
-  color: #059669;
+.status {
+  background: #e9ecef;
+  color: #495057;
+  padding: 4px 12px;
+  border-radius: 15px;
   font-size: 12px;
   font-weight: 500;
-  background: #d1fae5;
-  padding: 4px 8px;
-  border-radius: 12px;
 }
 
-.sort-options {
+.order-content {
+  padding: 20px;
+}
+
+.order-info {
   display: flex;
-  align-items: center;
-  gap: 8px;
+  justify-content: space-between;
+  margin-bottom: 15px;
+  font-size: 14px;
+  color: #666;
 }
 
-.sort-options label {
+.order-info strong {
+  color: #dc3545;
+  font-size: 16px;
+}
+
+.items {
+  margin-top: 15px;
+}
+
+.items h4 {
+  margin: 0 0 10px 0;
   font-size: 14px;
-  color: #6b7280;
+  color: #333;
+}
+
+.item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 0;
+  border-bottom: 1px solid #f1f1f1;
+}
+
+.item:last-child {
+  border-bottom: none;
+}
+
+.item-name {
+  flex: 1;
+  font-size: 14px;
+  color: #333;
+}
+
+.item-price {
+  color: #dc3545;
   font-weight: 500;
 }
 
-.sort-select {
-  padding: 6px 10px;
-  border: 1px solid #d1d5db;
-  border-radius: 6px;
+.order-actions {
+  display: flex;
+  gap: 10px;
+  padding: 15px 20px;
+  background: #f8f9fa;
+  border-top: 1px solid #e9ecef;
+}
+
+.btn, .btn-danger {
+  padding: 8px 16px;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
   font-size: 14px;
-  background: white;
-  min-width: 120px;
+  transition: background-color 0.2s;
 }
 
-.orders-content {
-  padding: 40px;
-  text-align: center;
-  background: #f8fafc;
-  border-radius: 12px;
-  color: #6b7280;
+.btn {
+  background: #007bff;
+  color: white;
 }
 
-.debug-info {
-  margin-top: 24px;
-  padding: 20px;
-  background: #fff3cd;
-  border-radius: 8px;
-  text-align: left;
-  max-width: 400px;
-  margin-left: auto;
-  margin-right: auto;
+.btn:hover {
+  background: #0056b3;
 }
 
-.debug-info h4 {
-  margin: 0 0 12px 0;
-  color: #856404;
+.btn-danger {
+  background: #dc3545;
+  color: white;
 }
 
-.debug-info ul {
-  margin: 0;
-  padding-left: 20px;
-  color: #856404;
-}
-
-.debug-info li {
-  margin: 4px 0;
-  font-size: 14px;
+.btn-danger:hover {
+  background: #c82333;
 }
 
 @media (max-width: 768px) {
   .orders-container {
-    padding: 16px;
+    padding: 15px;
   }
   
-  .orders-header {
+  .filters {
     flex-direction: column;
-    gap: 20px;
     align-items: stretch;
   }
   
-  .orders-stats {
-    justify-content: center;
-  }
-  
-  .filters-section {
-    grid-template-columns: 1fr;
-    gap: 16px;
-  }
-  
-  .search-group {
+  .search {
     min-width: auto;
   }
   
-  .filter-results {
-    padding: 12px 16px;
-  }
-  
-  .results-info {
+  .order-header {
     flex-direction: column;
     align-items: flex-start;
-    gap: 4px;
+    gap: 10px;
+  }
+  
+  .order-info {
+    flex-direction: column;
+    gap: 5px;
+  }
+  
+  .order-actions {
+    flex-direction: column;
   }
 }
 </style>
