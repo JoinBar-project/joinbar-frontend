@@ -133,9 +133,10 @@ const cancel = () => {
     <div>
       <label
         for="avatar"
-        class="bg-[var(--color-black)] text-[var(--color-secondary-pink)] p-2 rounded cursor-pointer"
-        >上傳頭像</label
-      >
+        class="px-4 py-3 bg-[var(--color-black)] text-[var(--color-secondary-pink)] rounded cursor-pointer hover:bg-opacity-80 active:scale-98 transition-all duration-150">
+        <i class="fa-solid fa-arrow-up-from-bracket"></i>
+        上傳頭像
+      </label>
       <input
         type="file"
         hidden
