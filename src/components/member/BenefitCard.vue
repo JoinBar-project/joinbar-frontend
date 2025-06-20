@@ -1,8 +1,10 @@
 <script setup>
 import { ref, computed } from 'vue'
 import dayjs from 'dayjs'
-import foodImage from '@/views/member/profile/picture/img-wine.jpg'
 import { updateBenefitStatus } from '@/api/memberCard'
+import vipCocktail from '@/assets/benefit/vip-cocktail.jpg'
+import cocktail from '@/assets/benefit/cocktail.jpg'
+import snake from '@/assets/benefit/snake.jpg'
 
 const { benefit } = defineProps({
   benefit: Object,
@@ -11,6 +13,11 @@ const { benefit } = defineProps({
 const dateRange = computed(() => {
   return `${dayjs(benefit.startAt).format('YYYY-MM-DD')} ~ ${dayjs(benefit.endAt).format('YYYY-MM-DD')}`
 })
+
+const status = computed(() => benefit.status)
+const isUsed = computed(() => status.value === 2)
+const isExpired = computed(() => status.value === 3)
+console.log('🧾 優惠券狀態:', benefit.id, benefit.status)
 
 const barOptions = ref([
   { id: 1, name: '醉後不歸路' },
@@ -50,11 +57,20 @@ async function handleConfirmRedeemModal(){
     });
 
     isRedeemed.value = true
+    benefit.status = 2
     showBenefitModal.value = false
   }catch(err){
     console.error(err)
   }
 }
+
+const imageMap = {
+  'VIP 專屬特調 1 次': vipCocktail,
+  '合作酒吧招待飲品 1 次': cocktail,
+  '合作酒吧招待小點 1 次': snake
+}
+
+const imageUrl = computed(() => imageMap[benefit.benefit] || cocktail)
 
 
 </script>
@@ -64,8 +80,8 @@ async function handleConfirmRedeemModal(){
     <figure class="aspect-square overflow-hidden relative w-[40%]">
       <img
         class="w-full h-full object-cover"
-        :src="foodImage"
-        alt="foodImage"
+        :src="imageUrl"
+        alt="imageUrl"
       />
       <div class="absolute bottom-0 left-0 w-full h-10 bg-black/80 text-white text-center text-sm flex items-center justify-center">
         <p>開車不喝酒，喝酒不開車</p>
@@ -84,7 +100,7 @@ async function handleConfirmRedeemModal(){
       <div class="flex">
         <select
           v-model="selectBar"
-          :disabled="isRedeemed"
+          :disabled="isUsed || isExpired || isRedeemed"
           class="select bg-white border-[2px] 
           border-[var(--color-primary-orange)] 
           focus:outline-none mt-2"
@@ -100,10 +116,16 @@ async function handleConfirmRedeemModal(){
         </select>
         <button 
           @click="toggleModal"
-          :disabled="isRedeemed"
+          :disabled="isUsed || isExpired || isRedeemed"
           type="button"
-          class="btn text-white bg-[var(--color-primary-red)] hover:bg-[var(--color-primary-orange)] mt-2">
-          {{ isRedeemed? '已使用' : '使用優惠券'}}
+          class="btn text-white bg-[var(--color-primary-red)]
+          hover:bg-[var(--color-primary-orange)] mt-2">
+          {{ 
+            isUsed ? '已使用' :
+            isExpired ? '已過期' :
+            isRedeemed ? '已使用' :
+            '使用優惠券'
+          }}
         </button>
       </div>
       
