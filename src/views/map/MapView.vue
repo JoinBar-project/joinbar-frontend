@@ -91,9 +91,11 @@ import FilterPanel from "../../components/map/FilterPanel.vue";
 import BarList from "../../components/map/BarList.vue";
 import BarDetailModal from "../../components/map/BarDetailModal.vue";
 
-
 import { useGoogleMaps } from "@/composables/useGoogleMaps/userIndex.js";
-import { COMMON_PLACE_TYPES_TO_EXCLUDE, BAR_PLACE_TYPES } from "@/composables/googleMapsConstants";
+import {
+  COMMON_PLACE_TYPES_TO_EXCLUDE,
+  BAR_PLACE_TYPES,
+} from "@/composables/googleMapsConstants";
 
 const googleMapsApiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
 const myMapId = import.meta.env.VITE_MAP_ID;
@@ -175,10 +177,13 @@ const filteredBars = computed(() => {
     if (Array.isArray(filters.address)) {
       if (filters.address.length > 0) {
         bars = bars.filter((bar) =>
-          filters.address.some(addr => bar.address?.includes(addr))
+          filters.address.some((addr) => bar.address?.includes(addr))
         );
       }
-    } else if (typeof filters.address === "string" && filters.address !== "current_location") {
+    } else if (
+      typeof filters.address === "string" &&
+      filters.address !== "current_location"
+    ) {
       bars = bars.filter((bar) => bar.address?.includes(filters.address));
     }
   }
@@ -199,9 +204,11 @@ const filteredBars = computed(() => {
 
     if (selectedDistrictTagsFromTagsFilter.length > 0) {
       if (filters.address && filters.address !== "current_location") {
-        let addressArr = Array.isArray(filters.address) ? filters.address : [filters.address];
-        const hasMatchingDistrict = selectedDistrictTagsFromTagsFilter.some(tag =>
-        addressArr.some(addr => addr.includes(tag))
+        let addressArr = Array.isArray(filters.address)
+          ? filters.address
+          : [filters.address];
+        const hasMatchingDistrict = selectedDistrictTagsFromTagsFilter.some(
+          (tag) => addressArr.some((addr) => addr.includes(tag))
         );
         if (!hasMatchingDistrict) {
           return [];
@@ -216,7 +223,14 @@ const filteredBars = computed(() => {
     }
   }
 
-  if (map && typeof googleMapsInstance === 'function' && googleMapsInstance() && googleMapsInstance().maps && googleMapsInstance().maps.geometry && googleMapsInstance().maps.geometry.spherical) {
+  if (
+    map &&
+    typeof googleMapsInstance === "function" &&
+    googleMapsInstance() &&
+    googleMapsInstance().maps &&
+    googleMapsInstance().maps.geometry &&
+    googleMapsInstance().maps.geometry.spherical
+  ) {
     const mapCenter = map.value.getCenter && map.value.getCenter();
     if (mapCenter) {
       const centerLatLng = new window.google.maps.LatLng(
@@ -410,9 +424,17 @@ async function handleSearch() {
     let mainBars = [];
     let typeForNearby = "establishment";
     const q = searchQuery.value.trim().toLowerCase();
-    if (["bar", "酒吧", "pub", "night club", "夜店", "交易吧", "intention"].some(k => q.includes(k))) {
+    if (
+      ["bar", "酒吧", "pub", "night club", "夜店", "交易吧", "intention"].some(
+        (k) => q.includes(k)
+      )
+    ) {
       typeForNearby = ["bar", "night_club", "pub", "liquor_store"];
-    } else if (["小吃", "餐廳", "美食", "food", "restaurant", "吃飯", "吃吃"].some(k => q.includes(k))) {
+    } else if (
+      ["小吃", "餐廳", "美食", "food", "restaurant", "吃飯", "吃吃"].some((k) =>
+        q.includes(k)
+      )
+    ) {
       typeForNearby = ["restaurant", "food"];
     }
 
@@ -425,7 +447,7 @@ async function handleSearch() {
         const c = map.value.getCenter();
         center = new window.google.maps.LatLng(c.lat(), c.lng());
       } else {
-        center = new window.google.maps.LatLng(25.0478, 121.5170);
+        center = new window.google.maps.LatLng(25.0478, 121.517);
       }
       const fallbackRequest = {
         location: center,
@@ -441,11 +463,17 @@ async function handleSearch() {
                 try {
                   const detail = await getPlaceDetails(place.place_id);
                   const tags = Array.isArray(detail.types)
-                    ? detail.types.filter(type => !COMMON_PLACE_TYPES_TO_EXCLUDE.includes(type))
+                    ? detail.types.filter(
+                        (type) => !COMMON_PLACE_TYPES_TO_EXCLUDE.includes(type)
+                      )
                     : [];
-                  const isOpen = detail.opening_hours ? detail.opening_hours.isOpen() : null;
+                  const isOpen = detail.opening_hours
+                    ? detail.opening_hours.isOpen()
+                    : null;
                   const isBarLike = Array.isArray(detail.types)
-                    ? detail.types.some(type => BAR_PLACE_TYPES.includes(type))
+                    ? detail.types.some((type) =>
+                        BAR_PLACE_TYPES.includes(type)
+                      )
                     : false;
                   return {
                     id: detail.place_id,
@@ -463,10 +491,15 @@ async function handleSearch() {
                     is_open: isOpen,
                     imageUrl:
                       detail.photos && detail.photos.length > 0
-                        ? detail.photos[0].getUrl({ maxWidth: 400, maxHeight: 400 })
+                        ? detail.photos[0].getUrl({
+                            maxWidth: 400,
+                            maxHeight: 400,
+                          })
                         : "",
                     images: detail.photos
-                      ? detail.photos.map((p) => p.getUrl({ maxWidth: 800, maxHeight: 600 }))
+                      ? detail.photos.map((p) =>
+                          p.getUrl({ maxWidth: 800, maxHeight: 600 })
+                        )
                       : [],
                     description: "點擊查看更多詳情...",
                     isWishlisted: false,
@@ -513,17 +546,17 @@ async function handleGetCurrentLocation() {
   try {
     clearMarkers("all");
     closeInfoWindow();
-    const sidebarWidth = document.querySelector('.bar-list-sidebar')?.offsetWidth || 0;
+    const sidebarWidth =
+      document.querySelector(".bar-list-sidebar")?.offsetWidth || 0;
     const currentLocation = await getMapCurrentLocation(sidebarWidth);
     if (currentLocation) {
-
       const bars = await searchBarsInMapBounds(false);
       googleBars.value = bars;
     }
   } catch (err) {
     const google = googleMapsInstance.value;
     if (google && map.value) {
-      const fallbackLocation = new window.google.maps.LatLng(25.0478, 121.5170);
+      const fallbackLocation = new window.google.maps.LatLng(25.0478, 121.517);
       map.value.setCenter(fallbackLocation);
       map.value.setZoom(15);
       const bars = await searchBarsInMapBounds(false);
@@ -551,7 +584,7 @@ async function handleBarSelected(bar) {
         bar.googleReviews = detail.reviews;
       }
     } catch (e) {
-      console.warn('自動補抓 Google 評論失敗', e);
+      console.warn("自動補抓 Google 評論失敗", e);
     }
   }
   selectedBarForDetail.value = bar || {};
@@ -617,7 +650,11 @@ function handleTagClick(tag) {
 watch(
   mapContainer,
   (newVal) => {
-    if (newVal && typeof googleMapsInstance === 'function' && googleMapsInstance()) {
+    if (
+      newVal &&
+      typeof googleMapsInstance === "function" &&
+      googleMapsInstance()
+    ) {
       initMap();
     }
   },
@@ -625,7 +662,12 @@ watch(
 );
 
 watch(isReady, (ready) => {
-  if (ready && map && typeof googleMapsInstance === 'function' && googleMapsInstance()) {
+  if (
+    ready &&
+    map &&
+    typeof googleMapsInstance === "function" &&
+    googleMapsInstance()
+  ) {
     const onMapIdleHandler = async () => {
       if (!isFetching.value && !isLoading.value) {
         const barsInBounds = await searchBarsInMapBounds(false);
@@ -641,7 +683,11 @@ watch(isReady, (ready) => {
 watch(
   filteredBars,
   (newBars) => {
-    if (map && typeof googleMapsInstance === 'function' && googleMapsInstance()) {
+    if (
+      map &&
+      typeof googleMapsInstance === "function" &&
+      googleMapsInstance()
+    ) {
       displayBarsOnMap(newBars, formatBarInfoWindowContent);
     }
   },
@@ -663,7 +709,8 @@ onMounted(async () => {
       requestGeolocationPermission();
       let gotLocation = false;
       try {
-        const sidebarWidth = document.querySelector('.bar-list-sidebar')?.offsetWidth || 0;
+        const sidebarWidth =
+          document.querySelector(".bar-list-sidebar")?.offsetWidth || 0;
         const currentLocation = await getMapCurrentLocation(sidebarWidth);
         if (currentLocation) {
           gotLocation = true;
@@ -673,7 +720,10 @@ onMounted(async () => {
       } catch (geoErr) {
         const google = googleMapsInstance.value;
         if (google && map.value) {
-          const fallbackLocation = new window.google.maps.LatLng(25.0478, 121.5170);
+          const fallbackLocation = new window.google.maps.LatLng(
+            25.0478,
+            121.517
+          );
           map.value.setCenter(fallbackLocation);
           map.value.setZoom(15);
           const bars = await searchBarsInMapBounds(false);
@@ -695,41 +745,129 @@ onMounted(async () => {
 });
 
 function getTypeForKeyword(q) {
-  if (["bar", "酒吧", "pub", "night club", "夜店", "交易吧", "intention"].some(k => q.includes(k))) {
+  const query = q.toLowerCase();
+
+  if (
+    [
+      "bar",
+      "酒吧",
+      "pub",
+      "night club",
+      "夜店",
+      "交易吧",
+      "intention",
+      "小酌",
+      "喝酒",
+      "夜生活",
+      "lounge",
+      "餐酒館",
+      "bistro",
+    ].some((k) => query.includes(k))
+  ) {
     return ["bar", "night_club", "pub", "liquor_store"];
-  } else if (["小吃", "餐廳", "美食", "food", "restaurant", "吃飯", "吃吃"].some(k => q.includes(k))) {
+  } else if (
+    [
+      "小吃",
+      "餐廳",
+      "美食",
+      "food",
+      "restaurant",
+      "吃飯",
+      "吃吃",
+      "用餐",
+      "料理",
+      "餐點",
+      "食堂",
+    ].some((k) => query.includes(k))
+  ) {
     return ["restaurant", "food"];
-  } else if (["咖啡", "咖啡廳", "coffee"].some(k => q.includes(k))) {
+  } else if (
+    ["咖啡", "咖啡廳", "coffee", "coffe shop", "飲品", "飲料店"].some((k) =>
+      query.includes(k)
+    )
+  ) {
     return ["cafe"];
-  } else if (["飲料", "手搖", "bubble tea", "tea"].some(k => q.includes(k))) {
+  } else if (
+    ["飲料", "手搖", "bubble tea", "tea", "茶飲", "手搖飲"].some((k) =>
+      query.includes(k)
+    )
+  ) {
     return ["cafe", "food"];
-  } else if (["超市", "market", "超商", "便利商店"].some(k => q.includes(k))) {
+  } else if (
+    ["超市", "market", "超商", "便利商店", "雜貨店", "商店", "便利店"].some(
+      (k) => query.includes(k)
+    )
+  ) {
     return ["supermarket", "convenience_store"];
-  } else if (["健身", "gym", "運動"].some(k => q.includes(k))) {
+  } else if (
+    ["健身", "gym", "運動", "健身房", "運動中心", "體育館"].some((k) =>
+      query.includes(k)
+    )
+  ) {
     return ["gym"];
-  } else if (["ktv", "KTV", "卡拉ok", "唱歌"].some(k => q.includes(k))) {
-    return ["night_club"];
-  } else if (["飯店", "旅館", "hotel", "住宿"].some(k => q.includes(k))) {
+  } else if (
+    ["ktv", "KTV", "卡拉ok", "唱歌", "錢櫃", "好樂迪", "星聚點"].some((k) =>
+      query.includes(k)
+    )
+  ) {
+    return ["night_club", "establishment"];
+  } else if (
+    ["飯店", "旅館", "hotel", "住宿", "民宿", "旅店", "hostel", "inn"].some(
+      (k) => query.includes(k)
+    )
+  ) {
     return ["lodging"];
-  } else if (["書店", "書局", "book"].some(k => q.includes(k))) {
-    return ["book_store"];
-  } else if (["藥局", "pharmacy"].some(k => q.includes(k))) {
+  } else if (
+    ["書店", "書局", "book", "library", "圖書館"].some((k) => query.includes(k))
+  ) {
+    return ["book_store", "library"];
+  } else if (
+    ["藥局", "pharmacy", "藥妝", "藥房"].some((k) => query.includes(k))
+  ) {
     return ["pharmacy"];
-  } else if (["醫院", "hospital"].some(k => q.includes(k))) {
+  } else if (
+    ["醫院", "hospital", "診所", "醫學中心"].some((k) => query.includes(k))
+  ) {
     return ["hospital"];
-  } else if (["銀行", "atm", "提款機"].some(k => q.includes(k))) {
+  } else if (
+    ["銀行", "atm", "提款機", "金融", "匯款"].some((k) => query.includes(k))
+  ) {
     return ["bank", "atm"];
-  } else if (["加油站", "gas"].some(k => q.includes(k))) {
+  } else if (
+    ["加油站", "gas", "加汽油", "中油", "台塑"].some((k) => query.includes(k))
+  ) {
     return ["gas_station"];
-  } else if (["停車場", "parking"].some(k => q.includes(k))) {
+  } else if (
+    ["停車場", "parking", "停車", "車位"].some((k) => query.includes(k))
+  ) {
     return ["parking"];
-  } else if (["動物", "寵物", "zoo", "pet"].some(k => q.includes(k))) {
-    return ["zoo", "pet_store"];
-  } else if (["藝文", "藝廊", "美術館", "museum", "art"].some(k => q.includes(k))) {
+  } else if (
+    ["動物", "寵物", "zoo", "pet", "動物園", "寵物店", "獸醫院"].some((k) =>
+      query.includes(k)
+    )
+  ) {
+    return ["zoo", "pet_store", "veterinary_care"];
+  } else if (
+    [
+      "藝文",
+      "藝廊",
+      "美術館",
+      "museum",
+      "art",
+      "畫廊",
+      "展覽",
+      "文化中心",
+    ].some((k) => query.includes(k))
+  ) {
     return ["art_gallery", "museum"];
-  } else if (["景點", "地標", "park", "公園"].some(k => q.includes(k))) {
+  } else if (
+    ["景點", "地標", "park", "公園", "觀光", "廣場", "古蹟"].some((k) =>
+      query.includes(k)
+    )
+  ) {
     return ["park", "point_of_interest"];
   }
+
   return "establishment";
 }
 </script>
@@ -873,7 +1011,9 @@ function getTypeForKeyword(q) {
   order: 3;
   box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
   outline: none;
-  transition: background-color 0.2s, transform 0.2s;
+  transition:
+    background-color 0.2s,
+    transform 0.2s;
 }
 
 .search-bt:hover {
