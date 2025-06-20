@@ -22,7 +22,11 @@ const {
   isAdmin,
 } = useEventForm(props.eventId);
 
+// 新增的變數
 const imageFile = ref(null);
+const loading = ref(false);
+const imagePreview = ref(null);
+const fileInput = ref(null);
 
 watch(
   () => props.eventId,
@@ -33,50 +37,89 @@ watch(
 );
 
 async function onUpdate() {
+  if (loading.value) return; // 防止重複點擊
+  
+  loading.value = true;
   try {
-    const formData = new FormData();
+    const token = localStorage.getItem('access_token');
+    
+    if (!token) {
+      alert('登入已過期，請重新登入');
+      return;
+    }
 
-    formData.append('name', eventName.value);
-    formData.append('bar_name', barName.value);
-    formData.append('location', eventLocation.value);
-    formData.append('start_at', eventStartDate.value);
-    formData.append('end_at', eventEndDate.value);
-    formData.append('price', eventPrice.value);
-    formData.append('max_people', eventPeople.value);
+    const formData = new FormData();
+    formData.append('name', eventName.value || '');
+    formData.append('bar_name', barName.value || '');
+    formData.append('location', eventLocation.value || '');
+    formData.append('start_at', eventStartDate.value || '');
+    formData.append('end_at', eventEndDate.value || '');
+    formData.append('price', eventPrice.value || '');
+    formData.append('max_people', eventPeople.value || '');
 
     if (imageFile.value) {
       formData.append('image', imageFile.value);
     }
 
-    const tagIds = eventHashtags.value.map(tag => tag.id);
-    tagIds.forEach(id => formData.append('tagIds', id));
+    // 檢查 eventHashtags 是否為陣列
+    if (Array.isArray(eventHashtags.value)) {
+      const tagIds = eventHashtags.value.map(tag => tag.id);
+      tagIds.forEach(id => formData.append('tagIds', id));
+    }
 
-    const token = localStorage.getItem('token');
-    console.log('token:', token)
-    await axios.put(`/api/event/update/${props.eventId}`, formData, {
+    console.log('準備發送請求...');
+    console.log('EventId:', props.eventId);
+
+    const response = await axios.put(`/api/event/update/${props.eventId}`, formData, {
       headers: {
-        Authorization: `Bearer ${token}`,
-        'Content-Type': 'multipart/form-data',
+        'Authorization': `Bearer ${token}`,
       },
     });
 
+    console.log('更新成功:', response.data);
+    alert('活動更新成功！');
     emit('update');
+    
   } catch (error) {
-    console.error('更新失敗:', error.response?.data || error);
+    console.error('完整錯誤信息:', error);
+    
+    // 詳細錯誤處理
+    if (error.response) {
+      // 伺服器回應的錯誤
+      console.error('伺服器錯誤:', error.response.status, error.response.data);
+      alert(`更新失敗: ${error.response.data?.message || '伺服器錯誤'}`);
+    } else if (error.request) {
+      // 網路請求錯誤
+      console.error('網路錯誤:', error.request);
+      alert('網路連線錯誤，請檢查網路狀態');
+    } else {
+      // 其他錯誤
+      console.error('未知錯誤:', error.message);
+      alert(`發生錯誤: ${error.message}`);
+    }
+  } finally {
+    loading.value = false;
   }
 }
 
 async function onDelete() {
+  if (loading.value) return; // 防止重複點擊
+  
+  if (!confirm('確定要刪除這個活動嗎？')) {
+    return;
+  }
+  
+  loading.value = true;
   try {
     await handleDelete(props.eventId);
     emit('delete');
   } catch (error) {
     console.error('刪除失敗:', error);
+    alert(`刪除失敗: ${error.message}`);
+  } finally {
+    loading.value = false;
   }
 }
-
-const imagePreview = ref(null);
-const fileInput = ref(null);
 
 function handleImageSelect(event) {
   const file = event.target.files[0];
@@ -203,20 +246,23 @@ function triggerFileInput() {
         <button
           type="button"
           class="btn-delete"
-          @click="onDelete">
-          刪除活動
+          @click="onDelete"
+          :disabled="loading">
+          {{ loading ? '處理中...' : '刪除活動' }}
         </button>
         <button
           type="button"
           class="btn-cancle"
-          @click="emit('cancel')">
+          @click="() => emit('cancel')"
+          :disabled="loading">
           取消修改
         </button>
         <button
           type="button"
           class="btn-confirm"
-          @click="onUpdate">
-          完成發佈
+          @click="onUpdate"
+          :disabled="loading">
+          {{ loading ? '更新中...' : '完成發佈' }}
         </button>
       </div>
     </div>
@@ -282,6 +328,10 @@ function triggerFileInput() {
 
 .form-bottom button {
   @apply block mx-auto w-44 py-1 text-lg rounded-xl cursor-pointer;
+}
+
+.form-bottom button:disabled {
+  @apply opacity-50 cursor-not-allowed;
 }
 
 .btn-delete {
