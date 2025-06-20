@@ -12,8 +12,12 @@
       >
         <div class="bar-card-image">
           <img
-            :src="bar.imageUrl || defaultPlaceholderImage"
-            :alt="bar.name"
+            :src="
+              bar.images && bar.images.length > 0
+                ? bar.images[0]
+                : bar.imageUrl || defaultPlaceholderImage
+            "
+            :alt="bar.name || 'Bar'"
             class="bar-image"
             loading="lazy"
             @error="handleImageError"
@@ -40,16 +44,14 @@
           <h3 class="bar-name">{{ bar.name }}</h3>
           <div class="bar-rating-price">
             <span class="bar-rating">⭐️ {{ bar.rating || "N/A" }}</span>
-            <span class="bar-reviews"> ({{ bar.reviews || "0" }} 評論)</span>
-            <span class="bar-price">NT$ {{ bar.priceRange || "???" }}</span>
+            <span class="bar-reviews"> ({{ bar.reviews || 0 }} 評論)</span>
           </div>
 
           <div v-if="bar.tags && bar.tags.length" class="bar-tags">
-            <span v-for="tag in bar.tags" :key="tag" class="bar-tag">{{
-              tag
+            <span v-for="tag in bar.tags || []" :key="tag" class="bar-tag">{{
+              getTagLabel(tag)
             }}</span>
           </div>
-
           <div class="bar-hours">
             {{ getOpeningHourText(bar) }}
           </div>
@@ -61,6 +63,7 @@
 
 <script setup>
 import { watch, ref } from "vue";
+import placeTypeMap from "@/composables/placeTypeMap";
 
 const props = defineProps({
   bars: {
@@ -80,9 +83,9 @@ const handleImageError = (event) => {
 };
 
 const getOpeningHourText = (bar) => {
-  if (bar.openingHours?.weekday_text?.length > 0) {
-    return bar.openingHours.weekday_text[0];
-  } else if (bar.openingHours) {
+  if (bar.opening_hours?.weekday_text?.length > 0) {
+    return bar.opening_hours.weekday_text[0];
+  } else if (bar.opening_hours) {
     return "營業時間待提供";
   } else {
     return "未提供營業時間";
@@ -101,10 +104,17 @@ const emitToggleWishlist = (placeId) => {
   emit("toggle-wishlist", placeId);
 };
 
+const getTagLabel = (tag) => {
+  return placeTypeMap[tag] || tag;
+};
+
 watch(
   () => props.bars,
   (newBars) => {
-    console.log("BarList 接收到的 bars prop 並更新列表，目前數量:", newBars.length);
+    console.log(
+      "BarList 接收到的 bars prop 並更新列表，目前數量:",
+      newBars.length
+    );
   },
   { immediate: true }
 );
@@ -232,12 +242,6 @@ watch(
   margin-left: 4px;
   font-size: 14px;
   color: #4a5568;
-}
-
-.bar-price {
-  font-size: 16px;
-  font-weight: 600;
-  color: #ea580c;
 }
 
 .bar-tags {
