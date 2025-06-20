@@ -516,6 +516,7 @@ async function handleGetCurrentLocation() {
     const sidebarWidth = document.querySelector('.bar-list-sidebar')?.offsetWidth || 0;
     const currentLocation = await getMapCurrentLocation(sidebarWidth);
     if (currentLocation) {
+
       const bars = await searchBarsInMapBounds(false);
       googleBars.value = bars;
     }
