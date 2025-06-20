@@ -25,9 +25,7 @@ const avatarUrl = computed(() => {
   <nav class="navbar">
     <div class="logo">
       <RouterLink to="/home">
-        <img
-          src="/joinbar-logo.png"
-          alt="JoinBar Logo" />
+        <img src="/joinbar-logo.png" alt="JoinBar Logo" />
       </RouterLink>
     </div>
     <ul class="nav-links">
@@ -36,29 +34,18 @@ const avatarUrl = computed(() => {
       <li><RouterLink to="/event">酒吧活動</RouterLink></li>
       <li><RouterLink to="/subscription">訂閱優惠</RouterLink></li>
       <li>
-        <div
-          v-if="isAuthenticated"
-          class="cursor-pointer flex flex-col items-center gap-1">
-          <UserAvatar
-            :avatar-url="avatarUrl"
-            :display-name="user.username"
-            size="sm"
-            :on-avatar-click="goToMember" />
+        <div v-if="isAuthenticated" class="cursor-pointer flex flex-col items-center gap-1">
+          <UserAvatar 
+          :avatar-url="avatarUrl"
+          :display-name="user.username"
+          size="sm"
+          :on-avatar-click="goToMember" />
           <span class="text-sm">嗨！{{ user.username }}</span>
         </div>
-        <RouterLink
-          v-else
-          to="/login"
-          >登入/註冊</RouterLink
-        >
+        <RouterLink v-else to="/login">登入/註冊</RouterLink>
       </li>
       <li>
-        <RouterLink to="/cart"
-          ><img
-            class="cart-icon"
-            src="/cart.png"
-            alt="Cart Icon"
-        /></RouterLink>
+        <RouterLink to="/cart"><img class="cart-icon" src="/cart.png" alt="Cart Icon" /></RouterLink>
       </li>
     </ul>
   </nav>

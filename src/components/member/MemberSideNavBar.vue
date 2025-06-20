@@ -36,16 +36,13 @@ const selectedItem = ref('profile');
 <template>
   <nav class="w-56 bg-gray-100 p-6 min-h-screen flex justify-center">
     <ul class="space-y-1 w-full">
-      <li
-        v-for="item in menuItems"
-        :key="item.key">
+      <li v-for="item in menuItems" :key="item.key">
         <RouterLink
           :to="item.to"
           @click="selectedItem = item.key"
-          :class="[
-            'flex items-center gap-2 p-2 rounded w-full transition',
-            selectedItem === item.key ? 'bg-gray-200 text-black scale-[0.98]' : 'hover:bg-gray-200 text-gray-700',
-          ]">
+          :class="['flex items-center gap-2 p-2 rounded w-full transition',selectedItem === item.key
+            ? 'bg-gray-200 text-black scale-[0.98]'
+            : 'hover:bg-gray-200 text-gray-700']">
           <i :class="['fa-solid', item.icon, 'w-4']" />
           {{ item.label }}
         </RouterLink>
@@ -53,12 +50,8 @@ const selectedItem = ref('profile');
 
       <!-- 登出 -->
       <li>
-        <button
-          @click="handleLogout"
-          class="flex items-center gap-2 p-2 rounded w-full text-black hover:bg-gray-200 transition cursor-pointer">
-          <i class="fa-solid fa-arrow-right-from-bracket w-4" />
-          登出
-        </button>
+        <button @click="handleLogout" class="flex items-center gap-2 p-2 rounded w-full text-black hover:bg-gray-200 transition cursor-pointer">
+          <i class="fa-solid fa-arrow-right-from-bracket w-4" />登出</button>
       </li>
     </ul>
   </nav>

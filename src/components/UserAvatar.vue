@@ -18,10 +18,10 @@ defineProps({
 </script>
 
 <template>
-  <div @click="onAvatarClick">
+  <div @click="onAvatarClick" :class="[sizeClass[size],'aspect-square rounded-full overflow-hidden border-2 border-white cursor-pointer']">
     <img
       :src="avatarUrl || defaultAvatar"
       alt="user-avatarUrl"
-      :class="[sizeClass[size], 'object-cover rounded-full border-2 border-white']" />
+      class="w-full h-full object-cover" />
   </div>
 </template>
