@@ -185,7 +185,7 @@
             <div class="tooltip" data-tip="導航">
               <button
                 class="w-11 h-11 rounded-xl border border-gray-200 bg-white flex items-center justify-center cursor-pointer transition-all hover:bg-gray-50 hover:border-gray-300 hover:-translate-y-0.5"
-                @click="() => navigateToBar(bar.latitude, bar.longitude)">
+                @click="navigateToBar(bar.latitude, bar.longitude)">
                 <i class="fa-regular fa-paper-plane text-lg text-gray-600"></i>
               </button>
             </div>
@@ -272,34 +272,14 @@ const handleImageError = (e) => {
 
 
 // 導航到酒吧位置
-const navigateToBar = (destLat, destLng) => {
-  if (!destLat || !destLng) {
-    alert('此酒吧尚未提供定位資訊')
-    return
+const navigateToBar = (lat, lng) => {
+  if (!lat || !lng) {
+    alert('此酒吧尚未提供定位資訊');
+    return;
   }
 
-  if (!navigator.geolocation) {
-    alert('您的瀏覽器不支援定位功能')
-    return
-  }
-
-  navigator.geolocation.getCurrentPosition(
-    (position) => {
-      const userLat = position.coords.latitude
-      const userLng = position.coords.longitude
-      const directionUrl = `https://www.google.com/maps/dir/?api=1&origin=${userLat},${userLng}&destination=${destLat},${destLng}&travelmode=walking`
-      window.open(directionUrl, '_blank')
-    },
-    (err) => {
-      console.error('取得定位失敗:', err)
-      alert('無法取得您的位置，請確認已開啟定位權限')
-    },
-    {
-      enableHighAccuracy: true,
-      timeout: 10000,
-      maximumAge: 300000,
-    }
-  )
+  const url = `https://www.google.com/maps/dir/?api=1&origin=Current+Location&destination=${lat},${lng}&travelmode=walking`;
+  window.open(url, '_blank');
 }
 
 // 收藏愛心狀態（local，變動 emit 出去）
