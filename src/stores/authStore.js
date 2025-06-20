@@ -4,7 +4,7 @@ import Swal from 'sweetalert2';
 import { verifyAuth, resendVerification, emaillogin as emailLoginAPI, lineLogin as lineLoginAPI, emailSignup as emailSignupAPI, saveBarTags as saveBarTagsAPI } from '../api/auth';
 
 export const useAuthStore = defineStore('auth', () => {
-  const user = ref(null); 
+  const user = ref(null);
   const accessToken = ref(null);
   const refreshToken = ref(null);
   const isEmailLoading = ref(false);
@@ -49,6 +49,21 @@ export const useAuthStore = defineStore('auth', () => {
     console.log('認證狀態已清除');
   }
 
+// 將更新後的使用者資料同步到 authStore.user 和 localStorage
+  function updateAuthUser(updatedData) {
+    if (!user.value) return;
+
+    const fieldsToUpdate = ['username', 'nickname', 'birthday', 'avatar'];
+
+    fieldsToUpdate.forEach(field => {
+      if (updatedData[field] !== undefined) {
+        user.value[field] = updatedData[field];
+      }
+    });
+
+    localStorage.setItem('user', JSON.stringify(user.value));
+  }
+
   // 檢查認證狀態
   async function checkAuthStatus() {
     if (!user.value) {
@@ -82,11 +97,9 @@ export const useAuthStore = defineStore('auth', () => {
       }
 
       return { title, message: errorMessage.value };
-
     } else if (err.request) {
       errorMessage.value = '網路連線失敗，請檢查網路狀態';
       return { title: '網路發生錯誤!', message: errorMessage.value };
-
     } else {
       errorMessage.value = '發生未知錯誤，請稍後再試';
       return { title: '發生未知錯誤!', message: errorMessage.value };
@@ -105,7 +118,7 @@ export const useAuthStore = defineStore('auth', () => {
         showConfirmButton: false,
         didOpen: () => {
           Swal.showLoading();
-        }
+        },
       });
 
       await resendVerification(email);
@@ -136,17 +149,16 @@ export const useAuthStore = defineStore('auth', () => {
         icon: 'success',
         confirmButtonText: '我知道了',
         confirmButtonColor: '#860914',
-        width: '500px'
+        width: '500px',
       });
 
       return true;
-
     } catch (err) {
       console.error('重新寄送驗證信失敗:', err);
-      
+
       let errorMessage = '重新寄送驗證信失敗，請稍後再試';
       let errorTitle = '寄送失敗';
-      
+
       if (err.response?.status === 429) {
         errorMessage = err.response.data.error || '請稍後再試，不要頻繁寄送驗證信';
         errorTitle = '寄送過於頻繁';
@@ -161,7 +173,7 @@ export const useAuthStore = defineStore('auth', () => {
         title: errorTitle,
         text: errorMessage,
         icon: errorTitle === '信箱已驗證' ? 'success' : 'error',
-        confirmButtonText: '確認'
+        confirmButtonText: '確認',
       });
 
       return false;
@@ -180,11 +192,11 @@ export const useAuthStore = defineStore('auth', () => {
       try {
         user.value = JSON.parse(storedUser);
         console.log('從 localStorage 恢復登入狀態 (Email 登入)');
-      } catch(err) {
+      } catch (err) {
         console.error('解析用戶資料失敗:', err);
         localStorage.removeItem('user');
       }
-    } 
+    }
     // 沒有 token 檢查是否有用戶資訊 可能是 LINE 登入
     else if (storedUser) {
       try {
@@ -200,7 +212,9 @@ export const useAuthStore = defineStore('auth', () => {
       const userInfoCookie = document.cookie
         .split('; ')
         .find(row => row.startsWith('user_info='))
-        ?.split('=').slice(1).join('=');
+        ?.split('=')
+        .slice(1)
+        .join('=');
 
       if (userInfoCookie) {
         const userData = JSON.parse(decodeURIComponent(userInfoCookie));
@@ -212,7 +226,7 @@ export const useAuthStore = defineStore('auth', () => {
           console.log('從 cookie 更新用戶資訊 (LINE 登入)');
         }
       }
-    } catch(err) {
+    } catch (err) {
       console.error('從 cookie 讀取用戶資訊失敗:', err);
     }
 
@@ -299,7 +313,7 @@ export const useAuthStore = defineStore('auth', () => {
       //信箱未驗證
       if (err.response?.status === 403 && err.response?.data?.needVerification) {
         const isExpired = err.response.data.tokenExpired;
-        
+
         const result = await Swal.fire({
           title: '信箱尚未驗證',
           html: `
@@ -316,9 +330,10 @@ export const useAuthStore = defineStore('auth', () => {
                   <li>• 信箱地址是否正確</li>
                 </ul>
               </div>
-              ${isExpired ? 
-                '<p class="mt-3 text-red-600 text-sm"><i class="fas fa-clock mr-1"></i>您的驗證連結已過期</p>' : 
-                '<p class="mt-3 text-blue-600 text-sm"><i class="fas fa-envelope mr-1"></i>或者重新寄送新的驗證信</p>'
+              ${
+                isExpired
+                  ? '<p class="mt-3 text-red-600 text-sm"><i class="fas fa-clock mr-1"></i>您的驗證連結已過期</p>'
+                  : '<p class="mt-3 text-blue-600 text-sm"><i class="fas fa-envelope mr-1"></i>或者重新寄送新的驗證信</p>'
               }
             </div>
           `,
@@ -328,7 +343,7 @@ export const useAuthStore = defineStore('auth', () => {
           cancelButtonText: '稍後再試',
           confirmButtonColor: '#860914',
           cancelButtonColor: '#6c757d',
-          width: '500px'
+          width: '500px',
         });
 
         if (result.isConfirmed) {
@@ -344,7 +359,6 @@ export const useAuthStore = defineStore('auth', () => {
       }
   
       return { success: false, error: errorMessage };
-
     } finally {
       setLoading('email', false);
     }
@@ -367,7 +381,6 @@ export const useAuthStore = defineStore('auth', () => {
 
     } catch(err) {
       return { success: false, error: err.response?.data?.error || 'LINE 登入失敗' };
-
     } finally {
       setLoading('line', false);
     }
@@ -385,10 +398,12 @@ export const useAuthStore = defineStore('auth', () => {
         const userInfoCookie = document.cookie
           .split('; ')
           .find(row => row.startsWith('user_info='))
-          ?.split('=').slice(1).join('=');
+          ?.split('=')
+          .slice(1)
+          .join('=');
         if (userInfoCookie) {
           const userData = JSON.parse(decodeURIComponent(userInfoCookie));
-          
+
           // 更新前端狀態
           user.value = userData;
           // 同步到 localStorag 用於頁面重新整理時快速載入
@@ -444,15 +459,14 @@ export const useAuthStore = defineStore('auth', () => {
 
         window.history.replaceState({}, document.title, window.location.pathname);
         return { success: true, redirect: '/home' };
-
-      } catch(err) {
+      } catch (err) {
         console.error('LINE 登入狀態同步失敗:', err);
         // 即使同步失敗 也顯示成功訊息
         await Swal.fire({
           title: 'LINE 登入成功!',
           text: '歡迎使用 LINE 登入',
           icon: 'success',
-          confirmButtonText: '開始使用'
+          confirmButtonText: '開始使用',
         });
 
         window.history.replaceState({}, document.title, window.location.pathname);
@@ -473,7 +487,6 @@ export const useAuthStore = defineStore('auth', () => {
       window.history.replaceState({}, document.title, window.location.pathname);
       return { success: false };
     }
-    
     return null;
   }
 
@@ -529,6 +542,7 @@ export const useAuthStore = defineStore('auth', () => {
     checkLineCallback,
     setLoading,
     clearAuthState,
+    updateAuthUser,
     checkAuthStatus,
     handleResendVerification,
     saveBarTags

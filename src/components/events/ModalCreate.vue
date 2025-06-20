@@ -1,16 +1,9 @@
 <script setup>
-import { useEventForm } from '@/composable/useEventForm'
-import FormCreate from './FormCreate.vue'
-import AlertModal from '@/components/AlertModal.vue'
+import { useEventForm } from '@/composables/useEventForm';
+import FormCreate from './FormCreate.vue';
+import AlertModal from '@/components/AlertModal.vue';
 
-const {
-  showForm,
-  showAlert,
-  handleAlertAccept,
-  handleAlertDeny,
-  overlayClick
-} = useEventForm()
-
+const { showForm, showAlert, handleAlertAccept, handleAlertDeny, overlayClick } = useEventForm();
 </script>
 
 <template>
@@ -18,16 +11,26 @@ const {
     <AlertModal
       :visible="showAlert"
       @accept="handleAlertAccept"
-      @deny="handleAlertDeny"
-    />
-    <button class="btn-open-form btn-create" @click="showForm = true">
+      @deny="handleAlertDeny" />
+    <button
+      class="btn-open-form btn-create"
+      @click="showForm = true">
       建立活動
     </button>
     <transition name="popup">
-      <div v-if="showForm" class="popup-overlay" @click="overlayClick">
+      <div
+        v-if="showForm"
+        class="popup-overlay"
+        @click="overlayClick">
         <div class="modal-content">
-          <button class="popup-close-btn" @click="showAlert = true">×</button>
-          <FormCreate @click.stop @submit="showForm = false" />
+          <button
+            class="popup-close-btn"
+            @click="showAlert = true">
+            ×
+          </button>
+          <FormCreate
+            @click.stop
+            @submit="showForm = false" />
         </div>
       </div>
     </transition>
