@@ -30,6 +30,7 @@
           <button
             @click="handleSearch"
             class="btn search-bt map-control-button"
+            :disabled="!isReady"
           >
             <b>🔍 搜尋</b>
           </button>
@@ -60,7 +61,9 @@
       v-if="isFilterPanelOpen"
       @filter-changed="handleFilterChanged"
       @close-panel="toggleFilterPanel"
+      @tag-click="handleTagClick"
       :initial-filters="currentFilters"
+      :selected-tag="selectedTag"
     />
 
     <BarDetailModal
@@ -70,7 +73,7 @@
       @toggle-wishlist="handleToggleWishlistFromDetail"
     />
 
-    <div v-if="googleMapsLoading || isLoading" class="loading-overlay">
+    <div v-if="combinedLoading" class="loading-overlay">
       <div class="loader"></div>
       <p class="loading-message">載入中，請稍候...</p>
     </div>
@@ -87,19 +90,23 @@ dayjs.extend(isBetween);
 import FilterPanel from "../../components/map/FilterPanel.vue";
 import BarList from "../../components/map/BarList.vue";
 import BarDetailModal from "../../components/map/BarDetailModal.vue";
-import { useGoogleMaps } from "@/composables/useGoogleMaps";
+
+import { useGoogleMaps } from "@/composables/useGoogleMaps/userIndex.js";
+import {
+  COMMON_PLACE_TYPES_TO_EXCLUDE,
+  BAR_PLACE_TYPES,
+} from "@/composables/googleMapsConstants";
 
 const googleMapsApiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
-const myMapId = import.meta.env.MAP_ID;
+const myMapId = import.meta.env.VITE_MAP_ID;
 
-const isLoading = ref(false);
 const mapContainer = ref(null);
 
 const {
   map,
-  markers,
   infoWindow,
   loading: googleMapsLoading,
+  isFetching,
   loadGoogleMapsAPI,
   initMap,
   showInfoWindow,
@@ -111,27 +118,29 @@ const {
   getCurrentLocation: getMapCurrentLocation,
   getPlacePredictions,
   searchAndDisplayPlaces,
-  panToAndShowBarInfo,
+  searchBarsInMapBounds,
+  clearMarkers,
+  google: googleMapsInstance,
+  isReady,
+  formatBarInfoWindowContent,
+  getPlaceDetails,
 } = useGoogleMaps(mapContainer, {
   googleMapsApiKey: googleMapsApiKey,
-  onLoading: () => {},
   mapId: myMapId,
-  onLoaded: () => {},
   onError: (msg) => {
     console.error("useGoogleMaps 錯誤:", msg);
-    alert(`地圖載入失敗：${msg}，請檢查API Key或網路。`);
+    alert(`地圖載入失敗：${msg}，請檢查API Key或網路連線。`);
   },
 });
 
 const isFilterPanelOpen = ref(false);
 const searchQuery = ref("");
 const suggestions = ref([]);
-const allBars = ref([]);
 const currentFilters = ref({
-  address: "any",
+  address: "current_location",
   ratingSort: "any",
   minDistance: 0,
-  maxDistance: 5000,
+  maxDistance: 10000,
   minOpenHour: 0,
   minOpenMinute: 0,
   maxOpenHour: 24,
@@ -141,59 +150,108 @@ const currentFilters = ref({
 const selectedBar = ref(null);
 const isBarDetailModalOpen = ref(false);
 const selectedBarForDetail = ref(null);
+const isLoading = ref(false);
+const googleBars = ref([]);
+const mainBarForSearch = ref(null);
+const selectedTag = ref(null);
+
+const combinedLoading = computed(
+  () => googleMapsLoading.value || isFetching.value || isLoading.value
+);
 
 const filteredBars = computed(() => {
-  let barsToFilter = [...allBars.value];
+  let bars = googleBars.value || [];
+  if (!Array.isArray(bars)) bars = [];
   const filters = currentFilters.value;
 
-  const districtTagsList = ["信義區", "大安區", "中山區", "松山區", "萬華區", "士林區"];
+  const districtTagsList = [
+    "信義區",
+    "大安區",
+    "中山區",
+    "松山區",
+    "萬華區",
+    "士林區",
+  ];
 
-  if (filters.address !== "any") {
-    barsToFilter = barsToFilter.filter((bar) =>
-      bar.address.includes(filters.address)
-    );
+  if (filters.address && filters.address !== "current_location") {
+    if (Array.isArray(filters.address)) {
+      if (filters.address.length > 0) {
+        bars = bars.filter((bar) =>
+          filters.address.some((addr) => bar.address?.includes(addr))
+        );
+      }
+    } else if (
+      typeof filters.address === "string" &&
+      filters.address !== "current_location"
+    ) {
+      bars = bars.filter((bar) => bar.address?.includes(filters.address));
+    }
   }
 
   if (filters.tags && filters.tags.length > 0) {
-    const nonDistrictTags = filters.tags.filter(tag => !districtTagsList.includes(tag));
-    const selectedDistrictTagsFromTagsFilter = filters.tags.filter(tag => districtTagsList.includes(tag));
+    const nonDistrictTags = filters.tags.filter(
+      (tag) => !districtTagsList.includes(tag)
+    );
+    const selectedDistrictTagsFromTagsFilter = filters.tags.filter((tag) =>
+      districtTagsList.includes(tag)
+    );
 
     if (nonDistrictTags.length > 0) {
-      barsToFilter = barsToFilter.filter((bar) =>
-        nonDistrictTags.every((tag) => bar.tags.includes(tag))
+      bars = bars.filter((bar) =>
+        nonDistrictTags.every((tag) => bar.tags?.includes(tag))
       );
     }
 
     if (selectedDistrictTagsFromTagsFilter.length > 0) {
-      if (filters.address !== "any") {
-        if (!selectedDistrictTagsFromTagsFilter.includes(filters.address)) {
+      if (filters.address && filters.address !== "current_location") {
+        let addressArr = Array.isArray(filters.address)
+          ? filters.address
+          : [filters.address];
+        const hasMatchingDistrict = selectedDistrictTagsFromTagsFilter.some(
+          (tag) => addressArr.some((addr) => addr.includes(tag))
+        );
+        if (!hasMatchingDistrict) {
           return [];
         }
       } else {
-        barsToFilter = barsToFilter.filter((bar) =>
-          selectedDistrictTagsFromTagsFilter.every(tag => {
-            return bar.address.includes(tag);
+        bars = bars.filter((bar) =>
+          selectedDistrictTagsFromTagsFilter.every((tag) => {
+            return bar.address?.includes(tag);
           })
         );
       }
     }
   }
 
-  if (map.value && window.google?.maps?.geometry?.spherical) {
-    const mapCenter = map.value.getCenter();
+  if (
+    map &&
+    typeof googleMapsInstance === "function" &&
+    googleMapsInstance() &&
+    googleMapsInstance().maps &&
+    googleMapsInstance().maps.geometry &&
+    googleMapsInstance().maps.geometry.spherical
+  ) {
+    const mapCenter = map.value.getCenter && map.value.getCenter();
     if (mapCenter) {
       const centerLatLng = new window.google.maps.LatLng(
         mapCenter.lat(),
         mapCenter.lng()
       );
-      barsToFilter = barsToFilter
+      bars = bars
         .map((bar) => {
+          if (
+            !bar.location ||
+            typeof bar.location.lat === "undefined" ||
+            typeof bar.location.lng === "undefined"
+          ) {
+            return { ...bar, distance: Infinity };
+          }
           const barLatLng = new window.google.maps.LatLng(
             bar.location.lat,
             bar.location.lng
           );
           bar.distance =
-            window.google.maps.geometry.spherical.computeDistanceBetween(
+            googleMapsInstance().maps.geometry.spherical.computeDistanceBetween(
               centerLatLng,
               barLatLng
             );
@@ -215,45 +273,69 @@ const filteredBars = computed(() => {
     filters.maxOpenHour !== 24 ||
     filters.maxOpenMinute !== 0
   ) {
-    barsToFilter = barsToFilter.filter((bar) => {
-      const openHoursText = bar.openingHours?.weekday_text?.[0] || "";
-      const timeMatch = openHoursText.match(/(\d{2}):(\d{2})\s*-\s*(\d{2}):(\d{2})/);
+    bars = bars.filter((bar) => {
+      const now = dayjs();
+      const currentDayOfWeek = now.day();
 
-      if (!timeMatch) return false;
+      if (!bar.opening_hours || !bar.opening_hours.periods) return false;
 
-      let barOpenTime = dayjs(timeMatch[1] + ":" + timeMatch[2], "HH:mm");
-      let barCloseTime = dayjs(timeMatch[3] + ":" + timeMatch[4], "HH:mm");
-
-      if (barCloseTime.isBefore(barOpenTime)) {
-        barCloseTime = barCloseTime.add(1, "day");
-      }
-
-      let filterOpenTime = dayjs()
+      const filterStart = dayjs()
         .hour(filters.minOpenHour)
         .minute(filters.minOpenMinute);
-      let filterCloseTime = dayjs()
+      let filterEnd = dayjs()
         .hour(filters.maxOpenHour)
         .minute(filters.maxOpenMinute);
-
       if (filters.maxOpenHour === 24 && filters.maxOpenMinute === 0) {
-        filterCloseTime = dayjs().endOf('day').add(1, 'minute');
+        filterEnd = filterEnd.endOf("day");
+      }
+      if (filterEnd.isBefore(filterStart)) {
+        filterEnd = filterEnd.add(1, "day");
       }
 
-      if (filterCloseTime.isBefore(filterOpenTime)) {
-        filterCloseTime = filterCloseTime.add(1, "day");
+      for (const period of bar.opening_hours.periods) {
+        if (period.open && period.close) {
+          let openTime = dayjs()
+            .day(period.open.day)
+            .hour(Math.floor(period.open.time / 100))
+            .minute(period.open.time % 100);
+          let closeTime = dayjs()
+            .day(period.close.day)
+            .hour(Math.floor(period.close.time / 100))
+            .minute(period.close.time % 100);
+
+          if (closeTime.isBefore(openTime)) {
+            closeTime = closeTime.add(1, "day");
+          }
+
+          const hasIntersection =
+            openTime.isBefore(filterEnd) && closeTime.isAfter(filterStart);
+
+          if (hasIntersection) {
+            return true;
+          }
+        }
       }
-      const isWithinHours = barOpenTime.isBefore(filterCloseTime) && barCloseTime.isAfter(filterOpenTime);
-      return isWithinHours;
+      return false;
     });
   }
 
   if (filters.ratingSort === "highToLow") {
-    barsToFilter.sort((a, b) => b.rating - a.rating);
+    bars.sort((a, b) => (b.rating || 0) - (a.rating || 0));
   } else if (filters.ratingSort === "lowToHigh") {
-    barsToFilter.sort((a, b) => a.rating - b.rating);
+    bars.sort((a, b) => (a.rating || 0) - (b.rating || 0));
   }
 
-  return barsToFilter;
+  const result = [];
+  if (mainBarForSearch.value) {
+    const isMainBarInFiltered = bars.some(
+      (bar) => bar.place_id === mainBarForSearch.value.place_id
+    );
+    if (!isMainBarInFiltered) {
+      result.push(mainBarForSearch.value);
+    }
+  }
+  result.push(...bars);
+  return result;
 });
 
 const debouncedSearchSuggestions = debounce(async () => {
@@ -267,19 +349,192 @@ const debouncedSearchSuggestions = debounce(async () => {
 async function selectSuggestion(suggestion) {
   searchQuery.value = suggestion.description;
   suggestions.value = [];
-  await handleSearch();
+  isLoading.value = true;
+  clearMarkers("all");
+  closeInfoWindow();
+
+  try {
+    const detail = await getPlaceDetails(suggestion.place_id);
+    if (detail && detail.geometry && detail.geometry.location) {
+      const barDetail = {
+        id: detail.place_id,
+        place_id: detail.place_id,
+        name: detail.name,
+        location: {
+          lat: detail.geometry.location.lat(),
+          lng: detail.geometry.location.lng(),
+        },
+        rating: detail.rating || 0,
+        reviews: detail.user_ratings_total || 0,
+        address: detail.formatted_address || "未知地址",
+        priceRange:
+          detail.price_level !== undefined
+            ? `等級 ${detail.price_level}`
+            : null,
+        tags: detail.types
+          ? detail.types.filter(
+              (type) => !COMMON_PLACE_TYPES_TO_EXCLUDE.includes(type)
+            )
+          : [],
+        opening_hours: detail.opening_hours,
+        imageUrl:
+          detail.photos && detail.photos.length > 0
+            ? detail.photos[0].getUrl({ maxWidth: 400, maxHeight: 400 })
+            : "",
+        images: detail.photos
+          ? detail.photos.map((p) =>
+              p.getUrl({ maxWidth: 800, maxHeight: 600 })
+            )
+          : [],
+        description: "點擊查看更多詳情...",
+        isWishlisted: false,
+        phone: detail.international_phone_number || null,
+        website: detail.website || null,
+        url: detail.url,
+        googleReviews: detail.reviews || [],
+      };
+      mainBarForSearch.value = barDetail;
+      googleBars.value = [barDetail];
+      displayBarsOnMap([barDetail], formatBarInfoWindowContent);
+      panTo(detail.geometry.location);
+    } else {
+      alert("無法獲取選定地點的詳細資訊。");
+    }
+  } catch (error) {
+    alert("獲取地點詳細資訊失敗，請重試。");
+  } finally {
+    isLoading.value = false;
+  }
 }
 
 async function handleSearch() {
+  if (!isReady.value) {
+    alert("地圖尚未載入完成，請稍候再試");
+    return;
+  }
   if (!searchQuery.value) {
     alert("請輸入搜尋關鍵字");
     return;
   }
   isLoading.value = true;
+  clearMarkers("all");
+  closeInfoWindow();
+
   try {
-    await searchAndDisplayPlaces(searchQuery.value);
-  } catch (error) {
-    console.error("搜尋或顯示地點失敗:", error);
+    let mainBars = [];
+    let typeForNearby = "establishment";
+    const q = searchQuery.value.trim().toLowerCase();
+    if (
+      ["bar", "酒吧", "pub", "night club", "夜店", "交易吧", "intention"].some(
+        (k) => q.includes(k)
+      )
+    ) {
+      typeForNearby = ["bar", "night_club", "pub", "liquor_store"];
+    } else if (
+      ["小吃", "餐廳", "美食", "food", "restaurant", "吃飯", "吃吃"].some((k) =>
+        q.includes(k)
+      )
+    ) {
+      typeForNearby = ["restaurant", "food"];
+    }
+
+    const result = await searchAndDisplayPlaces(searchQuery.value);
+    mainBars = result && result.results ? result.results : [];
+    if ((!mainBars || mainBars.length === 0) && typeForNearby) {
+      const google = googleMapsInstance.value;
+      let center = null;
+      if (map.value && map.value.getCenter) {
+        const c = map.value.getCenter();
+        center = new window.google.maps.LatLng(c.lat(), c.lng());
+      } else {
+        center = new window.google.maps.LatLng(25.0478, 121.517);
+      }
+      const fallbackRequest = {
+        location: center,
+        radius: 5000,
+        type: typeForNearby,
+      };
+      const service = new google.places.PlacesService(map.value);
+      mainBars = await new Promise((resolve) => {
+        service.nearbySearch(fallbackRequest, async (results, status) => {
+          if (status === google.places.PlacesServiceStatus.OK && results) {
+            const detailedBars = await Promise.all(
+              results.slice(0, 20).map(async (place) => {
+                try {
+                  const detail = await getPlaceDetails(place.place_id);
+                  const tags = Array.isArray(detail.types)
+                    ? detail.types.filter(
+                        (type) => !COMMON_PLACE_TYPES_TO_EXCLUDE.includes(type)
+                      )
+                    : [];
+                  const isOpen = detail.opening_hours
+                    ? detail.opening_hours.isOpen()
+                    : null;
+                  const isBarLike = Array.isArray(detail.types)
+                    ? detail.types.some((type) =>
+                        BAR_PLACE_TYPES.includes(type)
+                      )
+                    : false;
+                  return {
+                    id: detail.place_id,
+                    place_id: detail.place_id,
+                    name: detail.name,
+                    location: {
+                      lat: detail.geometry.location.lat(),
+                      lng: detail.geometry.location.lng(),
+                    },
+                    rating: detail.rating || 0,
+                    reviews: detail.user_ratings_total || 0,
+                    address: detail.formatted_address || "未知地址",
+                    tags: tags,
+                    opening_hours: detail.opening_hours,
+                    is_open: isOpen,
+                    imageUrl:
+                      detail.photos && detail.photos.length > 0
+                        ? detail.photos[0].getUrl({
+                            maxWidth: 400,
+                            maxHeight: 400,
+                          })
+                        : "",
+                    images: detail.photos
+                      ? detail.photos.map((p) =>
+                          p.getUrl({ maxWidth: 800, maxHeight: 600 })
+                        )
+                      : [],
+                    description: "點擊查看更多詳情...",
+                    isWishlisted: false,
+                    phone: detail.international_phone_number || null,
+                    website: detail.website || null,
+                    url: detail.url,
+                    googleReviews: detail.reviews || [],
+                    isBarLike: isBarLike,
+                  };
+                } catch (e) {
+                  return place;
+                }
+              })
+            );
+            resolve(detailedBars);
+          } else {
+            resolve([]);
+          }
+        });
+      });
+    }
+    if (mainBars && mainBars.length > 0) {
+      mainBarForSearch.value = null;
+      googleBars.value = mainBars;
+      if (googleMapsInstance.value && mainBars[0] && mainBars[0].location) {
+        panTo(mainBars[0].location, 15);
+      }
+    } else {
+      mainBarForSearch.value = null;
+      googleBars.value = [];
+      alert("查無結果。");
+    }
+  } catch (err) {
+    mainBarForSearch.value = null;
+    googleBars.value = [];
     alert("搜尋失敗，請稍後再試。");
   } finally {
     isLoading.value = false;
@@ -289,12 +544,25 @@ async function handleSearch() {
 async function handleGetCurrentLocation() {
   isLoading.value = true;
   try {
-    await getMapCurrentLocation(
-      document.querySelector(".bar-list-sidebar")?.offsetWidth || 0
-    );
+    clearMarkers("all");
+    closeInfoWindow();
+    const sidebarWidth =
+      document.querySelector(".bar-list-sidebar")?.offsetWidth || 0;
+    const currentLocation = await getMapCurrentLocation(sidebarWidth);
+    if (currentLocation) {
+      const bars = await searchBarsInMapBounds(false);
+      googleBars.value = bars;
+    }
   } catch (err) {
-    console.error("獲取目前位置失敗:", err);
-    alert("無法獲取您的目前位置，請檢查瀏覽器權限設定。");
+    const google = googleMapsInstance.value;
+    if (google && map.value) {
+      const fallbackLocation = new window.google.maps.LatLng(25.0478, 121.517);
+      map.value.setCenter(fallbackLocation);
+      map.value.setZoom(15);
+      const bars = await searchBarsInMapBounds(false);
+      googleBars.value = bars;
+    }
+    alert("無法獲取您的目前位置，請檢查瀏覽器權限設定");
   } finally {
     isLoading.value = false;
   }
@@ -308,11 +576,37 @@ function toggleFilterPanel() {
   isFilterPanelOpen.value = !isFilterPanelOpen.value;
 }
 
-function handleBarSelected(bar) {
-  selectedBar.value = bar;
-  selectedBarForDetail.value = bar;
+async function handleBarSelected(bar) {
+  if (bar.place_id && (!bar.googleReviews || bar.googleReviews.length === 0)) {
+    try {
+      const detail = await getPlaceDetails(bar.place_id);
+      if (detail && detail.reviews) {
+        bar.googleReviews = detail.reviews;
+      }
+    } catch (e) {
+      console.warn("自動補抓 Google 評論失敗", e);
+    }
+  }
+  selectedBarForDetail.value = bar || {};
   isBarDetailModalOpen.value = true;
-  panToAndShowBarInfo(bar);
+  if (bar.location && map && googleMapsInstance()) {
+    panTo(bar.location);
+    const tempMarker = new window.google.maps.Marker({
+      position: new window.google.maps.LatLng(
+        bar.location.lat,
+        bar.location.lng
+      ),
+      map: map,
+      title: bar.name,
+      icon: {
+        url: bar.isBarLike ? "/wine.png" : "/MapMarker.png",
+        scaledSize: new window.google.maps.Size(40, 40),
+        anchor: new window.google.maps.Point(20, 40),
+      },
+    });
+    const infoContent = formatBarInfoWindowContent(bar);
+    showInfoWindow(tempMarker, infoContent);
+  }
 }
 
 function closeBarDetailModal() {
@@ -322,12 +616,16 @@ function closeBarDetailModal() {
 }
 
 function handleToggleWishlist(barId) {
-  const barIndex = allBars.value.findIndex((b) => b.id === barId);
+  const barIndex = googleBars.value.findIndex((b) => b.place_id === barId);
   if (barIndex > -1) {
-    allBars.value[barIndex].isWishlisted =
-      !allBars.value[barIndex].isWishlisted;
+    const updatedBar = { ...googleBars.value[barIndex] };
+    updatedBar.isWishlisted = !updatedBar.isWishlisted;
+    googleBars.value.splice(barIndex, 1, updatedBar);
   }
-  if (selectedBarForDetail.value && selectedBarForDetail.value.id === barId) {
+  if (
+    selectedBarForDetail.value &&
+    selectedBarForDetail.value.place_id === barId
+  ) {
     selectedBarForDetail.value.isWishlisted =
       !selectedBarForDetail.value.isWishlisted;
   }
@@ -337,163 +635,104 @@ const handleToggleWishlistFromDetail = (barId) => {
   handleToggleWishlist(barId);
 };
 
-function fetchBarsData() {
-  allBars.value = [
-    {
-      id: "b001",
-      placeId: "ChIJ7-02o96jQjQR6c8b9j01314",
-      name: "微醺角落",
-      location: { lat: 25.0478, lng: 121.5172 },
-      rating: 4.5,
-      reviews: 120,
-      priceRange: "300-600",
-      tags: ["精釀啤酒", "放鬆氛圍", "平價", "中山區"],
-      openingHours: { weekday_text: ["週二至週日 18:00 - 01:00"] },
-      imageUrl: "",
-      description: "隱身巷弄中的小酒館，提供多款精釀啤酒，適合下班小酌。",
-      isWishlisted: false,
-      images: [],
-      address: "台北市中山區某某街123號",
-      phone: "02-1234-5678",
-      website: "https://www.example.com/bar001",
-    },
-    {
-      id: "b002",
-      placeId: "ChIJY52JzdyjQjQR6c8b9j01314",
-      name: "信義夜景酒吧",
-      location: { lat: 25.0336, lng: 121.5644 },
-      rating: 4.8,
-      reviews: 350,
-      priceRange: "800-1500",
-      tags: ["高空美景", "創意調酒", "約會小酌", "信義區"],
-      openingHours: { weekday_text: ["每日 20:00 - 02:00"] },
-      imageUrl: "",
-      description: "俯瞰台北市夜景的絕佳地點，提供精緻調酒與餐點，是約會首選。",
-      isWishlisted: false,
-      images: [],
-      address: "台北市信義區某某路456號",
-      phone: "02-9876-5432",
-      website: "https://www.example.com/bar002",
-    },
-    {
-      id: "b003",
-      placeId: "ChIJX52JzdyjQjQR6c8b9j01314",
-      name: "大安運動酒吧",
-      rating: 4.2,
-      reviews: 200,
-      priceRange: "400-900",
-      openingHours: { weekday_text: ["每日 17:00 - 03:00"] },
-      description: "提供多台大型螢幕轉播運動賽事，氛圍熱烈，適合與朋友一起看球",
-      tags: ["運動酒吧", "大型螢幕", "觀賽熱點", "美式", "大安區"],
-      imageUrl: "",
-      location: { lat: 25.038, lng: 121.543 },
-      isWishlisted: false,
-      images: [],
-      address: "台北市大安區某某街789號",
-      phone: "02-1122-3344",
-      website: "",
-    },
-    {
-      id: "b004",
-      placeId: "ChIJL52JzdyjQjQR6c8b9j01314",
-      name: "松山爵士吧",
-      location: { lat: 25.0505, lng: 121.5501 },
-      rating: 4.7,
-      reviews: 80,
-      priceRange: "600-1200",
-      tags: ["爵士樂", "現場表演", "復古", "調酒", "松山區"],
-      openingHours: { weekday_text: ["週三至週日 20:30 - 01:30"] },
-      imageUrl: "",
-      description: "每晚有現場爵士樂表演，提供多款經典調酒，適合品味人士。",
-      isWishlisted: false,
-      images: [],
-      address: "台北市松山區某某路100號",
-      phone: "02-5566-7788",
-      website: "https://www.example.com/bar004",
-    },
-    {
-      id: "b005",
-      placeId: "ChIJQ52JzdyjQjQR6c8b9j01314",
-      name: "萬華老屋酒吧",
-      location: { lat: 25.0375, lng: 121.5036 },
-      rating: 4.3,
-      reviews: 95,
-      priceRange: "350-700",
-      tags: ["老屋改造", "復古", "特色", "小酌", "萬華區"],
-      openingHours: { weekday_text: ["週一至週六 19:00 - 00:00"] },
-      imageUrl: "",
-      description: "由老屋改造的特色酒吧，保留復古元素，提供獨特調酒。",
-      isWishlisted: false,
-      images: [],
-      address: "台北市萬華區某某街1號",
-      phone: "",
-      website: "",
-    },
-    {
-      id: "b006",
-      placeId: "ChIJL52JzdyjQjQR6c8b9j01314",
-      name: "士林文青酒吧",
-      location: { lat: 25.0935, lng: 121.5235 },
-      rating: 4.6,
-      reviews: 150,
-      priceRange: "450-800",
-      tags: ["文青", "咖啡", "輕食", "獨立", "士林區"],
-      openingHours: { weekday_text: ["週二至週日 14:00 - 23:00"] },
-      imageUrl: "",
-      description: "結合咖啡與酒精，氛圍輕鬆，適合閱讀或安靜小酌。",
-      isWishlisted: false,
-      images: [],
-      address: "台北市士林區某某街20號",
-      phone: "02-1234-9876",
-      website: "https://www.example.com/bar006",
-    },
-    {
-      id: "b007",
-      placeId: "ChIJZ52JzdyjQjQR6c8b9j01314",
-      name: "信義餐酒館",
-      location: { lat: 25.041, lng: 121.567 },
-      rating: 4.9,
-      reviews: 90,
-      priceRange: "700-1300",
-      tags: ["秘密基地", "私密空間", "預約制", "信義區"],
-      openingHours: { weekday_text: ["週三至週六 21:00 - 03:00"] },
-      imageUrl: "",
-      description: "隱藏在城市中的秘密酒吧，需要預約才能進入，提供客製化調酒。",
-      isWishlisted: false,
-      images: [],
-      address: "台北市信義區某某街33號",
-      phone: "0912-345-678",
-      website: "",
-    },
-    {
-      id: "b008",
-      placeId: "ChIJG52JzdyjQjQR6c8b9j01314",
-      name: "大安居酒屋",
-      location: { lat: 25.037, lng: 121.545 },
-      rating: 4.4,
-      reviews: 250,
-      priceRange: "500-1000",
-      tags: ["居酒屋", "日式", "燒烤", "深夜食堂", "大安區"],
-      openingHours: { weekday_text: ["每日 18:00 - 00:00"] },
-      imageUrl: "",
-      description: "提供地道日式居酒屋氛圍，美味串燒與多種清酒。",
-      isWishlisted: false,
-      images: [],
-      address: "台北市大安區某某路88號",
-      phone: "02-7788-9900",
-      website: "https://www.example.com/bar008",
-    },
-  ];
+function handleTagClick(tag) {
+  if (!tag) {
+    selectedTag.value = null;
+    searchQuery.value = "";
+    googleBars.value = [];
+  } else {
+    selectedTag.value = tag;
+    searchQuery.value = tag;
+    handleSearch();
+  }
 }
+
+watch(
+  mapContainer,
+  (newVal) => {
+    if (
+      newVal &&
+      typeof googleMapsInstance === "function" &&
+      googleMapsInstance()
+    ) {
+      initMap();
+    }
+  },
+  { immediate: true }
+);
+
+watch(isReady, (ready) => {
+  if (
+    ready &&
+    map &&
+    typeof googleMapsInstance === "function" &&
+    googleMapsInstance()
+  ) {
+    const onMapIdleHandler = async () => {
+      if (!isFetching.value && !isLoading.value) {
+        const barsInBounds = await searchBarsInMapBounds(false);
+        googleBars.value = barsInBounds;
+      }
+    };
+    if (map.value && map.value.addListener) {
+      map.value.addListener("idle", onMapIdleHandler);
+    }
+  }
+});
+
+watch(
+  filteredBars,
+  (newBars) => {
+    if (
+      map &&
+      typeof googleMapsInstance === "function" &&
+      googleMapsInstance()
+    ) {
+      displayBarsOnMap(newBars, formatBarInfoWindowContent);
+    }
+  },
+  { immediate: false }
+);
+
+watch(selectedBar, (newVal) => {
+  if (!newVal && !isBarDetailModalOpen.value) {
+    closeInfoWindow();
+  }
+});
 
 onMounted(async () => {
   isLoading.value = true;
   try {
     await loadGoogleMapsAPI();
     if (mapContainer.value) {
-      initMap();
-      fetchBarsData();
+      await initMap();
       requestGeolocationPermission();
+      let gotLocation = false;
+      try {
+        const sidebarWidth =
+          document.querySelector(".bar-list-sidebar")?.offsetWidth || 0;
+        const currentLocation = await getMapCurrentLocation(sidebarWidth);
+        if (currentLocation) {
+          gotLocation = true;
+          const bars = await searchBarsInMapBounds(false);
+          googleBars.value = bars;
+        }
+      } catch (geoErr) {
+        const google = googleMapsInstance.value;
+        if (google && map.value) {
+          const fallbackLocation = new window.google.maps.LatLng(
+            25.0478,
+            121.517
+          );
+          map.value.setCenter(fallbackLocation);
+          map.value.setZoom(15);
+          const bars = await searchBarsInMapBounds(false);
+          googleBars.value = bars;
+        }
+        if (!gotLocation) {
+          alert("無法獲取您的目前位置");
+        }
+      }
     } else {
       console.error("錯誤：地圖容器 ref 未綁定，無法初始化地圖。");
     }
@@ -505,28 +744,135 @@ onMounted(async () => {
   }
 });
 
-watch(
-  filteredBars,
-  (newBars) => {
-    if (map.value) {
-      displayBarsOnMap(newBars);
-    } else {
-      console.warn("地圖實例尚未準備好，無法顯示酒吧標記。");
-    }
-  },
-  { immediate: true }
-);
+function getTypeForKeyword(q) {
+  const query = q.toLowerCase();
 
-watch(selectedBar, (newVal) => {
-  if (newVal && map.value && !isBarDetailModalOpen.value) {
-  } else if (!isBarDetailModalOpen.value) {
-    closeInfoWindow();
+  if (
+    [
+      "bar",
+      "酒吧",
+      "pub",
+      "night club",
+      "夜店",
+      "交易吧",
+      "intention",
+      "小酌",
+      "喝酒",
+      "夜生活",
+      "lounge",
+      "餐酒館",
+      "bistro",
+    ].some((k) => query.includes(k))
+  ) {
+    return ["bar", "night_club", "pub", "liquor_store"];
+  } else if (
+    [
+      "小吃",
+      "餐廳",
+      "美食",
+      "food",
+      "restaurant",
+      "吃飯",
+      "吃吃",
+      "用餐",
+      "料理",
+      "餐點",
+      "食堂",
+    ].some((k) => query.includes(k))
+  ) {
+    return ["restaurant", "food"];
+  } else if (
+    ["咖啡", "咖啡廳", "coffee", "coffe shop", "飲品", "飲料店"].some((k) =>
+      query.includes(k)
+    )
+  ) {
+    return ["cafe"];
+  } else if (
+    ["飲料", "手搖", "bubble tea", "tea", "茶飲", "手搖飲"].some((k) =>
+      query.includes(k)
+    )
+  ) {
+    return ["cafe", "food"];
+  } else if (
+    ["超市", "market", "超商", "便利商店", "雜貨店", "商店", "便利店"].some(
+      (k) => query.includes(k)
+    )
+  ) {
+    return ["supermarket", "convenience_store"];
+  } else if (
+    ["健身", "gym", "運動", "健身房", "運動中心", "體育館"].some((k) =>
+      query.includes(k)
+    )
+  ) {
+    return ["gym"];
+  } else if (
+    ["ktv", "KTV", "卡拉ok", "唱歌", "錢櫃", "好樂迪", "星聚點"].some((k) =>
+      query.includes(k)
+    )
+  ) {
+    return ["night_club", "establishment"];
+  } else if (
+    ["飯店", "旅館", "hotel", "住宿", "民宿", "旅店", "hostel", "inn"].some(
+      (k) => query.includes(k)
+    )
+  ) {
+    return ["lodging"];
+  } else if (
+    ["書店", "書局", "book", "library", "圖書館"].some((k) => query.includes(k))
+  ) {
+    return ["book_store", "library"];
+  } else if (
+    ["藥局", "pharmacy", "藥妝", "藥房"].some((k) => query.includes(k))
+  ) {
+    return ["pharmacy"];
+  } else if (
+    ["醫院", "hospital", "診所", "醫學中心"].some((k) => query.includes(k))
+  ) {
+    return ["hospital"];
+  } else if (
+    ["銀行", "atm", "提款機", "金融", "匯款"].some((k) => query.includes(k))
+  ) {
+    return ["bank", "atm"];
+  } else if (
+    ["加油站", "gas", "加汽油", "中油", "台塑"].some((k) => query.includes(k))
+  ) {
+    return ["gas_station"];
+  } else if (
+    ["停車場", "parking", "停車", "車位"].some((k) => query.includes(k))
+  ) {
+    return ["parking"];
+  } else if (
+    ["動物", "寵物", "zoo", "pet", "動物園", "寵物店", "獸醫院"].some((k) =>
+      query.includes(k)
+    )
+  ) {
+    return ["zoo", "pet_store", "veterinary_care"];
+  } else if (
+    [
+      "藝文",
+      "藝廊",
+      "美術館",
+      "museum",
+      "art",
+      "畫廊",
+      "展覽",
+      "文化中心",
+    ].some((k) => query.includes(k))
+  ) {
+    return ["art_gallery", "museum"];
+  } else if (
+    ["景點", "地標", "park", "公園", "觀光", "廣場", "古蹟"].some((k) =>
+      query.includes(k)
+    )
+  ) {
+    return ["park", "point_of_interest"];
   }
-});
+
+  return "establishment";
+}
 </script>
 
 <style scoped>
-/* 樣式保持不變 */
 .map-view-container {
   display: flex;
   height: 100vh;
@@ -592,7 +938,7 @@ watch(selectedBar, (newVal) => {
 
 .map-control-button:focus {
   outline: none;
-  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+  box-shadow: none;
 }
 
 .filter-toggle-button {
@@ -665,11 +1011,21 @@ watch(selectedBar, (newVal) => {
   order: 3;
   box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
   outline: none;
+  transition:
+    background-color 0.2s,
+    transform 0.2s;
 }
 
 .search-bt:hover {
   background-color: #860914;
   color: #ffffff;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+}
+
+.search-bt:active {
+  transform: translateY(0);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 .search-input:focus {
@@ -794,6 +1150,7 @@ watch(selectedBar, (newVal) => {
 .map-container {
   flex-grow: 1;
   height: 100%;
+  min-height: 400px;
   background-color: #e0e0e0;
 }
 

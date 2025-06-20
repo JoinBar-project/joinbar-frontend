@@ -14,7 +14,7 @@
           <div class="image-gallery-container">
             <img
               :src="currentImage"
-              alt="Bar Image"
+              alt="未提供圖片"
               class="main-image"
               @error="handleImageError"
             />
@@ -48,7 +48,6 @@
                 }}
                 評論)</span
               >
-              <span class="price-range">NT$ {{ bar.priceRange || "???" }}</span>
             </div>
 
             <div class="contact-info">
@@ -68,10 +67,18 @@
             <div class="opening-hours-detail">
               <h3>營業時間</h3>
               <p>
-                {{ bar.openingHours?.weekday_text?.[0] || "未提供營業時間" }}
+                <span v-html="currentOpenStatus"></span>
               </p>
+              <ul v-if="bar.opening_hours && bar.opening_hours.weekday_text">
+                <li
+                  v-for="(text, index) in bar.opening_hours.weekday_text"
+                  :key="index"
+                >
+                  {{ text }}
+                </li>
+              </ul>
+              <p v-else>未提供詳細營業時間</p>
             </div>
-
             <div v-if="bar.tags && bar.tags.length" class="bar-tags-detail">
               <h3>特色標籤</h3>
               <div class="tags-wrapper">
@@ -79,8 +86,7 @@
                   v-for="(tag, index) in bar.tags"
                   :key="index"
                   class="detail-tag"
-                  >{{ tag }}</span
-                >
+                >{{ getTagLabel(tag) }}</span>
               </div>
             </div>
 
@@ -89,88 +95,25 @@
               <p>{{ bar.description || "暫無詳細介紹。" }}</p>
             </div>
 
-            <div class="fake-review-section">
+            <div class="google-review-section">
               <h3>熱門評論</h3>
-              <div class="review-card">
-                <div class="review-header">
-                  <img
-                    src="https://via.placeholder.com/40"
-                    alt="User Avatar"
-                    class="user-avatar"
-                  />
-                  <div class="user-info">
-                    <span class="user-name">新用戶</span>
-                    <span class="review-date">2024年05月20日</span>
+              <template v-if="bar.googleReviews && bar.googleReviews.length">
+                <div class="review-card" v-for="(review, idx) in bar.googleReviews.slice(0, 5)" :key="idx">
+                  <div class="review-header">
+                    <img :src="review.profile_photo_url || 'https://via.placeholder.com/40'" alt="User Avatar" class="user-avatar" />
+                    <div class="user-info">
+                      <span class="user-name">{{ review.author_name || '匿名用戶' }}</span>
+                      <span class="review-date">{{ formatReviewDate(review.time) }}</span>
+                    </div>
+                  </div>
+                  <p class="review-text">{{ review.text }}</p>
+                  <div class="review-actions">
+                    <span>👍 有用 ({{ review.rating || 0 }})</span>
+                    <span>👎 不喜歡 ({{ review.rating || 0 }})</span>
                   </div>
                 </div>
-                <p class="review-text">
-                  這家酒吧氛圍超好，調酒師也很專業，推薦他們的招牌特調！會再來！
-                </p>
-                <div class="review-actions">
-                  <span>👍 有用 (10)</span>
-                  <span>👎 不喜歡 (0)</span>
-                </div>
-              </div>
-              <div class="review-card">
-                <div class="review-header">
-                  <img
-                    src="https://via.placeholder.com/40"
-                    alt="User Avatar"
-                    class="user-avatar"
-                  />
-                  <div class="user-info">
-                    <span class="user-name">另一個用戶</span>
-                    <span class="review-date">2024年05月18日</span>
-                  </div>
-                </div>
-                <p class="review-text">
-                  非常棒的體驗，服務人員態度親切，酒水品質一流！夜晚氛圍感十足，是放鬆的好去處。
-                </p>
-                <div class="review-actions">
-                  <span>👍 有用 (5)</span>
-                  <span>👎 不喜歡 (0)</span>
-                </div>
-              </div>
-              <div class="review-card">
-                <div class="review-header">
-                  <img
-                    src="https://via.placeholder.com/40"
-                    alt="User Avatar"
-                    class="user-avatar"
-                  />
-                  <div class="user-info">
-                    <span class="user-name">常造訪用戶</span>
-                    <span class="review-date">2024年05月15日</span>
-                  </div>
-                </div>
-                <p class="review-text">
-                  信義區的夜景真的無敵，這裡的視野很棒。調酒有創意，但價格偏高一些。整體還是很值得一去。
-                </p>
-                <div class="review-actions">
-                  <span>👍 有用 (7)</span>
-                  <span>👎 不喜歡 (1)</span>
-                </div>
-              </div>
-              <div class="review-card">
-                <div class="review-header">
-                  <img
-                    src="https://via.placeholder.com/40"
-                    alt="User Avatar"
-                    class="user-avatar"
-                  />
-                  <div class="user-info">
-                    <span class="user-name">老顧客</span>
-                    <span class="review-date">2024年05月10日</span>
-                  </div>
-                </div>
-                <p class="review-text">
-                  每次來都有驚喜，特別喜歡他們家的季節限定調酒。服務生會主動詢問口味偏好，很貼心。
-                </p>
-                <div class="review-actions">
-                  <span>👍 有用 (12)</span>
-                  <span>👎 不喜歡 (0)</span>
-                </div>
-              </div>
+              </template>
+              <p v-else>暫無 Google 評論</p>
             </div>
           </div>
         </div>
@@ -247,6 +190,7 @@
 <script setup>
 import { ref, watch, computed } from "vue";
 import { useRouter } from "vue-router";
+import placeTypeMap from '@/composables/placeTypeMap';
 
 const props = defineProps({
   bar: {
@@ -263,11 +207,21 @@ const currentImageIndex = ref(0);
 const defaultImage =
   "https://placehold.co/800x600/decdd5/860914?text=No+Image+Available";
 
+const google = computed(() => window.google && window.google.maps ? window.google.maps : null);
+
 const currentImage = computed(() => {
   if (props.bar.images && props.bar.images.length > 0) {
     return props.bar.images[currentImageIndex.value];
   }
   return props.bar.imageUrl || defaultImage;
+});
+
+const currentOpenStatus = computed(() => {
+  if (props.bar.opening_hours && google.value) {
+    return props.bar.opening_hours.isOpen()
+      ? '<span style="color: green;">正在營業中</span>'
+      : '<span style="color: red;">目前休息中</span>';
+  }
 });
 
 watch(
@@ -341,6 +295,16 @@ const handleFileUpload = (event) => {
       fileInput.value.value = "";
     }
   }
+};
+
+function formatReviewDate(unixTime) {
+  if (!unixTime) return '';
+  const date = new Date(unixTime * 1000);
+  return `${date.getFullYear()}年${date.getMonth() + 1}月${date.getDate()}日`;
+}
+
+const getTagLabel = (tag) => {
+  return placeTypeMap[tag] || tag;
 };
 </script>
 
@@ -532,10 +496,6 @@ const handleFileUpload = (event) => {
 .rating-text {
   font-weight: 500;
 }
-.price-range {
-  font-weight: 600;
-  color: #daa258;
-}
 
 .contact-info p {
   margin-bottom: 8px;
@@ -556,7 +516,7 @@ const handleFileUpload = (event) => {
 .opening-hours-detail,
 .bar-tags-detail,
 .description-section,
-.fake-review-section {
+.google-review-section {
   margin-top: 20px;
   border-top: 1px solid #eee;
   padding-top: 15px;
@@ -564,7 +524,7 @@ const handleFileUpload = (event) => {
 .opening-hours-detail h3,
 .bar-tags-detail h3,
 .description-section h3,
-.fake-review-section h3 {
+.google-review-section h3 {
   font-size: 18px;
   font-weight: bold;
   color: #333;
@@ -575,6 +535,17 @@ const handleFileUpload = (event) => {
   font-size: 15px;
   line-height: 1.6;
   color: #444;
+}
+
+.opening-hours-detail ul {
+  list-style: none;
+  padding: 0;
+  margin: 5px 0 0 0;
+}
+.opening-hours-detail li {
+  font-size: 15px;
+  color: #444;
+  margin-bottom: 3px;
 }
 
 .bar-tags-detail .tags-wrapper {
@@ -593,7 +564,7 @@ const handleFileUpload = (event) => {
   border: 1px solid #91d5ff;
 }
 
-.fake-review-section {
+.google-review-section {
   padding-bottom: 15px;
 }
 
@@ -812,7 +783,6 @@ const handleFileUpload = (event) => {
 .action-icon-button[data-tooltip] {
   position: relative;
 }
-
 .action-icon-button[data-tooltip]:hover::after {
   content: attr(data-tooltip);
   position: absolute;
@@ -830,7 +800,6 @@ const handleFileUpload = (event) => {
   pointer-events: none;
   transition: opacity 0.2s;
 }
-
 .action-icon-button[data-tooltip]::after {
   opacity: 0;
   pointer-events: none;
