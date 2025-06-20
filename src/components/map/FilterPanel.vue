@@ -37,19 +37,19 @@
     <div class="filter-section">
       <label for="addressFilter" class="filter-label">地點</label>
       <select
-      id="addressFilter"
-      v-model="filters.address"
-      @change="applyFilters"
-      class="filter-select"
+        id="addressFilter"
+        v-model="filters.address"
+        @change="applyFilters"
+        class="filter-select"
       >
-      <option value="any">任何地方</option>
-      <option value="信義區">信義區</option>
-      <option value="大安區">大安區</option>
-      <option value="中山區">中山區</option>
-      <option value="松山區">松山區</option>
-      <option value="萬華區">萬華區</option>
-      <option value="士林區">士林區</option>
-    </select>
+        <option value="current_location">你的位置</option>
+        <option value="信義區">信義區</option>
+        <option value="大安區">大安區</option>
+        <option value="中山區">中山區</option>
+        <option value="松山區">松山區</option>
+        <option value="萬華區">萬華區</option>
+        <option value="士林區">士林區</option>
+      </select>
     </div>
 
     <div class="filter-section">
@@ -76,7 +76,7 @@
           @input="updateDistance"
           class="range-number-input"
           min="0"
-          max="5000"
+          max="10000"
         />
         <span>-</span>
         <input
@@ -85,7 +85,7 @@
           @input="updateDistance"
           class="range-number-input"
           min="0"
-          max="5000"
+          max="10000"
         />
       </div>
       <input
@@ -94,12 +94,12 @@
         @input="updateDistanceRange"
         class="range-slider"
         min="0"
-        max="5000"
+        max="10000"
         step="100"
       />
       <div class="range-labels">
         <span>0</span>
-        <span>5000</span>
+        <span>10000</span>
       </div>
     </div>
 
@@ -136,18 +136,18 @@
     </div>
 
     <div class="filter-section">
-      <label class="filter-label">熱門推薦</label>
+      <label class="filter-label">標籤</label>
       <div class="tags-grid">
         <button
-          v-for="tag in popularTags"
-          :key="tag"
+          v-for="([type, label], idx) in tagList"
+          :key="type"
           :class="{
-            'tag-button-active': filters.tags.includes(tag),
-            'tag-button': !filters.tags.includes(tag),
+            'tag-button-active': props.selectedTag === type,
+            'tag-button': props.selectedTag !== type,
           }"
-          @click="toggleTag(tag)"
+          @click="handleTagClick(type)"
         >
-          {{ tag }}
+          {{ label }}
         </button>
       </div>
     </div>
@@ -161,18 +161,19 @@
 </template>
 
 <script setup>
-import { ref, defineEmits, watch, defineProps, computed } from "vue";
+import { ref, watch, computed } from "vue";
+import placeTypeMap from '@/composables/placeTypeMap';
 
-const emit = defineEmits(["filter-changed", "close-panel"]);
+const emit = defineEmits(["filter-changed", "close-panel", "tag-click"]);
 
 const props = defineProps({
   initialFilters: {
     type: Object,
     default: () => ({
-      address: [],
+      address: "current_location",
       ratingSort: "any",
       minDistance: 0,
-      maxDistance: 5000,
+      maxDistance: 10000,
       minOpenHour: 0,
       minOpenMinute: 0,
       maxOpenHour: 24,
@@ -180,27 +181,25 @@ const props = defineProps({
       tags: [],
     }),
   },
+  selectedTag: {
+    type: String,
+    default: null,
+  },
 });
 
 const filters = ref({ ...props.initialFilters });
-const popularTags = [
+// 取 placeTypeMap 常見類型（前 20 筆或常用類型）
+const tagList = computed(() => Object.entries(placeTypeMap).slice(0, 20));
+
+const districtTags = [
   "信義區",
   "大安區",
   "中山區",
-  "精釀啤酒",
-  "創意調酒",
-  "運動酒吧",
-  "秘密基地",
-  "約會小酌",
-  "現場表演",
-  "高空美景",
-  "大型螢幕",
-  "觀賽熱點",
-  "居酒屋",
-  "爵士樂",
-  "復古",
+  "松山區",
+  "萬華區",
+  "士林區",
 ];
-const districtTags = ["信義區", "大安區", "中山區", "松山區", "萬華區", "士林區"];
+
 const openTime = ref("00:00");
 const closeTime = ref("23:59");
 
@@ -208,13 +207,26 @@ const closeTime = ref("23:59");
 const appliedFiltersForDisplay = computed(() => {
   const displayFilters = [];
 
-  if (Array.isArray(filters.value.address) && filters.value.address.length > 0) {
-    filters.value.address.forEach(addr => {
+  if (
+    Array.isArray(filters.value.address) &&
+    filters.value.address.length > 0
+  ) {
+    filters.value.address.forEach((addr) => {
       displayFilters.push({
         label: `地點: ${addr}`,
         type: "address",
         value: addr,
       });
+    });
+  } else if (
+    typeof filters.value.address === "string" && 
+    filters.value.address !== "current_location" && 
+    filters.value.address !== "any"
+  ) {
+    displayFilters.push({
+      label: `地點: ${filters.value.address}`,
+      type: "address",
+      value: filters.value.address,
     });
   }
 
@@ -238,7 +250,7 @@ const appliedFiltersForDisplay = computed(() => {
     });
   }
 
-  if (filters.value.minDistance !== 0 || filters.value.maxDistance !== 5000) {
+  if (filters.value.minDistance !== 0 || filters.value.maxDistance !== 10000) {
     const min = filters.value.minDistance;
     const max = filters.value.maxDistance;
     displayFilters.push({
@@ -254,7 +266,7 @@ const appliedFiltersForDisplay = computed(() => {
   let currentMaxMinute = filters.value.maxOpenMinute;
 
   if (currentMaxHour === 24 && currentMaxMinute === 0) {
-    currentMaxHour = 0; 
+    currentMaxHour = 0;
   }
 
   if (
@@ -296,14 +308,15 @@ const appliedFiltersForDisplay = computed(() => {
   return displayFilters;
 });
 
-// 移除已套用的單一篩選條件
 const removeAppliedFilter = (type, value) => {
   switch (type) {
     case "address":
       if (Array.isArray(filters.value.address)) {
-        filters.value.address = filters.value.address.filter(addr => addr !== value);
+        filters.value.address = filters.value.address.filter(
+          (addr) => addr !== value
+        );
       } else {
-        filters.value.address = [];
+        filters.value.address = "current_location";
       }
       break;
     case "ratingSort":
@@ -311,7 +324,7 @@ const removeAppliedFilter = (type, value) => {
       break;
     case "distance":
       filters.value.minDistance = 0;
-      filters.value.maxDistance = 5000;
+      filters.value.maxDistance = 10000;
       break;
     case "openHour":
       filters.value.minOpenHour = 0;
@@ -325,21 +338,20 @@ const removeAppliedFilter = (type, value) => {
       filters.value.tags = filters.value.tags.filter((t) => t !== value);
       break;
   }
-  applyFilters(); 
+  applyFilters();
 };
 
-// 更新距離數值輸入框並同步篩選
 const updateDistance = () => {
   if (filters.value.minDistance > filters.value.maxDistance) {
     filters.value.minDistance = filters.value.maxDistance;
   }
   filters.value.minDistance = Math.max(
     0,
-    Math.min(filters.value.minDistance, 5000)
+    Math.min(filters.value.minDistance, 10000)
   );
   filters.value.maxDistance = Math.max(
     0,
-    Math.min(filters.value.maxDistance, 5000)
+    Math.min(filters.value.maxDistance, 10000)
   );
   applyFilters();
 };
@@ -356,13 +368,11 @@ const updateOpenHours = () => {
   let [maxOpenHour, maxOpenMinute] = closeTime.value.split(":").map(Number);
 
   if (maxOpenHour === 0 && maxOpenMinute === 0 && closeTime.value === "00:00") {
-
-      if (openTime.value !== "00:00") { 
-         maxOpenHour = 24;
-         maxOpenMinute = 0;
-      }
+    if (openTime.value !== "00:00") {
+      maxOpenHour = 24;
+      maxOpenMinute = 0;
+    }
   }
-
 
   filters.value.minOpenHour = minOpenHour;
   filters.value.minOpenMinute = minOpenMinute;
@@ -373,10 +383,9 @@ const updateOpenHours = () => {
   const endMinutes = maxOpenHour * 60 + maxOpenMinute;
 
   if (startMinutes > endMinutes && endMinutes !== 0) {
-
-      filters.value.maxOpenHour = minOpenHour;
-      filters.value.maxOpenMinute = minOpenMinute;
-      closeTime.value = openTime.value;
+    filters.value.maxOpenHour = minOpenHour;
+    filters.value.maxOpenMinute = minOpenMinute;
+    closeTime.value = openTime.value;
   }
 
   applyFilters();
@@ -401,10 +410,10 @@ const applyFilters = () => {
 
 const resetFilters = () => {
   filters.value = {
-    address: "any",
+    address: "current_location",
     ratingSort: "any",
     minDistance: 0,
-    maxDistance: 5000,
+    maxDistance: 10000,
     minOpenHour: 0,
     minOpenMinute: 0,
     maxOpenHour: 24,
@@ -420,7 +429,6 @@ const closePanel = () => {
   emit("close-panel");
 };
 
-// 更新本地篩選狀態
 watch(
   () => props.initialFilters,
   (newFilters) => {
@@ -432,7 +440,7 @@ watch(
 
     let displayMaxHour = newFilters.maxOpenHour;
     if (displayMaxHour === 24 && newFilters.maxOpenMinute === 0) {
-        displayMaxHour = 0;
+      displayMaxHour = 0;
     }
 
     openTime.value = `${String(newFilters.minOpenHour).padStart(2, "0")}:${String(newFilters.minOpenMinute).padStart(2, "0")}`;
@@ -440,6 +448,14 @@ watch(
   },
   { deep: true, immediate: true }
 );
+
+function handleTagClick(tag) {
+  if (props.selectedTag === tag) {
+    emit('tag-click', null);
+  } else {
+    emit('tag-click', tag);
+  }
+}
 </script>
 
 <style scoped>
