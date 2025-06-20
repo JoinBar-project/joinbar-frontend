@@ -146,7 +146,7 @@
                 class="icon"
               />
             </button>
-            <button class="action-icon-button navigate-button" data-tooltip="導航" @click="handleNavigate">
+            <button class="action-icon-button navigate-button" data-tooltip="導航" @click="() => navigateToBar(bar)">
               <img
                 src="@/assets/icons/mapicons/navigation-icon.svg"
                 alt="導航"
@@ -260,14 +260,6 @@ const handleImageError = (event) => {
 const closeModal = () => {
   emit("close");
 };
-
-const handleNavigate = () => {
-  if (!props.bar.latitude || !props.bar.longitude) {
-    alert('此酒吧尚未提供定位資訊');
-    return;
-  }
-  navigateToBar(props.bar.latitude, props.bar.longitude, props.bar.name);
-}
 
 const toggleFavorite = () => {
   if (props.bar.placeId) {
