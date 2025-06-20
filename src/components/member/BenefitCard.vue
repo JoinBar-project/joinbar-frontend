@@ -1,5 +1,5 @@
 <script setup>
-import { computed } from 'vue'
+import { ref, computed } from 'vue'
 import dayjs from 'dayjs'
 import foodImage from '@/views/member/profile/picture/img-food.jpg'
 
@@ -10,6 +10,43 @@ const props = defineProps({
 const dateRange = computed(() => {
   return `${dayjs(props.benefit.startAt).format('YYYY-MM-DD')} ~ ${dayjs(props.benefit.endAt).format('YYYY-MM-DD')}`
 })
+
+const barOptions = ref([
+  { id: 1, name: '醉後不歸路' },
+  { id: 2, name: '夜色迷醉' },
+  { id: 3, name: '貓吧 Meow Bar' },
+  { id: 4, name: '微醺時光' },
+  { id: 5, name: '深夜酒館' },
+]);
+
+const showBenefitModal = ref(false)
+const selectBar = ref('')
+const isRedeemed = ref(false)
+const showSelecBarModal = ref(false)
+
+
+function toggleModal(){
+  if( !selectBar.value ){
+    showSelecBarModal.value = true
+  }else{
+    showBenefitModal.value = true
+  }
+}
+
+function handleConfirmSelecBarModal() {
+  showSelecBarModal.value = false
+}
+
+function closeCancelRedeemModal(){
+  showBenefitModal.value = false
+}
+
+function handleConfirmRedeemModal() {
+  isRedeemed.value = true
+  showBenefitModal.value = false
+}
+
+
 </script>
 
 <template>
@@ -26,26 +63,64 @@ const dateRange = computed(() => {
     </figure>
     <div class="pt-2 pl-4">
       <h2 class="card-title text-[var(--color-primary-red)] py-2">{{ benefit.benefit }}</h2>
-      <p class="text-sm">票號：{{ benefit.id }}</p>
+      <p class="text-sm text-gray-700">票號：<span class="text-sm text-gray-500">{{ benefit.id }}</span></p>
       <p class="text-sm">使用時間：<span class="text-sm py-2 font-bold text-[var(--color-primary-red)]">{{ dateRange }}</span></p>
 
-      <p class="text-xs font-bold pt-2">注意事項：</p>
-      <p class="text-xs">
+      <p class="text-xs pt-2 text-gray-700">注意事項：</p>
+      <p class="text-xs text-gray-500">
         限定五家酒吧使用<br />
         照片僅供參考，以店家提供為主
       </p>
       <div class="flex">
-        <select class="select bg-white border-[2px] border-[var(--color-primary-orange)] hover:border-[var(--color-primary-orange)] focus:border-[var(--color-primary-orange)] focus:outline-none mt-2">
-          <option selected disabled>選擇酒吧優惠</option>
-          <option>醉後不歸路</option>
-          <option>夜色迷醉</option>
-          <option>貓吧 Meow Bar</option>
-          <option>微醺時光</option>
-          <option>深夜酒館</option>
+        <select
+          v-model="selectBar"
+          :disabled="isRedeemed"
+          class="select bg-white border-[2px] 
+          border-[var(--color-primary-orange)] 
+          focus:outline-none mt-2"
+        >
+          <option disabled value="">選擇酒吧</option>
+          <option 
+            v-for="bar in barOptions" 
+            :key="bar.id"
+            :value="bar.name"
+          >
+            {{ bar.name }}
+          </option>
         </select>
-        <button class="btn text-white bg-[var(--color-primary-red)] hover:bg-[var(--color-primary-orange)] mt-2">使用優惠券</button>
+        <button 
+          @click="toggleModal"
+          :disabled="isRedeemed"
+          class="btn text-white bg-[var(--color-primary-red)] hover:bg-[var(--color-primary-orange)] mt-2">
+          {{ isRedeemed? '已使用' : '使用優惠券'}}
+        </button>
       </div>
-
+      
     </div>
   </div>
+
+  <div v-if="showSelecBarModal" class="modal modal-open">
+    <div class="modal-box">
+      <h3 class="text-lg font-bold">提醒</h3>
+      <p class="py-4">請先選擇酒吧</p>
+      <div class="modal-action">
+        <form method="dialog">
+          <button @click="handleConfirmSelecBarModal" class="btn">確認</button>
+        </form>
+      </div>
+    </div>
+  </div >
+
+  <div v-if="showBenefitModal" class="modal modal-open">
+    <div class="modal-box">
+      <h3 class="text-lg font-bold">使用優惠券</h3>
+      <p class="py-4">您確定要使用優惠券嗎？</p>
+      <div class="modal-action">
+        <form method="dialog">
+          <button @click="closeCancelRedeemModal" class="btn mx-2">取消</button>
+          <button @click="handleConfirmRedeemModal" class="btn">確認</button>
+        </form>
+      </div>
+    </div>
+  </div >
 </template>

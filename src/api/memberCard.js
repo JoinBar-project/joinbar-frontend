@@ -43,4 +43,11 @@ const getOverUseBenefit = async () => {
   return [...used, ...expired];
 };
 
+const benefitRedeem = async() => {
+  const usedRes = await apiClient.get('/benefit', { params: { status: 2 } });
+  const res = await apiClient.put('/benefit/status')
+  const data = res.data.benefitRedeems
+
+}
+
 export { getSubIdAndCreateBenefit, getCanUseBenefit, getOverUseBenefit };
