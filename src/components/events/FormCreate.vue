@@ -1,9 +1,14 @@
 <script setup>
-import { ref } from 'vue';
+import { ref, computed } from 'vue';
 import { useEventForm } from '@/composables/useEventForm';
+import { useAuthStore } from '@/stores/authStore';
 import Hashtag from './Hashtag.vue';
 
 const emit = defineEmits(['submit']);
+
+const authStore = useAuthStore();
+
+const isAdmin = computed(() => authStore.user?.role === 'admin');
 
 const { eventName, barName, eventLocation, eventStartDate, eventEndDate, eventPrice, eventPeople, eventHashtags, handleCreate } = useEventForm();
 
@@ -38,10 +43,103 @@ function triggerFileInput() {
   fileInput.value?.click();
 }
 
-function onSubmit() {
-  const success = handleCreate();
-  if (success) {
+async function onSubmit() {
+  if (!authStore.isAuthenticated) {
+    alert('請先登入後再建立活動');
+    return;
+  }
+
+  if (!eventName.value || !barName.value || !eventStartDate.value || !eventEndDate.value || !eventPeople.value) {
+    alert('請完整填寫所有欄位！');
+    return;
+  }
+
+  if (isAdmin.value && (!eventPrice.value || isNaN(eventPrice.value))) {
+    alert('請輸入有效的價格！');
+    return;
+  }
+
+  try {
+    const formData = new FormData();
+    formData.append('name', eventName.value.trim());
+    formData.append('barName', barName.value.trim()); 
+    formData.append('location', eventLocation.value.trim());
+    formData.append('startAt', eventStartDate.value);
+    formData.append('endAt', eventEndDate.value);
+    formData.append('price', isAdmin.value ? (eventPrice.value || '0') : '0');
+    formData.append('maxPeople', eventPeople.value);
+
+    if (imageFile.value) {
+      formData.append('image', imageFile.value);
+    }
+
+    if (Array.isArray(eventHashtags.value)) {
+      const tagIds = eventHashtags.value.map(tag => tag.id || tag);
+      tagIds.forEach(id => formData.append('tagIds', id));
+    }
+
+    console.log('準備發送的資料:');
+    for (let [key, value] of formData.entries()) {
+      console.log(key, value);
+    }
+
+
+    const fetchOptions = {
+      method: 'POST',
+      body: formData
+    };
+
+
+    if (authStore.accessToken) {
+      fetchOptions.headers = {
+        'Authorization': `Bearer ${authStore.accessToken}`
+      };
+      fetchOptions.credentials = 'same-origin';
+    } else if (authStore.loginMethod === 'line') {
+      fetchOptions.credentials = 'include';
+    }
+
+    console.log('請求配置:', fetchOptions);
+
+
+    const response = await fetch('http://localhost:3000/api/event/create', fetchOptions);
+
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('API 錯誤回應:', errorText);
+      throw new Error(`HTTP error! status: ${response.status}, message: ${errorText}`);
+    }
+
+    const result = await response.json();
+    console.log('活動建立成功:', result);
+    
+
+    eventName.value = '';
+    barName.value = '';
+    eventLocation.value = '';
+    eventStartDate.value = '';
+    eventEndDate.value = '';
+    if (imageFile.value) imageFile.value = null;
+    if (imagePreview.value) imagePreview.value = null;
+    eventPrice.value = '';
+    eventPeople.value = '';
+    eventHashtags.value = [];
+    
+    alert('活動建立成功！');
     emit('submit');
+    
+  } catch (error) {
+    console.error('建立活動失敗:', error);
+    
+    if (error.message.includes('401')) {
+      alert('認證失敗，請重新登入');
+      authStore.clearAuthState();
+    } else if (error.message.includes('400')) {
+      alert('資料格式錯誤，請檢查所有欄位是否正確填寫');
+    } else {
+      alert('建立活動失敗，請稍後再試');
+    }
   }
 }
 </script>
@@ -110,7 +208,7 @@ function onSubmit() {
               id="event-end-date"
               v-model="eventEndDate" />
           </div>
-          <div class="form-row">
+          <div class="form-row" v-if="isAdmin">
             <label for="event-price">價格</label>
             <input
               type="number"
