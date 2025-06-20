@@ -27,15 +27,15 @@ const getOverUseBenefit = async () => {
   let expired = [];
 
   try {
-    const usedRes = await apiClient.get('/benefit', { params: { status: 2 } });
-    used = usedRes.data.benefits || [];
+    const usedBenefit = await apiClient.get('/benefit', { params: { status: 2 } });
+    used = usedBenefit.data.benefits || [];
   } catch (err) {
     if (err.response?.status !== 404) console.error(err);
   }
 
   try {
-    const expiredRes = await apiClient.get('/benefit', { params: { status: 3 } });
-    expired = expiredRes.data.benefits || [];
+    const expiredBenefit = await apiClient.get('/benefit', { params: { status: 3 } });
+    expired = expiredBenefit.data.benefits || [];
   } catch (err) {
     if (err.response?.status !== 404) console.error(err);
   }
@@ -43,11 +43,13 @@ const getOverUseBenefit = async () => {
   return [...used, ...expired];
 };
 
-const benefitRedeem = async() => {
-  const usedRes = await apiClient.get('/benefit', { params: { status: 2 } });
-  const res = await apiClient.put('/benefit/status')
-  const data = res.data.benefitRedeems
+const updateBenefitStatus = async ({ benefitId, barId }) => {
+  try {
+    await apiClient.put('/benefit/status', { benefitId, barId });
+  } catch (err) {
+    console.error(err);
+    throw err;
+  }
+};
 
-}
-
-export { getSubIdAndCreateBenefit, getCanUseBenefit, getOverUseBenefit };
+export { getSubIdAndCreateBenefit, getCanUseBenefit, getOverUseBenefit, updateBenefitStatus };

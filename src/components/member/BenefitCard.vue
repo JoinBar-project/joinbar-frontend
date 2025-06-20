@@ -1,14 +1,15 @@
 <script setup>
 import { ref, computed } from 'vue'
 import dayjs from 'dayjs'
-import foodImage from '@/views/member/profile/picture/img-food.jpg'
+import foodImage from '@/views/member/profile/picture/img-wine.jpg'
+import { updateBenefitStatus } from '@/api/memberCard'
 
-const props = defineProps({
+const { benefit } = defineProps({
   benefit: Object,
 })
 
 const dateRange = computed(() => {
-  return `${dayjs(props.benefit.startAt).format('YYYY-MM-DD')} ~ ${dayjs(props.benefit.endAt).format('YYYY-MM-DD')}`
+  return `${dayjs(benefit.startAt).format('YYYY-MM-DD')} ~ ${dayjs(benefit.endAt).format('YYYY-MM-DD')}`
 })
 
 const barOptions = ref([
@@ -33,7 +34,7 @@ function toggleModal(){
   }
 }
 
-function handleConfirmSelecBarModal() {
+function handleConfirmSelecBarModal(){
   showSelecBarModal.value = false
 }
 
@@ -41,9 +42,18 @@ function closeCancelRedeemModal(){
   showBenefitModal.value = false
 }
 
-function handleConfirmRedeemModal() {
-  isRedeemed.value = true
-  showBenefitModal.value = false
+async function handleConfirmRedeemModal(){
+  try{
+    await updateBenefitStatus({
+      benefitId: benefit.id,
+      barId: selectBar.value
+    });
+
+    isRedeemed.value = true
+    showBenefitModal.value = false
+  }catch(err){
+    console.error(err)
+  }
 }
 
 
@@ -83,7 +93,7 @@ function handleConfirmRedeemModal() {
           <option 
             v-for="bar in barOptions" 
             :key="bar.id"
-            :value="bar.name"
+            :value="bar.id"
           >
             {{ bar.name }}
           </option>
@@ -91,6 +101,7 @@ function handleConfirmRedeemModal() {
         <button 
           @click="toggleModal"
           :disabled="isRedeemed"
+          type="button"
           class="btn text-white bg-[var(--color-primary-red)] hover:bg-[var(--color-primary-orange)] mt-2">
           {{ isRedeemed? '已使用' : '使用優惠券'}}
         </button>
@@ -105,7 +116,7 @@ function handleConfirmRedeemModal() {
       <p class="py-4">請先選擇酒吧</p>
       <div class="modal-action">
         <form method="dialog">
-          <button @click="handleConfirmSelecBarModal" class="btn">確認</button>
+          <button @click="handleConfirmSelecBarModal" type="button" class="btn">確認</button>
         </form>
       </div>
     </div>
@@ -117,8 +128,8 @@ function handleConfirmRedeemModal() {
       <p class="py-4">您確定要使用優惠券嗎？</p>
       <div class="modal-action">
         <form method="dialog">
-          <button @click="closeCancelRedeemModal" class="btn mx-2">取消</button>
-          <button @click="handleConfirmRedeemModal" class="btn">確認</button>
+          <button @click="closeCancelRedeemModal" type="button" class="btn mx-2">取消</button>
+          <button @click="handleConfirmRedeemModal" type="button" class="btn">確認</button>
         </form>
       </div>
     </div>
