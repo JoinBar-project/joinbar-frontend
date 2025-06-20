@@ -137,39 +137,34 @@ onMounted(() => {
 }
 
 .form-row label {
-  @apply text-xl text-center;
+  @apply text-base text-center;
 }
 
 .selected-tags {
-  @apply flex flex-wrap gap-2 min-h-8;
+  @apply flex flex-wrap gap-2 items-center; 
 }
 
 .selected-tag {
-  @apply relative flex items-center mb-1 py-1 text-sm rounded-2xl pr-[11px] pl-2;
-  background: #ffecf0;
-  color: #c9475d;
+  @apply relative flex items-center py-1 text-sm rounded-lg pr-[11px] pl-2 bg-orange-100 border-orange-200 text-orange-700;
 }
 
 .remove-tag {
-  @apply ml-2 cursor-pointer font-bold select-none text-sm;
-  color: #c9475d;
+  @apply ml-2 cursor-pointer font-bold select-none text-sm text-orange-700;
 }
 
 .btn-hashtag-modal {
-  @apply rounded-2xl py-1 px-4 border-[3px] border-gray-400 text-sm cursor-pointer bg-gray-100;
-}
-
-.btn-hashtag-modal:hover {
-  @apply bg-red-100;
+  @apply h-9 rounded-lg px-4 border-2 border-gray-300 text-base cursor-pointer bg-white
+         hover:bg-gray-50 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 focus:outline-none
+         transition-all duration-200 ease-in-out;
 }
 
 .hashtag-modal-overlay {
-  @apply fixed left-0 top-0 w-screen h-screen flex items-center justify-center z-[3000];
+  @apply fixed left-0 top-0 w-screen h-screen flex items-center justify-center z-[9999];
   background: rgba(0,0,0,0.20);
 }
 
 .hashtag-modal-content {
-  @apply bg-white rounded-2xl min-w-[300px] relative shadow-2xl p-[32px_28px_20px_28px];
+  @apply bg-white rounded-xl w-[400px] max-w-[90vw] mx-auto relative shadow-2xl p-[32px_28px_20px_28px];
   animation: popupFadeIn 0.25s;
 }
 
@@ -179,11 +174,11 @@ onMounted(() => {
 }
 
 .modal-header {
-  @apply text-xl font-bold mb-4 flex justify-between items-center;
+  @apply text-lg font-bold mb-4 flex justify-between items-center;
 }
 
 .modal-close-btn {
-  @apply text-2xl bg-transparent border-none cursor-pointer;
+  @apply text-2xl bg-transparent border-none cursor-pointer hover:text-gray-600 transition-colors;
 }
 
 .modal-tags {
@@ -191,20 +186,23 @@ onMounted(() => {
 }
 
 .tag-btn {
-  @apply text-base border-2 border-gray-400 rounded-2xl py-2 px-4 cursor-pointer transition-all duration-200 bg-gray-50;
+  @apply text-base border-2 border-gray-300 rounded-lg py-2 px-4 cursor-pointer transition-all duration-200 bg-white
+         hover:bg-gray-50 focus:outline-none;
 }
 
 .tag-btn.active,
 .tag-btn:active {
-  @apply bg-red-100 border-red-300;
+  @apply bg-orange-100 border-orange-200 text-orange-700;
 }
 
+
 .modal-actions {
-  @apply mt-2 text-right;
+  @apply mt-4 text-right;
 }
 
 .confirm-btn {
-  @apply border-none text-white rounded-2xl text-base py-1 px-6 cursor-pointer ml-3;
+  @apply border-none text-white rounded-lg text-base py-2 px-6 cursor-pointer ml-3
+         hover:opacity-90 focus:outline-none focus:ring-2 focus:ring-red-300 transition-all duration-200;
   background: var(--color-primary-red, #c9475d);
 }
 
@@ -214,6 +212,6 @@ onMounted(() => {
 }
 
 .no-tags-info {
-  @apply text-xs text-gray-500;
+  @apply text-xs text-gray-500 flex items-center;
 }
 </style>

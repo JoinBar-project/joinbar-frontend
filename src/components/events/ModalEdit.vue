@@ -96,7 +96,7 @@ function handleDelete() {
 }
 
 .popup-close-btn {
-  @apply absolute top-12 right-4 text-[30px] bg-transparent border-none text-black cursor-pointer z-[101] transition-colors duration-200;
+  @apply absolute right-4 text-[30px] bg-transparent border-none text-white cursor-pointer z-[101] transition-colors duration-200;
 }
 
 .popup-close-btn:hover {

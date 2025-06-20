@@ -3,7 +3,14 @@ import { useEventForm } from '@/composables/useEventForm';
 import FormCreate from './FormCreate.vue';
 import AlertModal from '@/components/AlertModal.vue';
 
+const emit = defineEmits(['submit']);
+
 const { showForm, showAlert, handleAlertAccept, handleAlertDeny, overlayClick } = useEventForm();
+
+function handleSubmit() {
+  showForm.value = false;
+  emit('submit');
+}
 </script>
 
 <template>
@@ -11,7 +18,8 @@ const { showForm, showAlert, handleAlertAccept, handleAlertDeny, overlayClick } 
     <AlertModal
       :visible="showAlert"
       @accept="handleAlertAccept"
-      @deny="handleAlertDeny" />
+      @deny="handleAlertDeny" 
+    />
     <button
       class="btn-open-form btn-create"
       @click="showForm = true">
@@ -30,7 +38,7 @@ const { showForm, showAlert, handleAlertAccept, handleAlertDeny, overlayClick } 
           </button>
           <FormCreate
             @click.stop
-            @submit="showForm = false" />
+            @submit="handleSubmit" />
         </div>
       </div>
     </transition>
@@ -41,15 +49,20 @@ const { showForm, showAlert, handleAlertAccept, handleAlertDeny, overlayClick } 
 @reference "tailwindcss";
 
 .btn-open-form {
-  @apply flex justify-center items-center mx-auto w-44 py-2 text-xl text-white border-none rounded-2xl cursor-pointer;
+  @apply mt-[30px] mr-[30px] rounded-[20px] border-0 text-[24px] text-center shadow-md cursor-pointer transition-colors duration-200;
 }
 
 .btn-create {
+  @apply px-[16px] pt-[8px] pb-[10px] text-white hover:bg-[#a83c51];
   background-color: var(--color-primary-red);
 }
 
 .btn-edit {
-  background-color: var(--color-primary-orange);
+  @apply px-[16px] pt-[8px] pb-[10px] text-white bg-[var(--color-secondary-green)] hover:bg-[#8b8d6c];
+}
+
+.edit-btn-container {
+  @apply flex justify-end;
 }
 
 .popup-overlay {
@@ -62,10 +75,10 @@ const { showForm, showAlert, handleAlertAccept, handleAlertDeny, overlayClick } 
 }
 
 .popup-close-btn {
-  @apply absolute top-12 right-4 text-[30px] bg-transparent border-none text-black cursor-pointer z-[101] transition-colors duration-200;
+  @apply absolute right-4 text-[30px] bg-transparent border-none text-white cursor-pointer z-[101] transition-colors duration-200;
 }
 
 .popup-close-btn:hover {
-  @apply text-orange-600;
+  @apply text-red-600;
 }
 </style>

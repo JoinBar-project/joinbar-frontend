@@ -1,10 +1,42 @@
 <script setup>
+import { ref } from 'vue';
 import { useEventForm } from '@/composables/useEventForm';
 import Hashtag from './Hashtag.vue';
 
 const emit = defineEmits(['submit']);
 
 const { eventName, barName, eventLocation, eventStartDate, eventEndDate, eventPrice, eventPeople, eventHashtags, handleCreate } = useEventForm();
+
+const imageFile = ref(null);
+const imagePreview = ref(null);
+const fileInput = ref(null);
+
+function handleImageSelect(event) {
+  const file = event.target.files[0];
+  if (file) {
+    if (!file.type.startsWith('image/')) {
+      alert('請選擇圖片檔案');
+      return;
+    }
+    
+    if (file.size > 5 * 1024 * 1024) {
+      alert('圖片檔案大小不能超過 5MB');
+      return;
+    }
+    
+    imageFile.value = file;
+    
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      imagePreview.value = e.target.result;
+    };
+    reader.readAsDataURL(file);
+  }
+}
+
+function triggerFileInput() {
+  fileInput.value?.click();
+}
 
 function onSubmit() {
   const success = handleCreate();
@@ -15,14 +47,34 @@ function onSubmit() {
 </script>
 
 <template>
-  <section
-    class="event-form"
-    id="new-event">
+  <section class="event-form" id="new-event">
     <div class="form-header">建立新活動</div>
     <div class="form-container">
-      <div class="form-image-upload">
-        <div class="event-image-placeholder">點擊更換活動圖</div>
+      <div class="form-image-upload" @click="triggerFileInput">
+        <input
+          ref="fileInput"
+          type="file"
+          accept="image/*"
+          @change="handleImageSelect"
+          style="display: none;"
+        />
+        
+        <div v-if="!imagePreview" class="event-image-placeholder">
+          點擊更換活動圖
+        </div>
+        
+        <div v-else class="relative w-full h-full">
+          <img
+            :src="imagePreview"
+            alt="活動圖片預覽"
+            class="w-full h-full object-cover"
+          />
+          <div class="absolute inset-0 opacity-0 hover:opacity-100 transition-opacity rounded-t-xl flex items-center justify-center backdrop-blur-sm">
+            <span class="text-white text-lg font-medium">點擊重新選擇</span>
+          </div>
+        </div>
       </div>
+      
       <div class="form-layout">
         <div class="form-left">
           <div class="form-row">
@@ -67,7 +119,7 @@ function onSubmit() {
               placeholder="請輸入價格" />
           </div>
           <div class="form-row">
-            <label for="event-time">參加人數</label>
+            <label for="event-people">參加人數</label>
             <input
               type="number"
               id="event-people"
@@ -78,11 +130,19 @@ function onSubmit() {
           </div>
           <Hashtag v-model="eventHashtags" />
         </div>
-        <div class="form-right"></div>
+        <div class="form-right">
+          <iframe 
+            v-if="eventLocation"
+            :src="`https://www.google.com/maps?q=${encodeURIComponent(eventLocation)}&output=embed`"
+            class="w-full h-full rounded-lg border-0">
+          </iframe>
+        </div>
       </div>
+      
       <div class="form-bottom">
         <button
           type="button"
+          class="btn-submit"
           @click="onSubmit">
           發佈
         </button>
@@ -99,28 +159,28 @@ function onSubmit() {
 }
 
 .form-header {
-  @apply w-36 text-center mx-auto text-lg p-1 rounded-t-2xl text-white;
+  @apply text-center mx-auto text-lg p-2 rounded-t-xl text-white;
   background-color: var(--color-primary-red);
 }
 
 .form-container {
-  @apply mx-auto w-[700px] rounded-xl bg-gray-300;
+  @apply mx-auto w-[700px] rounded-xl bg-gray-200;
 }
 
 .form-image-upload {
-  @apply flex justify-center items-center w-full h-72 text-xl text-gray-400 rounded-t-xl bg-gray-200;
+  @apply flex justify-center items-center w-full h-72 text-xl text-gray-400 bg-gray-200;
 }
 
 .form-layout {
-  @apply p-5 grid grid-cols-[1.5fr_1fr] items-center gap-5;
+  @apply p-5 grid grid-cols-[2fr_1fr] items-start gap-5;
 }
 
 .form-left {
-  @apply text-xl;
+  @apply text-base;
 }
 
 .form-right {
-  @apply flex justify-center items-center w-full h-full rounded-2xl;
+  @apply flex justify-center items-center w-full h-full rounded-xl;
   background-color: var(--color-black);
 }
 
@@ -129,11 +189,14 @@ function onSubmit() {
 }
 
 .form-row label {
-  @apply text-xl text-center;
+  @apply text-base text-center;
 }
 
 .form-row input {
-  @apply h-10 px-2 text-lg border-[3px] border-gray-400 rounded-2xl bg-white;
+  @apply h-9 px-4 text-base border-2 border-gray-300 rounded-lg bg-white 
+         focus:border-blue-500 focus:ring-2 focus:ring-blue-200 focus:outline-none
+         transition-all duration-200 ease-in-out
+         placeholder:text-gray-400;
 }
 
 .event-location {
@@ -142,11 +205,16 @@ function onSubmit() {
 }
 
 .form-bottom {
-  @apply pb-5;
+  @apply px-12 pb-5 flex justify-center;
 }
 
-.form-bottom button {
-  @apply block mx-auto w-44 py-1 text-xl text-white border-none rounded-xl cursor-pointer;
+.btn-submit {
+  @apply w-44 py-1 text-lg text-white rounded-xl cursor-pointer
+         transition-all duration-200 ease-in-out;
   background-color: var(--color-primary-red);
+}
+
+.btn-submit:hover {
+  background-color: var(--color-primary-orange);
 }
 </style>
