@@ -12,6 +12,7 @@ const props = defineProps({
   tags: Array,
 });
 
+const emit = defineEmits(['update']);
 const eventRef = toRef(props, 'event');
 const cart = useCartStore();
 const router = useRouter();

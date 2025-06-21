@@ -94,7 +94,7 @@ async function onUpdate() {
     } else if (error.request) {
       alert('網路連線錯誤，請檢查網路狀態');
     } else {
-      alert(`發生錯誤: ${error.message}`);
+      console.error('[活動更新失敗]', error);
     }
   } finally {
     loading.value = false;
