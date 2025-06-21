@@ -15,6 +15,14 @@ const props = defineProps({
   eventId: String,
 });
 
+const currentUserId = computed(() => {
+  const user = JSON.parse(localStorage.getItem('user'));
+  return user?.id ? Number(user.id) : null;
+});
+
+const isHostUser = computed(() => {
+  return currentUserId.value !== null && Number(currentEvent.value.hostUser) === currentUserId.value;
+});
 
 const eventRef = toRef(props, 'event');
 const localEvent = ref({ ...props.event });
@@ -220,12 +228,12 @@ const handleCancelConfirm = async () => {
                 {{ isUpdating ? '處理中...' : '取消報名' }}
               </button>
               
-
               <ModalEdit
-                v-if="currentEvent.id"
+                v-if="currentEvent.id && isHostUser"
                 :event-id="currentEvent.id"
                 @update="handleEventUpdate"
               />
+
             </div>
           </div>
         </div>
