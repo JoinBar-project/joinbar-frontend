@@ -81,7 +81,7 @@ async function onSubmit() {
     }
     
     const isValidTagFormat = Array.isArray(eventHashtags.value) && 
-                            eventHashtags.value.every(tag => typeof tag === 'number');
+      eventHashtags.value.every(tag => typeof tag === 'number');
     
     if (!isValidTagFormat) {
       console.error('標籤格式錯誤，期望數字陣列，實際:', eventHashtags.value);
