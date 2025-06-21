@@ -1,16 +1,29 @@
 <script setup>
 import { ref, computed } from 'vue';
+import axios from 'axios';
 import { useEventForm } from '@/composables/useEventForm';
 import { useAuthStore } from '@/stores/authStore';
+import { useTagStore } from '@/stores/tag';
 import Hashtag from './Hashtag.vue';
 
 const emit = defineEmits(['submit']);
 
 const authStore = useAuthStore();
+const tagStore = useTagStore();
 
 const isAdmin = computed(() => authStore.user?.role === 'admin');
 
-const { eventName, barName, eventLocation, eventStartDate, eventEndDate, eventPrice, eventPeople, eventHashtags, handleCreate } = useEventForm();
+const { 
+  eventName, 
+  barName, 
+  eventLocation, 
+  eventStartDate, 
+  eventEndDate, 
+  eventPrice, 
+  eventPeople, 
+  eventHashtags, 
+  createFormData 
+} = useEventForm();
 
 const imageFile = ref(null);
 const imagePreview = ref(null);
@@ -60,86 +73,93 @@ async function onSubmit() {
   }
 
   try {
+    const token = localStorage.getItem('access_token') || authStore.accessToken;
+    
+    if (!token) {
+      alert('登入已過期，請重新登入');
+      return;
+    }
+    
+    const isValidTagFormat = Array.isArray(eventHashtags.value) && 
+                            eventHashtags.value.every(tag => typeof tag === 'number');
+    
+    if (!isValidTagFormat) {
+      console.error('標籤格式錯誤，期望數字陣列，實際:', eventHashtags.value);
+    }
+
     const formData = new FormData();
-    formData.append('name', eventName.value.trim());
-    formData.append('barName', barName.value.trim()); 
-    formData.append('location', eventLocation.value.trim());
+    
+    formData.append('name', eventName.value);
+    formData.append('barName', barName.value);
+    formData.append('location', eventLocation.value);
     formData.append('startAt', eventStartDate.value);
     formData.append('endAt', eventEndDate.value);
-    formData.append('price', isAdmin.value ? (eventPrice.value || '0') : '0');
     formData.append('maxPeople', eventPeople.value);
-
+    
+    if (isAdmin.value && eventPrice.value) {
+      formData.append('price', eventPrice.value);
+    }
+    
     if (imageFile.value) {
       formData.append('image', imageFile.value);
     }
-
-    if (Array.isArray(eventHashtags.value)) {
-      const tagIds = eventHashtags.value.map(tag => tag.id || tag);
-      tagIds.forEach(id => formData.append('tagIds', id));
-    }
-
-    console.log('準備發送的資料:');
-    for (let [key, value] of formData.entries()) {
-      console.log(key, value);
-    }
-
-
-    const fetchOptions = {
-      method: 'POST',
-      body: formData
-    };
-
-
-    if (authStore.accessToken) {
-      fetchOptions.headers = {
-        'Authorization': `Bearer ${authStore.accessToken}`
-      };
-      fetchOptions.credentials = 'same-origin';
-    } else if (authStore.loginMethod === 'line') {
-      fetchOptions.credentials = 'include';
-    }
-
-    console.log('請求配置:', fetchOptions);
-
-
-    const response = await fetch('http://localhost:3000/api/event/create', fetchOptions);
-
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error('API 錯誤回應:', errorText);
-      throw new Error(`HTTP error! status: ${response.status}, message: ${errorText}`);
-    }
-
-    const result = await response.json();
-    console.log('活動建立成功:', result);
     
+    formData.append('tags', JSON.stringify(eventHashtags.value));
 
+    const response = await axios.post('/api/event/create', formData, {
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+    
     eventName.value = '';
     barName.value = '';
     eventLocation.value = '';
     eventStartDate.value = '';
     eventEndDate.value = '';
-    if (imageFile.value) imageFile.value = null;
-    if (imagePreview.value) imagePreview.value = null;
     eventPrice.value = '';
     eventPeople.value = '';
     eventHashtags.value = [];
     
+    if (imageFile.value) imageFile.value = null;
+    if (imagePreview.value) imagePreview.value = null;
+    
     alert('活動建立成功！');
-    emit('submit');
+    
+    emit('submit', {
+      success: true,
+      newEvent: response.data.event || response.data
+    });
     
   } catch (error) {
-    console.error('建立活動失敗:', error);
+    console.error('=== 建立失敗 ===');
+    console.error('完整錯誤:', error);
     
-    if (error.message.includes('401')) {
-      alert('認證失敗，請重新登入');
-      authStore.clearAuthState();
-    } else if (error.message.includes('400')) {
-      alert('資料格式錯誤，請檢查所有欄位是否正確填寫');
+    let errorMessage = '發生未知錯誤';
+    
+    if (error.response) {
+      console.error('伺服器錯誤詳情:', {
+        status: error.response.status,
+        data: error.response.data,
+        headers: error.response.headers
+      });
+      errorMessage = error.response.data?.message || '伺服器錯誤';
+      alert(`建立失敗: ${errorMessage}`);
+    } else if (error.request) {
+      console.error('網路錯誤:', error.request);
+      errorMessage = '網路連線錯誤，請檢查網路狀態';
+      alert(errorMessage);
     } else {
-      alert('建立活動失敗，請稍後再試');
+      console.error('其他錯誤:', error.message);
+      errorMessage = error.message;
+      alert(`發生錯誤: ${errorMessage}`);
     }
+    
+    emit('submit', {
+      success: false,
+      error: errorMessage
+    });
   }
 }
 </script>

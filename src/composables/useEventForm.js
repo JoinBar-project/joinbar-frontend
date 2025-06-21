@@ -6,7 +6,7 @@ import axios from 'axios'
 export function useEventForm(eventId = null) {
   const authStore = useAuthStore()
   const userRole = computed(() => authStore.user?.role || 'user')
-  const isAdmin = computed(() => userRole === 'admin')
+  const isAdmin = computed(() => userRole.value === 'admin')
   const userId = authStore.user?.id || null
   const eventStore = useEventStore()
   
@@ -110,6 +110,55 @@ export function useEventForm(eventId = null) {
       console.error('載入活動失敗:', error)
     }
   }
+
+  function createFormData(imageFile, processedHashtags = null) {
+    const formData = new FormData();
+
+    formData.append('name', eventName.value.trim());
+    formData.append('barName', barName.value.trim());
+    formData.append('location', eventLocation.value.trim());
+    formData.append('startAt', eventStartDate.value);
+    formData.append('endAt', eventEndDate.value);
+    formData.append('price', isAdmin.value ? (eventPrice.value || '0') : '0');
+    formData.append('maxPeople', eventPeople.value);
+
+    if (imageFile) {
+      formData.append('image', imageFile);
+    }
+
+    console.log('=== 標籤處理開始 ===');
+    console.log('eventHashtags.value:', eventHashtags.value);
+
+    if (Array.isArray(eventHashtags.value) && eventHashtags.value.length > 0) {
+      const tagIds = eventHashtags.value
+        .map(tag => (typeof tag === 'object' && tag !== null ? tag.id || tag.value || tag : tag))
+        .filter(id => id !== undefined && id !== null && id !== '' && !isNaN(id))
+        .map(id => parseInt(id));
+
+      if (tagIds.length > 0) {
+        formData.append('tagIds', tagIds.join(','));
+        formData.append('tagIdsJson', JSON.stringify(tagIds));
+        tagIds.forEach((id, index) => {
+          formData.append('tagIdList[]', id.toString());
+        });
+        console.log('🔥 總共發送了', tagIds.length, '個標籤，使用 3 種格式');
+      } else {
+        console.log('⚠️ 沒有有效的標籤 ID');
+      }
+    } else {
+      console.log('⚠️ 標籤陣列為空或無效');
+    }
+    console.log('=== 標籤處理結束 ===');
+
+    for (let [key, value] of formData.entries()) {
+      console.log(`${key}:`, value);
+    }
+
+    const tagsToUse = processedHashtags || eventHashtags.value;
+    formData.append('hashtags', JSON.stringify(tagsToUse));
+    
+    return formData;
+  }
   
   function handleCreate() {
     if (!validateForm()) {
@@ -183,6 +232,7 @@ export function useEventForm(eventId = null) {
     handleDelete,
     loadEvent,
     resetForm,
+    createFormData, // 新增這個方法
     handleAlertAccept,
     handleAlertDeny,
     overlayClick

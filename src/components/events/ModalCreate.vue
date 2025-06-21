@@ -3,13 +3,18 @@ import { useEventForm } from '@/composables/useEventForm';
 import FormCreate from './FormCreate.vue';
 import AlertModal from '@/components/AlertModal.vue';
 
-const emit = defineEmits(['submit']);
+const emit = defineEmits(['submit', 'eventCreated']);
 
 const { showForm, showAlert, handleAlertAccept, handleAlertDeny, overlayClick } = useEventForm();
 
-function handleSubmit() {
-  showForm.value = false;
-  emit('submit');
+function handleSubmit(result) {
+  if (result.success) {
+    emit('eventCreated', result.newEvent);
+    showForm.value = false;
+  
+  } else {
+    console.error('建立活動失敗:', result.error);
+  }
 }
 </script>
 

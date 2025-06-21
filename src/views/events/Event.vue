@@ -1,5 +1,5 @@
 <script setup>
-import { onMounted, computed, nextTick } from 'vue'
+import { onMounted, computed, nextTick, ref, watch } from 'vue'
 import { useEventStore } from '@/stores/event'
 import { useTagStore } from '@/stores/tag'
 import { storeToRefs } from 'pinia'
@@ -10,38 +10,56 @@ const eventStore = useEventStore()
 const { events } = storeToRefs(eventStore)
 const tagStore = useTagStore()
 
+const localEvents = ref([])
+
 onMounted(() => {
   eventStore.fetchEvents()
   tagStore.fetchTags()
 })
 
 const sortedEvents = computed(() => {
-  return [...events.value]
+  const eventsToShow = localEvents.value.length > 0 ? localEvents.value : events.value
+  
+  return [...eventsToShow]
     .filter(event => event && event.status !== 2) // 過濾刪除活動
     .sort((a, b) => new Date(b.startAt) - new Date(a.startAt))
 })
 
+watch(() => events.value, (newEvents) => {
+  if (newEvents.length > 0) {
+    localEvents.value = [...newEvents]
+  }
+}, { immediate: true })
+
+function handleEventCreated(newEvent) {
+  localEvents.value = [newEvent, ...localEvents.value]
+  nextTick(() => {
+    eventStore.fetchEvents()
+  })
+}
 
 async function handleEventUpdate() {
   try {
     await eventStore.fetchEvents()
+    localEvents.value = [...events.value]
     await nextTick()
   } catch (error) {
     console.error('更新事件列表失敗:', error)
   }
 }
-
 </script>
 
 <template>
   <div class="page">
-    <ModalCreate />
+    <ModalCreate 
+      @eventCreated="handleEventCreated"
+    />
     <div class="event-list">
       <EventCard
         v-for="event in sortedEvents"
         :key="event.id"
         :event="event"
-        @update="handleEventUpdate()"
+        @update="handleEventUpdate"
       />
     </div>
   </div>
