@@ -282,7 +282,7 @@ watch(() => paymentMethod.value, () => {
 
 function loadUserInfo() {
  try {
-   const userInfo = localStorage.getItem('user_info')
+   const userInfo = localStorage.getItem('user')
    if (userInfo) {
      const user = JSON.parse(userInfo)
      customerInfo.value.name = user.username || user.lineDisplayName || ''
@@ -498,8 +498,8 @@ function handleSubmitError(error) {
  
  if (error.message.includes('登入已過期') || error.message.includes('認證')) {
    errorMsg = '登入已過期，請重新登入'
-   localStorage.removeItem('auth_token')
-   localStorage.removeItem('user_info')
+   localStorage.removeItem('access_token')
+   localStorage.removeItem('user')
    setTimeout(() => router.push('/login'), 1500)
  } else if (error.message.includes('已滿員')) {
    errorMsg = error.message + '，請重新選擇活動'

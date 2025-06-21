@@ -20,7 +20,7 @@ export const useCartStore = defineStore('cart', () => {
   }
   
   const useServerCart = computed(() => {
-    return !!localStorage.getItem('auth_token')
+    return !!localStorage.getItem('access_token')
   })
   
   const itemCount = computed(() => {
@@ -44,7 +44,7 @@ export const useCartStore = defineStore('cart', () => {
       loading.value = true
       error.value = null
       
-      const token = localStorage.getItem('auth_token')
+      const token = localStorage.getItem('access_token')
       if (!token) {
         throw new Error('請先登入')
       }
@@ -79,8 +79,8 @@ export const useCartStore = defineStore('cart', () => {
         switch (status) {
           case 401:
             errorMessage = '登入已過期，請重新登入'
-            localStorage.removeItem('auth_token')
-            localStorage.removeItem('user_info')
+            localStorage.removeItem('access_token')
+            localStorage.removeItem('user')
             break
           case 403:
             errorMessage = '權限不足'

@@ -20,7 +20,7 @@ export function useLinePay() {
 
      console.log('🔄 創建 LINE Pay 付款...', orderId)
 
-     const token = localStorage.getItem('auth_token')
+     const token = localStorage.getItem('access_token')
      if (!token) {
        throw new Error('請先登入')
      }
@@ -72,8 +72,8 @@ export function useLinePay() {
        switch (status) {
          case 401:
            errorMessage = '登入已過期，請重新登入'
-           localStorage.removeItem('auth_token')
-           localStorage.removeItem('user_info')
+           localStorage.removeItem('access_token')
+           localStorage.removeItem('user')
            break
          case 404:
            errorMessage = '找不到訂單，請確認訂單狀態'
@@ -115,7 +115,7 @@ export function useLinePay() {
    try {
      console.log('🔍 檢查 LINE Pay 狀態...', orderId)
 
-     const token = localStorage.getItem('auth_token')
+     const token = localStorage.getItem('access_token')
      if (!token) {
        throw new Error('請先登入')
      }
@@ -199,7 +199,7 @@ export function useLinePay() {
   try {
     console.log('🔍 檢查詳細付款狀態...', orderId)
 
-    const token = localStorage.getItem('auth_token')
+    const token = localStorage.getItem('access_token')
     if (!token) {
       throw new Error('請先登入')
     }
