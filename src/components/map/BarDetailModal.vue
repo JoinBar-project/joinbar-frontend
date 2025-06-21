@@ -139,7 +139,7 @@
               @change="handleFileUpload"
             />
 
-            <button class="action-icon-button share-button" data-tooltip="分享">
+            <button class="action-icon-button share-button" data-tooltip="分享" @click="shareBar()">
               <img
                 src="@/assets/icons/mapicons/share-icon.svg"
                 alt="分享"
@@ -307,6 +307,25 @@ function formatReviewDate(unixTime) {
 const getTagLabel = (tag) => {
   return placeTypeMap[tag] || tag;
 };
+
+const shareBar = () => {
+  const shareData = {
+    title: `${props.bar.name} - 酒吧推薦`,
+    text: `來看看這家很棒的酒吧：${props.bar.name}！評分：${props.bar.rating || 'N/A'}⭐️`,
+    url: `${props.bar.url}`
+  };
+
+  // 嘗試使用原生分享
+  if (navigator.share) {
+    navigator.share(shareData);
+  } else {
+    // 複製連結作為備用
+    navigator.clipboard.writeText(`${shareData.text} ${shareData.url}`);
+    alert('分享連結已複製！');
+  }
+};
+console.log('=== 酒吧 Props 內容 ===');
+console.log(props.bar);
 </script>
 
 <style scoped>
