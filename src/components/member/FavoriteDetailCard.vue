@@ -319,7 +319,7 @@ const handleFileUpload = (e) => {
 // 導到活動頁面
 const goToBarActivities = () => {
   handleClose()
-  router.push('/events')
+  router.push('/event')
 }
 
 // 模擬評論

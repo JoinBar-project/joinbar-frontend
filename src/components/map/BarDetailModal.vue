@@ -271,7 +271,7 @@ const toggleFavorite = () => {
 
 const goToBarActivities = () => {
   closeModal();
-  router.push("/events");
+  router.push("/event");
 };
 
 const fileInput = ref(null);
