@@ -68,7 +68,6 @@ const routes = [
   { path: '/cart', name: 'Cart', component: Cart },
   { path: '/payment', name: 'Payment', component: Payment },
   { path: '/payment-waiting', name: 'PaymentWaiting', component: PaymentWaiting },
-  { path: '/sub', name: 'EventInformation', component: EventInfo },
   { path: '/order-success/:orderNumber', name: 'OrderSuccess', component: OrderSuccess, props: true },
   // 404 路由放到最後，並且更精確
   { path: '/404', name: 'NotFound', component: NotFound },
