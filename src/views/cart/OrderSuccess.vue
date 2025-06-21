@@ -88,7 +88,7 @@ onMounted(async () => {
     const result = {
       success: true,
       orderId: route.query.orderId,
-      orderNumber: route.params.orderNumber,
+      orderNumber: route.params.orderNumber || route.query.orderNumber || 'unknown',
       message: '付款成功'
     };
     

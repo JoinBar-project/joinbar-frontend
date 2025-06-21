@@ -264,6 +264,7 @@ onMounted(async () => {
     isLoading.value = false;
   }
 
+  // 監聽 LINE Pay 結果 - 新增這段
   const handleLinePaySuccess = (event) => {
     const data = event.detail;
     console.log('✅ LINE Pay 付款成功！', data);
@@ -276,11 +277,17 @@ onMounted(async () => {
     
     clearAllErrors();
     
-    router.push({
-      name: 'OrderSuccess',
-      params: { orderNumber: data.orderNumber },
-      query: { orderId: data.orderId }
-    });
+    // 修復路由跳轉
+    if (data.orderNumber && data.orderNumber !== 'unknown') {
+      router.push({
+        name: 'OrderSuccess',
+        params: { orderNumber: data.orderNumber },
+        query: { orderId: data.orderId }
+      });
+    } else {
+      // 降級處理：直接用 orderId 跳轉
+      router.push(`/payment-waiting?orderId=${data.orderId}`);
+    }
   };
 
   const handleLinePayError = (event) => {
@@ -289,9 +296,11 @@ onMounted(async () => {
     setError(`付款失敗: ${data.message}`);
   };
 
+  // 註冊事件監聽
   window.addEventListener('linepay-success', handleLinePaySuccess);
   window.addEventListener('linepay-error', handleLinePayError);
 
+  // 清理事件監聽器
   onUnmounted(() => {
     window.removeEventListener('linepay-success', handleLinePaySuccess);
     window.removeEventListener('linepay-error', handleLinePayError);

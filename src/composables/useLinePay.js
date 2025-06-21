@@ -162,52 +162,59 @@ export function useLinePay() {
  }
 
  const redirectToLinePay = (paymentUrl, onCloseCallback = null) => {
-  localStorage.removeItem('linepay-result');
-  
-  const paymentWindow = window.open(paymentUrl, 'linePayWindow', 'width=400,height=600');
-  
-  if (!paymentWindow) {
-    window.location.href = paymentUrl;
-    return;
-  }
-  
-  let isProcessed = false;
-  
-  const checkResult = setInterval(() => {
-    const result = localStorage.getItem('linepay-result');
-    
-    if (result && !isProcessed) {
-      isProcessed = true;
-      const data = JSON.parse(result);
-      
-      localStorage.removeItem('linepay-result');
-      
-      paymentWindow.close();
-      
-      if (data.success) {
-        window.dispatchEvent(new CustomEvent('linepay-success', { detail: data }));
-      } else {
-        window.dispatchEvent(new CustomEvent('linepay-error', { detail: data }));
-      }
-      
-      clearInterval(checkResult);
-      clearInterval(checkClosed);
-    }
-  }, 1000);
-  
-  const checkClosed = setInterval(() => {
-    if (paymentWindow.closed) {
-      clearInterval(checkResult);
-      clearInterval(checkClosed);
-      
-      if (!isProcessed && onCloseCallback) {
-        onCloseCallback();
-      }
-    }
-  }, 1000);
-  
-  return paymentWindow;
-};
+   // 清除舊狀態
+   localStorage.removeItem('linepay-result');
+   
+   const paymentWindow = window.open(paymentUrl, 'linePayWindow', 'width=400,height=600');
+   
+   if (!paymentWindow) {
+     window.location.href = paymentUrl;
+     return;
+   }
+   
+   let isProcessed = false;
+   
+   // 每秒檢查 localStorage
+   const checkResult = setInterval(() => {
+     const result = localStorage.getItem('linepay-result');
+     
+     if (result && !isProcessed) {
+       isProcessed = true;
+       const data = JSON.parse(result);
+       
+       // 清除結果
+       localStorage.removeItem('linepay-result');
+       
+       // 關閉彈窗
+       paymentWindow.close();
+       
+       if (data.success) {
+         // 觸發成功處理
+         window.dispatchEvent(new CustomEvent('linepay-success', { detail: data }));
+       } else {
+         // 觸發失敗處理
+         window.dispatchEvent(new CustomEvent('linepay-error', { detail: data }));
+       }
+       
+       clearInterval(checkResult);
+       clearInterval(checkClosed);
+     }
+   }, 1000);
+   
+   // 檢測視窗關閉
+   const checkClosed = setInterval(() => {
+     if (paymentWindow.closed) {
+       clearInterval(checkResult);
+       clearInterval(checkClosed);
+       
+       if (!isProcessed && onCloseCallback) {
+         onCloseCallback();
+       }
+     }
+   }, 1000);
+   
+   return paymentWindow;
+ };
 
  const clearState = () => {
    error.value = ''
@@ -341,5 +348,5 @@ const formatPaymentStatusDisplay = (statusData) => {
    clearState,
    checkDetailedPaymentStatus, 
    formatPaymentStatusDisplay
-}
+ }
 }

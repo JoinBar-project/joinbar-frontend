@@ -78,6 +78,7 @@ onMounted(async () => {
     const result = {
       success: true,
       orderId: route.query.orderId,
+      orderNumber: route.query.orderNumber || 'unknown',
       message: '付款處理中'
     };
     
@@ -88,7 +89,7 @@ onMounted(async () => {
     setTimeout(() => window.close(), 1500);
     return;
   }
-  
+
   const orderId = route.query.orderId
   
   console.log('🔄 PaymentWaiting 啟動:', { orderId })
