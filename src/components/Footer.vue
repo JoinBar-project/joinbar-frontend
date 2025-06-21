@@ -35,7 +35,7 @@ onUnmounted(() => {
     <div class="footer-content">
       <div class="footer-logo">
         <a href="#">
-          <img src="../../../public/joinbar-logo.png" alt="JoinBar Logo">
+          <img src="/joinbar-logo.png" alt="JoinBar Logo">
         </a>
       </div>
     <div class="footer-links">
