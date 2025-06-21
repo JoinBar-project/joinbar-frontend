@@ -1,5 +1,5 @@
 <script setup>
-import { ref, watch } from 'vue';
+import { ref, watch, onMounted } from 'vue';
 import axios from 'axios';
 import { useEventForm } from '@/composables/useEventForm';
 import Hashtag from './Hashtag.vue';
@@ -16,33 +16,46 @@ const {
   eventPrice,
   eventPeople,
   eventHashtags,
+  eventImageUrl,
   handleUpdate,
   handleDelete,
   loadEvent,
   isAdmin,
 } = useEventForm(props.eventId);
 
-// 新增的變數
 const imageFile = ref(null);
 const loading = ref(false);
 const imagePreview = ref(null);
 const fileInput = ref(null);
 
+onMounted(async () => {
+  if (props.eventId) {
+    await loadEvent(props.eventId);
+    if (!imageFile.value && eventImageUrl.value) {
+      imagePreview.value = eventImageUrl.value;
+    }
+  }
+});
+
 watch(
   () => props.eventId,
-  newId => {
-    if (newId) loadEvent(newId);
+  async (newId) => {
+    if (newId) {
+      await loadEvent(newId);
+      if (!imageFile.value && eventImageUrl.value) {
+        imagePreview.value = eventImageUrl.value;
+      }
+    }
   },
   { immediate: true }
 );
 
 async function onUpdate() {
-  if (loading.value) return; // 防止重複點擊
-  
+  if (loading.value) return;
+
   loading.value = true;
   try {
     const token = localStorage.getItem('access_token');
-    
     if (!token) {
       alert('登入已過期，請重新登入');
       return;
@@ -61,40 +74,26 @@ async function onUpdate() {
       formData.append('image', imageFile.value);
     }
 
-    // 檢查 eventHashtags 是否為陣列
     if (Array.isArray(eventHashtags.value)) {
-      const tagIds = eventHashtags.value.map(tag => tag.id);
-      tagIds.forEach(id => formData.append('tagIds', id));
+      const tagIds = eventHashtags.value.map(tag => tag.id ?? tag);
+      formData.append('tags', JSON.stringify(tagIds));
     }
 
-    console.log('準備發送請求...');
-    console.log('EventId:', props.eventId);
-
-    const response = await axios.put(`/api/event/update/${props.eventId}`, formData, {
+    await axios.put(`/api/event/update/${props.eventId}`, formData, {
       headers: {
         'Authorization': `Bearer ${token}`,
       },
     });
 
-    console.log('更新成功:', response.data);
     alert('活動更新成功！');
     emit('update');
-    
+
   } catch (error) {
-    console.error('完整錯誤信息:', error);
-    
-    // 詳細錯誤處理
     if (error.response) {
-      // 伺服器回應的錯誤
-      console.error('伺服器錯誤:', error.response.status, error.response.data);
       alert(`更新失敗: ${error.response.data?.message || '伺服器錯誤'}`);
     } else if (error.request) {
-      // 網路請求錯誤
-      console.error('網路錯誤:', error.request);
       alert('網路連線錯誤，請檢查網路狀態');
     } else {
-      // 其他錯誤
-      console.error('未知錯誤:', error.message);
       alert(`發生錯誤: ${error.message}`);
     }
   } finally {
@@ -103,18 +102,13 @@ async function onUpdate() {
 }
 
 async function onDelete() {
-  if (loading.value) return; // 防止重複點擊
-  
-  if (!confirm('確定要刪除這個活動嗎？')) {
-    return;
-  }
-  
+  if (loading.value || !confirm('確定要刪除這個活動嗎？')) return;
+
   loading.value = true;
   try {
     await handleDelete(props.eventId);
     emit('delete');
   } catch (error) {
-    console.error('刪除失敗:', error);
     alert(`刪除失敗: ${error.message}`);
   } finally {
     loading.value = false;
@@ -123,24 +117,15 @@ async function onDelete() {
 
 function handleImageSelect(event) {
   const file = event.target.files[0];
-  if (file) {
-    if (!file.type.startsWith('image/')) {
-      alert('請選擇圖片檔案');
-      return;
-    }
-    
-    if (file.size > 5 * 1024 * 1024) {
-      alert('圖片檔案大小不能超過 5MB');
-      return;
-    }
-    
+  if (file && file.type.startsWith('image/') && file.size <= 5 * 1024 * 1024) {
     imageFile.value = file;
-    
     const reader = new FileReader();
     reader.onload = (e) => {
       imagePreview.value = e.target.result;
     };
     reader.readAsDataURL(file);
+  } else {
+    alert(file?.size > 5 * 1024 * 1024 ? '圖片檔案大小不能超過 5MB' : '請選擇圖片檔案');
   }
 }
 
