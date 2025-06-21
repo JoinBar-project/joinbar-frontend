@@ -379,8 +379,22 @@ function goToCart() {
   router.push('/cart');
 }
 
-function goToOrders() {
-  router.push('/member/orders')
+const goToOrders = () => {
+  try {
+    const userInfo = localStorage.getItem('user')
+    if (userInfo) {
+      const user = JSON.parse(userInfo)
+      router.push({
+        name: 'MemberOrderRecords',
+        params: { id: user.id }
+      })
+    } else {
+      router.push('/login')
+    }
+  } catch (error) {
+    console.error('跳轉失敗:', error)
+    router.push('/login')
+  }
 }
 
 function shareOrder() {
