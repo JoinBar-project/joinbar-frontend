@@ -70,10 +70,10 @@ git push origin issue/號碼
 9. 合併（Merge）
 ```
 Merge：(若需整合最新 main)
-git checkout feature/your-feature-name
-git fetch
-git rebase origin/main
-若有衝突需解決後繼續： git add . → git rebase --continue
+git checkout issue/號碼
+git fetch origin
+git merge origin/dev
+若有衝突需解決後繼續： git add . → git merge --continue
 ```
 
 ---
