@@ -129,7 +129,7 @@ const {
   mapId: myMapId,
   onError: (msg) => {
     console.error("useGoogleMaps 錯誤:", msg);
-    alert(`地圖載入失敗：${msg}，請檢查API Key或網路連線。`);
+    alert(`地圖載入失敗：${msg}。`);
   },
 });
 
@@ -596,7 +596,7 @@ async function handleBarSelected(bar) {
         bar.location.lat,
         bar.location.lng
       ),
-      map: map,
+      map: map.value,
       title: bar.name,
       icon: {
         url: bar.isBarLike ? "/wine.png" : "/MapMarker.png",

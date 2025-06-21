@@ -146,7 +146,7 @@
                 class="icon"
               />
             </button>
-            <button class="action-icon-button navigate-button" data-tooltip="導航">
+            <button class="action-icon-button navigate-button" data-tooltip="導航" @click="() => navigateToBar(bar)">
               <img
                 src="@/assets/icons/mapicons/navigation-icon.svg"
                 alt="導航"
@@ -191,6 +191,7 @@
 import { ref, watch, computed } from "vue";
 import { useRouter } from "vue-router";
 import placeTypeMap from '@/composables/placeTypeMap';
+import { navigateToBar } from '@/utils/useGoogleMapNavigation';
 
 const props = defineProps({
   bar: {
@@ -270,7 +271,7 @@ const toggleFavorite = () => {
 
 const goToBarActivities = () => {
   closeModal();
-  router.push("/events");
+  router.push("/event");
 };
 
 const fileInput = ref(null);

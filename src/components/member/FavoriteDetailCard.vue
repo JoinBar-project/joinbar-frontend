@@ -2,16 +2,13 @@
   <transition name="modal-fade">
     <div
       class="fixed inset-0 bg-black/60 flex justify-center items-center z-50 p-5"
-      @click.self="handleClose"
-    >
+      @click.self="handleClose">
       <div
-        class="modal-content bg-white rounded-2xl max-w-4xl w-full max-h-[90vh] overflow-hidden relative flex flex-col shadow-2xl"
-      >
+        class="modal-content bg-white rounded-2xl max-w-4xl w-full max-h-[90vh] overflow-hidden relative flex flex-col shadow-2xl">
         <!-- 關閉按鈕 -->
         <button
           class="absolute top-4 right-4 z-10 bg-white/90 backdrop-blur-sm border-0 rounded-full w-10 h-10 flex items-center justify-center cursor-pointer transition-all hover:bg-white hover:scale-110"
-          @click="handleClose"
-        >
+          @click="handleClose">
           <i class="fa-solid fa-xmark text-gray-600 text-xl"></i>
         </button>
 
@@ -22,22 +19,18 @@
               :src="currentImage"
               alt="Bar Image"
               class="w-full h-full object-cover"
-              @error="handleImageError"
-            />
+              @error="handleImageError"/>
             <div
               v-if="bar.images?.length > 1"
-              class="absolute top-1/2 -translate-y-1/2 w-full flex justify-between px-4"
-            >
+              class="absolute top-1/2 -translate-y-1/2 w-full flex justify-between px-4">
               <button
                 class="bg-white/80 border-0 rounded-full w-10 h-10 cursor-pointer text-lg font-bold text-gray-800 transition-all hover:bg-white hover:scale-110"
-                @click="prevImage"
-              >
+                @click="prevImage">
                 &lt;
               </button>
               <button
                 class="bg-white/80 border-0 rounded-full w-10 h-10 cursor-pointer text-lg font-bold text-gray-800 transition-all hover:bg-white hover:scale-110"
-                @click="nextImage"
-              >
+                @click="nextImage">
                 &gt;
               </button>
             </div>
@@ -62,14 +55,11 @@
             <div class="p-6 h-full">
               <h2 class="text-2xl font-bold text-gray-900 mb-3">{{ bar.name }}</h2>
 
-              <div
-                class="flex justify-between items-center mb-5 pb-3 border-b border-gray-200"
-              >
+              <div class="flex justify-between items-center mb-5 pb-3 border-b border-gray-200">
                 <span class="rating">⭐️ {{ bar.rating || 'N/A' }} ({{ bar.reviews || 0 }} 評論)</span>
                 <span
                   class="text-[var(--color-primary-orange)] font-bold text-lg"
-                  >NT$ {{ bar.priceRange || '???' }}</span
-                >
+                  >NT$ {{ bar.priceRange || '???' }}</span>
               </div>
               <div class="contact-info">
                 <p
@@ -194,7 +184,8 @@
             <!-- 導航 -->
             <div class="tooltip" data-tip="導航">
               <button
-                class="w-11 h-11 rounded-xl border border-gray-200 bg-white flex items-center justify-center cursor-pointer transition-all hover:bg-gray-50 hover:border-gray-300 hover:-translate-y-0.5">
+                class="w-11 h-11 rounded-xl border border-gray-200 bg-white flex items-center justify-center cursor-pointer transition-all hover:bg-gray-50 hover:border-gray-300 hover:-translate-y-0.5"
+                @click="navigateToBar(bar.latitude, bar.longitude)">
                 <i class="fa-regular fa-paper-plane text-lg text-gray-600"></i>
               </button>
             </div>
@@ -279,6 +270,18 @@ const handleImageError = (e) => {
   e.target.src = defaultImage
 }
 
+
+// 導航到酒吧位置
+const navigateToBar = (lat, lng) => {
+  if (!lat || !lng) {
+    alert('此酒吧尚未提供定位資訊');
+    return;
+  }
+
+  const url = `https://www.google.com/maps/dir/?api=1&origin=Current+Location&destination=${lat},${lng}&travelmode=walking`;
+  window.open(url, '_blank');
+}
+
 // 收藏愛心狀態（local，變動 emit 出去）
 const localIsWishlisted = ref(false)
 watch(
@@ -316,7 +319,7 @@ const handleFileUpload = (e) => {
 // 導到活動頁面
 const goToBarActivities = () => {
   handleClose()
-  router.push('/events')
+  router.push('/event')
 }
 
 // 模擬評論
