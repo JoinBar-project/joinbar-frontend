@@ -84,8 +84,24 @@ const isLoading = ref(true)
 const error = ref('')
 
 onMounted(async () => {
-  await loadOrder()
-})
+  if (window.opener) {
+    const result = {
+      success: true,
+      orderId: route.query.orderId,
+      orderNumber: route.params.orderNumber,
+      message: '付款成功'
+    };
+    
+    localStorage.setItem('linepay-result', JSON.stringify(result));
+    
+    document.body.innerHTML = '<div style="text-align:center;margin-top:100px;font-size:24px;">✅ 付款成功！視窗即將關閉...</div>';
+    
+    setTimeout(() => window.close(), 1500);
+    return;
+  }
+  
+  await loadOrder();
+});
 
 const loadOrder = async () => {
   try {

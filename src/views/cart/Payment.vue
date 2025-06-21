@@ -263,11 +263,41 @@ onMounted(async () => {
   } finally {
     isLoading.value = false;
   }
-});
 
-onUnmounted(() => {
- window.removeEventListener('message', handlePopupMessage)
-})
+  const handleLinePaySuccess = (event) => {
+    const data = event.detail;
+    console.log('✅ LINE Pay 付款成功！', data);
+    
+    alert(`🎉 付款成功！\n訂單：${data.orderNumber}`);
+    
+    if (!isRetryMode.value) {
+      cart.clearCart();
+    }
+    
+    clearAllErrors();
+    
+    router.push({
+      name: 'OrderSuccess',
+      params: { orderNumber: data.orderNumber },
+      query: { orderId: data.orderId }
+    });
+  };
+
+  const handleLinePayError = (event) => {
+    const data = event.detail;
+    console.error('❌ LINE Pay 付款失敗:', data);
+    setError(`付款失敗: ${data.message}`);
+  };
+
+  window.addEventListener('linepay-success', handleLinePaySuccess);
+  window.addEventListener('linepay-error', handleLinePayError);
+
+  onUnmounted(() => {
+    window.removeEventListener('linepay-success', handleLinePaySuccess);
+    window.removeEventListener('linepay-error', handleLinePayError);
+    window.removeEventListener('message', handlePopupMessage);
+  });
+});
 
 const calcSubtotal = (item) => (item.price * item.quantity).toLocaleString()
 

@@ -74,6 +74,21 @@ const maxAttempts = ref(15)
 const checkInterval = ref(null)
 
 onMounted(async () => {
+  if (window.opener) {
+    const result = {
+      success: true,
+      orderId: route.query.orderId,
+      message: '付款處理中'
+    };
+    
+    localStorage.setItem('linepay-result', JSON.stringify(result));
+    
+    document.body.innerHTML = '<div style="text-align:center;margin-top:100px;font-size:24px;">✅ 付款成功！視窗即將關閉...</div>';
+    
+    setTimeout(() => window.close(), 1500);
+    return;
+  }
+  
   const orderId = route.query.orderId
   
   console.log('🔄 PaymentWaiting 啟動:', { orderId })
@@ -86,7 +101,7 @@ onMounted(async () => {
   }
 
   await startPaymentCheck(orderId)
-})
+});
 
 onUnmounted(() => {
   if (checkInterval.value) {
