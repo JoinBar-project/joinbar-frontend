@@ -54,11 +54,10 @@ function handleSubmit(result) {
 @reference "tailwindcss";
 
 .btn-open-form {
-  @apply mt-[30px] mr-[30px] rounded-[20px] border-0 text-[24px] text-center shadow-md cursor-pointer transition-colors duration-200;
+  @apply mt-[30px] rounded-[20px] border-0 text-[24px] text-center shadow-md cursor-pointer transition-colors duration-200 mx-auto block;
 }
-
 .btn-create {
-  @apply px-[16px] pt-[8px] pb-[10px] text-white hover:bg-[#a83c51];
+  @apply px-6 py-3 text-white font-medium rounded-xl shadow-lg hover:shadow-xl hover:bg-[#a83c51] transform hover:scale-105 transition-all duration-300 ease-in-out;
   background-color: var(--color-primary-red);
 }
 

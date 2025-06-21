@@ -117,7 +117,13 @@ onMounted(() => {
       </div>
 
       <div class="event-content-box">
-        <div class="event-map"></div>
+        <div class="event-map">
+          <iframe 
+            v-if="eventRef.location"
+            :src="`https://www.google.com/maps?q=${encodeURIComponent(eventRef.location)}&output=embed`"
+            class="w-full h-full rounded-lg border-0">
+          </iframe>
+        </div>
 
         <div class="event-content">
           <div class="event-tags">
