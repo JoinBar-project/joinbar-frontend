@@ -2,10 +2,11 @@
 import { useEvent } from '@/composables/useEvent.js';
 import { useCartStore } from '@/stores/cartStore';
 import { useRouter } from 'vue-router';
-import { toRef, computed } from 'vue';
+import { ref, computed, onMounted } from 'vue';
+import axios from 'axios';
 import EventHoster from './EventHoster.vue';
 import MessageBoard from './MessageBoard.vue';
-import ModalEdit from '@/components/events/ModalEdit.vue'
+import ModalEdit from '@/components/events/ModalEdit.vue';
 
 const props = defineProps({
   event: Object,
@@ -13,31 +14,66 @@ const props = defineProps({
 });
 
 const emit = defineEmits(['update']);
-const eventRef = toRef(props, 'event');
-const cart = useCartStore();
 const router = useRouter();
+const cart = useCartStore();
 
-const { isJoin, joinedNum, toggleJoin, isOver24hr, showModal, formattedEventTime, openCancelModal, closeModal, handleConfirmCancel } =
-  useEvent(eventRef);
+const eventRef = ref({ ...props.event });
+const tagList = ref([...props.tags]);
 
-const isInCart = computed(() => cart.isInCart(props.event.id));
+const isInCart = computed(() => cart.isInCart(eventRef.value.id));
+
+const {
+  isJoin,
+  joinedNum,
+  toggleJoin,
+  isOver24hr,
+  showModal,
+  formattedEventTime,
+  openCancelModal,
+  closeModal,
+  handleConfirmCancel
+} = useEvent(eventRef);
+
+const reloadEventData = async () => {
+  try {
+    const token = localStorage.getItem('access_token');
+    const res = await axios.get(`/api/event/${eventRef.value.id}`, {
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+    });
+
+    if (res.data?.event) {
+      eventRef.value = { ...res.data.event };
+    }
+
+    if (res.data?.tags) {
+      tagList.value = [...res.data.tags];
+    }
+
+    emit('update', { event: eventRef.value, tags: tagList.value });
+  } catch (error) {
+    console.error('活動資料更新失敗', error);
+  }
+};
+
+const handleEventUpdate = () => {
+  reloadEventData();
+};
 
 const addToCart = () => {
   try {
-    const eventData = {
-      id: props.event.id,
-      name: props.event.name,
-      price: props.event.price,
-      imageUrl: props.event.imageUrl,
-      barName: props.event.barName,
-      location: props.event.location,
-      startDate: props.event.startDate,
-      endDate: props.event.endDate,
-      maxPeople: props.event.maxPeople,
-      hostUser: props.event.hostUser,
-    };
-
-    cart.addItem(eventData);
+    const e = eventRef.value;
+    cart.addItem({
+      id: e.id,
+      name: e.name,
+      price: e.price,
+      imageUrl: e.imageUrl,
+      barName: e.barName,
+      location: e.location,
+      startDate: e.startDate,
+      endDate: e.endDate,
+      maxPeople: e.maxPeople,
+      hostUser: e.hostUser,
+    });
     alert('已加入購物車！');
   } catch (error) {
     alert(error.message);
@@ -46,27 +82,16 @@ const addToCart = () => {
 
 const buyNow = () => {
   try {
-    if (!isInCart.value) {
-      const eventData = {
-        id: props.event.id,
-        name: props.event.name,
-        price: props.event.price,
-        imageUrl: props.event.imageUrl,
-        barName: props.event.barName,
-        location: props.event.location,
-        startDate: props.event.startDate,
-        endDate: props.event.endDate,
-        maxPeople: props.event.maxPeople,
-        hostUser: props.event.hostUser,
-      };
-      cart.addItem(eventData);
-    }
-
+    if (!isInCart.value) addToCart();
     router.push('/payment');
   } catch (error) {
     alert(error.message);
   }
 };
+
+onMounted(() => {
+  reloadEventData();
+});
 </script>
 
 <template>
@@ -79,23 +104,16 @@ const buyNow = () => {
         請再次確認您的選擇。
       </p>
       <div class="modal-action">
-        <button
-          class="btn"
-          @click="closeModal">
-          放棄取消
-        </button>
-        <button
-          class="btn"
-          @click="handleConfirmCancel">
-          確認取消
-        </button>
+        <button class="btn" @click="closeModal">放棄取消</button>
+        <button class="btn" @click="handleConfirmCancel">確認取消</button>
       </div>
     </div>
   </div>
+
   <div class="event-information-section">
     <div class="event-information-card">
       <div class="event-img">
-        <img :src="props.event.imageUrl" alt="活動圖片" />
+        <img :src="eventRef.imageUrl" alt="活動圖片" />
       </div>
 
       <div class="event-content-box">
@@ -103,67 +121,54 @@ const buyNow = () => {
 
         <div class="event-content">
           <div class="event-tags">
-            <div
-              v-for="tag in props.tags"
-              :key="tag.id">
+            <div v-for="tag in tagList" :key="tag.id">
               {{ tag.name }}
             </div>
           </div>
 
-            <h3 class="event-title">
-              {{ props.event.name }}
-            </h3>
+          <h3 class="event-title">{{ eventRef.name }}</h3>
 
-            <div
-              v-if="formattedEventTime"
-              class="event-content-info">
-              <i class="fa-solid fa-calendar"></i>
-              <p>活動時間：{{ formattedEventTime }}</p>
-            </div>
+          <div v-if="formattedEventTime" class="event-content-info">
+            <i class="fa-solid fa-calendar"></i>
+            <p>活動時間：{{ formattedEventTime }}</p>
+          </div>
 
-            <div class="event-content-info">
-              <i class="fa-solid fa-wine-glass"></i>
-              <p>店名：{{ props.event.barName }}</p>
-            </div>
+          <div class="event-content-info">
+            <i class="fa-solid fa-wine-glass"></i>
+            <p>店名：{{ eventRef.barName }}</p>
+          </div>
 
-            <div class="event-content-info">
-              <i class="fa-solid fa-location-dot"></i>
-              <p>地址：{{ props.event.location }}</p>
-            </div>
+          <div class="event-content-info">
+            <i class="fa-solid fa-location-dot"></i>
+            <p>地址：{{ eventRef.location }}</p>
+          </div>
 
-            <div class="event-content-info">
-              <i class="fa-solid fa-dollar-sign"></i>
-              <p class="event-payment">
-                費用：新台幣 <span>{{ props.event.price }}</span> 元
-              </p>
-            </div>
+          <div class="event-content-info">
+            <i class="fa-solid fa-dollar-sign"></i>
+            <p class="event-payment">費用：新台幣 <span>{{ eventRef.price }}</span> 元</p>
+          </div>
 
-            <div class="event-content-info">
-              <i class="fa-solid fa-user"></i>
-              <p>
-                目前報名人數： <span>{{ joinedNum }}</span> ｜ 報名人數上限：<span>{{ props.event.maxPeople || '無報名人數限制' }}</span>
-              </p>
-            </div>
+          <div class="event-content-info">
+            <i class="fa-solid fa-user"></i>
+            <p>
+              目前報名人數： <span>{{ joinedNum }}</span> ｜ 報名人數上限：
+              <span>{{ eventRef.maxPeople || '無報名人數限制' }}</span>
+            </p>
+          </div>
 
           <div class="edit-btn-container">
-            <button
-              @click="addToCart"
-              type="button"
-              class="event-btn event-btn-cart">
+            <button @click="addToCart" type="button" class="event-btn event-btn-cart">
               {{ isInCart ? '✓ 已在購物車' : '加入購物車' }}
             </button>
-            <button
-              @click="buyNow"
-              type="button"
-              class="event-btn event-btn-pay">
+            <button @click="buyNow" type="button" class="event-btn event-btn-pay">
               立即報名
             </button>
             <ModalEdit
-              v-if="props.event.id"
-              :event-id="props.event.id"
-              @update="emit('update')"
+              v-if="eventRef.id"
+              :event-id="eventRef.id"
+              @update="handleEventUpdate"
             />
-        </div>
+          </div>
         </div>
       </div>
     </div>
