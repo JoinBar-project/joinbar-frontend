@@ -161,33 +161,36 @@ export function useLinePay() {
    }
  }
 
- const redirectToLinePay = (paymentUrl) => {
-   if (!paymentUrl) {
-     throw new Error('付款 URL 無效')
-   }
+ const redirectToLinePay = (paymentUrl, onCloseCallback = null) => {
+  if (!paymentUrl) {
+    throw new Error('付款 URL 無效');
+  }
 
-   console.log('🔄 跳轉到 LINE Pay 頁面...', paymentUrl)
-   
-   const paymentWindow = window.open(
-     paymentUrl,
-     'linePayWindow',
-     'width=400,height=600,scrollbars=yes,resizable=yes'
-   )
+  console.log('🔄 跳轉到 LINE Pay 頁面...', paymentUrl);
+  
+  const paymentWindow = window.open(
+    paymentUrl,
+    'linePayWindow',
+    'width=400,height=600,scrollbars=yes,resizable=yes'
+  );
 
-   if (!paymentWindow) {
-     console.log('彈出視窗被阻擋，在當前視窗跳轉')
-     window.location.href = paymentUrl
-   } else {
-     const checkClosed = setInterval(() => {
-       if (paymentWindow.closed) {
-         clearInterval(checkClosed)
-         console.log('LINE Pay 視窗已關閉')
-       }
-     }, 1000)
-   }
+  if (!paymentWindow) {
+    console.log('彈出視窗被阻擋，在當前視窗跳轉');
+    window.location.href = paymentUrl;
+  } else {
+    const checkClosed = setInterval(() => {
+      if (paymentWindow.closed) {
+        clearInterval(checkClosed);
+        console.log('LINE Pay 視窗已關閉');
+        if (onCloseCallback) {
+          onCloseCallback(); // 觸發回呼函式
+        }
+      }
+    }, 1000);
+  }
 
-   return paymentWindow
- }
+  return paymentWindow;
+};
 
  const clearState = () => {
    error.value = ''
