@@ -1,40 +1,19 @@
 <script setup>
 import { ref, onMounted, onUnmounted } from 'vue'
+import { getAllSubPlans } from '@/api/subsCard';
 
 const spotlight = ref(null)
+const cardData = ref([])
 
-const cardData = [
-  {
-    title: "尊爵黑卡",
-    price: "$2,999",
-    duration: "365 天",
-    benefits: [
-      "VIP 專屬特調 3 次 / 年",
-      "合作酒吧招待飲品 6 次 / 年",
-      "合作酒吧招待小點 6 次 / 年"
-    ]
-  },
-  {
-    title: "季訂方案",
-    price: "$1,999",
-    duration: "90 天",
-    benefits: [
-      "VIP 專屬特調 2 次 / 年",
-      "合作酒吧招待飲品 3 次 / 季",
-      "合作酒吧招待小點 3 次 / 季"
-    ]
-  },
-  {
-    title: "小資月卡",
-    price: "$999",
-    duration: "30 天",
-    benefits: [
-      "VIP 專屬特調 1 次 / 年",
-      "合作酒吧招待飲品 1 次 / 月",
-      "合作酒吧招待小點 1 次 / 月"
-    ]
+onMounted(async() => {
+  try{
+    const plans = await getAllSubPlans();
+    cardData.value = plans;
+    console.log('============', cardData.value)
+  }catch(err){
+    console.warn('訂閱資料載入失敗');
   }
-];
+})
 
 function handleMouseMove(e) {
   if (spotlight.value) {
@@ -72,15 +51,19 @@ onUnmounted(() => {
 
       <div class="max-w-7xl m-auto">
         <div class="grid grid-cols-3 gap-20">
-          <div v-for="(card, index) in cardData" :key="index" class="bg-[var(--color-black)] flex border rounded-[16px] my-20 hover:scale-105 transition-transform duration-300">
+          <div
+            v-for="card in cardData"
+            :key="card.type"
+            class="bg-[var(--color-black)] flex border rounded-[16px] my-20 hover:scale-105 transition-transform duration-300"
+          >
             <div class="m-auto w-[66%]">
               <h3 class="text-6xl text-stone-50 pt-10 pb-4 w-full">{{ card.title }}</h3>
               <p class="text-zinc-300 py-10 text-center">
-                <span class="text-[var(--color-primary-orange)] text-3xl font-bold">{{ card.price }}</span> / {{ card.duration }}
+                <span class="text-[var(--color-primary-orange)] text-3xl font-bold">${{ card.price.toLocaleString() }}</span> / {{ card.duration }}天
               </p>
               <div v-for="(benefit, idx) in card.benefits" :key="idx" class="flex py-4">
                 <i class="fa-solid fa-check text-[var(--color-primary-orange)] pr-4"></i>
-                <p class="text-stone-50 font-bold">{{ benefit }}</p>
+                <p class="text-stone-50 font-bold">{{ benefit.benefit.replace('1 次', `${benefit.counts} 次 `) }}</p>
               </div>
               <button 
                 type="button" 
