@@ -1,18 +1,19 @@
 import { defineStore } from 'pinia';
 import { ref, computed } from 'vue';
 import Swal from 'sweetalert2';
-import { verifyAuth, resendVerification, login, getLineAuthUrl } from '../api/auth';
+import { verifyAuth, resendVerification, emaillogin as emailLoginAPI, lineLogin as lineLoginAPI, emailSignup as emailSignupAPI, saveBarTags as saveBarTagsAPI } from '../api/auth';
 
 export const useAuthStore = defineStore('auth', () => {
   const user = ref(null);
   const accessToken = ref(null);
   const refreshToken = ref(null);
   const isEmailLoading = ref(false);
+  const isEmailRegistering = ref(false);
   const isLineLoading = ref(false);
   const errorMessage = ref('');
 
   const currentUser = computed(() => user.value);
-  const isLoading = computed(() => isEmailLoading.value || isLineLoading.value);
+  const isLoading = computed(() => isEmailLoading.value || isLineLoading.value || isEmailRegistering.value);
 
   const isAuthenticated = computed(() => {
     // 有用戶資訊就算已認證（不管是 token 還是 cookie）
@@ -240,23 +241,61 @@ export const useAuthStore = defineStore('auth', () => {
     }
   }
 
+  async function emailSignup(userData) {
+    clearError();
+
+    if (!userData.username || !userData.email || !userData.password) {
+      return { success: false, error: '請填寫完整資訊', type: 'validation' };
+    }
+    setLoading('email', true);
+
+    try {
+      const resp = await emailSignupAPI(userData);
+      console.log('註冊成功:', resp.data);
+
+      await Swal.fire({
+        title: '註冊成功！',
+        html: `
+          <div class="text-left">
+            <p class="mb-3">帳號建立成功！驗證信已寄送至：</p>
+            <p class="font-mono bg-gray-100 p-2 rounded text-sm mb-3">${userData.email}</p>
+            <div class="bg-blue-50 p-3 rounded-lg text-sm">
+              <p class="text-blue-700 mb-2">
+                <i class="fas fa-info-circle mr-1"></i>
+                接下來請：
+              </p>
+              <ol class="text-blue-600 ml-4 space-y-1">
+                <li>1. 檢查您的信箱（包含垃圾信件夾）</li>
+                <li>2. 點擊信件中的驗證連結</li>
+                <li>3. 驗證完成後即可正常登入</li>
+              </ol>
+            </div>
+          </div>
+        `,
+        icon: 'success',
+        confirmButtonText: '我知道了',
+        confirmButtonColor: '#860914',
+        width: '500px'
+      });
+      return { success: true, handled: true };
+    } catch(err) {
+      return { success: false, error: err.response?.data?.error || '註冊失敗' };
+    } finally {
+      setLoading('email', false);
+    }  
+  }  
+
   async function emailLogin(email, password) {
     clearError();
 
     if (!email || !password) {
-      await Swal.fire({
-        title: '請填寫完整資訊',
-        text: '請輸入電子郵件和密碼',
-        icon: 'warning',
-        confirmButtonText: '確認',
-      });
-      return false;
+      return { success: false, error: '請填寫完整資訊', type: 'validation' };
     }
 
     setLoading('email', true);
 
     try {
-      const resp = await login(email, password);
+      const resp = await emailLoginAPI(email, password);
 
       console.log('登入成功:', resp.data);
 
@@ -268,14 +307,9 @@ export const useAuthStore = defineStore('auth', () => {
       localStorage.setItem('refresh_token', refreshToken.value);
       localStorage.setItem('user', JSON.stringify(user.value));
 
-      // await Swal.fire({
-      //   title: '登入成功!',
-      //   icon: 'success',
-      //   confirmButtonText: '開始使用'
-      // });
+      return { success: true, user: resp.data.user };
 
-      return true;
-    } catch (err) {
+    } catch(err) {
       //信箱未驗證
       if (err.response?.status === 403 && err.response?.data?.needVerification) {
         const isExpired = err.response.data.tokenExpired;
@@ -316,19 +350,15 @@ export const useAuthStore = defineStore('auth', () => {
           // 重新寄送驗證信
           await handleResendVerification(email);
         }
-        return false;
+        return { success: false, needVerification: true, handled: true };
       }
 
-      const errorInfo = handleError(err, '登入失敗');
-
-      await Swal.fire({
-        title: errorInfo.title,
-        text: errorInfo.message,
-        icon: 'error',
-        confirmButtonText: '確認',
-      });
-
-      return false;
+      let errorMessage = '登入失敗';
+      if (err.response?.status === 401) {
+        errorMessage = '電子郵件或密碼錯誤';
+      }
+  
+      return { success: false, error: errorMessage };
     } finally {
       setLoading('email', false);
     }
@@ -339,26 +369,18 @@ export const useAuthStore = defineStore('auth', () => {
     clearError();
 
     try {
-      const resp = await getLineAuthUrl();
+      const resp = await lineLoginAPI();
       console.log('LINE 授權 URL 取得成功:', resp.data);
 
       if (resp.data.authUrl) {
         window.location.href = resp.data.authUrl;
-        return true;
+        return { success: true };
       } else {
         throw new Error('無法取得 LINE 授權連結');
       }
-    } catch (err) {
-      const errorInfo = handleError(err, 'LINE 登入失敗');
 
-      await Swal.fire({
-        title: errorInfo.title,
-        text: errorInfo.message,
-        icon: 'error',
-        confirmButtonText: '確認',
-      });
-
-      return false;
+    } catch(err) {
+      return { success: false, error: err.response?.data?.error || 'LINE 登入失敗' };
     } finally {
       setLoading('line', false);
     }
@@ -368,6 +390,7 @@ export const useAuthStore = defineStore('auth', () => {
     const urlParams = new URLSearchParams(window.location.search);
     const success = urlParams.get('success');
     const error = urlParams.get('error');
+    const source = urlParams.get('source');
 
     if (success === 'true') {
       try {
@@ -386,13 +409,53 @@ export const useAuthStore = defineStore('auth', () => {
           // 同步到 localStorag 用於頁面重新整理時快速載入
           localStorage.setItem('user', JSON.stringify(userData));
           console.log('LINE 登入用戶資訊已同步:', userData);
-        }
-        await Swal.fire({
-          title: 'LINE 登入成功!',
-          text: `歡迎 ${user.value?.lineDisplayName || user.value?.username || ''}`,
-          icon: 'success',
-          confirmButtonText: '開始使用',
-        });
+        
+          // 檢查用戶是否有偏好設定
+          const hasPreferences = userData.hasPreferences;
+          
+          if (!hasPreferences) {
+            // 新用戶或沒有偏好設定的用戶
+            const result = await Swal.fire({
+              title: 'LINE 登入成功！',
+              html: `
+                <p>歡迎 ${userData.lineDisplayName || userData.username || ''}！</p>
+                <p style="color: #f39c12; margin-top: 10px;">
+                  <i class="fa-solid fa-info-circle"></i> 
+                  您尚未設定酒吧偏好，建議前往個人設定完成設定以獲得更好的推薦體驗
+                </p>
+              `,
+              icon: 'success',
+              confirmButtonText: '開始使用',
+              showCancelButton: true,
+              cancelButtonText: '立即設定',
+              reverseButtons: true,
+              customClass: {
+                cancelButton: 'swal2-confirm',
+                confirmButton: 'swal2-cancel'
+              }
+            });
+
+            window.history.replaceState({}, document.title, window.location.pathname);
+
+            if (result.dismiss === Swal.DismissReason.cancel) {
+              // 用戶選擇立即設定，導向偏好設定頁面
+              return { success: true, redirect: '/preferences?from=line-login' };
+            } else {
+              // 用戶選擇開始使用，導向主頁
+              return { success: true, redirect: '/home' };
+            }
+          } else {
+            // 已有偏好設定的用戶
+            await Swal.fire({
+              title: 'LINE 登入成功！',
+              text: `歡迎回來 ${userData.lineDisplayName || userData.username || ''}！`,
+              icon: 'success',
+              confirmButtonText: '開始使用',
+              timer: 2000,
+              timerProgressBar: true
+            });
+          }
+        }  
 
         window.history.replaceState({}, document.title, window.location.pathname);
         return { success: true, redirect: '/home' };
@@ -409,7 +472,8 @@ export const useAuthStore = defineStore('auth', () => {
         window.history.replaceState({}, document.title, window.location.pathname);
         return { success: true, redirect: '/home' };
       }
-    } else if (error) {
+
+    } else if(error) {
       const errorMsg = decodeURIComponent(error);
       errorMessage.value = errorMsg;
 
@@ -417,15 +481,34 @@ export const useAuthStore = defineStore('auth', () => {
         title: 'LINE 登入失敗',
         text: errorMsg,
         icon: 'error',
-        confirmButtonText: '確認',
+        confirmButtonText: '確認'
       });
 
       window.history.replaceState({}, document.title, window.location.pathname);
       return { success: false };
     }
-
     return null;
   }
+
+  async function saveBarTags(preferences) {
+    clearError();
+    
+    try {
+      // 檢查用戶是否存在
+      if (!user.value?.id) {
+        throw new Error('用戶資訊不存在');
+      }
+
+      const resp = await saveBarTagsAPI(user.value.id, preferences);
+      
+      return { success: true, data: resp.data };
+      
+    } catch(err) {
+      console.error('儲存偏好設定失敗:', err);
+
+      return { success: false, error: err.response?.data?.message || '儲存失敗，請稍後再試' };
+    }
+  }  
 
   // 區分登入方式
   const loginMethod = computed(() => {
@@ -443,6 +526,7 @@ export const useAuthStore = defineStore('auth', () => {
     isEmailLoading,
     isLineLoading,
     errorMessage,
+    isEmailRegistering,
 
     // 計算屬性
     isAuthenticated,
@@ -452,6 +536,7 @@ export const useAuthStore = defineStore('auth', () => {
     // 方法
     init,
     clearError,
+    emailSignup,
     emailLogin,
     lineLogin,
     checkLineCallback,
@@ -460,5 +545,6 @@ export const useAuthStore = defineStore('auth', () => {
     updateAuthUser,
     checkAuthStatus,
     handleResendVerification,
+    saveBarTags
   };
 });

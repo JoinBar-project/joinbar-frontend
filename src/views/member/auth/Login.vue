@@ -119,7 +119,7 @@
       <!-- 登入按鈕 -->
       <div class="flex justify-center">
         <button
-          @click="handleLogin"
+          @click="handleEmailLogin"
           :disabled="authStore.isLoading"
           class="w-full max-w-[180px] py-2 bg-gradient-to-r from-[var(--color-secondary-green)] via-[#d8dbaf] to-[var(--color-primary-orange)] text-[var(--color-black)] rounded-lg font-semibold mt-4 shadow-md transition duration-300 transform hover:scale-105 hover:brightness-110 hover:shadow-lg">
           <span v-if="authStore.isEmailLoading">登入中...</span>
@@ -148,7 +148,7 @@ import { useRouter } from 'vue-router';
 import { useAuthStore } from '@/stores/authStore'
 import Swal from 'sweetalert2';
 
-const authStore = useAuthStore()
+const authStore = useAuthStore();
 const router = useRouter();
 
 const isLogin = ref(true);
@@ -169,6 +169,19 @@ const errors = ref({
 // 錯誤訊息
 const emailErrorMessage = ref('')
 const passwordErrorMessage = ref('')
+
+const clearError = (fieldName) => {
+  if (errors.value[fieldName]) {
+    errors.value[fieldName] = false
+    
+    // 清除對應的錯誤訊息
+    if (fieldName === 'email') {
+      emailErrorMessage.value = ''
+    } else if (fieldName === 'password') {
+      passwordErrorMessage.value = ''
+    }
+  }
+}
 
 const validateEmail = (email) => {
   if (!email || email.trim() === '') {
@@ -217,7 +230,7 @@ const validatePassword = (password) => {
   return true
 }
 
-const handleLogin = async () => {
+const handleEmailLogin = async () => {
   let valid = true
 
   if (!validateEmail(loginForm.value.email)) {
@@ -237,34 +250,44 @@ const handleLogin = async () => {
   if (!valid) return
 
   try {
-    const success = await authStore.emailLogin(loginForm.value.email, loginForm.value.password)
+    const result = await authStore.emailLogin(loginForm.value.email, loginForm.value.password);
     
-    if (success) {
-      showLoginSuccess.value = true
-
-      loginForm.value.email = ''
-      loginForm.value.password = ''
-
+    if (result.success) {
+      showLoginSuccess.value = true;
+      loginForm.value = { email: '', password: '' };
+      
       setTimeout(() => {
-        showLoginSuccess.value = false
-        router.push('/home')
-      }, 1500)
+        showLoginSuccess.value = false;
+        router.push('/home');
+      }, 1500);
+    } else {
+      await Swal.fire({
+        title: '登入失敗',
+        text: result.error,
+        icon: 'error',
+        confirmButtonText: '確認'
+      });
     }
-
   } catch (error) {
-    console.error('登入過程發生錯誤:', error)
-    showLoginSuccess.value = false
+    console.error('登入過程發生錯誤:', error);
+    await Swal.fire({
+      title: '發生錯誤',
+      text: '發生未知錯誤，請稍後再試',
+      icon: 'error',
+      confirmButtonText: '確認'
+    });
   }
-}
+};
 
 const handleLineLogin = async () => {
-  await authStore.lineLogin()
-}
-
-// 清除單一欄位的錯誤狀態
-const clearError = (fieldName) => {
-  if (errors.value[fieldName]) {
-    errors.value[fieldName] = false
+  const result = await authStore.lineLogin()
+  if (!result.success) {
+    await Swal.fire({
+      title: 'LINE 登入失敗',
+      text: result.error,
+      icon: 'error',
+      confirmButtonText: '確認'
+    });
   }
 }
 
@@ -286,14 +309,19 @@ const useTestAccount = () => {
 
 // 組件掛載時檢查 LINE 登入狀態
 onMounted(async () => {
-  // 初始化 store
-  authStore.init()
-  // 檢查 LINE 登入回調
-  const result = await authStore.checkLineCallback()
-  if (result?.success) {
-    router.push(result.redirect)
+  const urlParams = new URLSearchParams(window.location.search);
+  const isLineCallback = urlParams.get('success') || urlParams.get('error');
+
+  if (isLineCallback) {
+    console.log('處理 LINE 登入回調...');
+    const result = await authStore.checkLineCallback();
+    if (result?.success) {
+      router.push(result.redirect);
+    }
+  } else {
+    authStore.init();
   }
-})
+});
 </script>
 
 <style scoped>
