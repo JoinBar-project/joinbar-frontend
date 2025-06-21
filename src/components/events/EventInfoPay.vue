@@ -163,7 +163,13 @@ onMounted(() => {
           </div>
 
           <div class="edit-btn-container">
-            <button @click="addToCart" type="button" class="event-btn event-btn-cart">
+            <button
+              @click="addToCart"
+              type="button"
+              class="event-btn event-btn-cart"
+              :disabled="isInCart"
+              :class="{ 'opacity-50 cursor-not-allowed': isInCart }"
+            >
               {{ isInCart ? '✓ 已在購物車' : '加入購物車' }}
             </button>
             <button @click="buyNow" type="button" class="event-btn event-btn-pay">
@@ -319,5 +325,11 @@ onMounted(() => {
   color: white;
   padding: 8px 28px 10px 28px;
   cursor: pointer;
+}
+
+button:disabled.event-btn-cart:hover {
+  background-color: white;
+  color: inherit;
+  cursor: not-allowed;
 }
 </style>
