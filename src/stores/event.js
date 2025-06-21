@@ -56,22 +56,28 @@ export const useEventStore = defineStore('event', () => {
   }
 
   const deleteEvent = async (id) => {
-    loading.value = true
+    loading.value = true;
     try {
-      await axios.delete(`/api/event/delete/${id}`)
-      const index = events.value.findIndex(e => e.id == id)
+      const token = localStorage.getItem('access_token');
+      await axios.delete(`/api/event/delete/${id}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+
+      // 軟刪除後更新本地資料
+      const index = events.value.findIndex(e => e.id == id);
       if (index !== -1) {
-        events.value[index].status = 2
+        events.value[index].status = 2;
       }
 
-      event.value = null
-      error.value = null
+      event.value = null;
+      error.value = null;
     } catch (e) {
-      error.value = e.response?.data?.message || e.message
+      error.value = e.response?.data?.message || e.message || '刪除失敗';
+      throw new Error(error.value);
     } finally {
-      loading.value = false
+      loading.value = false;
     }
-  }
+  };
 
   const fetchEvent = async (id) => {
     loading.value = true

@@ -18,10 +18,6 @@ function handleUpdate() {
   emit('update');
 }
 
-function handleDelete() {
-  showForm.value = false;
-  emit('update');
-}
 </script>
 
 <template>
@@ -55,8 +51,7 @@ function handleDelete() {
               :event-id="props.eventId"
               @click.stop
               @update="handleUpdate"
-              @cancel="showAlert = true"
-              @delete="handleDelete" />
+              @cancel="showAlert = true"/>
           </div>
           <div v-else>
             <p>請選擇要編輯的活動</p>

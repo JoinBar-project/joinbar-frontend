@@ -2,10 +2,14 @@
 import { ref, watch, onMounted } from 'vue';
 import axios from 'axios';
 import { useEventForm } from '@/composables/useEventForm';
+import { useEventStore } from '@/stores/event';
 import Hashtag from './Hashtag.vue';
+import { useRouter } from 'vue-router';
 
 const emit = defineEmits(['update', 'delete', 'cancel']);
 const props = defineProps({ eventId: String });
+
+const eventStore = useEventStore();
 
 const {
   eventName,
@@ -101,15 +105,21 @@ async function onUpdate() {
   }
 }
 
+const router = useRouter();
+
 async function onDelete() {
   if (loading.value || !confirm('確定要刪除這個活動嗎？')) return;
 
   loading.value = true;
   try {
-    await handleDelete(props.eventId);
-    emit('delete');
+    await eventStore.deleteEvent(props.eventId);
+    router.push({
+      path: '/event',
+      state: { message: '活動已成功刪除！' }
+    });
   } catch (error) {
-    alert(`刪除失敗: ${error.message}`);
+    const errorMessage = eventStore.error || error?.message || '刪除失敗，請稍後再試';
+    alert(`刪除失敗: ${errorMessage}`);
   } finally {
     loading.value = false;
   }
