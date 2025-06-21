@@ -5,6 +5,8 @@ import { useTagStore } from '@/stores/tag'
 import { storeToRefs } from 'pinia'
 import ModalCreate from '@/components/events/ModalCreate.vue'
 import EventCard from '@/components/events/EventCard.vue'
+import SparkleBg from '@/components/events/SparkleBg.vue'
+import Beer from '@/assets/beers-bgImage.jpg'
 
 const eventStore = useEventStore()
 const { events } = storeToRefs(eventStore)
@@ -60,6 +62,8 @@ function scrollToTop() {
 </script>
 
 <template>
+  <SparkleBg :backgroundImage="Beer" />
+
   <div class="page">
     <ModalCreate @eventCreated="handleEventCreated" />
     <div class="event-list">
