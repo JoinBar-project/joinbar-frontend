@@ -68,7 +68,7 @@ const routes = [
   { path: '/cart', name: 'Cart', component: Cart },
   { path: '/payment', name: 'Payment', component: Payment },
   { path: '/payment-waiting', name: 'PaymentWaiting', component: PaymentWaiting },
-  { path: '/sub', name: 'EventInformation', component: EventInfo },
+  { path: '/sub', name: 'SubEventInformation', component: EventInfo },
   { path: '/order-success/:orderNumber', name: 'OrderSuccess', component: OrderSuccess, props: true },
   // 404 路由放到最後，並且更精確
   { path: '/404', name: 'NotFound', component: NotFound },
@@ -85,7 +85,6 @@ const router = createRouter({
   routes,
 });
 
-// 添加路由守衛來調試
 router.beforeEach((to, from, next) => {
   console.log('🔄 路由跳轉:', {
     from: from.path,
@@ -95,7 +94,6 @@ router.beforeEach((to, from, next) => {
   next()
 })
 
-// 處理路由錯誤
 router.onError((error) => {
   console.error('❌ 路由錯誤:', error)
 })
