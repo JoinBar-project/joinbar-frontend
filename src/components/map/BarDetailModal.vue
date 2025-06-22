@@ -133,14 +133,6 @@
 
         <div class="footer-actions">
           <div class="action-buttons-group">
-            <input
-              type="file"
-              ref="fileInput"
-              style="display: none"
-              accept="image/*"
-              @change="handleFileUpload"
-            />
-
             <button
               class="action-button icon-button share-button"
               data-tooltip="分享"
@@ -198,7 +190,7 @@
 <script setup>
 import { ref, watch, computed } from "vue";
 import { useRouter } from "vue-router";
-import placeTypeMap from "@/composables/placeTypeMap"; //
+import placeTypeMap from "@/composables/placeTypeMap";
 
 const props = defineProps({
   bar: {
@@ -215,24 +207,27 @@ const currentImageIndex = ref(0);
 const defaultImage =
   "https://placehold.co/800x600/decdd5/860914?text=No+Image+Available";
 
+// 確保 google 實例可用
 const google = computed(() =>
   window.google && window.google.maps ? window.google.maps : null
 );
 
 const currentImage = computed(() => {
   if (props.bar.images && props.bar.images.length > 0) {
-    return props.bar.images[currentImageIndex.value];
+    return props.bar.images?.[currentImageIndex.value];
   }
   return props.bar.imageUrl || defaultImage;
 });
 
+// 修改營業狀態判斷邏輯，直接使用 is_open
 const currentOpenStatus = computed(() => {
-  if (props.bar.opening_hours && google.value) {
-    return props.bar.opening_hours.isOpen()
-      ? '<span style="color: green;">正在營業中</span>'
-      : '<span style="color: red;">目前休息中</span>';
+  if (props.bar.is_open === true) {
+    return '<span style="color: green;">正在營業中</span>';
   }
-  return ""; // Added default return to avoid undefined
+  if (props.bar.is_open === false) {
+    return '<span style="color: red;">目前休息中</span>';
+  }
+  // return "未提供營業時間資訊";
 });
 
 watch(
@@ -283,31 +278,7 @@ const toggleFavorite = () => {
 
 const goToBarActivities = () => {
   closeModal();
-  router.push("/events");
-};
-
-const fileInput = ref(null);
-
-const triggerFileUpload = () => {
-  fileInput.value?.click();
-};
-
-const handleFileUpload = (event) => {
-  const target = event.target;
-  const files = target.files;
-
-  if (files && files.length > 0) {
-    const selectedFile = files[0];
-    console.log("Selected file for upload:", selectedFile);
-
-    alert(
-      `選取了檔案：${selectedFile.name} (大小: ${selectedFile.size} bytes)\n此處僅為前端選取示範，實際圖片上傳需連接後端。`
-    );
-
-    if (fileInput.value) {
-      fileInput.value.value = "";
-    }
-  }
+  router.push("/event");
 };
 
 function formatReviewDate(unixTime) {
@@ -317,7 +288,7 @@ function formatReviewDate(unixTime) {
 }
 
 const getTagLabel = (tag) => {
-  return placeTypeMap[tag] || tag; //
+  return placeTypeMap?.[tag] || tag;
 };
 </script>
 
@@ -342,7 +313,7 @@ const getTagLabel = (tag) => {
   display: flex;
   flex-direction: column;
   width: 90%;
-  max-width: 900px; /* Adjusted based on image 2 aspect ratio */
+  max-width: 900px;
   height: 85vh;
   position: relative;
   box-shadow: 0 8px 30px rgba(0, 0, 0, 0.3);
@@ -367,24 +338,24 @@ const getTagLabel = (tag) => {
   justify-content: center;
   cursor: pointer;
   z-index: 10;
-  background-color: rgba(255, 255, 255, 0.9); /* From FavoriteDetailCard */
-  backdrop-filter: blur(4px); /* From FavoriteDetailCard */
-  transition: all 0.2s ease; /* From FavoriteDetailCard */
+  background-color: rgba(255, 255, 255, 0.9);
+  backdrop-filter: blur(4px);
+  transition: all 0.2s ease;
 }
 .close-button:hover {
-  transform: scale(1.1); /* From FavoriteDetailCard */
-  background-color: #fff; /* From FavoriteDetailCard */
+  transform: scale(1.1);
+  background-color: #fff;
 }
 
 .close-button .close-icon {
-  width: 20px; /* Adjusted size to match FavoriteDetailCard's icon */
-  height: 20px; /* Adjusted size to match FavoriteDetailCard's icon */
-  filter: brightness(0.5); /* Make icon darker to be visible on white background */
+  width: 20px;
+  height: 20px;
+  filter: brightness(0.5);
 }
 
 .image-gallery-container {
-  /* Adjusted width for more prominent image based on image 2 */
-  width: 60%;
+  /* 恢復為圖片一的佈局 */
+  width: 50%;
   height: 100%;
   overflow: hidden;
   position: relative;
@@ -394,7 +365,7 @@ const getTagLabel = (tag) => {
   justify-content: center;
   color: #666;
   font-size: 1.2rem;
-  min-height: 200px; /* Ensure a minimum height for mobile */
+  min-height: 200px;
 }
 
 .main-image {
@@ -415,8 +386,8 @@ const getTagLabel = (tag) => {
 }
 
 .nav-button {
-  background-color: rgba(255, 255, 255, 0.8); /* From FavoriteDetailCard */
-  color: #333; /* From FavoriteDetailCard */
+  background-color: rgba(0, 0, 0, 0.5); /* 恢復圖片一的背景 */
+  color: white; /* 恢復圖片一的文字顏色 */
   border: none;
   border-radius: 50%;
   width: 32px;
@@ -426,16 +397,16 @@ const getTagLabel = (tag) => {
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  transition: all 0.2s ease; /* From FavoriteDetailCard */
+  transition: background-color 0.2s; /* 調整過渡效果 */
 }
 .nav-button:hover {
-  background-color: #fff; /* From FavoriteDetailCard */
-  transform: scale(1.1); /* From FavoriteDetailCard */
+  background-color: rgba(0, 0, 0, 0.7); /* 恢復圖片一的 hover 背景 */
+  transform: scale(1); /* 移除上次加入的 hover 縮放效果 */
 }
 
 .image-dots {
   position: absolute;
-  bottom: 15px; /* Slightly higher from bottom */
+  bottom: 10px; /* 恢復圖片一的位置 */
   left: 50%;
   transform: translateX(-50%);
   display: flex;
@@ -445,10 +416,12 @@ const getTagLabel = (tag) => {
 .dot {
   width: 8px;
   height: 8px;
-  background-color: rgba(255, 255, 255, 0.5); /* From FavoriteDetailCard */
+  background-color: rgba(255, 255, 255, 0.6); /* 恢復圖片一的顏色 */
   border-radius: 50%;
   cursor: pointer;
-  transition: all 0.2s ease; /* From FavoriteDetailCard */
+  transition:
+    background-color 0.2s,
+    transform 0.2s; /* 調整過渡效果 */
 }
 .dot.active {
   background-color: #fff;
@@ -456,14 +429,14 @@ const getTagLabel = (tag) => {
 }
 
 .detail-info-section {
-  width: 40%; /* Adjusted width based on image 2 */
-  padding: 20px 25px; /* Adjust padding as needed, removed top padding as content starts lower in image 2 */
+  width: 50%; /* 恢復圖片一的寬度 */
+  padding: 80px 25px 20px 25px; /* 恢復圖片一的 padding */
   overflow-y: auto;
   flex-grow: 1;
   display: flex;
   flex-direction: column;
-  padding-bottom: calc(20px + 60px + 15px); /* Keep space for footer */
-  background-color: #f8fafc; /* Similar to FavoriteDetailCard's bg-slate-50 */
+  padding-bottom: 20px;
+  background-color: #f8fafc; /* 與圖片一背景相似 */
 }
 
 .header-main {
@@ -471,7 +444,7 @@ const getTagLabel = (tag) => {
   align-items: center;
   justify-content: flex-start;
   margin-bottom: 10px;
-  padding-top: 10px; /* Added some top padding to align with image 2 */
+  padding-top: 0; /* 恢復原始 */
 }
 
 .bar-detail-name {
@@ -485,12 +458,12 @@ const getTagLabel = (tag) => {
 .rating-info {
   display: flex;
   align-items: center;
-  gap: 5px; /* Adjusted spacing */
-  margin-bottom: 15px; /* Adjusted margin */
+  gap: 15px; /* 恢復圖片一的間距 */
+  margin-bottom: 15px;
   font-size: 16px;
   color: #555;
-  padding-bottom: 10px; /* Similar to FavoriteDetailCard's border-b */
-  border-bottom: 1px solid #e2e8f0; /* Similar to FavoriteDetailCard's border-gray-200 */
+  padding-bottom: 10px; /* 恢復圖片一的間距 */
+  border-bottom: 1px solid #f0f0f0; /* 恢復圖片一的邊框 */
 }
 .rating-text {
   font-weight: 500;
@@ -499,13 +472,13 @@ const getTagLabel = (tag) => {
 .contact-info p {
   margin-bottom: 8px;
   font-size: 15px;
-  color: #4a5568; /* Adjusted for better contrast on light background */
+  color: #666; /* 恢復圖片一的顏色 */
   display: flex;
   align-items: center;
   gap: 8px;
 }
 .contact-info a {
-  color: #3b82f6; /* Adjusted to a common blue */
+  color: #007bff; /* 恢復圖片一的顏色 */
   text-decoration: none;
 }
 .contact-info a:hover {
@@ -517,7 +490,7 @@ const getTagLabel = (tag) => {
 .description-section,
 .google-review-section {
   margin-top: 20px;
-  border-top: 1px solid #eee; /* Kept from original, image 2 doesn't explicitly show this */
+  border-top: 1px solid #eee;
   padding-top: 15px;
 }
 .opening-hours-detail h3,
@@ -554,13 +527,13 @@ const getTagLabel = (tag) => {
 }
 
 .detail-tag {
-  background-color: #e2e8f0; /* Similar to FavoriteDetailCard's bg-gray-200 */
-  color: #4a5568; /* Similar to FavoriteDetailCard's text-gray-800 */
+  background-color: #e6f7ff; /* 恢復圖片一的顏色 */
+  color: #1890ff; /* 恢復圖片一的顏色 */
   padding: 6px 12px;
   border-radius: 20px;
   font-size: 14px;
   white-space: nowrap;
-  border: 1px solid #e2e8f0; /* Adjusted border to match bg */
+  border: 1px solid #91d5ff; /* 恢復圖片一的邊框 */
 }
 
 .google-review-section {
@@ -568,12 +541,12 @@ const getTagLabel = (tag) => {
 }
 
 .review-card {
-  background-color: #fff; /* From FavoriteDetailCard */
-  border-radius: 8px; /* From FavoriteDetailCard */
+  background-color: #f9f9f9; /* 恢復圖片一的背景 */
+  border-radius: 8px;
   padding: 15px;
   margin-top: 15px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05); /* From FavoriteDetailCard */
-  border: 1px solid #e2e8f0; /* From FavoriteDetailCard */
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  border: none; /* 恢復圖片一的無邊框 */
 }
 
 .review-header {
@@ -583,11 +556,11 @@ const getTagLabel = (tag) => {
 }
 
 .user-avatar {
-  width: 40px; /* From FavoriteDetailCard */
-  height: 40px; /* From FavoriteDetailCard */
+  width: 40px;
+  height: 40px;
   border-radius: 50%;
   object-fit: cover;
-  margin-right: 10px; /* From FavoriteDetailCard */
+  margin-right: 10px;
   border: 1px solid #ddd;
 }
 
@@ -598,19 +571,19 @@ const getTagLabel = (tag) => {
 
 .user-name {
   font-weight: bold;
-  color: #1a202c; /* From FavoriteDetailCard */
+  color: #333;
   font-size: 16px;
 }
 
 .review-date {
   font-size: 13px;
-  color: #718096; /* From FavoriteDetailCard */
+  color: #777;
 }
 
 .review-text {
   font-size: 15px;
   line-height: 1.6;
-  color: #4a5568; /* From FavoriteDetailCard */
+  color: #444;
   margin-bottom: 10px;
 }
 
@@ -618,21 +591,20 @@ const getTagLabel = (tag) => {
   display: flex;
   gap: 15px;
   font-size: 14px;
-  color: #718096; /* From FavoriteDetailCard */
+  color: #888;
 }
 
 .footer-actions {
   position: absolute;
   bottom: 0;
-  left: 0; /* Changed to 0 to cover full width */
-  width: 100%; /* Changed to 100% to cover full width */
-  transform: translateX(0%); /* No transform needed */
+  left: 0;
+  width: 100%;
   display: flex;
-  justify-content: space-between;
+  justify-content: space-between; /* 內容兩端對齊 */
   align-items: center;
   padding: 15px 25px;
   background-color: #fff;
-  border-top: 1px solid #eee;
+  border-top: 1px solid #f0f0f0; /* 恢復圖片一的邊框 */
   box-shadow: 0 -4px 10px rgba(0, 0, 0, 0.05);
   z-index: 5;
   box-sizing: border-box;
@@ -640,60 +612,60 @@ const getTagLabel = (tag) => {
 
 .action-buttons-group {
   display: flex;
-  gap: 15px; /* From FavoriteDetailCard */
+  gap: 15px; /* 恢復圖片一的間距 */
 }
 
 .action-button {
   background: none;
-  border: 1px solid #e2e8f0; /* From FavoriteDetailCard */
-  border-radius: 12px; /* From FavoriteDetailCard, changed from 50% for icons */
-  width: 44px; /* From FavoriteDetailCard */
-  height: 44px; /* From FavoriteDetailCard */
+  border: 1px solid #e2e8f0; /* 恢復圖片一的邊框 */
+  border-radius: 12px; /* 恢復圖片一的圓角 */
+  width: 44px; /* 恢復圖片一的大小 */
+  height: 44px; /* 恢復圖片一的大小 */
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  transition: all 0.2s ease; /* From FavoriteDetailCard */
+  transition: all 0.2s ease;
   padding: 0;
-  background-color: #fff; /* From FavoriteDetailCard */
+  background-color: #fff;
 }
 
 .action-button:hover {
-  background-color: #f7fafc; /* Similar to FavoriteDetailCard's hover:bg-gray-50 */
-  border-color: #cbd5e0; /* Similar to FavoriteDetailCard's hover:border-gray-300 */
-  transform: translateY(-2px); /* From FavoriteDetailCard */
+  background-color: #f7fafc;
+  border-color: #cbd5e0;
+  transform: translateY(-2px); /* 恢復圖片一的 hover 效果 */
 }
 
 .action-button .icon {
   width: 24px;
   height: 24px;
-  filter: brightness(0.5); /* To make icons visible on light background */
+  filter: brightness(0.5); /* 恢復圖片一的濾鏡 */
 }
 
 .wishlist-detail-button .heart-icon {
-  width: 20px; /* From FavoriteDetailCard */
-  height: 20px; /* From FavoriteDetailCard */
+  width: 20px; /* 恢復圖片一的大小 */
+  height: 20px; /* 恢復圖片一的大小 */
   transition:
     fill 0.3s ease,
     stroke 0.3s ease;
 }
-/* Specific hover for non-red heart (from original BarDetailModal) */
+/* 恢復圖片一的收藏按鈕 hover 效果 */
 .wishlist-detail-button:not([fill="red"]):hover .heart-icon {
   fill: #ffebeb;
   stroke: red;
 }
 
 .start-event-button {
-  /* Mimic FavoriteDetailCard's gradient button */
+  /* 恢復圖片一的樣式 */
   background-image: linear-gradient(
     to right,
     #a8d87b,
     #d8dbaf,
     #daa258
-  ); /* Adjusted colors based on screenshot */
-  color: #333; /* Adjusted text color for contrast */
+  );
+  color: #333;
   border: none;
-  border-radius: 25px; /* From FavoriteDetailCard */
+  border-radius: 25px;
   padding: 10px 20px;
   font-size: 16px;
   font-weight: bold;
@@ -701,14 +673,14 @@ const getTagLabel = (tag) => {
   display: flex;
   align-items: center;
   gap: 8px;
-  transition: all 0.2s ease; /* From FavoriteDetailCard */
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); /* Added shadow */
+  transition: all 0.2s ease;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
 }
 
 .start-event-button:hover {
-  transform: scale(1.05); /* From FavoriteDetailCard */
-  filter: brightness(1.1); /* From FavoriteDetailCard */
-  box-shadow: 0 6px 10px rgba(0, 0, 0, 0.15); /* From FavoriteDetailCard */
+  transform: scale(1.05);
+  filter: brightness(1.1);
+  box-shadow: 0 6px 10px rgba(0, 0, 0, 0.15);
 }
 
 .icon-plus {
@@ -729,7 +701,7 @@ const getTagLabel = (tag) => {
   opacity: 0;
 }
 
-/* Tooltip styles from FavoriteDetailCard */
+/* Tooltip 樣式恢復 */
 .action-button[data-tooltip] {
   position: relative;
 }
@@ -772,7 +744,7 @@ const getTagLabel = (tag) => {
   }
   .detail-info-section {
     width: 100%;
-    padding: 20px 15px; /* Adjusted padding for mobile */
+    padding: 20px 15px;
     padding-bottom: calc(20px + 60px + 10px);
   }
   .bar-detail-name {
@@ -813,7 +785,7 @@ const getTagLabel = (tag) => {
   .action-button {
     width: 36px;
     height: 36px;
-    border-radius: 10px; /* Slightly smaller radius for mobile buttons */
+    border-radius: 10px;
   }
   .action-button .icon {
     width: 20px;

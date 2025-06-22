@@ -346,6 +346,11 @@ async function selectSuggestion(suggestion) {
   try {
     const detail = await getPlaceDetails(suggestion.place_id);
     if (detail && detail.geometry && detail.geometry.location) {
+      const isOpen = detail.opening_hours ? detail.opening_hours.isOpen() : null;
+      const isBarLike = Array.isArray(detail.types)
+        ? detail.types.some(type => BAR_PLACE_TYPES.includes(type))
+        : false;
+
       const barDetail = {
         id: detail.place_id,
         place_id: detail.place_id,
@@ -367,6 +372,7 @@ async function selectSuggestion(suggestion) {
             )
           : [],
         opening_hours: detail.opening_hours,
+        is_open: isOpen,
         imageUrl:
           detail.photos && detail.photos.length > 0
             ? detail.photos[0].getUrl({ maxWidth: 400, maxHeight: 400 })
@@ -382,9 +388,10 @@ async function selectSuggestion(suggestion) {
         website: detail.website || null,
         url: detail.url,
         googleReviews: detail.reviews || [],
+        isBarLike: isBarLike,
       };
       mainBarForSearch.value = barDetail;
-      googleBars.value = []; // 清空 googleBars，因為現在是單點搜尋結果，不應該影響列表
+      googleBars.value = [];
       addMarker(
         {
           location: barDetail.location,
@@ -393,7 +400,7 @@ async function selectSuggestion(suggestion) {
           isBarLike: barDetail.isBarLike === true,
           infoContent: formatBarInfoWindowContent(barDetail),
         },
-        "search" // 將單點標記放入 searchMarkers
+        "search"
       );
       panTo(detail.geometry.location, 15);
     } else {
@@ -420,95 +427,16 @@ async function handleSearch() {
   }
   isLoading.value = true;
   isManualSearchActive.value = true;
-  clearMarkers("all"); // 這裡確保清除所有標記
+  clearMarkers("all");
   closeInfoWindow();
 
   try {
-    let mainBars = [];
-    let typeForNearby = "establishment";
-    const q = searchQuery.value.trim().toLowerCase();
-    if (["bar", "酒吧", "pub", "night club", "夜店", "交易吧", "intention"].some(k => q.includes(k))) {
-      typeForNearby = ["bar", "night_club", "pub", "liquor_store"];
-    } else if (["小吃", "餐廳", "美食", "food", "restaurant", "吃飯", "吃吃"].some(k => q.includes(k))) {
-      typeForNearby = ["restaurant", "food"];
-    }
-
     const result = await searchAndDisplayPlaces(searchQuery.value);
-    mainBars = result && result.results ? result.results : [];
+    const mainBars = result && result.results ? result.results : [];
 
-    if ((!mainBars || mainBars.length === 0) && typeForNearby) {
-      const google = googleMapsInstance();
-      let center = null;
-      if (map() && map().getCenter) {
-        const c = map().getCenter();
-        center = new window.google.maps.LatLng(c.lat(), c.lng());
-      } else {
-        center = new window.google.maps.LatLng(25.0478, 121.5170);
-      }
-      const fallbackRequest = {
-        location: center,
-        radius: 5000,
-        type: Array.isArray(typeForNearby) && typeForNearby.length > 0 ? typeForNearby[0] : typeForNearby,
-      };
-      const service = new google.places.PlacesService(map());
-      mainBars = await new Promise((resolve) => {
-        service.nearbySearch(fallbackRequest, async (results, status) => {
-          if (status === google.places.PlacesServiceStatus.OK && results) {
-            const detailedBars = await Promise.all(
-              results.slice(0, 20).map(async (place) => {
-                try {
-                  const detail = await getPlaceDetails(place.place_id);
-                  const tags = Array.isArray(detail.types)
-                    ? detail.types.filter(type => !COMMON_PLACE_TYPES_TO_EXCLUDE.includes(type))
-                    : [];
-                  const isOpen = detail.opening_hours ? detail.opening_hours.isOpen() : null;
-                  const isBarLike = Array.isArray(detail.types)
-                    ? detail.types.some(type => BAR_PLACE_TYPES.includes(type))
-                    : false;
-                  return {
-                    id: detail.place_id,
-                    place_id: detail.place_id,
-                    name: detail.name,
-                    location: {
-                      lat: detail.geometry.location.lat(),
-                      lng: detail.geometry.location.lng(),
-                    },
-                    rating: detail.rating || 0,
-                    reviews: detail.user_ratings_total || 0,
-                    address: detail.formatted_address || "未知地址",
-                    tags: tags,
-                    opening_hours: detail.opening_hours,
-                    is_open: isOpen,
-                    imageUrl:
-                      detail.photos && detail.photos.length > 0
-                        ? detail.photos[0].getUrl({ maxWidth: 400, maxHeight: 400 })
-                        : "",
-                    images: detail.photos
-                      ? detail.photos.map((p) => p.getUrl({ maxWidth: 800, maxHeight: 600 }))
-                      : [],
-                    description: "點擊查看更多詳情...",
-                    isWishlisted: false,
-                    phone: detail.international_phone_number || null,
-                    website: detail.website || null,
-                    url: detail.url,
-                    googleReviews: detail.reviews || [],
-                    isBarLike: isBarLike,
-                  };
-                } catch (e) {
-                  return place;
-                }
-              })
-            );
-            resolve(detailedBars);
-          } else {
-            resolve([]);
-          }
-        });
-      });
-    }
     if (mainBars && mainBars.length > 0) {
       mainBarForSearch.value = null;
-      googleBars.value = mainBars; // 將多筆搜尋結果設置為 googleBars
+      googleBars.value = mainBars;
       if (googleMapsInstance() && googleBars.value.length > 0 && googleBars.value[0].location) {
         panTo(googleBars.value[0].location, 15);
       }
@@ -532,7 +460,7 @@ async function handleSearch() {
 async function handleGetCurrentLocation() {
   isLoading.value = true;
   isManualSearchActive.value = true;
-  clearMarkers("all"); // 這裡確保清除所有標記
+  clearMarkers("all");
   closeInfoWindow();
 
   try {
@@ -545,13 +473,13 @@ async function handleGetCurrentLocation() {
   } catch (err) {
     const google = googleMapsInstance();
     if (google && map()) {
-      const fallbackLocation = new window.google.LatLng(25.0478, 121.5170);
+      const fallbackLocation = new window.google.maps.LatLng(25.0478, 121.5170);
       map().setCenter(fallbackLocation);
       map().setZoom(15);
       const bars = await searchBarsInMapBounds(false);
       googleBars.value = bars;
     }
-    alert("無法獲取您的目前位置，請檢查瀏覽器權限設定");
+    alert("無法獲取您的目前位置，請檢查瀏覽器權限設定或網路連接。");
   } finally {
     isLoading.value = false;
     setTimeout(() => {
@@ -579,11 +507,12 @@ async function handleBarSelected(bar) {
       console.warn('自動補抓 Google 評論失敗', e);
     }
   }
+
   selectedBarForDetail.value = bar || {};
   isBarDetailModalOpen.value = true;
   if (bar.location && map() && googleMapsInstance()) {
     panTo(bar.location, 15);
-    clearMarkers("all"); // 這裡確保清除所有標記
+    clearMarkers("all");
     const tempMarker = addMarker({
       location: bar.location,
       title: bar.name,
@@ -599,14 +528,14 @@ function closeBarDetailModal() {
   isBarDetailModalOpen.value = false;
   selectedBarForDetail.value = null;
   closeInfoWindow();
-  clearMarkers("search"); // 關閉模態框時，只清除單點標記，因為主列表的標記可能還需要
+  clearMarkers("search");
   if (!isManualSearchActive.value && !searchQuery.value) {
     setTimeout(async () => {
       const barsInBounds = await searchBarsInMapBounds(false);
       googleBars.value = barsInBounds;
     }, 100);
   } else if (searchQuery.value) {
-    handleSearch(); // 如果有搜尋關鍵字，則重新觸發手動搜尋以恢復多個標記
+    handleSearch();
   }
 }
 
@@ -636,7 +565,7 @@ function handleTagClick(tag) {
     searchQuery.value = "";
     googleBars.value = [];
     isManualSearchActive.value = false;
-    clearMarkers("all"); // 清除所有標記
+    clearMarkers("all");
   } else {
     selectedTag.value = tag;
     searchQuery.value = tag;
@@ -741,7 +670,7 @@ function getTypeForKeyword(q) {
     return ["gym"];
   } else if (["ktv", "KTV", "卡拉ok", "唱歌"].some(k => q.includes(k))) {
     return ["night_club"];
-  } else if (["飯店", "旅館", "hotel", "住宿"].some(k => k.includes(k))) { // Corrected: k.includes(k) -> q.includes(k)
+  } else if (["飯店", "旅館", "hotel", "住宿"].some(k => q.includes(k))) {
     return ["lodging"];
   } else if (["書店", "書局", "book"].some(k => q.includes(k))) {
     return ["book_store"];

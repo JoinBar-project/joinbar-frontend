@@ -7,8 +7,8 @@ export function createGoogleMapsCore(mapContainerRef, options) {
     options;
 
   const map = shallowRef(null);
-  const markers = ref([]); // 主要用於顯示多個酒吧列表的標記
-  const searchMarkers = ref([]); // 用於顯示單一搜尋結果（例如點擊建議）或當前位置的標記
+  const markers = ref([]);
+  const searchMarkers = ref([]);
   const infoWindow = shallowRef(null);
   const loading = ref(true);
   const isFetching = ref(false);
@@ -314,16 +314,15 @@ export function createGoogleMapsCore(mapContainerRef, options) {
     }
   };
 
-  const displayBarsOnMap = async (bars, formatBarInfoWindowContent) => { // 這裡改成 async
+  const displayBarsOnMap = async (bars, formatBarInfoWindowContent) => {
     if (!map.value || !window.google.maps) {
       console.warn("地圖或 Google 實例未準備好，無法顯示酒吧標記。");
       return;
     }
 
-    clearMarkers("all"); // 徹底清除所有現有的標記
+    clearMarkers("all");
 
-    // 引入一個短暫的延遲，讓瀏覽器有時間完成舊標記的移除操作
-    await new Promise(resolve => setTimeout(resolve, 50)); // 50ms 延遲
+    await new Promise(resolve => setTimeout(resolve, 50));
 
     if (!bars || bars.length === 0) {
       console.log("沒有酒吧數據可供顯示。");

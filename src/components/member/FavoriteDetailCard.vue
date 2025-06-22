@@ -168,20 +168,6 @@
         <div
           class="flex justify-between items-center p-4 bg-white border-t border-gray-200">
           <div class="flex gap-3">
-            <!-- 新增照片 -->
-            <div class="tooltip" data-tip="新增照片">
-              <button
-                class="w-11 h-11 rounded-xl border border-gray-200 bg-white flex items-center justify-center cursor-pointer transition-all hover:bg-gray-50 hover:border-gray-300 hover:-translate-y-0.5"
-              @click="triggerFileUpload">
-                <i class="fa-regular fa-image text-lg text-gray-600"></i>
-              </button>
-            </div>
-            <input
-              type="file"
-              ref="fileInput"
-              class="hidden"
-              accept="image/*"
-              @change="handleFileUpload"/>
 
             <!-- 分享 -->
             <div class="tooltip" data-tip="分享">

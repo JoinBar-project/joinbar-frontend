@@ -3,7 +3,7 @@ import {
   COMMON_PLACE_TYPES_TO_EXCLUDE,
   TAIWAN_BOUNDS,
   BAR_PLACE_TYPES,
-} from "../googleMapsConstants";
+} from "../googleMapsConstants"; //
 
 export function createGoogleMapsPlaces(coreMapRefs) {
   const {
@@ -82,6 +82,11 @@ export function createGoogleMapsPlaces(coreMapRefs) {
       };
       currentPlacesService.getDetails(request, (place, status) => {
         if (status === currentGoogle.places.PlacesServiceStatus.OK && place) {
+          if (place.opening_hours) {
+            place.is_open = place.opening_hours.isOpen();
+          } else {
+            place.is_open = null;
+          }
           resolve(place);
         } else {
           const errorMessage = "取得詳細資料失敗: " + status;
@@ -104,118 +109,135 @@ export function createGoogleMapsPlaces(coreMapRefs) {
     }
 
     if (isFetching) isFetching.value = true;
-    let allResults = [];
-    let lastPagination = null;
 
     try {
-      return await new Promise((resolve, reject) => {
+      // First, try a text search
+      let { results: textResults, pagination: textPagination } = await new Promise((resolve, reject) => {
         const request = {
           query: query,
-          fields: [
-            "name",
-            "geometry",
-            "formatted_address",
-            "place_id",
-            "icon",
-            "photos",
-            "rating",
-            "user_ratings_total",
-            "opening_hours",
-            "types",
-            "url",
-          ],
+          fields: ["place_id", "name", "geometry"],
         };
-
-        const handleResults = async (results, status, pagination) => {
+        currentPlacesService.textSearch(request, (results, status, pagination) => {
           if (status === currentGoogle.places.PlacesServiceStatus.OK && results) {
-            allResults = allResults.concat(results);
-            lastPagination = pagination;
-            if (
-              pagination &&
-              pagination.hasNextPage &&
-              allResults.length < maxResults
-            ) {
-              setTimeout(() => {
-                pagination.nextPage();
-              }, 1000);
-            } else {
-              const finalResults = allResults.slice(0, maxResults);
-              Promise.all(
-                finalResults.map(async (place) => {
-                  try {
-                    const detail = await getPlaceDetails(place.place_id);
-                    const tags = Array.isArray(detail.types)
-                      ? detail.types.filter(
-                          (type) => !COMMON_PLACE_TYPES_TO_EXCLUDE.includes(type)
-                        )
-                      : [];
-                    const isOpen = detail.opening_hours ? detail.opening_hours.isOpen() : null;
-                    const isBarLike = Array.isArray(detail.types)
-                      ? detail.types.some((type) => BAR_PLACE_TYPES.includes(type))
-                      : false;
-                    return {
-                      id: detail.place_id,
-                      place_id: detail.place_id,
-                      name: detail.name,
-                      location: {
-                        lat: detail.geometry.location.lat(),
-                        lng: detail.geometry.location.lng(),
-                      },
-                      rating: detail.rating || 0,
-                      reviews: detail.user_ratings_total || 0,
-                      address: detail.formatted_address || "未知地址",
-                      tags: tags,
-                      opening_hours: detail.opening_hours,
-                      is_open: isOpen,
-                      imageUrl:
-                        detail.photos && detail.photos.length > 0
-                          ? detail.photos[0].getUrl({
-                              maxWidth: 400,
-                              maxHeight: 400,
-                            })
-                          : "",
-                      images: detail.photos
-                        ? detail.photos.map((p) =>
-                            p.getUrl({ maxWidth: 800, maxHeight: 600 })
-                          )
-                        : [],
-                      description: "點擊查看更多詳情...",
-                      isWishlisted: false,
-                      phone: detail.international_phone_number || null,
-                      website: detail.website || null,
-                      url: detail.url,
-                      googleReviews: detail.reviews || [],
-                      isBarLike: isBarLike,
-                    };
-                  } catch (e) {
-                    console.warn(`獲取 ${place.name} 詳細資料失敗:`, e);
-                    onError &&
-                      onError(`獲取 ${place.name} 詳細資料失敗: ${e.message}`);
-                    return {
-                      id: place.place_id,
-                      place_id: place.place_id,
-                      name: place.name,
-                      location: place.geometry?.location ? { lat: place.geometry.location.lat(), lng: place.geometry.location.lng() } : null,
-                    };
-                  }
-                })
-              ).then((detailedBars) => {
-                resolve({ results: detailedBars, pagination: lastPagination });
-              });
-            }
-          } else if (
-            status === currentGoogle.places.PlacesServiceStatus.ZERO_RESULTS
-          ) {
+            resolve({ results, pagination });
+          } else if (status === currentGoogle.places.PlacesServiceStatus.ZERO_RESULTS) {
             resolve({ results: [], pagination: null });
           } else {
-            const errorMessage = `Places 搜尋失敗: ${status}`;
-            console.error(errorMessage, results);
-            onError && onError(errorMessage);
-            reject(new Error(errorMessage));
+            console.warn(`TextSearch failed with status: ${status}. Will try nearbySearch as a fallback.`);
+            resolve({ results: [], pagination: null }); // Resolve with empty to proceed to fallback
           }
-        };
-        currentPlacesService.textSearch(request, handleResults);
+        });
       });
+
+      // If text search fails or returns no results, try a nearby search as a fallback
+      if (textResults.length === 0) {
+        console.log("TextSearch returned no results. Trying fallback to nearbySearch.");
+        const currentMap = map();
+        const center = currentMap ? currentMap.getCenter() : new currentGoogle.LatLng(25.0478, 121.5170);
+        
+        const q = query.trim().toLowerCase();
+        let typeForNearby = 'establishment'; // Default
+        if (["bar", "酒吧", "pub", "night club", "夜店", "交易吧", "intention"].some(k => q.includes(k))) {
+            typeForNearby = ["bar", "night_club", "pub"];
+        } else if (["小吃", "餐廳", "美食", "food", "restaurant", "吃飯"].some(k => q.includes(k))) {
+            typeForNearby = ["restaurant", "food"];
+        }
+
+        const fallbackRequest = {
+            location: center,
+            radius: 5000,
+            type: typeForNearby,
+            keyword: query
+        };
+
+        const { results: nearbyResults, pagination: nearbyPagination } = await new Promise((resolve, reject) => {
+          currentPlacesService.nearbySearch(fallbackRequest, (results, status, pagination) => {
+            if (status === currentGoogle.places.PlacesServiceStatus.OK && results) {
+              resolve({ results, pagination });
+            } else {
+              console.warn(`Fallback nearbySearch also failed with status: ${status}`);
+              resolve({ results: [], pagination: null });
+            }
+          });
+        });
+        textResults = nearbyResults;
+        textPagination = nearbyPagination;
+      }
+      
+      if (!textResults || textResults.length === 0) {
+        return { results: [], pagination: null };
+      }
+
+      // Process and get details for the results we found
+      const finalResults = await Promise.all(
+        textResults.slice(0, maxResults).map(async (place) => {
+          try {
+            const detail = await getPlaceDetails(place.place_id);
+            const tags = Array.isArray(detail.types)
+              ? detail.types.filter((type) => !COMMON_PLACE_TYPES_TO_EXCLUDE.includes(type))
+              : [];
+            const isBarLike = Array.isArray(detail.types)
+              ? detail.types.some((type) => BAR_PLACE_TYPES.includes(type))
+              : false;
+            return {
+              id: detail.place_id,
+              place_id: detail.place_id,
+              name: detail.name,
+              location: {
+                lat: detail.geometry.location.lat(),
+                lng: detail.geometry.location.lng(),
+              },
+              rating: detail.rating || 0,
+              reviews: detail.user_ratings_total || 0,
+              address: detail.formatted_address || "未知地址",
+              tags: tags,
+              opening_hours: detail.opening_hours,
+              is_open: detail.is_open,
+              imageUrl:
+                detail.photos && detail.photos.length > 0
+                  ? detail.photos[0].getUrl({ maxWidth: 400, maxHeight: 400 })
+                  : "",
+              images: detail.photos
+                ? detail.photos.map((p) => p.getUrl({ maxWidth: 800, maxHeight: 600 }))
+                : [],
+              description: "點擊查看更多詳情...",
+              isWishlisted: false,
+              phone: detail.international_phone_number || null,
+              website: detail.website || null,
+              url: detail.url,
+              googleReviews: detail.reviews || [],
+              isBarLike: isBarLike,
+            };
+          } catch (e) {
+            console.warn(`獲取 ${place.name} 詳細資料失敗:`, e);
+            onError && onError(`獲取 ${place.name} 詳細資料失敗: ${e.message}`);
+            return {
+              id: place.place_id,
+              place_id: place.place_id,
+              name: place.name,
+              location: place.geometry?.location ? { lat: place.geometry.location.lat(), lng: place.geometry.location.lng() } : null,
+              rating: null,
+              reviews: null,
+              address: "資料獲取失敗",
+              tags: [],
+              opening_hours: null,
+              is_open: null,
+              imageUrl: "",
+              images: [],
+              description: "點擊查看更多詳情...",
+              isWishlisted: false,
+              phone: null,
+              website: null,
+              url: null,
+              googleReviews: [],
+              isBarLike: false,
+            };
+          }
+        })
+      );
+      
+      return { results: finalResults, pagination: textPagination };
+
     } catch (err) {
       console.error("searchAndDisplayPlaces 發生錯誤:", err);
       onError && onError("搜尋地點時發生錯誤，請稍後再試。");
@@ -262,7 +284,7 @@ export function createGoogleMapsPlaces(coreMapRefs) {
       return await new Promise((resolve, reject) => {
         const request = {
           bounds: bounds,
-          type: BAR_PLACE_TYPES.length > 0 ? BAR_PLACE_TYPES[0] : 'bar',
+          type: BAR_PLACE_TYPES.length > 0 ? BAR_PLACE_TYPES[0] : 'bar', //
           rankBy: currentGoogle.places.RankBy.PROMINENCE,
         };
 
@@ -286,12 +308,11 @@ export function createGoogleMapsPlaces(coreMapRefs) {
                     const detail = await getPlaceDetails(place.place_id);
                     const tags = Array.isArray(detail.types)
                       ? detail.types.filter(
-                          (type) => !COMMON_PLACE_TYPES_TO_EXCLUDE.includes(type)
+                          (type) => !COMMON_PLACE_TYPES_TO_EXCLUDE.includes(type) //
                         )
                       : [];
-                    const isOpen = detail.opening_hours ? detail.opening_hours.isOpen() : null;
                     const isBarLike = Array.isArray(detail.types)
-                      ? detail.types.some((type) => BAR_PLACE_TYPES.includes(type))
+                      ? detail.types.some((type) => BAR_PLACE_TYPES.includes(type)) //
                       : false;
                     return {
                       id: detail.place_id,
@@ -306,7 +327,7 @@ export function createGoogleMapsPlaces(coreMapRefs) {
                       address: detail.formatted_address || "未知地址",
                       tags: tags,
                       opening_hours: detail.opening_hours,
-                      is_open: isOpen,
+                      is_open: detail.is_open,
                       imageUrl:
                         detail.photos && detail.photos.length > 0
                           ? detail.photos[0].getUrl({
@@ -336,6 +357,21 @@ export function createGoogleMapsPlaces(coreMapRefs) {
                       place_id: place.place_id,
                       name: place.name,
                       location: place.geometry?.location ? { lat: place.geometry.location.lat(), lng: place.geometry.location.lng() } : null,
+                      rating: null,
+                      reviews: null,
+                      address: "資料獲取失敗",
+                      tags: [],
+                      opening_hours: null,
+                      is_open: null,
+                      imageUrl: "",
+                      images: [],
+                      description: "點擊查看更多詳情...",
+                      isWishlisted: false,
+                      phone: null,
+                      website: null,
+                      url: null,
+                      googleReviews: [],
+                      isBarLike: false,
                     };
                   }
                 })
@@ -464,11 +500,15 @@ export function createGoogleMapsPlaces(coreMapRefs) {
       : "無評分";
     const reviewsCount = bar.reviews ? `(${bar.reviews} 則評論)` : "";
 
-    const openNow = bar.opening_hours
-      ? bar.opening_hours.isOpen()
-        ? '<span style="color: green;">營業中</span>'
-        : '<span style="color: red;">休息中</span>'
-      : "無營業時間資訊";
+    // 改為使用預先計算好的 is_open 屬性
+    let openNow;
+    if (bar.is_open === true) {
+      openNow = '<span style="color: green;">營業中</span>';
+    } else if (bar.is_open === false) {
+      openNow = '<span style="color: red;">休息中</span>';
+    } else {
+      openNow = '無營業時間資訊';
+    }
 
     const address = bar.address ? bar.address : "無地址資訊";
     const tags =
@@ -478,11 +518,12 @@ export function createGoogleMapsPlaces(coreMapRefs) {
           )}</div>`
         : "";
 
+    // 更正 Google Maps URL 格式
     const googleMapsUrl = bar.url
       ? bar.url
       : bar.place_id
-      ? `https://maps.google.com/?q=${encodeURIComponent(bar.name)}&query_place_id=${bar.place_id}` // 更正為標準的 Google Maps URL
-      : `https://maps.google.com/?q=${encodeURIComponent(bar.name + " " + bar.address)}`;
+      ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(bar.name)}&query_place_id=${bar.place_id}`
+      : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(bar.name + " " + bar.address)}`;
 
 
     return `
