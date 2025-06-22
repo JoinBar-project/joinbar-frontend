@@ -139,7 +139,7 @@
               @change="handleFileUpload"
             />
 
-            <button class="action-icon-button share-button" data-tooltip="分享" @click="shareBar()">
+            <button class="action-icon-button share-button" data-tooltip="分享" @click="showShareModal">
               <img
                 src="@/assets/icons/mapicons/share-icon.svg"
                 alt="分享"
@@ -185,6 +185,57 @@
       </div>
     </div>
   </transition>
+
+  <div 
+        v-if="shareModalVisible" 
+        class="share-modal-overlay w-screen h-screen fixed inset-0 flex justify-center items-center z-2000" 
+        @click.self="closeShareModal">
+    <div class="bg-white rounded-2xl w-80 shadow-xl overflow-hidden">
+      <div class="flex justify-between items-center px-6 py-5 border-b border-gray-100 text-black">
+        <h3 text-lg font-bold text-gray-800>分享</h3>
+        <button 
+          class="w-7 h-7 flex items-center justify-center rounded-full hover:bg-gray-100 text-black hover:text-gray-600 transition-colors" 
+          @click="closeShareModal">×</button>
+      </div>
+
+      <div class="flex justify-center gap-5 px-6 py-5">
+        <!-- Line -->
+        <button 
+          class="flex flex-col items-center gap-2 p-4 rounded-xl hover:bg-gray-50 transition-colors min-w-20" 
+          @click="shareToLine">
+          <div class="w-15 h-15 bg-green-500 rounded-full flex items-center justify-center">
+            <svg
+              aria-label="Line logo"
+              width="24"
+              height="24"
+              xmlns="http://www.w3.org/2000/svg"
+              viewBox="0 0 16 16"
+            >
+              <g fill-rule="evenodd" stroke-linejoin="round" fill="white">
+                <path
+                  fill-rule="nonzero"
+                  d="M12.91 6.57c.232 0 .42.19.42.42 0 .23-.188.42-.42.42h-1.17v.75h1.17a.42.42 0 1 1 0 .84h-1.59a.42.42 0 0 1-.418-.42V5.4c0-.23.188-.42.42-.42h1.59a.42.42 0 0 1-.002.84h-1.17v.75h1.17zm-2.57 2.01a.421.421 0 0 1-.757.251l-1.63-2.217V8.58a.42.42 0 0 1-.42.42.42.42 0 0 1-.418-.42V5.4a.418.418 0 0 1 .755-.249L9.5 7.366V5.4c0-.23.188-.42.42-.42.23 0 .42.19.42.42v3.18zm-3.828 0c0 .23-.188.42-.42.42a.42.42 0 0 1-.418-.42V5.4c0-.23.188-.42.42-.42.23 0 .418.19.418.42v3.18zM4.868 9h-1.59c-.23 0-.42-.19-.42-.42V5.4c0-.23.19-.42.42-.42.232 0 .42.19.42.42v2.76h1.17a.42.42 0 1 1 0 .84M16 6.87C16 3.29 12.41.376 8 .376S0 3.29 0 6.87c0 3.208 2.846 5.896 6.69 6.405.26.056.615.172.705.394.08.2.053.518.026.722 0 0-.092.565-.113.685-.035.203-.16.79.693.432.854-.36 4.607-2.714 6.285-4.646C15.445 9.594 16 8.302 16 6.87"
+                ></path>
+              </g>
+            </svg>
+          </div>
+          <span class="text-sm font-medium text-gray-700">Line</span>
+        </button>
+      </div>
+
+      <!-- 網址預覽 -->
+      <div class="bg-gray-50 px-6 py-4 border-t border-gray-100 flex gap-2 items-center">
+        <input 
+          type="text" 
+          :value="shareUrl" 
+          readonly 
+          class="flex-1 px-3 py-2 border border-gray-200 rounded-md text-xs text-gray-600 bg-white focus:outline-none focus:border-blue-500"
+          ref="urlInput"
+        />
+        <button class="bg-blue-500 hover:bg-blue-600 text-white px-3 py-2 rounded-md text-xs font-medium transition-colors whitespace-nowrap" @click="copyUrl">複製</button>
+      </div>
+    </div>
+  </div>
 </template>
 
 <script setup>
@@ -308,20 +359,52 @@ const getTagLabel = (tag) => {
   return placeTypeMap[tag] || tag;
 };
 
-const shareBar = () => {
-  const shareData = {
-    title: `${props.bar.name} - 酒吧推薦`,
-    text: `來看看這家很棒的酒吧：${props.bar.name}！評分：${props.bar.rating || 'N/A'}⭐️`,
-    url: `${props.bar.url}`
-  };
+// 分享
+const shareModalVisible = ref(false);
+const urlInput = ref(null);
 
-  // 嘗試使用原生分享
-  if (navigator.share) {
-    navigator.share(shareData);
-  } else {
-    // 複製連結作為備用
-    navigator.clipboard.writeText(`${shareData.text} ${shareData.url}`);
-    alert('分享連結已複製！');
+const showShareModal = () => {
+  shareModalVisible.value = true;
+};
+
+const closeShareModal = () => {
+  shareModalVisible.value = false;
+};
+
+const shareUrl = computed(() => {
+  return props.bar.url;
+});
+
+const copyUrl = async () => {
+  try {
+    await navigator.clipboard.writeText(shareUrl.value);
+    alert('網址已複製到剪貼簿！');
+  } catch (error) {
+    alert('複製失敗，請手動複製網址');
+  }
+};
+
+const shareToLine = () => {
+  try {
+    const barName = props.bar.name;
+    const barRating = props.bar.rating || 'N/A';
+    const barAddress = props.bar.address || '';
+    
+    const shareText = `推薦酒吧：${barName}\n評價：${barRating}星\n${barAddress}`;
+    
+    const lineShareUrl = `https://social-plugins.line.me/lineit/share?` +
+                          `url=${encodeURIComponent(shareUrl.value)}&` +
+                          `text=${encodeURIComponent(shareText)}`;
+    
+    const lineWindow = window.open(lineShareUrl, 'lineShare', 'width=600,height=500');
+    
+    if (lineWindow) {
+      closeShareModal();
+    }
+    
+  } catch (error) {
+    console.error('Line 分享失敗:', error);
+    alert('Line 分享失敗，請稍後再試');
   }
 };
 console.log('=== 酒吧 Props 內容 ===');
@@ -724,6 +807,10 @@ console.log(props.bar);
 .modal-fade-enter-from,
 .modal-fade-leave-to {
   opacity: 0;
+}
+
+.share-modal-overlay {
+  background-color: rgba(0, 0, 0, 0.5);
 }
 
 @media (max-width: 768px) {
