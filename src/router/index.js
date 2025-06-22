@@ -73,13 +73,11 @@ const routes = [
   { path: '/sub', name: 'SubEventInformation', component: EventInfo },
   { path: '/order-success/:orderNumber', name: 'OrderSuccess', component: OrderSuccess, props: true },
   { path: '/preferences', name: 'Preferences', component: Preferences, meta: { requiresAuth: true } },
-  // 404 路由放到最後，並且更精確
   { path: '/404', name: 'NotFound', component: NotFound },
   { 
     path: '/:pathMatch(.*)*', 
     name: 'Catch-All',
     component: NotFound,
-    // 可以改成直接使用組件而不是 redirect，避免重複跳轉
   }
 ];
 
@@ -99,18 +97,15 @@ router.beforeEach((to, from, next) => {
 
   const authStore = useAuthStore();
   
-  // 檢查是否為 LINE 登入回調
   const urlParams = new URLSearchParams(window.location.search);
   const isLineCallback = urlParams.get('success') || urlParams.get('error');
   
-  // 如果是 LINE 登入回調，先讓組件處理，避免在路由守衛中初始化
   if (isLineCallback && to.path === '/login') {
     console.log('LINE 登入回調偵測，跳過路由守衛初始化');
     next();
     return;
   }
 
-  // 初始化store
   if (!authStore.user && !authStore.accessToken) {
     authStore.init();
   }
@@ -119,7 +114,7 @@ router.beforeEach((to, from, next) => {
     console.log('需要登入，重導向到登入頁');
     next('/login');
   } 
-  // 只允許訪客的頁面（如登入、註冊頁）
+  
   else if (to.meta.requiresGuest && authStore.isAuthenticated) {
     console.log('已登入用戶，重導向到首頁');
     next('/home');

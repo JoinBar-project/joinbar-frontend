@@ -260,27 +260,38 @@ export function createGoogleMapsCore(mapContainerRef, options) {
   };
 
   const clearMarkers = (type = "all") => {
-    if (type === "bars" || type === "all") {
-      markers.forEach((marker) => {
-        if (marker) marker.setMap(null);
-      });
-      markers = [];
-    }
-    if (type === "search" || type === "all") {
-      searchMarkers.forEach((marker) => {
-        if (marker) marker.setMap(null);
-      });
-      searchMarkers = [];
-    }
-    closeInfoWindow();
+  const safeClear = (markerList) => {
+    markerList.forEach((marker) => {
+      if (
+        marker &&
+        typeof marker.setMap === "function" &&
+        (marker instanceof window.google.maps.Marker)
+      ) {
+        marker.setMap(null);
+      }
+    });
   };
+
+  if (type === "bars" || type === "all") {
+    safeClear(markers);
+    markers = [];
+  }
+
+  if (type === "search" || type === "all") {
+    safeClear(searchMarkers);
+    searchMarkers = [];
+  }
+
+  closeInfoWindow();
+};
+
 
   const showInfoWindow = (marker, content) => {
     if (infoWindow && map) {
       infoWindow.setContent(content);
       infoWindow.open(map, marker);
     } else {
-      console.warn("無法顯示 InfoWindow：InfoWindow 或 Map 未初始化。");
+      console.warn("無法顯示 InfoWindow：地圖未初始化。", map);
     }
   };
 
@@ -365,8 +376,12 @@ export function createGoogleMapsCore(mapContainerRef, options) {
   }
 
   function getPlacesService() {
-    return window.google?.maps?.places && map ? new window.google.maps.places.PlacesService(map) : null;
+  if (!(map instanceof window.google.maps.Map)) {
+    console.warn("❗ PlacesService 無法建立，map 尚未初始化");
+    return null;
   }
+  return new window.google.maps.places.PlacesService(map);
+}
 
   function getAutocompleteService() {
     return window.google?.maps?.places ? new window.google.maps.places.AutocompleteService() : null;
