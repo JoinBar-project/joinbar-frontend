@@ -19,26 +19,26 @@ export function createGoogleMapsPlaces(coreMapRefs) {
   } = coreMapRefs;
 
   const getPlacesService = () => {
-    const map = typeof coreMapRefs.map === 'function' ? coreMapRefs.map() : coreMapRefs.map;
-    const google = typeof coreMapRefs.google === 'function' ? coreMapRefs.google() : coreMapRefs.google;
-    return google && map ? new google.places.PlacesService(map) : null;
+    const currentMap = map();
+    const currentGoogle = google();
+    return currentGoogle && currentMap ? new currentGoogle.places.PlacesService(currentMap) : null;
   };
 
   const getPlacePredictions = async (input) => {
-    const autocompleteService = coreMapRefs.autocompleteService();
-    const google = typeof coreMapRefs.google === 'function' ? coreMapRefs.google() : coreMapRefs.google;
-    if (!autocompleteService || !google) {
+    const currentAutocompleteService = autocompleteService();
+    const currentGoogle = google();
+    if (!currentAutocompleteService || !currentGoogle) {
       console.error("AutocompleteService 未初始化。");
       onError && onError("地點建議服務未準備好，請檢查地圖載入。");
       return [];
     }
     try {
       const { predictions } =
-        await autocompleteService.getPlacePredictions({
+        await currentAutocompleteService.getPlacePredictions({
           input: input,
-          bounds: new google.LatLngBounds(
-            new google.LatLng(TAIWAN_BOUNDS.south, TAIWAN_BOUNDS.west),
-            new google.LatLng(TAIWAN_BOUNDS.north, TAIWAN_BOUNDS.east)
+          bounds: new currentGoogle.LatLngBounds(
+            new currentGoogle.LatLng(TAIWAN_BOUNDS.south, TAIWAN_BOUNDS.west),
+            new currentGoogle.LatLng(TAIWAN_BOUNDS.north, TAIWAN_BOUNDS.east)
           ),
           componentRestrictions: { country: "tw" },
           types: ["establishment", "geocode"],
@@ -52,10 +52,10 @@ export function createGoogleMapsPlaces(coreMapRefs) {
   };
 
   const getPlaceDetails = (placeId) => {
-    const placesService = getPlacesService();
-    const google = typeof coreMapRefs.google === 'function' ? coreMapRefs.google() : coreMapRefs.google;
+    const currentPlacesService = getPlacesService();
+    const currentGoogle = google();
     return new Promise((resolve, reject) => {
-      if (!placesService || !google) {
+      if (!currentPlacesService || !currentGoogle) {
         const errorMessage = "PlacesService 未初始化";
         onError && onError(errorMessage);
         reject(new Error(errorMessage));
@@ -80,8 +80,8 @@ export function createGoogleMapsPlaces(coreMapRefs) {
           "website",
         ],
       };
-      placesService.getDetails(request, (place, status) => {
-        if (status === google.places.PlacesServiceStatus.OK && place) {
+      currentPlacesService.getDetails(request, (place, status) => {
+        if (status === currentGoogle.places.PlacesServiceStatus.OK && place) {
           resolve(place);
         } else {
           const errorMessage = "取得詳細資料失敗: " + status;
@@ -94,16 +94,16 @@ export function createGoogleMapsPlaces(coreMapRefs) {
   };
 
   const searchAndDisplayPlaces = async (query, maxResults = 20) => {
-    const placesService = getPlacesService();
-    const google = typeof coreMapRefs.google === 'function' ? coreMapRefs.google() : coreMapRefs.google;
-    if (!placesService || !google) {
+    const currentPlacesService = getPlacesService();
+    const currentGoogle = google();
+    if (!currentPlacesService || !currentGoogle) {
       const errorMessage = "PlacesService 或 Google Maps API 未初始化。";
       console.error(errorMessage);
       onError && onError(errorMessage);
       return { results: [], pagination: null };
     }
 
-    if (coreMapRefs.isFetching) coreMapRefs.isFetching.value = true;
+    if (isFetching) isFetching.value = true;
     let allResults = [];
     let lastPagination = null;
 
@@ -127,7 +127,7 @@ export function createGoogleMapsPlaces(coreMapRefs) {
         };
 
         const handleResults = async (results, status, pagination) => {
-          if (status === google.places.PlacesServiceStatus.OK && results) {
+          if (status === currentGoogle.places.PlacesServiceStatus.OK && results) {
             allResults = allResults.concat(results);
             lastPagination = pagination;
             if (
@@ -204,7 +204,7 @@ export function createGoogleMapsPlaces(coreMapRefs) {
               });
             }
           } else if (
-            status === google.places.PlacesServiceStatus.ZERO_RESULTS
+            status === currentGoogle.places.PlacesServiceStatus.ZERO_RESULTS
           ) {
             resolve({ results: [], pagination: null });
           } else {
@@ -214,14 +214,14 @@ export function createGoogleMapsPlaces(coreMapRefs) {
             reject(new Error(errorMessage));
           }
         };
-        placesService.textSearch(request, handleResults);
+        currentPlacesService.textSearch(request, handleResults);
       });
     } catch (err) {
       console.error("searchAndDisplayPlaces 發生錯誤:", err);
       onError && onError("搜尋地點時發生錯誤，請稍後再試。");
       return { results: [], pagination: null };
     } finally {
-      if (coreMapRefs.isFetching) coreMapRefs.isFetching.value = false;
+      if (isFetching) isFetching.value = false;
     }
   };
 
@@ -229,10 +229,10 @@ export function createGoogleMapsPlaces(coreMapRefs) {
     showLoadingOverlay = true,
     maxResults = 20
   ) => {
-    const map = coreMapRefs.map;
-    const placesService = getPlacesService();
-    const google = typeof coreMapRefs.google === 'function' ? coreMapRefs.google() : coreMapRefs.google;
-    if (!map || !placesService || !google) {
+    const currentMap = map();
+    const currentPlacesService = getPlacesService();
+    const currentGoogle = google();
+    if (!currentMap || !currentPlacesService || !currentGoogle) {
       const errorMessage = "地圖、PlacesService 或 Google Maps API 未準備好。";
       console.warn(errorMessage);
       onError && onError(errorMessage);
@@ -240,17 +240,19 @@ export function createGoogleMapsPlaces(coreMapRefs) {
     }
 
     if (showLoadingOverlay) {
-      if (coreMapRefs.isFetching) coreMapRefs.isFetching.value = true;
+      if (isFetching) isFetching.value = true;
     }
 
-    const bounds = map.getBounds();
-    if (!bounds) {
+    const bounds = currentMap.getBounds();
+    // 增強檢查：如果地圖邊界無效，則及早終止
+    if (!bounds || typeof bounds.isEmpty !== 'function' || bounds.isEmpty()) {
       if (showLoadingOverlay) {
-        if (coreMapRefs.isFetching) coreMapRefs.isFetching.value = false;
+        if (isFetching) isFetching.value = false;
       }
-      console.warn("無法取得地圖邊界。");
-      onError && onError("無法取得地圖邊界，請稍後再試。");
-      return { results: [], pagination: null };
+      const errorMessage = "無法取得有效地圖邊界。";
+      console.warn(errorMessage);
+      onError && onError(errorMessage); // 觸發 MapView 中的 onError 顯示給用戶
+      return { results: [], pagination: null }; // 返回空結果
     }
 
     let allResults = [];
@@ -260,12 +262,12 @@ export function createGoogleMapsPlaces(coreMapRefs) {
       return await new Promise((resolve, reject) => {
         const request = {
           bounds: bounds,
-          type: BAR_PLACE_TYPES,
-          rankBy: google.places.RankBy.PROMINENCE,
+          type: BAR_PLACE_TYPES.length > 0 ? BAR_PLACE_TYPES[0] : 'bar',
+          rankBy: currentGoogle.places.RankBy.PROMINENCE,
         };
 
         const handleResults = async (results, status, pagination) => {
-          if (status === google.places.PlacesServiceStatus.OK && results) {
+          if (status === currentGoogle.places.PlacesServiceStatus.OK && results) {
             allResults = allResults.concat(results);
             lastPagination = pagination;
             if (
@@ -342,7 +344,7 @@ export function createGoogleMapsPlaces(coreMapRefs) {
               });
             }
           } else if (
-            status === google.places.PlacesServiceStatus.ZERO_RESULTS
+            status === currentGoogle.places.PlacesServiceStatus.ZERO_RESULTS
           ) {
             resolve({ results: [], pagination: null });
           } else {
@@ -352,7 +354,7 @@ export function createGoogleMapsPlaces(coreMapRefs) {
             reject(new Error(errorMessage));
           }
         };
-        placesService.nearbySearch(request, handleResults);
+        currentPlacesService.nearbySearch(request, handleResults);
       });
     } catch (err) {
       console.error("searchBarsInMapBounds 發生錯誤:", err);
@@ -360,23 +362,23 @@ export function createGoogleMapsPlaces(coreMapRefs) {
       return { results: [], pagination: null };
     } finally {
       if (showLoadingOverlay) {
-        if (coreMapRefs.isFetching) coreMapRefs.isFetching.value = false;
+        if (isFetching) isFetching.value = false;
       }
     }
   };
 
   const getGeocode = async (address) => {
-    const geocoderService = coreMapRefs.geocoderService();
-    const google = typeof coreMapRefs.google === 'function' ? coreMapRefs.google() : coreMapRefs.google;
-    if (!geocoderService) {
+    const currentGeocoderService = geocoderService();
+    const currentGoogle = google();
+    if (!currentGeocoderService) {
       const errorMessage = "GeocoderService 未初始化。";
       console.error(errorMessage);
       onError && onError(errorMessage);
       return null;
     }
     return new Promise((resolve, reject) => {
-      geocoderService.geocode({ address: address }, (results, status) => {
-        if (status === google.GeocoderStatus.OK && results[0]) {
+      currentGeocoderService.geocode({ address: address }, (results, status) => {
+        if (status === currentGoogle.GeocoderStatus.OK && results[0]) {
           const location = {
             lat: results[0].geometry.location.lat(),
             lng: results[0].geometry.location.lng(),
@@ -397,13 +399,13 @@ export function createGoogleMapsPlaces(coreMapRefs) {
     destination,
     travelMode = "DRIVING"
   ) => {
-    const directionsService = coreMapRefs.directionsService();
-    const directionsRenderer = coreMapRefs.directionsRenderer();
-    const google = typeof coreMapRefs.google === 'function' ? coreMapRefs.google() : coreMapRefs.google;
+    const currentDirectionsService = directionsService();
+    const currentDirectionsRenderer = directionsRenderer();
+    const currentGoogle = google();
     if (
-      !directionsService ||
-      !directionsRenderer ||
-      !google
+      !currentDirectionsService ||
+      !currentDirectionsRenderer ||
+      !currentGoogle
     ) {
       const errorMessage = "DirectionsService 或 DirectionsRenderer 未初始化。";
       console.error(errorMessage);
@@ -413,7 +415,7 @@ export function createGoogleMapsPlaces(coreMapRefs) {
 
     if (origin === "" || destination === "") {
       console.warn("起點或終點為空，無法計算路線。");
-      directionsRenderer.setDirections({ routes: [] });
+      currentDirectionsRenderer.setDirections({ routes: [] });
       onError && onError("請輸入起點和終點以計算路線。");
       return;
     }
@@ -422,33 +424,35 @@ export function createGoogleMapsPlaces(coreMapRefs) {
       const request = {
         origin: origin,
         destination: destination,
-        travelMode: google.maps.TravelMode[travelMode.toUpperCase()],
+        travelMode: currentGoogle.maps.TravelMode[travelMode.toUpperCase()],
       };
 
-      const response = await directionsService.route(request);
+      const response = await currentDirectionsService.route(request);
 
-      if (response.status === google.maps.DirectionsStatus.OK) {
-        directionsRenderer.setDirections(response);
+      if (response.status === currentGoogle.maps.DirectionsStatus.OK) {
+        directionsRenderer().setMap(map()); // 確保渲染器綁定到地圖
+        currentDirectionsRenderer.setDirections(response);
       } else {
         const errorMessage = "路線計算失敗:" + response.status;
         console.error(errorMessage);
-        directionsRenderer.setDirections({ routes: [] });
+        currentDirectionsRenderer.setDirections({ routes: [] });
         onError && onError(errorMessage);
         throw new Error(errorMessage);
       }
     } catch (error) {
       const errorMessage = `計算並顯示路線時發生錯誤: ${error.message}`;
       console.error(errorMessage);
-      directionsRenderer.setDirections({ routes: [] });
+      currentDirectionsRenderer.setDirections({ routes: [] });
       onError && onError(errorMessage);
       throw error;
     }
   };
 
   const clearDirections = () => {
-    const directionsRenderer = coreMapRefs.directionsRenderer();
-    if (directionsRenderer) {
-      directionsRenderer.setDirections({ routes: [] });
+    const currentDirectionsRenderer = directionsRenderer();
+    if (currentDirectionsRenderer) {
+      currentDirectionsRenderer.setDirections({ routes: [] });
+      currentDirectionsRenderer.setMap(null); // 清除路線時解除與地圖的綁定
     }
   };
 
@@ -477,8 +481,8 @@ export function createGoogleMapsPlaces(coreMapRefs) {
     const googleMapsUrl = bar.url
       ? bar.url
       : bar.place_id
-      ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(bar.name + " " + bar.address)}&query_place_id=${bar.place_id}`
-      : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(bar.name + " " + bar.address)}`;
+      ? `https://maps.google.com/?q=${encodeURIComponent(bar.name)}&query_place_id=${bar.place_id}` // 更正為標準的 Google Maps URL
+      : `https://maps.google.com/?q=${encodeURIComponent(bar.name + " " + bar.address)}`;
 
 
     return `

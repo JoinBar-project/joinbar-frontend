@@ -118,6 +118,7 @@ const {
   searchAndDisplayPlaces,
   searchBarsInMapBounds,
   clearMarkers,
+  addMarker,
   google: googleMapsInstance,
   isReady,
   formatBarInfoWindowContent,
@@ -127,7 +128,7 @@ const {
   mapId: myMapId,
   onError: (msg) => {
     console.error("useGoogleMaps 錯誤:", msg);
-    alert(`地圖載入失敗：${msg}，請檢查API Key或網路連線。`);
+    alert(`地圖載入失敗：${msg}，請檢查API Key或網路連線。`); //
   },
 });
 
@@ -152,6 +153,8 @@ const isLoading = ref(false);
 const googleBars = ref([]);
 const mainBarForSearch = ref(null);
 const selectedTag = ref(null);
+
+const isManualSearchActive = ref(false);
 
 const combinedLoading = computed(
   () => googleMapsLoading.value || isFetching.value || isLoading.value
@@ -216,8 +219,8 @@ const filteredBars = computed(() => {
     }
   }
 
-  if (map && typeof googleMapsInstance === 'function' && googleMapsInstance() && googleMapsInstance().maps && googleMapsInstance().maps.geometry && googleMapsInstance().maps.geometry.spherical) {
-    const mapCenter = map.value.getCenter && map.value.getCenter();
+  if (map() && typeof googleMapsInstance === 'function' && googleMapsInstance() && googleMapsInstance().maps && googleMapsInstance().maps.geometry && googleMapsInstance().maps.geometry.spherical) {
+    const mapCenter = map().getCenter && map().getCenter();
     if (mapCenter) {
       const centerLatLng = new window.google.maps.LatLng(
         mapCenter.lat(),
@@ -336,6 +339,7 @@ async function selectSuggestion(suggestion) {
   searchQuery.value = suggestion.description;
   suggestions.value = [];
   isLoading.value = true;
+  isManualSearchActive.value = true;
   clearMarkers("all");
   closeInfoWindow();
 
@@ -380,9 +384,18 @@ async function selectSuggestion(suggestion) {
         googleReviews: detail.reviews || [],
       };
       mainBarForSearch.value = barDetail;
-      googleBars.value = [barDetail];
-      displayBarsOnMap([barDetail], formatBarInfoWindowContent);
-      panTo(detail.geometry.location);
+      googleBars.value = [];
+      addMarker(
+        {
+          location: barDetail.location,
+          title: barDetail.name,
+          data: barDetail,
+          isBarLike: barDetail.isBarLike === true,
+          infoContent: formatBarInfoWindowContent(barDetail),
+        },
+        "search"
+      );
+      panTo(detail.geometry.location, 15);
     } else {
       alert("無法獲取選定地點的詳細資訊。");
     }
@@ -390,6 +403,9 @@ async function selectSuggestion(suggestion) {
     alert("獲取地點詳細資訊失敗，請重試。");
   } finally {
     isLoading.value = false;
+    setTimeout(() => {
+      isManualSearchActive.value = false;
+    }, 500);
   }
 }
 
@@ -403,6 +419,7 @@ async function handleSearch() {
     return;
   }
   isLoading.value = true;
+  isManualSearchActive.value = true;
   clearMarkers("all");
   closeInfoWindow();
 
@@ -418,11 +435,12 @@ async function handleSearch() {
 
     const result = await searchAndDisplayPlaces(searchQuery.value);
     mainBars = result && result.results ? result.results : [];
+
     if ((!mainBars || mainBars.length === 0) && typeForNearby) {
-      const google = googleMapsInstance.value;
+      const google = googleMapsInstance();
       let center = null;
-      if (map.value && map.value.getCenter) {
-        const c = map.value.getCenter();
+      if (map() && map().getCenter) {
+        const c = map().getCenter();
         center = new window.google.maps.LatLng(c.lat(), c.lng());
       } else {
         center = new window.google.maps.LatLng(25.0478, 121.5170);
@@ -430,9 +448,9 @@ async function handleSearch() {
       const fallbackRequest = {
         location: center,
         radius: 5000,
-        type: typeForNearby,
+        type: Array.isArray(typeForNearby) && typeForNearby.length > 0 ? typeForNearby[0] : typeForNearby,
       };
-      const service = new google.places.PlacesService(map.value);
+      const service = new google.places.PlacesService(map());
       mainBars = await new Promise((resolve) => {
         service.nearbySearch(fallbackRequest, async (results, status) => {
           if (status === google.places.PlacesServiceStatus.OK && results) {
@@ -491,8 +509,8 @@ async function handleSearch() {
     if (mainBars && mainBars.length > 0) {
       mainBarForSearch.value = null;
       googleBars.value = mainBars;
-      if (googleMapsInstance.value && mainBars[0] && mainBars[0].location) {
-        panTo(mainBars[0].location, 15);
+      if (googleMapsInstance() && googleBars.value.length > 0 && googleBars.value[0].location) {
+        panTo(googleBars.value[0].location, 15);
       }
     } else {
       mainBarForSearch.value = null;
@@ -505,33 +523,40 @@ async function handleSearch() {
     alert("搜尋失敗，請稍後再試。");
   } finally {
     isLoading.value = false;
+    setTimeout(() => {
+      isManualSearchActive.value = false;
+    }, 500);
   }
 }
 
 async function handleGetCurrentLocation() {
   isLoading.value = true;
+  isManualSearchActive.value = true;
+  clearMarkers("all");
+  closeInfoWindow();
+
   try {
-    clearMarkers("all");
-    closeInfoWindow();
     const sidebarWidth = document.querySelector('.bar-list-sidebar')?.offsetWidth || 0;
     const currentLocation = await getMapCurrentLocation(sidebarWidth);
     if (currentLocation) {
-
-      const bars = await searchBarsInMapBounds(false);
+      const bars = await searchBarsInMapBounds(false); //
       googleBars.value = bars;
     }
   } catch (err) {
-    const google = googleMapsInstance.value;
-    if (google && map.value) {
+    const google = googleMapsInstance();
+    if (google && map()) {
       const fallbackLocation = new window.google.maps.LatLng(25.0478, 121.5170);
-      map.value.setCenter(fallbackLocation);
-      map.value.setZoom(15);
-      const bars = await searchBarsInMapBounds(false);
+      map().setCenter(fallbackLocation);
+      map().setZoom(15);
+      const bars = await searchBarsInMapBounds(false); //
       googleBars.value = bars;
     }
-    alert("無法獲取您的目前位置，請檢查瀏覽器權限設定");
+    alert("無法獲取您的目前位置，請檢查瀏覽器權限設定"); //
   } finally {
     isLoading.value = false;
+    setTimeout(() => {
+      isManualSearchActive.value = false;
+    }, 500);
   }
 }
 
@@ -556,23 +581,17 @@ async function handleBarSelected(bar) {
   }
   selectedBarForDetail.value = bar || {};
   isBarDetailModalOpen.value = true;
-  if (bar.location && map && googleMapsInstance()) {
-    panTo(bar.location);
-    const tempMarker = new window.google.maps.Marker({
-      position: new window.google.maps.LatLng(
-        bar.location.lat,
-        bar.location.lng
-      ),
-      map: map,
+  if (bar.location && map() && googleMapsInstance()) {
+    panTo(bar.location, 15);
+    clearMarkers("all");
+    const tempMarker = addMarker({
+      location: bar.location,
       title: bar.name,
-      icon: {
-        url: bar.isBarLike ? "/wine.png" : "/MapMarker.png",
-        scaledSize: new window.google.maps.Size(40, 40),
-        anchor: new window.google.maps.Point(20, 40),
-      },
-    });
-    const infoContent = formatBarInfoWindowContent(bar);
-    showInfoWindow(tempMarker, infoContent);
+      data: bar,
+      isBarLike: bar.isBarLike === true,
+      infoContent: formatBarInfoWindowContent(bar),
+    }, "search");
+    showInfoWindow(tempMarker, formatBarInfoWindowContent(bar));
   }
 }
 
@@ -580,6 +599,15 @@ function closeBarDetailModal() {
   isBarDetailModalOpen.value = false;
   selectedBarForDetail.value = null;
   closeInfoWindow();
+  clearMarkers("search"); //
+  if (!isManualSearchActive.value && !searchQuery.value) {
+    setTimeout(async () => {
+      const barsInBounds = await searchBarsInMapBounds(false); //
+      googleBars.value = barsInBounds;
+    }, 100);
+  } else if (searchQuery.value) {
+    handleSearch();
+  }
 }
 
 function handleToggleWishlist(barId) {
@@ -607,6 +635,8 @@ function handleTagClick(tag) {
     selectedTag.value = null;
     searchQuery.value = "";
     googleBars.value = [];
+    isManualSearchActive.value = false;
+    clearMarkers("all");
   } else {
     selectedTag.value = tag;
     searchQuery.value = tag;
@@ -625,15 +655,18 @@ watch(
 );
 
 watch(isReady, (ready) => {
-  if (ready && map && typeof googleMapsInstance === 'function' && googleMapsInstance()) {
+  if (ready && map() && typeof googleMapsInstance === 'function' && googleMapsInstance()) {
     const onMapIdleHandler = async () => {
-      if (!isFetching.value && !isLoading.value) {
-        const barsInBounds = await searchBarsInMapBounds(false);
+      if (!isFetching.value && !isLoading.value && !isManualSearchActive.value && !searchQuery.value) {
+        console.log("Map idle: Auto searching bars in bounds."); //
+        const barsInBounds = await searchBarsInMapBounds(false); //
         googleBars.value = barsInBounds;
+      } else {
+        console.log("Map idle: Skipping auto search. Manual search active or loading data or search query present."); //
       }
     };
-    if (map.value && map.value.addListener) {
-      map.value.addListener("idle", onMapIdleHandler);
+    if (map() && map().addListener) {
+      map().addListener("idle", onMapIdleHandler);
     }
   }
 });
@@ -641,7 +674,7 @@ watch(isReady, (ready) => {
 watch(
   filteredBars,
   (newBars) => {
-    if (map && typeof googleMapsInstance === 'function' && googleMapsInstance()) {
+    if (map() && typeof googleMapsInstance === 'function' && googleMapsInstance()) {
       displayBarsOnMap(newBars, formatBarInfoWindowContent);
     }
   },
@@ -649,9 +682,6 @@ watch(
 );
 
 watch(selectedBar, (newVal) => {
-  if (!newVal && !isBarDetailModalOpen.value) {
-    closeInfoWindow();
-  }
 });
 
 onMounted(async () => {
@@ -664,33 +694,36 @@ onMounted(async () => {
       let gotLocation = false;
       try {
         const sidebarWidth = document.querySelector('.bar-list-sidebar')?.offsetWidth || 0;
+        // 初始載入時，直接獲取當前位置並搜尋地圖範圍內的酒吧
         const currentLocation = await getMapCurrentLocation(sidebarWidth);
         if (currentLocation) {
           gotLocation = true;
-          const bars = await searchBarsInMapBounds(false);
+          const bars = await searchBarsInMapBounds(false); //
           googleBars.value = bars;
         }
       } catch (geoErr) {
-        const google = googleMapsInstance.value;
-        if (google && map.value) {
+        console.error("嘗試獲取當前位置失敗:", geoErr); // 添加更詳細的錯誤日誌
+        const google = googleMapsInstance();
+        if (google && map()) {
           const fallbackLocation = new window.google.maps.LatLng(25.0478, 121.5170);
-          map.value.setCenter(fallbackLocation);
-          map.value.setZoom(15);
-          const bars = await searchBarsInMapBounds(false);
+          map().setCenter(fallbackLocation);
+          map().setZoom(15);
+          const bars = await searchBarsInMapBounds(false); //
           googleBars.value = bars;
         }
         if (!gotLocation) {
-          alert("無法獲取您的目前位置");
+          alert("無法獲取您的目前位置，請檢查瀏覽器權限設定或網路連接。"); //
         }
       }
     } else {
       console.error("錯誤：地圖容器 ref 未綁定，無法初始化地圖。");
     }
   } catch (err) {
-    console.error("地圖或數據載入失敗:", err);
-    alert("初始化失敗，請檢查控制台錯誤。");
+    console.error("地圖或數據載入失敗:", err); //
+    alert("初始化失敗，請檢查控制台錯誤。"); //
   } finally {
     isLoading.value = false;
+    isManualSearchActive.value = false;
   }
 });
 

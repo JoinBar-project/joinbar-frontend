@@ -6,24 +6,24 @@ export function createGoogleMapsCore(mapContainerRef, options) {
   const { googleMapsApiKey, onLoading, onLoaded, onError, mapId, onMapIdle } =
     options;
 
-  let map = null;
-  let markers = [];
-  let searchMarkers = [];
-  let infoWindow = null;
-  let loading = true;
-  let isFetching = false;
-  let isReady = ref(false);
+  const map = shallowRef(null);
+  const markers = ref([]); // 主要用於顯示多個酒吧列表的標記
+  const searchMarkers = ref([]); // 用於顯示單一搜尋結果（例如點擊建議）或當前位置的標記
+  const infoWindow = shallowRef(null);
+  const loading = ref(true);
+  const isFetching = ref(false);
+  const isReady = ref(false);
 
   const barIconUrl = "/wine.png";
   const nowIconUrl = "/now.png";
 
   const loadGoogleMapsAPI = async () => {
     if (window.google && window.google.maps) {
-      loading = false;
+      loading.value = false;
       onLoaded && onLoaded();
       return;
     }
-    loading = true;
+    loading.value = true;
     onLoading && onLoading();
     return new Promise((resolve, reject) => {
       const existingScript = document.querySelector(
@@ -31,17 +31,16 @@ export function createGoogleMapsCore(mapContainerRef, options) {
       );
       if (existingScript) {
         if (window.google && window.google.maps) {
-          loading = false;
+          loading.value = false;
           onLoaded && onLoaded();
           resolve();
         } else {
           if (!window.initMapCallback) {
             window.initMapCallback = () => {
-              loading = false;
+              loading.value = false;
               onLoaded && onLoaded();
               resolve();
             };
-            // 檢查 script src 是否已經包含 callback，避免重複添加
             if (!existingScript.src.includes("callback=initMapCallback")) {
               existingScript.src += "&callback=initMapCallback";
             }
@@ -55,13 +54,13 @@ export function createGoogleMapsCore(mapContainerRef, options) {
       script.defer = true;
       if (!window.initMapCallback) {
         window.initMapCallback = () => {
-          loading = false;
+          loading.value = false;
           onLoaded && onLoaded();
           resolve();
         };
       }
       script.onerror = (e) => {
-        loading = false;
+        loading.value = false;
         const errorMessage = "Google Maps API 載入失敗";
         onError && onError(errorMessage);
         reject(new Error(errorMessage));
@@ -86,7 +85,7 @@ export function createGoogleMapsCore(mapContainerRef, options) {
       onError && onError(errorMessage);
       return;
     }
-    if (map) {
+    if (map.value) {
       console.log("地圖已初始化，跳過重複初始化。");
       return;
     }
@@ -94,7 +93,7 @@ export function createGoogleMapsCore(mapContainerRef, options) {
       console.log('[DEBUG] 地圖容器 DOM:', mapContainerRef.value);
       console.log('[DEBUG] window.google:', window.google);
       console.log('[DEBUG] window.google.maps:', window.google && window.google.maps);
-      map = new window.google.maps.Map(mapContainerRef.value, {
+      map.value = new window.google.maps.Map(mapContainerRef.value, {
         center: DEFAULT_TAIPEI_LOCATION,
         zoom: 14,
         mapTypeControl: false,
@@ -107,14 +106,14 @@ export function createGoogleMapsCore(mapContainerRef, options) {
         },
         scrollwheel: true,
       });
-      console.log('[DEBUG] 地圖物件:', map);
+      console.log('[DEBUG] 地圖物件:', map.value);
 
-      infoWindow = new window.google.maps.InfoWindow({
+      infoWindow.value = new window.google.maps.InfoWindow({
         content: "",
         pixelOffset: new window.google.maps.Size(0, -30),
       });
 
-      window.google.maps.event.addListener(map, "idle", () => {
+      window.google.maps.event.addListener(map.value, "idle", () => {
         if (onMapIdle && typeof onMapIdle === "function") {
           onMapIdle();
         }
@@ -136,31 +135,32 @@ export function createGoogleMapsCore(mapContainerRef, options) {
   };
 
   const getCurrentLocation = (offsetWidth = 0) => {
-    isFetching = true;
+    isFetching.value = true;
     return new Promise((resolve, reject) => {
       if (!navigator.geolocation) {
-        isFetching = false;
+        isFetching.value = false;
         const msg = "瀏覽器不支援地理位置功能。";
         onError && onError(msg);
         reject(new Error(msg));
         return;
       }
-      if (!map || !window.google.maps) {
-        isFetching = false;
+      if (!map.value || !window.google.maps) {
+        isFetching.value = false;
         const msg = "地圖或 Google Maps API 未初始化。";
         onError && onError(msg);
         reject(new Error(msg));
         return;
       }
 
+      clearMarkers("all");
+
       navigator.geolocation.getCurrentPosition(
         (position) => {
+          // 修正：確保 pos 在作用域內被定義
           const pos = {
             lat: position.coords.latitude,
             lng: position.coords.longitude,
           };
-
-          clearMarkers("search");
 
           addMarker(
             {
@@ -173,11 +173,11 @@ export function createGoogleMapsCore(mapContainerRef, options) {
           );
 
           panTo(pos, 15, offsetWidth);
-          isFetching = false;
+          isFetching.value = false;
           resolve(pos);
         },
         (error) => {
-          isFetching = false;
+          isFetching.value = false;
           let msg = "";
           switch (error.code) {
             case error.PERMISSION_DENIED:
@@ -204,7 +204,7 @@ export function createGoogleMapsCore(mapContainerRef, options) {
   };
 
   const addMarker = (options, type = "bars") => {
-    if (!map || !window.google.maps) return null;
+    if (!map.value || !window.google.maps) return null;
 
     const position = new window.google.maps.LatLng(
       options.location.lat,
@@ -212,7 +212,7 @@ export function createGoogleMapsCore(mapContainerRef, options) {
     );
     const markerOptions = {
       position: position,
-      map: map,
+      map: map.value,
       title: options.title,
     };
 
@@ -241,7 +241,7 @@ export function createGoogleMapsCore(mapContainerRef, options) {
     const marker = new window.google.maps.Marker(markerOptions);
 
     if (options.infoContent || options.data) {
-      if (infoWindow) {
+      if (infoWindow.value) {
         marker.addListener("click", () => {
           const content = options.infoContent;
           showInfoWindow(marker, content);
@@ -252,71 +252,71 @@ export function createGoogleMapsCore(mapContainerRef, options) {
     }
 
     if (type === "bars") {
-      markers.push(marker);
+      markers.value.push(marker);
     } else if (type === "search") {
-      searchMarkers.push(marker);
+      searchMarkers.value.push(marker);
     }
     return marker;
   };
 
   const clearMarkers = (type = "all") => {
+    closeInfoWindow();
     if (type === "bars" || type === "all") {
-      markers.forEach((marker) => {
+      markers.value.forEach((marker) => {
         if (marker) marker.setMap(null);
       });
-      markers = [];
+      markers.value = [];
     }
     if (type === "search" || type === "all") {
-      searchMarkers.forEach((marker) => {
+      searchMarkers.value.forEach((marker) => {
         if (marker) marker.setMap(null);
       });
-      searchMarkers = [];
+      searchMarkers.value = [];
     }
-    closeInfoWindow();
   };
 
   const showInfoWindow = (marker, content) => {
-    if (infoWindow && map) {
-      infoWindow.setContent(content);
-      infoWindow.open(map, marker);
+    if (infoWindow.value && map.value) {
+      infoWindow.value.setContent(content);
+      infoWindow.value.open(map.value, marker);
     } else {
       console.warn("無法顯示 InfoWindow：InfoWindow 或 Map 未初始化。");
     }
   };
 
   const closeInfoWindow = () => {
-    if (infoWindow && typeof infoWindow.close === 'function') {
-      infoWindow.close();
+    if (infoWindow.value && typeof infoWindow.value.close === 'function') {
+      infoWindow.value.close();
     } else {
       console.warn("無法關閉 InfoWindow：InfoWindow 未初始化或沒有 close 方法。");
     }
   };
 
   const panTo = (latLng, zoomLevel = null, offsetWidth = 0) => {
-    if (!map || !window.google.maps) return;
+    if (!map.value || !window.google.maps) return;
 
-    map.panTo(latLng);
+    map.value.panTo(latLng);
 
     if (zoomLevel) {
-      map.setZoom(zoomLevel);
+      map.value.setZoom(zoomLevel);
     }
 
     if (offsetWidth > 0) {
-      window.google.maps.event.addListenerOnce(map, "idle", () => {
+      window.google.maps.event.addListenerOnce(map.value, "idle", () => {
         const offset = offsetWidth / 2;
-        map.panBy(-offset, 0);
+        map.value.panBy(-offset, 0);
       });
     }
   };
 
   const setZoom = (level) => {
-    if (map) {
-      map.setZoom(level);
+    if (map.value) {
+      map.value.setZoom(level);
     }
   };
 
   const displayBarsOnMap = (bars, formatBarInfoWindowContent) => {
-    if (!map || !window.google.maps) {
+    if (!map.value || !window.google.maps) {
       console.warn("地圖或 Google 實例未準備好，無法顯示酒吧標記。");
       return;
     }
@@ -352,20 +352,48 @@ export function createGoogleMapsCore(mapContainerRef, options) {
 
     if (!bounds.isEmpty()) {
       if (bars.length === 1) {
-        map.panTo(bounds.getCenter());
-        map.setZoom(15);
+        map.value.panTo(bounds.getCenter());
+        map.value.setZoom(15);
       } else {
-        map.fitBounds(bounds);
+        map.value.fitBounds(bounds);
       }
     }
   };
 
   function getMap() {
-    return map;
+    return map.value;
+  }
+
+  function getInfoWindow() {
+    return infoWindow.value;
+  }
+
+  function getMarkers() {
+    return markers.value;
+  }
+
+  function getSearchMarkers() {
+    return searchMarkers.value;
+  }
+
+  function getLoadingStatus() {
+    return loading.value;
+  }
+
+  function getIsFetchingStatus() {
+    return isFetching.value;
+  }
+
+  function getIsReadyStatus() {
+    return isReady.value;
+  }
+
+  function getGoogleMaps() {
+    return window.google && window.google.maps ? window.google.maps : null;
   }
 
   function getPlacesService() {
-    return window.google?.maps?.places && map ? new window.google.maps.places.PlacesService(map) : null;
+    return window.google?.maps?.places && map.value ? new window.google.maps.places.PlacesService(map.value) : null;
   }
 
   function getAutocompleteService() {
@@ -384,57 +412,15 @@ export function createGoogleMapsCore(mapContainerRef, options) {
     return window.google?.maps ? new window.google.maps.DirectionsRenderer() : null;
   }
 
-  function getGoogleMaps() {
-    return window.google && window.google.maps ? window.google.maps : null;
-  }
-
-  async function handleSearch() {
-    if (!isReady.value) {
-      alert("地圖尚未載入完成，請稍候再試");
-      return;
-    }
-    if (!searchQuery.value) {
-      alert("請輸入搜尋關鍵字");
-      return;
-    }
-    isLoading.value = true;
-    clearMarkers("all");
-    closeInfoWindow();
-
-    try {
-      const mainBars = await searchAndDisplayPlaces(searchQuery.value);
-
-      if (mainBars && mainBars.length > 0) {
-        mainBarForSearch.value = null;
-        googleBars.value = mainBars.slice(0, 20);
-
-        if (googleMapsInstance() && googleBars.value.length > 0 && googleBars.value[0].location) {
-          panTo(googleBars.value[0].location, 15);
-        }
-      } else {
-        mainBarForSearch.value = null;
-        googleBars.value = [];
-        alert("查無結果。");
-      }
-    } catch (err) {
-      mainBarForSearch.value = null;
-      googleBars.value = [];
-      console.error("搜尋地點失敗:", err);
-      alert("搜尋失敗，請稍後再試。");
-    } finally {
-      isLoading.value = false;
-    }
-  }
-
   return {
     map: getMap,
-    markers,
-    searchMarkers,
-    infoWindow,
+    infoWindow: getInfoWindow,
+    markers: getMarkers,
+    searchMarkers: getSearchMarkers,
     google: getGoogleMaps,
-    loading,
-    isFetching,
-    isReady,
+    loading: loading,
+    isFetching: isFetching,
+    isReady: isReady,
     placesService: getPlacesService,
     autocompleteService: getAutocompleteService,
     geocoderService: getGeocoderService,
@@ -451,6 +437,5 @@ export function createGoogleMapsCore(mapContainerRef, options) {
     panTo,
     setZoom,
     displayBarsOnMap,
-    handleSearch,
   };
 }
