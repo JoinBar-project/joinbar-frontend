@@ -2,6 +2,8 @@
 import { useEventForm } from '@/composables/useEventForm';
 import FormUpdate from './FormUpdate.vue';
 import AlertModal from '@/components/AlertModal.vue';
+import { useAuthStore } from '@/stores/authStore';
+
 
 const emit = defineEmits(['update']);
 const props = defineProps({
@@ -27,14 +29,13 @@ function handleUpdate() {
       @accept="handleAlertAccept"
       @deny="handleAlertDeny" 
     />
-    <!-- <div class="edit-btn-container"> -->
-      <button
-        class="btn-open-form btn-edit"
-        @click="showForm = true"
-        :disabled="!props.eventId">
-        編輯活動
-      </button>
-    <!-- </div> -->
+    <button
+      v-if="useAuthStore().isAuthenticated"
+      class="btn-open-form btn-edit"
+      @click="showForm = true"
+      :disabled="!props.eventId">
+      編輯活動
+    </button>
     <transition name="popup">
       <div
         v-if="showForm"

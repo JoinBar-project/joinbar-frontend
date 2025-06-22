@@ -251,7 +251,7 @@ export function useEventForm(eventId = null) {
     handleDelete,
     loadEvent,
     resetForm,
-    createFormData, // 新增這個方法
+    createFormData,
     handleAlertAccept,
     handleAlertDeny,
     overlayClick

@@ -21,7 +21,7 @@ const {
   eventEndDate, 
   eventPrice, 
   eventPeople, 
-  eventHashtags, 
+  eventHashtags,
 } = useEventForm();
 
 const imageFile = ref(null);

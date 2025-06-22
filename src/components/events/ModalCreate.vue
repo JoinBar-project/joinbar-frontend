@@ -2,6 +2,7 @@
 import { useEventForm } from '@/composables/useEventForm';
 import FormCreate from './FormCreate.vue';
 import AlertModal from '@/components/AlertModal.vue';
+import { useAuthStore } from '@/stores/authStore';
 
 const emit = defineEmits(['submit', 'eventCreated']);
 
@@ -16,6 +17,7 @@ function handleSubmit(result) {
     console.error('建立活動失敗:', result.error);
   }
 }
+
 </script>
 
 <template>
@@ -26,6 +28,7 @@ function handleSubmit(result) {
       @deny="handleAlertDeny" 
     />
     <button
+      v-if="useAuthStore().isAuthenticated"
       class="btn-open-form btn-create"
       @click="showForm = true">
       建立活動

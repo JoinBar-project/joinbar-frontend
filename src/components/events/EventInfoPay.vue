@@ -2,6 +2,7 @@
 import { useEvent } from '@/composables/useEvent.js';
 import { useCartStore } from '@/stores/cartStore';
 import { useRouter } from 'vue-router';
+import { useAuthStore } from '@/stores/authStore';
 import { ref, computed, onMounted } from 'vue';
 import axios from 'axios';
 import EventHoster from './EventHoster.vue';
@@ -21,6 +22,11 @@ const eventRef = ref({ ...props.event });
 const tagList = ref([...props.tags]);
 
 const isInCart = computed(() => cart.isInCart(eventRef.value.id));
+
+const authStore = useAuthStore();
+const isOwner = computed(() => {
+  return authStore.currentUser?.id === eventRef.value.hostUser;
+});
 
 const {
   isJoin,
@@ -176,7 +182,7 @@ onMounted(() => {
               立即報名
             </button>
             <ModalEdit
-              v-if="eventRef.id"
+              v-if="isOwner && eventRef.id"
               :event-id="eventRef.id"
               @update="handleEventUpdate"
             />
