@@ -26,16 +26,16 @@ export function useLinePay() {
      }
 
      const response = await axios.post(
-       `${API_BASE_URL}/api/linepay/create`,
-       { orderId: String(orderId) }, 
-       {
-         headers: {
-           'Authorization': `Bearer ${token}`,
-           'Content-Type': 'application/json'
-         },
-         timeout: 15000
-       }
-     )
+        `${API_BASE_URL}/linepay/create`, 
+        { orderId: String(orderId) }, 
+        {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          },
+          timeout: 15000
+        }
+      )
 
      if (response.data.success) {
        paymentUrl.value = response.data.data.paymentUrl
@@ -121,14 +121,14 @@ export function useLinePay() {
      }
 
      const response = await axios.get(
-       `${API_BASE_URL}/api/linepay/status/${orderId}`,
+       `${API_BASE_URL}/linepay/status/${orderId}`, 
        {
          headers: {
            'Authorization': `Bearer ${token}`
          },
          timeout: 10000
        }
-     )
+      )
 
      console.log('✅ 付款狀態檢查成功:', response.data)
      return response.data
@@ -232,7 +232,7 @@ export function useLinePay() {
     }
 
     const response = await axios.get(
-      `${API_BASE_URL}/api/linepay/status/${orderId}`,
+      `${API_BASE_URL}/linepay/status/${orderId}`, 
       {
         headers: {
           'Authorization': `Bearer ${token}`
