@@ -156,7 +156,6 @@ export function createGoogleMapsCore(mapContainerRef, options) {
 
       navigator.geolocation.getCurrentPosition(
         (position) => {
-          // 修正：確保 pos 在作用域內被定義
           const pos = {
             lat: position.coords.latitude,
             lng: position.coords.longitude,
@@ -315,13 +314,16 @@ export function createGoogleMapsCore(mapContainerRef, options) {
     }
   };
 
-  const displayBarsOnMap = (bars, formatBarInfoWindowContent) => {
+  const displayBarsOnMap = async (bars, formatBarInfoWindowContent) => { // 這裡改成 async
     if (!map.value || !window.google.maps) {
       console.warn("地圖或 Google 實例未準備好，無法顯示酒吧標記。");
       return;
     }
 
-    clearMarkers("bars");
+    clearMarkers("all"); // 徹底清除所有現有的標記
+
+    // 引入一個短暫的延遲，讓瀏覽器有時間完成舊標記的移除操作
+    await new Promise(resolve => setTimeout(resolve, 50)); // 50ms 延遲
 
     if (!bars || bars.length === 0) {
       console.log("沒有酒吧數據可供顯示。");

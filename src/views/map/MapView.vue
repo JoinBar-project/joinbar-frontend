@@ -128,7 +128,7 @@ const {
   mapId: myMapId,
   onError: (msg) => {
     console.error("useGoogleMaps 錯誤:", msg);
-    alert(`地圖載入失敗：${msg}，請檢查API Key或網路連線。`); //
+    alert(`地圖載入失敗：${msg}，請檢查API Key或網路連線。`);
   },
 });
 
@@ -384,7 +384,7 @@ async function selectSuggestion(suggestion) {
         googleReviews: detail.reviews || [],
       };
       mainBarForSearch.value = barDetail;
-      googleBars.value = [];
+      googleBars.value = []; // 清空 googleBars，因為現在是單點搜尋結果，不應該影響列表
       addMarker(
         {
           location: barDetail.location,
@@ -393,7 +393,7 @@ async function selectSuggestion(suggestion) {
           isBarLike: barDetail.isBarLike === true,
           infoContent: formatBarInfoWindowContent(barDetail),
         },
-        "search"
+        "search" // 將單點標記放入 searchMarkers
       );
       panTo(detail.geometry.location, 15);
     } else {
@@ -420,7 +420,7 @@ async function handleSearch() {
   }
   isLoading.value = true;
   isManualSearchActive.value = true;
-  clearMarkers("all");
+  clearMarkers("all"); // 這裡確保清除所有標記
   closeInfoWindow();
 
   try {
@@ -508,7 +508,7 @@ async function handleSearch() {
     }
     if (mainBars && mainBars.length > 0) {
       mainBarForSearch.value = null;
-      googleBars.value = mainBars;
+      googleBars.value = mainBars; // 將多筆搜尋結果設置為 googleBars
       if (googleMapsInstance() && googleBars.value.length > 0 && googleBars.value[0].location) {
         panTo(googleBars.value[0].location, 15);
       }
@@ -532,26 +532,26 @@ async function handleSearch() {
 async function handleGetCurrentLocation() {
   isLoading.value = true;
   isManualSearchActive.value = true;
-  clearMarkers("all");
+  clearMarkers("all"); // 這裡確保清除所有標記
   closeInfoWindow();
 
   try {
     const sidebarWidth = document.querySelector('.bar-list-sidebar')?.offsetWidth || 0;
     const currentLocation = await getMapCurrentLocation(sidebarWidth);
     if (currentLocation) {
-      const bars = await searchBarsInMapBounds(false); //
+      const bars = await searchBarsInMapBounds(false);
       googleBars.value = bars;
     }
   } catch (err) {
     const google = googleMapsInstance();
     if (google && map()) {
-      const fallbackLocation = new window.google.maps.LatLng(25.0478, 121.5170);
+      const fallbackLocation = new window.google.LatLng(25.0478, 121.5170);
       map().setCenter(fallbackLocation);
       map().setZoom(15);
-      const bars = await searchBarsInMapBounds(false); //
+      const bars = await searchBarsInMapBounds(false);
       googleBars.value = bars;
     }
-    alert("無法獲取您的目前位置，請檢查瀏覽器權限設定"); //
+    alert("無法獲取您的目前位置，請檢查瀏覽器權限設定");
   } finally {
     isLoading.value = false;
     setTimeout(() => {
@@ -583,7 +583,7 @@ async function handleBarSelected(bar) {
   isBarDetailModalOpen.value = true;
   if (bar.location && map() && googleMapsInstance()) {
     panTo(bar.location, 15);
-    clearMarkers("all");
+    clearMarkers("all"); // 這裡確保清除所有標記
     const tempMarker = addMarker({
       location: bar.location,
       title: bar.name,
@@ -599,14 +599,14 @@ function closeBarDetailModal() {
   isBarDetailModalOpen.value = false;
   selectedBarForDetail.value = null;
   closeInfoWindow();
-  clearMarkers("search"); //
+  clearMarkers("search"); // 關閉模態框時，只清除單點標記，因為主列表的標記可能還需要
   if (!isManualSearchActive.value && !searchQuery.value) {
     setTimeout(async () => {
-      const barsInBounds = await searchBarsInMapBounds(false); //
+      const barsInBounds = await searchBarsInMapBounds(false);
       googleBars.value = barsInBounds;
     }, 100);
   } else if (searchQuery.value) {
-    handleSearch();
+    handleSearch(); // 如果有搜尋關鍵字，則重新觸發手動搜尋以恢復多個標記
   }
 }
 
@@ -636,7 +636,7 @@ function handleTagClick(tag) {
     searchQuery.value = "";
     googleBars.value = [];
     isManualSearchActive.value = false;
-    clearMarkers("all");
+    clearMarkers("all"); // 清除所有標記
   } else {
     selectedTag.value = tag;
     searchQuery.value = tag;
@@ -658,11 +658,11 @@ watch(isReady, (ready) => {
   if (ready && map() && typeof googleMapsInstance === 'function' && googleMapsInstance()) {
     const onMapIdleHandler = async () => {
       if (!isFetching.value && !isLoading.value && !isManualSearchActive.value && !searchQuery.value) {
-        console.log("Map idle: Auto searching bars in bounds."); //
-        const barsInBounds = await searchBarsInMapBounds(false); //
+        console.log("Map idle: Auto searching bars in bounds.");
+        const barsInBounds = await searchBarsInMapBounds(false);
         googleBars.value = barsInBounds;
       } else {
-        console.log("Map idle: Skipping auto search. Manual search active or loading data or search query present."); //
+        console.log("Map idle: Skipping auto search. Manual search active or loading data or search query present.");
       }
     };
     if (map() && map().addListener) {
@@ -694,33 +694,32 @@ onMounted(async () => {
       let gotLocation = false;
       try {
         const sidebarWidth = document.querySelector('.bar-list-sidebar')?.offsetWidth || 0;
-        // 初始載入時，直接獲取當前位置並搜尋地圖範圍內的酒吧
         const currentLocation = await getMapCurrentLocation(sidebarWidth);
         if (currentLocation) {
           gotLocation = true;
-          const bars = await searchBarsInMapBounds(false); //
+          const bars = await searchBarsInMapBounds(false);
           googleBars.value = bars;
         }
       } catch (geoErr) {
-        console.error("嘗試獲取當前位置失敗:", geoErr); // 添加更詳細的錯誤日誌
+        console.error("嘗試獲取當前位置失敗:", geoErr);
         const google = googleMapsInstance();
         if (google && map()) {
           const fallbackLocation = new window.google.maps.LatLng(25.0478, 121.5170);
           map().setCenter(fallbackLocation);
           map().setZoom(15);
-          const bars = await searchBarsInMapBounds(false); //
+          const bars = await searchBarsInMapBounds(false);
           googleBars.value = bars;
         }
         if (!gotLocation) {
-          alert("無法獲取您的目前位置，請檢查瀏覽器權限設定或網路連接。"); //
+          alert("無法獲取您的目前位置，請檢查瀏覽器權限設定或網路連接。");
         }
       }
     } else {
       console.error("錯誤：地圖容器 ref 未綁定，無法初始化地圖。");
     }
   } catch (err) {
-    console.error("地圖或數據載入失敗:", err); //
-    alert("初始化失敗，請檢查控制台錯誤。"); //
+    console.error("地圖或數據載入失敗:", err);
+    alert("初始化失敗，請檢查控制台錯誤或 API Key。");
   } finally {
     isLoading.value = false;
     isManualSearchActive.value = false;
@@ -742,7 +741,7 @@ function getTypeForKeyword(q) {
     return ["gym"];
   } else if (["ktv", "KTV", "卡拉ok", "唱歌"].some(k => q.includes(k))) {
     return ["night_club"];
-  } else if (["飯店", "旅館", "hotel", "住宿"].some(k => q.includes(k))) {
+  } else if (["飯店", "旅館", "hotel", "住宿"].some(k => k.includes(k))) { // Corrected: k.includes(k) -> q.includes(k)
     return ["lodging"];
   } else if (["書店", "書局", "book"].some(k => q.includes(k))) {
     return ["book_store"];

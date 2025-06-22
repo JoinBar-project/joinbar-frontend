@@ -41,7 +41,7 @@
               <h2 class="bar-detail-name">{{ bar.name }}</h2>
             </div>
 
-            <div class="rating-price-info">
+            <div class="rating-info">
               <span class="rating-text"
                 >⭐️ {{ bar.rating || "N/A" }} ({{
                   bar.reviews || 0
@@ -86,7 +86,8 @@
                   v-for="(tag, index) in bar.tags"
                   :key="index"
                   class="detail-tag"
-                >{{ getTagLabel(tag) }}</span>
+                  >{{ getTagLabel(tag) }}</span
+                >
               </div>
             </div>
 
@@ -98,12 +99,24 @@
             <div class="google-review-section">
               <h3>熱門評論</h3>
               <template v-if="bar.googleReviews && bar.googleReviews.length">
-                <div class="review-card" v-for="(review, idx) in bar.googleReviews.slice(0, 5)" :key="idx">
+                <div
+                  class="review-card"
+                  v-for="(review, idx) in bar.googleReviews.slice(0, 5)"
+                  :key="idx"
+                >
                   <div class="review-header">
-                    <img :src="review.profile_photo_url || 'https://via.placeholder.com/40'" alt="User Avatar" class="user-avatar" />
+                    <img
+                      :src="review.profile_photo_url || 'https://via.placeholder.com/40'"
+                      alt="User Avatar"
+                      class="user-avatar"
+                    />
                     <div class="user-info">
-                      <span class="user-name">{{ review.author_name || '匿名用戶' }}</span>
-                      <span class="review-date">{{ formatReviewDate(review.time) }}</span>
+                      <span class="user-name">{{
+                        review.author_name || "匿名用戶"
+                      }}</span>
+                      <span class="review-date">{{
+                        formatReviewDate(review.time)
+                      }}</span>
                     </div>
                   </div>
                   <p class="review-text">{{ review.text }}</p>
@@ -119,18 +132,7 @@
         </div>
 
         <div class="footer-actions">
-          <div class="icon-buttons">
-            <button
-              class="action-icon-button upload-photo-button"
-              @click="triggerFileUpload"
-              data-tooltip="上傳照片"
-            >
-              <img
-                src="@/assets/icons/mapicons/add-photo-icon.svg"
-                alt="新增照片"
-                class="icon"
-              />
-            </button>
+          <div class="action-buttons-group">
             <input
               type="file"
               ref="fileInput"
@@ -139,14 +141,20 @@
               @change="handleFileUpload"
             />
 
-            <button class="action-icon-button share-button" data-tooltip="分享">
+            <button
+              class="action-button icon-button share-button"
+              data-tooltip="分享"
+            >
               <img
                 src="@/assets/icons/mapicons/share-icon.svg"
                 alt="分享"
                 class="icon"
               />
             </button>
-            <button class="action-icon-button navigate-button" data-tooltip="導航">
+            <button
+              class="action-button icon-button navigate-button"
+              data-tooltip="導航"
+            >
               <img
                 src="@/assets/icons/mapicons/navigation-icon.svg"
                 alt="導航"
@@ -154,7 +162,7 @@
               />
             </button>
             <button
-              class="action-icon-button wishlist-detail-button"
+              class="action-button icon-button wishlist-detail-button"
               @click.stop="toggleFavorite"
               :aria-label="bar.isWishlisted ? '取消收藏' : '加入收藏'"
               :data-tooltip="bar.isWishlisted ? '取消收藏' : '加入收藏'"
@@ -162,7 +170,7 @@
               <svg
                 xmlns="http://www.w3.org/2000/svg"
                 viewBox="0 0 24 24"
-                :fill="bar.isWishlisted ? 'red' : 'white'"
+                :fill="bar.isWishlisted ? 'red' : 'none'"
                 :stroke="bar.isWishlisted ? 'red' : '#7f7f7f'"
                 stroke-width="1.5"
                 class="heart-icon"
@@ -190,7 +198,7 @@
 <script setup>
 import { ref, watch, computed } from "vue";
 import { useRouter } from "vue-router";
-import placeTypeMap from '@/composables/placeTypeMap';
+import placeTypeMap from "@/composables/placeTypeMap"; //
 
 const props = defineProps({
   bar: {
@@ -207,7 +215,9 @@ const currentImageIndex = ref(0);
 const defaultImage =
   "https://placehold.co/800x600/decdd5/860914?text=No+Image+Available";
 
-const google = computed(() => window.google && window.google.maps ? window.google.maps : null);
+const google = computed(() =>
+  window.google && window.google.maps ? window.google.maps : null
+);
 
 const currentImage = computed(() => {
   if (props.bar.images && props.bar.images.length > 0) {
@@ -222,6 +232,7 @@ const currentOpenStatus = computed(() => {
       ? '<span style="color: green;">正在營業中</span>'
       : '<span style="color: red;">目前休息中</span>';
   }
+  return ""; // Added default return to avoid undefined
 });
 
 watch(
@@ -261,9 +272,11 @@ const closeModal = () => {
 };
 
 const toggleFavorite = () => {
-  if (props.bar.placeId) {
-    emit("toggle-wishlist", props.bar.placeId);
+  // Use place_id for consistency based on BarList and MapView
+  if (props.bar.place_id) {
+    emit("toggle-wishlist", props.bar.place_id);
   } else if (props.bar.id) {
+    // Fallback to id if place_id is not available
     emit("toggle-wishlist", props.bar.id);
   }
 };
@@ -298,13 +311,13 @@ const handleFileUpload = (event) => {
 };
 
 function formatReviewDate(unixTime) {
-  if (!unixTime) return '';
+  if (!unixTime) return "";
   const date = new Date(unixTime * 1000);
   return `${date.getFullYear()}年${date.getMonth() + 1}月${date.getDate()}日`;
 }
 
 const getTagLabel = (tag) => {
-  return placeTypeMap[tag] || tag;
+  return placeTypeMap[tag] || tag; //
 };
 </script>
 
@@ -329,7 +342,7 @@ const getTagLabel = (tag) => {
   display: flex;
   flex-direction: column;
   width: 90%;
-  max-width: 900px;
+  max-width: 900px; /* Adjusted based on image 2 aspect ratio */
   height: 85vh;
   position: relative;
   box-shadow: 0 8px 30px rgba(0, 0, 0, 0.3);
@@ -354,18 +367,24 @@ const getTagLabel = (tag) => {
   justify-content: center;
   cursor: pointer;
   z-index: 10;
+  background-color: rgba(255, 255, 255, 0.9); /* From FavoriteDetailCard */
+  backdrop-filter: blur(4px); /* From FavoriteDetailCard */
+  transition: all 0.2s ease; /* From FavoriteDetailCard */
 }
 .close-button:hover {
-  transform: scale(1.1);
+  transform: scale(1.1); /* From FavoriteDetailCard */
+  background-color: #fff; /* From FavoriteDetailCard */
 }
 
 .close-button .close-icon {
-  width: 100%;
-  height: 100%;
+  width: 20px; /* Adjusted size to match FavoriteDetailCard's icon */
+  height: 20px; /* Adjusted size to match FavoriteDetailCard's icon */
+  filter: brightness(0.5); /* Make icon darker to be visible on white background */
 }
 
 .image-gallery-container {
-  width: 50%;
+  /* Adjusted width for more prominent image based on image 2 */
+  width: 60%;
   height: 100%;
   overflow: hidden;
   position: relative;
@@ -375,6 +394,7 @@ const getTagLabel = (tag) => {
   justify-content: center;
   color: #666;
   font-size: 1.2rem;
+  min-height: 200px; /* Ensure a minimum height for mobile */
 }
 
 .main-image {
@@ -395,8 +415,8 @@ const getTagLabel = (tag) => {
 }
 
 .nav-button {
-  background-color: rgba(0, 0, 0, 0.5);
-  color: white;
+  background-color: rgba(255, 255, 255, 0.8); /* From FavoriteDetailCard */
+  color: #333; /* From FavoriteDetailCard */
   border: none;
   border-radius: 50%;
   width: 32px;
@@ -406,15 +426,16 @@ const getTagLabel = (tag) => {
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  transition: background-color 0.2s;
+  transition: all 0.2s ease; /* From FavoriteDetailCard */
 }
 .nav-button:hover {
-  background-color: rgba(0, 0, 0, 0.7);
+  background-color: #fff; /* From FavoriteDetailCard */
+  transform: scale(1.1); /* From FavoriteDetailCard */
 }
 
 .image-dots {
   position: absolute;
-  bottom: 10px;
+  bottom: 15px; /* Slightly higher from bottom */
   left: 50%;
   transform: translateX(-50%);
   display: flex;
@@ -424,12 +445,10 @@ const getTagLabel = (tag) => {
 .dot {
   width: 8px;
   height: 8px;
-  background-color: rgba(255, 255, 255, 0.6);
+  background-color: rgba(255, 255, 255, 0.5); /* From FavoriteDetailCard */
   border-radius: 50%;
   cursor: pointer;
-  transition:
-    background-color 0.2s,
-    transform 0.2s;
+  transition: all 0.2s ease; /* From FavoriteDetailCard */
 }
 .dot.active {
   background-color: #fff;
@@ -437,13 +456,14 @@ const getTagLabel = (tag) => {
 }
 
 .detail-info-section {
-  width: 50%;
-  padding: 80px 25px 20px 25px;
+  width: 40%; /* Adjusted width based on image 2 */
+  padding: 20px 25px; /* Adjust padding as needed, removed top padding as content starts lower in image 2 */
   overflow-y: auto;
   flex-grow: 1;
   display: flex;
   flex-direction: column;
-  padding-bottom: calc(20px + 60px + 15px);
+  padding-bottom: calc(20px + 60px + 15px); /* Keep space for footer */
+  background-color: #f8fafc; /* Similar to FavoriteDetailCard's bg-slate-50 */
 }
 
 .header-main {
@@ -451,6 +471,7 @@ const getTagLabel = (tag) => {
   align-items: center;
   justify-content: flex-start;
   margin-bottom: 10px;
+  padding-top: 10px; /* Added some top padding to align with image 2 */
 }
 
 .bar-detail-name {
@@ -461,37 +482,15 @@ const getTagLabel = (tag) => {
   line-height: 1.2;
 }
 
-.wishlist-detail-button {
-  cursor: pointer;
-  z-index: 10;
-  outline: none;
-  transition: transform 0.2s ease-in-out;
-}
-
-.wishlist-detail-button:hover {
-  transform: scale(1.1);
-}
-
-.wishlist-detail-button .heart-icon {
-  width: 24px;
-  height: 24px;
-  transition:
-    fill 0.3s ease,
-    stroke 0.3s ease;
-}
-
-.wishlist-detail-button:not([fill="red"]):hover .heart-icon {
-  fill: #ffebeb;
-  stroke: red;
-}
-
-.rating-price-info {
+.rating-info {
   display: flex;
   align-items: center;
-  gap: 15px;
-  margin-bottom: 15px;
+  gap: 5px; /* Adjusted spacing */
+  margin-bottom: 15px; /* Adjusted margin */
   font-size: 16px;
   color: #555;
+  padding-bottom: 10px; /* Similar to FavoriteDetailCard's border-b */
+  border-bottom: 1px solid #e2e8f0; /* Similar to FavoriteDetailCard's border-gray-200 */
 }
 .rating-text {
   font-weight: 500;
@@ -500,13 +499,13 @@ const getTagLabel = (tag) => {
 .contact-info p {
   margin-bottom: 8px;
   font-size: 15px;
-  color: #666;
+  color: #4a5568; /* Adjusted for better contrast on light background */
   display: flex;
   align-items: center;
   gap: 8px;
 }
 .contact-info a {
-  color: #007bff;
+  color: #3b82f6; /* Adjusted to a common blue */
   text-decoration: none;
 }
 .contact-info a:hover {
@@ -518,7 +517,7 @@ const getTagLabel = (tag) => {
 .description-section,
 .google-review-section {
   margin-top: 20px;
-  border-top: 1px solid #eee;
+  border-top: 1px solid #eee; /* Kept from original, image 2 doesn't explicitly show this */
   padding-top: 15px;
 }
 .opening-hours-detail h3,
@@ -555,13 +554,13 @@ const getTagLabel = (tag) => {
 }
 
 .detail-tag {
-  background-color: #e6f7ff;
-  color: #1890ff;
+  background-color: #e2e8f0; /* Similar to FavoriteDetailCard's bg-gray-200 */
+  color: #4a5568; /* Similar to FavoriteDetailCard's text-gray-800 */
   padding: 6px 12px;
   border-radius: 20px;
   font-size: 14px;
   white-space: nowrap;
-  border: 1px solid #91d5ff;
+  border: 1px solid #e2e8f0; /* Adjusted border to match bg */
 }
 
 .google-review-section {
@@ -569,11 +568,12 @@ const getTagLabel = (tag) => {
 }
 
 .review-card {
-  background-color: #f9f9f9;
-  border-radius: 8px;
+  background-color: #fff; /* From FavoriteDetailCard */
+  border-radius: 8px; /* From FavoriteDetailCard */
   padding: 15px;
   margin-top: 15px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05); /* From FavoriteDetailCard */
+  border: 1px solid #e2e8f0; /* From FavoriteDetailCard */
 }
 
 .review-header {
@@ -583,11 +583,11 @@ const getTagLabel = (tag) => {
 }
 
 .user-avatar {
-  width: 40px;
-  height: 40px;
+  width: 40px; /* From FavoriteDetailCard */
+  height: 40px; /* From FavoriteDetailCard */
   border-radius: 50%;
   object-fit: cover;
-  margin-right: 10px;
+  margin-right: 10px; /* From FavoriteDetailCard */
   border: 1px solid #ddd;
 }
 
@@ -598,19 +598,19 @@ const getTagLabel = (tag) => {
 
 .user-name {
   font-weight: bold;
-  color: #333;
+  color: #1a202c; /* From FavoriteDetailCard */
   font-size: 16px;
 }
 
 .review-date {
   font-size: 13px;
-  color: #777;
+  color: #718096; /* From FavoriteDetailCard */
 }
 
 .review-text {
   font-size: 15px;
   line-height: 1.6;
-  color: #444;
+  color: #4a5568; /* From FavoriteDetailCard */
   margin-bottom: 10px;
 }
 
@@ -618,15 +618,15 @@ const getTagLabel = (tag) => {
   display: flex;
   gap: 15px;
   font-size: 14px;
-  color: #888;
+  color: #718096; /* From FavoriteDetailCard */
 }
 
 .footer-actions {
   position: absolute;
   bottom: 0;
-  left: 50%;
-  width: 50%;
-  transform: translateX(0%);
+  left: 0; /* Changed to 0 to cover full width */
+  width: 100%; /* Changed to 100% to cover full width */
+  transform: translateX(0%); /* No transform needed */
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -638,42 +638,62 @@ const getTagLabel = (tag) => {
   box-sizing: border-box;
 }
 
-.icon-buttons {
+.action-buttons-group {
   display: flex;
-  gap: 15px;
+  gap: 15px; /* From FavoriteDetailCard */
 }
 
-.action-icon-button {
+.action-button {
   background: none;
-  border: 1px solid #ccc;
-  border-radius: 50%;
-  width: 40px;
-  height: 40px;
+  border: 1px solid #e2e8f0; /* From FavoriteDetailCard */
+  border-radius: 12px; /* From FavoriteDetailCard, changed from 50% for icons */
+  width: 44px; /* From FavoriteDetailCard */
+  height: 44px; /* From FavoriteDetailCard */
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  transition:
-    background-color 0.2s,
-    border-color 0.2s;
+  transition: all 0.2s ease; /* From FavoriteDetailCard */
   padding: 0;
+  background-color: #fff; /* From FavoriteDetailCard */
 }
 
-.action-icon-button:hover {
-  background-color: #f0f0f0;
-  border-color: #aaa;
+.action-button:hover {
+  background-color: #f7fafc; /* Similar to FavoriteDetailCard's hover:bg-gray-50 */
+  border-color: #cbd5e0; /* Similar to FavoriteDetailCard's hover:border-gray-300 */
+  transform: translateY(-2px); /* From FavoriteDetailCard */
 }
 
-.action-icon-button .icon {
+.action-button .icon {
   width: 24px;
   height: 24px;
+  filter: brightness(0.5); /* To make icons visible on light background */
+}
+
+.wishlist-detail-button .heart-icon {
+  width: 20px; /* From FavoriteDetailCard */
+  height: 20px; /* From FavoriteDetailCard */
+  transition:
+    fill 0.3s ease,
+    stroke 0.3s ease;
+}
+/* Specific hover for non-red heart (from original BarDetailModal) */
+.wishlist-detail-button:not([fill="red"]):hover .heart-icon {
+  fill: #ffebeb;
+  stroke: red;
 }
 
 .start-event-button {
-  background-color: #daa258;
-  color: white;
+  /* Mimic FavoriteDetailCard's gradient button */
+  background-image: linear-gradient(
+    to right,
+    #a8d87b,
+    #d8dbaf,
+    #daa258
+  ); /* Adjusted colors based on screenshot */
+  color: #333; /* Adjusted text color for contrast */
   border: none;
-  border-radius: 25px;
+  border-radius: 25px; /* From FavoriteDetailCard */
   padding: 10px 20px;
   font-size: 16px;
   font-weight: bold;
@@ -681,11 +701,14 @@ const getTagLabel = (tag) => {
   display: flex;
   align-items: center;
   gap: 8px;
-  transition: background-color 0.2s;
+  transition: all 0.2s ease; /* From FavoriteDetailCard */
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); /* Added shadow */
 }
 
 .start-event-button:hover {
-  background-color: #c37b1c;
+  transform: scale(1.05); /* From FavoriteDetailCard */
+  filter: brightness(1.1); /* From FavoriteDetailCard */
+  box-shadow: 0 6px 10px rgba(0, 0, 0, 0.15); /* From FavoriteDetailCard */
 }
 
 .icon-plus {
@@ -706,6 +729,32 @@ const getTagLabel = (tag) => {
   opacity: 0;
 }
 
+/* Tooltip styles from FavoriteDetailCard */
+.action-button[data-tooltip] {
+  position: relative;
+}
+.action-button[data-tooltip]:hover::after {
+  content: attr(data-tooltip);
+  position: absolute;
+  bottom: 110%;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #333;
+  color: #fff;
+  padding: 5px 12px;
+  border-radius: 6px;
+  font-size: 13px;
+  white-space: nowrap;
+  z-index: 20;
+  opacity: 1;
+  pointer-events: none;
+  transition: opacity 0.2s;
+}
+.action-button[data-tooltip]::after {
+  opacity: 0;
+  pointer-events: none;
+}
+
 @media (max-width: 768px) {
   .bar-detail-modal-content {
     flex-direction: column;
@@ -723,13 +772,13 @@ const getTagLabel = (tag) => {
   }
   .detail-info-section {
     width: 100%;
-    padding: 60px 15px 20px 15px;
+    padding: 20px 15px; /* Adjusted padding for mobile */
     padding-bottom: calc(20px + 60px + 10px);
   }
   .bar-detail-name {
     font-size: 24px;
   }
-  .rating-price-info {
+  .rating-info {
     font-size: 14px;
   }
   .close-button {
@@ -740,8 +789,8 @@ const getTagLabel = (tag) => {
   }
 
   .close-button .close-icon {
-    width: 100%;
-    height: 100%;
+    width: 18px;
+    height: 18px;
   }
 
   .wishlist-detail-button .heart-icon {
@@ -758,14 +807,15 @@ const getTagLabel = (tag) => {
     box-shadow: 0 -2px 5px rgba(0, 0, 0, 0.1);
     border-top: none;
   }
-  .icon-buttons {
+  .action-buttons-group {
     gap: 10px;
   }
-  .action-icon-button {
+  .action-button {
     width: 36px;
     height: 36px;
+    border-radius: 10px; /* Slightly smaller radius for mobile buttons */
   }
-  .action-icon-button .icon {
+  .action-button .icon {
     width: 20px;
     height: 20px;
   }
@@ -778,30 +828,5 @@ const getTagLabel = (tag) => {
     width: 18px;
     height: 18px;
   }
-}
-
-.action-icon-button[data-tooltip] {
-  position: relative;
-}
-.action-icon-button[data-tooltip]:hover::after {
-  content: attr(data-tooltip);
-  position: absolute;
-  bottom: 110%;
-  left: 50%;
-  transform: translateX(-50%);
-  background: #333;
-  color: #fff;
-  padding: 5px 12px;
-  border-radius: 6px;
-  font-size: 13px;
-  white-space: nowrap;
-  z-index: 20;
-  opacity: 1;
-  pointer-events: none;
-  transition: opacity 0.2s;
-}
-.action-icon-button[data-tooltip]::after {
-  opacity: 0;
-  pointer-events: none;
 }
 </style>
