@@ -154,6 +154,7 @@ const isBarDetailModalOpen = ref(false);
 const selectedBarForDetail = ref(null);
 const isLoading = ref(false);
 const googleBars = ref([]);
+const searchInputRef = ref(null);
 const mainBarForSearch = ref(null);
 const selectedTag = ref(null);
 
