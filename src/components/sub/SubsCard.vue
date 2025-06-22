@@ -1,9 +1,11 @@
 <script setup>
 import { ref, onMounted, onUnmounted } from 'vue'
+import PaymentResultModal from '@/components/sub/PaymentResultModal.vue';
 import { getAllSubPlans, createSubscriptionOrder, createLinePayment, confirmLinePayment } from '@/api/subsCard';
 
 const spotlight = ref(null)
 const cardData = ref([])
+const showModal = ref(false)
 
 onMounted(async() => {
   try{
@@ -37,6 +39,52 @@ const handleSubscribe = async(subscriptionType) => {
     alert('訂閱流程發生錯誤，請稍後再試');
   }
 }
+
+function isPaymentConfirmed(){
+  const transactionId = localStorage.getItem('transactionId');
+  const expireTime = localStorage.getItem('expireTime');
+  const orderId = localStorage.getItem('orderId');
+
+  return !!(transactionId && expireTime && orderId)
+}
+
+onMounted(() => {
+  if (isPaymentConfirmed()) {
+    showModal.value = true;
+  } else {
+    console.error('付款未完成');
+  }
+});
+
+const modalMessage = ref({
+  title: '',
+  message: ''
+});
+
+onMounted(async () => {
+  const transactionId = localStorage.getItem('transactionId')
+  const orderId = localStorage.getItem('orderId')
+
+  if (transactionId && orderId) {
+    try {
+      const res = await confirmLinePayment(transactionId, orderId)
+
+      modalMessage.value = {
+        title: '付款成功',
+        message: '優惠券已送出'
+      }
+    } catch (err) {
+      modalMessage.value = {
+        title: '付款失敗',
+        message: '請稍後再試一次'
+      }
+    }
+
+    showModal.value = true
+  }
+})
+
+
 
 function handleMouseMove(e) {
   if (spotlight.value) {
@@ -91,7 +139,10 @@ onUnmounted(() => {
               <button
                 @click="handleSubscribe(card.type)" 
                 type="button" 
-                class="mt-20 mb-10 px-6 py-2 text-lg text-stone-50 border-2 border-[var(--color-primary-orange)] rounded-[12px] bg-neutral-900 block mx-auto cursor-pointer hover:bg-[var(--color-primary-orange)]">
+                class="mt-20 mb-10 px-6 py-2 text-lg
+                 text-stone-50 border-2 border-[var(--color-primary-orange)] 
+                 rounded-[12px] bg-neutral-900 block mx-auto cursor-pointer 
+                 hover:bg-[var(--color-primary-orange)]">
                 即刻擁有
               </button>
             </div>
@@ -99,6 +150,10 @@ onUnmounted(() => {
         </div>
       </div>
     </div>
+    <PaymentResultModal 
+      v-if="showModal"
+      :modalMessage="modalMessage" 
+    />
   </div>
 </template>
 
