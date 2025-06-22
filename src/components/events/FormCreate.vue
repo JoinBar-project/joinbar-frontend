@@ -22,7 +22,6 @@ const {
   eventPrice, 
   eventPeople, 
   eventHashtags, 
-  createFormData 
 } = useEventForm();
 
 const imageFile = ref(null);
@@ -37,8 +36,8 @@ function handleImageSelect(event) {
       return;
     }
     
-    if (file.size > 5 * 1024 * 1024) {
-      alert('圖片檔案大小不能超過 5MB');
+    if (file.size > 1 * 1024 * 1024) {
+      alert('圖片檔案大小不能超過 1MB');
       return;
     }
     

@@ -67,12 +67,12 @@ async function onUpdate() {
 
     const formData = new FormData();
     formData.append('name', eventName.value || '');
-    formData.append('bar_name', barName.value || '');
+    formData.append('barName', barName.value || '');
     formData.append('location', eventLocation.value || '');
-    formData.append('start_at', eventStartDate.value || '');
-    formData.append('end_at', eventEndDate.value || '');
+    formData.append('startAt', eventStartDate.value || '');
+    formData.append('endAt', eventEndDate.value || '');
     formData.append('price', eventPrice.value || '');
-    formData.append('max_people', eventPeople.value || '');
+    formData.append('maxPeople', eventPeople.value || '');
 
     if (imageFile.value) {
       formData.append('image', imageFile.value);
@@ -83,23 +83,23 @@ async function onUpdate() {
       formData.append('tags', JSON.stringify(tagIds));
     }
 
-    await axios.put(`/api/event/update/${props.eventId}`, formData, {
+    const res = await axios.put(`/api/event/update/${props.eventId}`, formData, {
       headers: {
         'Authorization': `Bearer ${token}`,
       },
+      validateStatus: () => true,
     });
 
-    alert('活動更新成功！');
-    emit('update');
+    if (res.status >= 200 && res.status < 300) {
+      alert('活動更新成功！');
+      emit('update');
+    } else {
+      alert(`更新失敗：${res.data?.message || '後端回傳錯誤'}`);
+    }
 
   } catch (error) {
-    if (error.response) {
-      alert(`更新失敗: ${error.response.data?.message || '伺服器錯誤'}`);
-    } else if (error.request) {
-      alert('網路連線錯誤，請檢查網路狀態');
-    } else {
-      console.error('[活動更新失敗]', error);
-    }
+    console.error('[活動更新失敗]', error);
+    alert('網路或系統錯誤，請稍後再試');
   } finally {
     loading.value = false;
   }
@@ -135,7 +135,7 @@ function handleImageSelect(event) {
     };
     reader.readAsDataURL(file);
   } else {
-    alert(file?.size > 5 * 1024 * 1024 ? '圖片檔案大小不能超過 5MB' : '請選擇圖片檔案');
+    alert(file?.size > 1 * 1024 * 1024 ? '圖片檔案大小不能超過 1MB' : '請選擇圖片檔案');
   }
 }
 

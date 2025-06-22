@@ -49,7 +49,26 @@ export function useEventForm(eventId = null) {
 
     const priceValid = isAdmin.value ? eventPrice.value !== '' && !isNaN(eventPrice.value) : true
 
-    return basicValid && priceValid
+    const start = dayjs(eventStartDate.value);
+    const end = dayjs(eventEndDate.value);
+    const now = dayjs();
+
+    if (!start.isValid() || !end.isValid()) {
+      alert('開始或結束時間格式錯誤！');
+      return false;
+    }
+
+    if (start.isAfter(end)) {
+      alert('開始時間不能晚於結束時間！');
+      return false;
+    }
+
+    if (start.isBefore(now)) {
+      alert('開始時間不能早於現在時間！');
+      return false;
+    }
+
+    return basicValid && priceValid;
   }
   
   function createPayload() {
