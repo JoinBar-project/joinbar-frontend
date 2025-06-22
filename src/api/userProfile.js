@@ -1,41 +1,31 @@
 import apiClient from '@/api/axios';
 
 const getUserProfileById = async (id) => {
-  try {
-    const resp = await apiClient.get(`/users/${id}`);
-    return resp.data;
-  } catch (err) {
-    console.error('取得使用者資料失敗', err);
-    throw err;
-  }
+  const { data } = await apiClient.get(`/users/${id}`);
+  return data;
 };
 
 const patchUserProfileById = async (id, userData) => {
-  try {
-    const resp = await apiClient.patch(`/users/${id}`, userData);
-    return resp.data;
-  } catch (err) {
-    console.error('更新使用者資料失敗', err);
-    throw err;
-  }
+  const { data } = await apiClient.patch(`/users/${id}`, userData);
+  return data;
 };
 
 const patchUserAvatar = async (id, file) => {
-  try {
-    const formData = new FormData();
-    formData.append('userAvatar', file);
+  const formData = new FormData();
+  formData.append('userAvatar', file);
 
-    const resp = await apiClient.patch(`/users/${id}/avatar`, formData, {
-      headers: {
-        'Content-Type': 'multipart/form-data',
-      },
-    });
+  const { data } = await apiClient.patch(`/users/${id}/avatar`, formData, {
+    headers: {
+      'Content-Type': 'multipart/form-data'
+    },
+  });
 
-    return resp.data;
-  } catch (err) {
-    console.error('會員更新頭像失敗', err);
-    throw err;
-  }
+  return data;
 };
 
-export { getUserProfileById, patchUserProfileById, patchUserAvatar };
+const deleteUserAvatar = async (id) => {
+  const { data } = await apiClient.delete(`/users/${id}/avatar`);
+  return data;
+};
+
+export { getUserProfileById, patchUserProfileById, patchUserAvatar, deleteUserAvatar };

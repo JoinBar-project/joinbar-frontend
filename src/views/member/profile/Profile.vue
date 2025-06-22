@@ -1,21 +1,28 @@
 <script setup>
 import { watch, computed } from 'vue';
+import { useRouter } from 'vue-router';
+import { storeToRefs } from 'pinia';
 import { useAuthStore } from '@/stores/authStore';
 import { useUserProfileStore } from '@/stores/userProfileStore';
-import { storeToRefs } from 'pinia';
-import { useRouter } from 'vue-router';
 import ProfileForm from '@/components/member/ProfileForm.vue';
 import UserAvatar from '@/components/UserAvatar.vue';
 
 const authStore = useAuthStore();
-const { user } = storeToRefs(authStore);
-
 const userProfileStore = useUserProfileStore();
-const { profile, isLoading } = storeToRefs(userProfileStore);
-
 const router = useRouter();
 
+const { user } = storeToRefs(authStore);
+const { profile, isLoading } = storeToRefs(userProfileStore);
+
 const userId = computed(() => user.value?.id);
+
+const profileFields = [
+  { model: 'username', label: '姓名', placeholder: '請輸入姓名', icon: 'fa-solid fa-user', type: 'text' },
+  { model: 'nickname', label: '暱稱', placeholder: '請輸入暱稱', icon: 'fa-solid fa-user-pen', type: 'text' },
+  { model: 'birthday', label: '生日', placeholder: '請輸入生日', icon: 'fa-solid fa-cake-candles', type: 'date' },
+];
+const barTypes = ['運動酒吧', '音樂酒吧', '學生酒吧', '餐酒館', '暢飲店'];
+const barMoods = ['熱鬧歡樂', '浪漫私密', '復古懷舊', '高級精緻', '輕鬆悠閒'];
 
 watch(
   userId,
@@ -25,13 +32,7 @@ watch(
   { immediate: true }
 );
 
-const profileFields = [
-  { model: 'username', label: '姓名', placeholder: '請輸入姓名', icon: 'fa-solid fa-user', type: 'text' },
-  { model: 'nickname', label: '暱稱', placeholder: '請輸入暱稱', icon: 'fa-solid fa-user-pen', type: 'text' },
-  { model: 'birthday', label: '生日', placeholder: '請輸入生日', icon: 'fa-solid fa-cake-candles', type: 'date' },
-];
-const barTypes = ['運動酒吧', '音樂酒吧', '學生酒吧', '餐酒館', '暢飲店'];
-const barMoods = ['熱鬧歡樂', '浪漫私密', '復古懷舊', '高級精緻', '輕鬆悠閒'];
+
 
 const goToEdit = () => {
   router.push({ name: 'MemberProfileEdit', params: { id: userId.value } });

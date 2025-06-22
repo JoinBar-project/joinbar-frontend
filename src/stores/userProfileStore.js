@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia';
 import { ref } from 'vue';
-import { getUserProfileById, patchUserProfileById, patchUserAvatar } from '@/api/userProfile.js';
+import { getUserProfileById, patchUserProfileById, patchUserAvatar, deleteUserAvatar } from '@/api/userProfile.js';
 
 export const useUserProfileStore = defineStore('userProfile', () => {
   const profile = ref({
@@ -57,11 +57,26 @@ export const useUserProfileStore = defineStore('userProfile', () => {
     }
   };
 
+    const removeUserAvatar = async (id) => {
+    isLoading.value = true;
+    try {
+      const { data } = await deleteUserAvatar(id);
+      profile.value.avatarUrl = '';
+      console.log('會員頭像刪除成功', data);
+    } catch (err) {
+      console.error('會員頭像刪除失敗', err);
+      throw err;
+    } finally {
+      isLoading.value = false;
+    }
+  };
+
   return {
     profile,
     getUserProfile,
     updateUserProfile,
     updateUserAvatar,
+    removeUserAvatar,
     isLoading,
   };
 });

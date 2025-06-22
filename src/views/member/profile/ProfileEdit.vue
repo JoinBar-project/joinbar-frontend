@@ -10,16 +10,18 @@ import UserAvatar from '@/components/UserAvatar.vue';
 
 const authStore = useAuthStore();
 const userProfileStore = useUserProfileStore();
-const { user } = storeToRefs(authStore);
-const { profile, isLoading } = storeToRefs(userProfileStore);
-const { updateUserAvatar } = userProfileStore;
 const router = useRouter();
 const { showAlert, triggerAlert } = useSuccessAlert();
+
+const { user } = storeToRefs(authStore);
+const { profile, isLoading } = storeToRefs(userProfileStore);
+const { updateUserAvatar, removeUserAvatar } = userProfileStore;
 
 const form = ref({
   username: '',
   nickname: '',
   birthday: '',
+  avatarUrl: '',
   preferences: {
     types: [],
     moods: [],
@@ -30,15 +32,22 @@ const userId = computed(() => user.value?.id);
 const avatarFile = ref(null);
 const avatarPreview = ref('');
 
-const handleAvatarChange = event => {
-  const file = event.target.files[0];
-  if (file && file.type.startsWith('image/')) {
-    avatarFile.value = file;
-    avatarPreview.value = URL.createObjectURL(file); // 頭像即時預覽
-  } else {
-    alert('請選擇圖片檔案');
+const isDefaultAvatar = computed(() => {
+  const currentUrl = avatarPreview.value || profile.value.avatarUrl;
+
+  if (!currentUrl || currentUrl.includes('default-user-avatar.png')) {
+    return true;
   }
-};
+  return false;
+});
+
+const profileFields = [
+  { model: 'username', label: '姓名', placeholder: '請輸入姓名', icon: 'fa-solid fa-user', type: 'text' },
+  { model: 'nickname', label: '暱稱', placeholder: '請輸入暱稱', icon: 'fa-solid fa-user-pen', type: 'text' },
+  { model: 'birthday', label: '生日', placeholder: '請輸入生日', icon: 'fa-solid fa-cake-candles', type: 'date' },
+];
+const barTypes = ['運動酒吧', '音樂酒吧', '學生酒吧', '餐酒館', '暢飲店'];
+const barMoods = ['熱鬧歡樂', '浪漫私密', '復古懷舊', '高級精緻', '輕鬆悠閒'];
 
 watch(
   userId,
@@ -62,18 +71,32 @@ watch(
   { immediate: true }
 );
 
-const profileFields = [
-  { model: 'username', label: '姓名', placeholder: '請輸入姓名', icon: 'fa-solid fa-user', type: 'text' },
-  { model: 'nickname', label: '暱稱', placeholder: '請輸入暱稱', icon: 'fa-solid fa-user-pen', type: 'text' },
-  { model: 'birthday', label: '生日', placeholder: '請輸入生日', icon: 'fa-solid fa-cake-candles', type: 'date' },
-];
-const barTypes = ['運動酒吧', '音樂酒吧', '學生酒吧', '餐酒館', '暢飲店'];
-const barMoods = ['熱鬧歡樂', '浪漫私密', '復古懷舊', '高級精緻', '輕鬆悠閒'];
-
 const toggleSelection = (arr, value) => {
   const index = arr.indexOf(value);
   if (index > -1) arr.splice(index, 1);
   else arr.push(value);
+};
+
+const handleAvatarChange = (event) => {
+  const file = event.target.files[0];
+  if (file && file.type.startsWith('image/')) {
+    avatarFile.value = file;
+    avatarPreview.value = URL.createObjectURL(file); // 頭像即時預覽
+  } else {
+    alert('請選擇圖片檔案');
+  }
+};
+
+const handleRemoveAvatar = async () => {
+  try {
+    await removeUserAvatar(userId.value);
+    profile.value.avatarUrl = '';
+    authStore.user.avatarUrl = '';
+    avatarFile.value = null;
+    avatarPreview.value = '';
+  } catch (err) {
+    alert('頭像移除失敗');
+  }
 };
 
 const handleSubmit = async () => {
@@ -113,19 +136,23 @@ const cancel = () => {
 
   <div v-else class="w-full max-w-4xl mx-auto mt-10 px-4">
     <form @submit.prevent="handleSubmit" class="flex flex-col md:flex-row items-center md:items-start gap-10">
-      <!-- 左側：頭像 + 上傳按鈕 -->
+      <!-- 左側：頭像 + 上傳 & 移除按鈕 -->
       <div class="flex flex-col items-center md:w-1/3">
-        <UserAvatar
-          :avatar-url="avatarPreview || profile.avatarUrl || '/default-user-avatar.png'"
-          :display-name="profile.username"
-          size="lg"
-        />
+        <UserAvatar 
+        :avatar-url="avatarPreview || profile.avatarUrl || '/default-user-avatar.png'" 
+        :display-name="profile.username" 
+        size="lg" />
         <label
           for="avatar"
           class="mt-4 px-4 py-2 bg-[var(--color-black)] text-[var(--color-secondary-pink)] rounded cursor-pointer hover:bg-opacity-80 active:scale-98 transition-all duration-150">
           <i class="fa-solid fa-arrow-up-from-bracket mr-1"></i> 上傳頭像
         </label>
         <input type="file" hidden id="avatar" @change="handleAvatarChange" />
+        <button type="button"
+        v-if="!isDefaultAvatar"
+        @click="handleRemoveAvatar"
+        class="mt-2 px-4 py-2  bg-gray-400 text-white rounded cursor-pointer active:scale-98 transition-all duration-150">
+        <i class="fa-solid fa-user-minus"></i> 移除頭像</button>
       </div>
 
       <!-- 右側：表單 + 按鈕 -->
@@ -136,8 +163,7 @@ const cancel = () => {
           :profileFields="profileFields"
           :barTypes="barTypes"
           :barMoods="barMoods"
-          :toggleSelection="toggleSelection"
-        />
+          :toggleSelection="toggleSelection" />
         <div class="mt-4 flex gap-2">
           <button type="button" @click="cancel" class="px-4 py-2 bg-gray-400 text-white rounded cursor-pointer">取消</button>
           <button type="submit" class="px-4 py-2 bg-[var(--color-primary-orange)] text-white rounded cursor-pointer">儲存</button>
