@@ -9,16 +9,22 @@ const isLoading = ref(true);
 
 const fetchBenefitData = async () => {
   try {
-    canUseBenefitList.value = await getCanUseBenefit();
-    overUseBenefitList.value = await getOverUseBenefit();
+    const canUse = await getCanUseBenefit();
+    const overUse = await getOverUseBenefit();
+
+    canUseBenefitList.value = canUse;
+    overUseBenefitList.value = overUse;
   } catch (err) {
     console.error('取得優惠券失敗', err);
-  } finally{
+  } finally {
+    console.log('設定 isLoading = false');
     isLoading.value = false;
   }
 };
 
 onMounted(fetchBenefitData);
+console.log('canUseBenefitList', canUseBenefitList.value);
+console.log('isLoading', isLoading.value);
 
 </script>
 

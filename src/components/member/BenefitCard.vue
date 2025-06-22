@@ -17,7 +17,6 @@ const dateRange = computed(() => {
 const status = computed(() => benefit.status)
 const isUsed = computed(() => status.value === 2)
 const isExpired = computed(() => status.value === 3)
-console.log('🧾 優惠券狀態:', benefit.id, benefit.status)
 
 const barOptions = ref([
   { id: 1, name: '醉後不歸路' },
@@ -28,10 +27,8 @@ const barOptions = ref([
 ]);
 
 const showBenefitModal = ref(false)
-const selectBar = ref('')
-const isRedeemed = ref(false)
+const selectBar = ref(benefit.barId || '')
 const showSelecBarModal = ref(false)
-
 
 function toggleModal(){
   if( !selectBar.value ){
@@ -56,8 +53,8 @@ async function handleConfirmRedeemModal(){
       barId: selectBar.value
     });
 
-    isRedeemed.value = true
     benefit.status = 2
+    benefit.barId = selectBar.value;
     showBenefitModal.value = false
   }catch(err){
     console.error(err)
@@ -100,7 +97,7 @@ const imageUrl = computed(() => imageMap[benefit.benefit] || cocktail)
       <div class="flex">
         <select
           v-model="selectBar"
-          :disabled="isUsed || isExpired || isRedeemed"
+          :disabled="isUsed || isExpired"
           class="select bg-white border-[2px] 
           border-[var(--color-primary-orange)] 
           focus:outline-none mt-2"
@@ -116,14 +113,13 @@ const imageUrl = computed(() => imageMap[benefit.benefit] || cocktail)
         </select>
         <button 
           @click="toggleModal"
-          :disabled="isUsed || isExpired || isRedeemed"
+          :disabled="isUsed || isExpired"
           type="button"
           class="btn text-white bg-[var(--color-primary-red)]
           hover:bg-[var(--color-primary-orange)] mt-2">
           {{ 
             isUsed ? '已使用' :
             isExpired ? '已過期' :
-            isRedeemed ? '已使用' :
             '使用優惠券'
           }}
         </button>

@@ -1,24 +1,26 @@
 import apiClient from '@/api/axios';
 
 const getSubIdAndCreateBenefit = async () => {
-
-  try{
+  try {
     const { sub: { id: subId } } = (await apiClient.get('/sub/plan')).data;
     await apiClient.post('/benefit/create', { subId });
-  }catch(err){
-    console.error(err)
+    return true;
+  } catch (err) {
+    console.error(err);
+    return false;
   }
 };
 
-const getCanUseBenefit = async(status = 1) => {
+const getCanUseBenefit = async (status = 1) => {
   try {
     const { benefits: benefitList } = (await apiClient.get('/benefit', {
-      params: { status } 
+      params: { status }
     })).data;
-
-    return benefitList;
+    return benefitList || [];
   } catch (err) {
+    if (err.response?.status === 404) return [];
     console.error(err);
+    return [];
   }
 };
 
