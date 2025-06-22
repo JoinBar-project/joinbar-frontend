@@ -84,5 +84,5 @@ const confirmLinePayment = async (transactionId, orderId) => {
 
 
 
-export { getAllSubPlans, createSubscriptionOrder, createLinePayment };
+export { getAllSubPlans, createSubscriptionOrder, createLinePayment, confirmLinePayment };
 

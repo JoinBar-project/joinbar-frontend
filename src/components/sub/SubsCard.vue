@@ -1,6 +1,6 @@
 <script setup>
 import { ref, onMounted, onUnmounted } from 'vue'
-import { getAllSubPlans } from '@/api/subsCard';
+import { getAllSubPlans, createSubscriptionOrder, createLinePayment, confirmLinePayment } from '@/api/subsCard';
 
 const spotlight = ref(null)
 const cardData = ref([])
@@ -9,11 +9,34 @@ onMounted(async() => {
   try{
     const plans = await getAllSubPlans();
     cardData.value = plans;
-    console.log('============', cardData.value)
-  }catch(err){
+
+  }catch (err) {
     console.warn('訂閱資料載入失敗');
   }
 })
+
+const handleSubscribe = async(subscriptionType) => {
+
+  try{
+    const order = await createSubscriptionOrder(subscriptionType);
+
+    if (!order || !order.id) {
+      throw new Error('訂單建立失敗');
+    }
+
+    const { paymentUrl, transactionId, expireTime } = await createLinePayment(order);
+
+    localStorage.setItem('transactionId', transactionId);
+    localStorage.setItem('expireTime', expireTime);
+    localStorage.setItem('orderId', order.id);
+
+    window.location.href = paymentUrl;
+
+  }catch (err) {
+    console.error('訂閱流程發生錯誤', err);
+    alert('訂閱流程發生錯誤，請稍後再試');
+  }
+}
 
 function handleMouseMove(e) {
   if (spotlight.value) {
@@ -65,7 +88,8 @@ onUnmounted(() => {
                 <i class="fa-solid fa-check text-[var(--color-primary-orange)] pr-4"></i>
                 <p class="text-stone-50 font-bold">{{ benefit.benefit.replace('1 次', `${benefit.counts} 次 `) }}</p>
               </div>
-              <button 
+              <button
+                @click="handleSubscribe(card.type)" 
                 type="button" 
                 class="mt-20 mb-10 px-6 py-2 text-lg text-stone-50 border-2 border-[var(--color-primary-orange)] rounded-[12px] bg-neutral-900 block mx-auto cursor-pointer hover:bg-[var(--color-primary-orange)]">
                 即刻擁有
