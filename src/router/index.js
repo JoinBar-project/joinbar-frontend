@@ -70,8 +70,6 @@ const routes = [
   { path: '/cart', name: 'Cart', component: Cart, meta: { requiresAuth: true } },
   { path: '/payment', name: 'Payment', component: Payment, meta: { requiresAuth: true } },
   { path: '/payment-waiting', name: 'PaymentWaiting', component: PaymentWaiting },
-  { path: '/order-success/:orderNumber', name: 'OrderSuccess', component: OrderSuccess, props: true },
-  { path: '/sub', name: 'Subscription', component: Subscription },
   { path: '/order-success/:orderNumber', name: 'OrderSuccess', component: OrderSuccess, props: true, meta: { requiresAuth: true } },
   { path: '/preferences', name: 'Preferences', component: Preferences, meta: { requiresAuth: true } },
   // 404 路由放到最後，並且更精確
