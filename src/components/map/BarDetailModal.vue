@@ -371,14 +371,49 @@ const closeShareModal = () => {
   shareModalVisible.value = false;
 };
 
+const handleShareFallback = async (shareText, shareUrl) => {
+  try {
+    const fullContent = `${shareText}\n${shareUrl}`;
+    await navigator.clipboard.writeText(fullContent);
+    alert('分享內容已複製到剪貼簿！\n\n請開啟 Line app 手動貼上分享。');
+    closeShareModal();
+  } catch (error) {
+    console.error('複製失敗:', error);
+    alert('分享失敗，請稍後再試');
+  }
+};
+
+const generateBarShareUrl = () => {
+  const barId = props.bar.placeId || props.bar.id || props.bar.place_id;
+  if (!barId) {
+    console.warn('找不到酒吧 ID，使用 Google Maps URL');
+    return props.bar.url;
+  }
+
+  const baseUrl = window.location.origin;
+  const barUrl = `${baseUrl}/bar/${encodeURIComponent(barId)}`;
+
+  const params = new URLSearchParams({
+    name: props.bar.name || '',
+    rating: props.bar.rating || '',
+    reviews: props.bar.reviews || 0,
+    address: props.bar.address || '',
+    originalUrl: props.bar.url || ''
+  });
+  const finalUrl = `${barUrl}?${params.toString()}`;
+  return finalUrl;
+}
+
 const shareUrl = computed(() => {
-  return props.bar.url;
+  return generateBarShareUrl();
 });
 
 const copyUrl = async () => {
   try {
-    await navigator.clipboard.writeText(shareUrl.value);
-    alert('網址已複製到剪貼簿！');
+    const appShareUrl = generateBarShareUrl();
+    await navigator.clipboard.writeText(appShareUrl);
+    alert('酒吧專屬連結已複製到剪貼簿！\n\n點擊此連結就能直接查看酒吧詳情。');
+    closeShareModal();
   } catch (error) {
     alert('複製失敗，請手動複製網址');
   }
@@ -389,17 +424,21 @@ const shareToLine = () => {
     const barName = props.bar.name;
     const barRating = props.bar.rating || 'N/A';
     const barAddress = props.bar.address || '';
-    
+
     const shareText = `推薦酒吧：${barName}\n評價：${barRating}星\n${barAddress}`;
-    
+
+    const appShareUrl = generateBarShareUrl();
+
     const lineShareUrl = `https://social-plugins.line.me/lineit/share?` +
-                          `url=${encodeURIComponent(shareUrl.value)}&` +
+                          `url=${encodeURIComponent(appShareUrl)}&` +
                           `text=${encodeURIComponent(shareText)}`;
     
     const lineWindow = window.open(lineShareUrl, 'lineShare', 'width=600,height=500');
     
     if (lineWindow) {
       closeShareModal();
+    } else {
+      handleShareFallback(shareText, appShareUrl);
     }
     
   } catch (error) {
