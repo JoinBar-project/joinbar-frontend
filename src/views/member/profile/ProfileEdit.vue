@@ -7,6 +7,7 @@ import { useUserProfileStore } from '@/stores/userProfileStore';
 import { useSuccessAlert } from '@/composables/useSuccessAlert';
 import ProfileForm from '@/components/member/ProfileForm.vue';
 import UserAvatar from '@/components/UserAvatar.vue';
+import { validateUserProfile } from '@/utils/validators.js';
 
 const authStore = useAuthStore();
 const userProfileStore = useUserProfileStore();
@@ -21,7 +22,6 @@ const form = ref({
   username: '',
   nickname: '',
   birthday: '',
-  avatarUrl: '',
   preferences: {
     types: [],
     moods: [],
@@ -39,6 +39,12 @@ const isDefaultAvatar = computed(() => {
     return true;
   }
   return false;
+});
+
+const errors = ref({
+  username: '',
+  nickname: '',
+  birthday: ''
 });
 
 const profileFields = [
@@ -64,7 +70,6 @@ watch(
       form.value.username = newProfile.username || '';
       form.value.nickname = newProfile.nickname || '';
       form.value.birthday = newProfile.birthday || '';
-      form.value.avatarUrl = newProfile.avatarUrl;
       form.value.preferences = newProfile.preferences || { types: [], moods: [] };
     }
   },
@@ -100,13 +105,46 @@ const handleRemoveAvatar = async () => {
 };
 
 const handleSubmit = async () => {
+  const result = validateUserProfile(form.value);
+  let valid = true;
+
+  if (result.username) {
+    errors.value.username = result.username;
+    valid = false;
+  } else {
+    errors.value.username = '';
+  }
+
+  if (result.nickname) {
+    errors.value.nickname = result.nickname;
+    valid = false;
+  } else {
+    errors.value.nickname = '';
+  }
+
+  if (result.birthday) {
+    errors.value.birthday = result.birthday;
+    valid = false;
+  } else {
+    errors.value.birthday = '';
+  }
+
+  if (!valid) return;
+  
   try {
-    await userProfileStore.updateUserProfile(userId.value, form.value);
+    const submitData = {
+      username: form.value.username,
+      nickname: form.value.nickname === '' ? null : form.value.nickname,
+      birthday: form.value.birthday === '' ? null : form.value.birthday,
+      // nickname: form.value.nickname || undefined,
+      // birthday: form.value.birthday || undefined,
+      preferences: form.value.preferences
+    };
+    await userProfileStore.updateUserProfile(userId.value, submitData);
     if (avatarFile.value) {
       await updateUserAvatar(userId.value, avatarFile.value);
-      form.value.avatarUrl = userProfileStore.profile.avatarUrl;
     }
-    authStore.updateAuthUser(form.value);
+    authStore.updateAuthUser(submitData);
     triggerAlert();
 
     setTimeout(() => {
@@ -163,7 +201,8 @@ const cancel = () => {
           :profileFields="profileFields"
           :barTypes="barTypes"
           :barMoods="barMoods"
-          :toggleSelection="toggleSelection" />
+          :toggleSelection="toggleSelection"
+          :errors="errors" />
         <div class="mt-4 flex gap-2">
           <button type="button" @click="cancel" class="px-4 py-2 bg-gray-400 text-white rounded cursor-pointer">取消</button>
           <button type="submit" class="px-4 py-2 bg-[var(--color-primary-orange)] text-white rounded cursor-pointer">儲存</button>

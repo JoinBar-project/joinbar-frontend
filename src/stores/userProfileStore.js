@@ -8,16 +8,26 @@ export const useUserProfileStore = defineStore('userProfile', () => {
     nickname: '',
     birthday: '',
     avatarUrl: '',
+    preferences: {
+      types: [],
+      moods: [],
+    },
   });
 
   const isLoading = ref(false);
-  
+
   const getUserProfile = async (id) => {
     isLoading.value = true;
 
     try {
       const { data } = await getUserProfileById(id);
-      profile.value = data;
+      profile.value = {
+        username: data.username || '',
+        nickname: data.nickname || '',
+        birthday: data.birthday || '',
+        avatarUrl: data.avatarUrl || '',
+        preferences: data.preferences || { types: [], moods: [] },
+      };
       console.log('取得使用者資料成功:', data);
     } catch (err) {
       console.error('取得使用者資料失敗', err);
@@ -32,7 +42,13 @@ export const useUserProfileStore = defineStore('userProfile', () => {
 
     try {
       const { data } = await patchUserProfileById(id, userData);
-      profile.value = data;
+      profile.value = {
+        username: data.username || '',
+        nickname: data.nickname || '',
+        birthday: data.birthday || '',
+        avatarUrl: data.avatarUrl || '',
+        preferences: data.preferences || { types: [], moods: [] },
+      };
       console.log('更新使用者資料成功:', data);
       return data;
     } catch (err) {
@@ -57,7 +73,7 @@ export const useUserProfileStore = defineStore('userProfile', () => {
     }
   };
 
-    const removeUserAvatar = async (id) => {
+  const removeUserAvatar = async (id) => {
     isLoading.value = true;
     try {
       const { data } = await deleteUserAvatar(id);

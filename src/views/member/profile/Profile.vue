@@ -18,7 +18,7 @@ const userId = computed(() => user.value?.id);
 
 const profileFields = [
   { model: 'username', label: '姓名', placeholder: '請輸入姓名', icon: 'fa-solid fa-user', type: 'text' },
-  { model: 'nickname', label: '暱稱', placeholder: '請輸入暱稱', icon: 'fa-solid fa-user-pen', type: 'text' },
+  { model: 'nickname', label: '暱稱', placeholder: '請輸入暱稱', icon: 'fa-solid fa-tag', type: 'text' },
   { model: 'birthday', label: '生日', placeholder: '請輸入生日', icon: 'fa-solid fa-cake-candles', type: 'date' },
 ];
 const barTypes = ['運動酒吧', '音樂酒吧', '學生酒吧', '餐酒館', '暢飲店'];
@@ -60,7 +60,8 @@ const goToEdit = () => {
           :profileFields="profileFields"
           :barTypes="barTypes"
           :barMoods="barMoods"
-          :toggleSelection="() => {}" />
+          :toggleSelection="() => {}"
+          :errors="{ username: '', nickname: '', birthday: '' }" />
         <div class="text-center md:text-left">
           <button type="button" class="px-4 py-2 bg-gray-800 text-white rounded cursor-pointer" @click="goToEdit">編輯個人資料</button>
         </div>
