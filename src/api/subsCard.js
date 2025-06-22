@@ -64,6 +64,23 @@ const createLinePayment = async (order) => {
   }
 };
 
+const confirmLinePayment = async (transactionId, orderId) => {
+  try{
+    const res = await apiClient.get('/linepay/confirm', {
+      params: {
+        transactionId,
+        orderId
+      }
+    })
+    return res.data;
+
+  }catch (err) {
+    console.error(err);
+    throw err; 
+    }
+  };
+  
+
 
 
 
