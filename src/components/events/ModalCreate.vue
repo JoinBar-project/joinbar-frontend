@@ -7,6 +7,7 @@ import { useAuthStore } from '@/stores/authStore';
 const emit = defineEmits(['submit', 'eventCreated']);
 
 const { showForm, showAlert, handleAlertAccept, handleAlertDeny, overlayClick } = useEventForm();
+const authStore = useAuthStore();
 
 function handleSubmit(result) {
   if (result.success) {
@@ -16,6 +17,13 @@ function handleSubmit(result) {
   } else {
     console.error('建立活動失敗:', result.error);
   }
+}
+function handleClick() {
+  if (!authStore.isAuthenticated) {
+    alert('請先登入才能建立活動');
+    return;
+  }
+  showForm.value = true;
 }
 
 </script>
@@ -28,9 +36,8 @@ function handleSubmit(result) {
       @deny="handleAlertDeny" 
     />
     <button
-      v-if="useAuthStore().isAuthenticated"
       class="btn-open-form btn-create"
-      @click="showForm = true">
+      @click="handleClick">
       建立活動
     </button>
     <transition name="popup">
