@@ -32,6 +32,7 @@ const authStore = useAuthStore()
           前往登入
         </button>
 			</div>
+
 			<!-- 驗證失敗 -->
 			<div class="text-center">
 				<div class="flex items-center justify-center w-16 h-16 mx-auto mb-4 bg-red-100 rounded-full">
@@ -52,6 +53,7 @@ const authStore = useAuthStore()
           </button>
 				</div>
 			</div>
+
 			<!-- 無效連結 -->
 			<div class="text-center">
 				<div class="flex items-center justify-center w-16 h-16 mx-auto mb-4 bg-green-100 rounded-full">
@@ -65,8 +67,32 @@ const authStore = useAuthStore()
           返回登入頁
         </button>
 			</div>
+
 			<!-- 重新寄送驗證信表單 -->
-			<div></div>
+			<div class="mt-4 text-center">
+        <h3 class="mb-3 text-lg font-semibold">重新寄送驗證信</h3>
+        <div class="space-y-3">
+          <input
+            v-model="resendEmail"
+            type="email"
+            placeholder="請輸入您的信箱"
+            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-[var(--color-secondary-green)]"
+          />
+          <div class="flex justify-center gap-4"> 
+            <button
+              class="px-4 py-2 text-black bg-green-200 rounded-lg cursor-pointer hover:opacity-75 hover:shadow-lg active:opacity-50"
+            >
+              <span v-if="isResending">寄送中...</span>
+              <span v-else>重新寄送</span>
+            </button>
+            <button
+              class="px-4 py-2 text-black bg-red-200 rounded-lg cursor-pointer hover:opacity-75 hover:shadow-lg active:opacity-50"
+						>
+              取消
+            </button>
+          </div>
+        </div>
+      </div>
 		</div>
 	</div>
 </template>
