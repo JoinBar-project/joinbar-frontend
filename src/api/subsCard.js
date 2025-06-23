@@ -51,35 +51,35 @@ const createSubscriptionOrder = async (subscriptionType) => {
   }
 };
 
-const createLinePayment = async (order) => {
+const getSubOrderDetails  = async (orderId) => {
   try {
-    const payload = {
-      orderId: order.orderId, // 修正這裡
-      orderNumber: order.orderNumber,
-      amount: Number(order.totalAmount),
-    };
-
-    const res = await apiClient.post('/linepay/create', payload);
-
-    const { success, data, message } = res.data;
-
-    if (success && data?.paymentUrl) {
-      const { paymentUrl, transactionId, expireTime } = data;
-
-      // 記住付款的資訊
-      localStorage.setItem('line_transaction_id', transactionId);
-      localStorage.setItem('line_expire_time', expireTime);
-
-      // 導向付款頁
-      window.location.href = paymentUrl;
-
-      return { transactionId, expireTime };
-    } else {
-      throw new Error(message || '建立付款請求失敗');
-    }
+    const res = await apiClient.get(`/orders/${orderId}/details`);
+    return res.data;
   } catch (err) {
-    console.error('建立 LINE Pay 訂單失敗:', err);
+    console.error('❌ 取得訂單詳情失敗:', err);
     throw err;
+  }
+};
+
+const createLinePayment = async (order) => {
+  const payload = {
+    orderId: order.orderId,
+    orderNumber: order.orderNumber,
+    amount: Number(order.totalAmount),
+  };
+
+  const res = await apiClient.post('/linepay/create', payload);
+
+  const { success, data, message } = res.data;
+
+  if (success && data?.paymentUrl) {
+    return {
+      transactionId: data.transactionId,
+      expireTime: data.expireTime,
+      paymentUrl: data.paymentUrl
+    };
+  } else {
+    throw new Error(message || '建立付款請求失敗');
   }
 };
 
@@ -104,5 +104,5 @@ const confirmLinePayment = async (transactionId, orderId) => {
 
 
 
-export { getAllSubPlans, createSubscriptionOrder, createLinePayment, confirmLinePayment };
+export { getAllSubPlans, createSubscriptionOrder, getSubOrderDetails , createLinePayment, confirmLinePayment };
 

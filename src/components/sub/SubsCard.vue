@@ -1,69 +1,53 @@
 <script setup>
-import { ref, onMounted, onUnmounted } from 'vue';
-import { getAllSubPlans, createSubscriptionOrder, createLinePayment } from '@/api/subsCard';
-import PaymentPendingModal from '@/components/sub/PaymentPendingModal.vue'
+import { ref, onMounted, onUnmounted } from 'vue'
+import { getAllSubPlans, createSubscriptionOrder, createLinePayment } from '@/api/subsCard'
 
-const spotlight = ref(null);
-const cardData = ref([]);
-const showModal = ref(false)
-const modalMessage = ref('')   
-const modalOrderId = ref('')
-const modalSubType = ref('')
-
+const spotlight = ref(null)
+const cardData = ref([])
 
 const handleSubscribe = async (subscriptionType) => {
   try {
+    const order = await createSubscriptionOrder(subscriptionType)
+    if (!order?.orderId) throw new Error('訂單建立失敗')
 
-    console.log('🟢 1. 建立訂閱訂單中...')
-    const order = await createSubscriptionOrder(subscriptionType);
-    if (!order || !order.orderId?.toString?.()) throw new Error('訂單建立失敗');
+    const { paymentUrl, transactionId, expireTime } = await createLinePayment(order)
 
-    console.log('🟢 2. 建立 LINE Pay 付款中...', order.id)
-    console.log('📥 createSubscriptionOrder 回傳', order)
-    const { paymentUrl, transactionId, expireTime } = await createLinePayment(order);
+    if (!paymentUrl) throw new Error('付款連結為空')
 
-    modalOrderId.value = order.orderId;
-    modalSubType.value = subscriptionType;
-    modalMessage.value = '即將前往付款頁';
-    showModal.value = true;
+    localStorage.setItem('transactionId', transactionId)
+    localStorage.setItem('expireTime', expireTime)
+    localStorage.setItem('orderId', order.orderId)
+    localStorage.setItem('subType', subscriptionType)
 
-    setTimeout(() => {
-      localStorage.setItem('transactionId', transactionId);
-      localStorage.setItem('expireTime', expireTime);
-      localStorage.setItem('orderId', order.id);
-      localStorage.setItem('subType', subscriptionType);
+    // ✅ 確保儲存完成再導向
+    window.location.href = paymentUrl
 
-      window.location.href = paymentUrl;
-    }, 1000);
-
+    console.log('🔗 LINE Pay URL:', paymentUrl)
   } catch (err) {
-    console.error('訂閱流程發生錯誤', err);
-    alert('訂閱流程發生錯誤，請稍後再試一次');
+    console.error('訂閱流程發生錯誤', err)
+    alert('訂閱流程發生錯誤，請稍後再試一次')
   }
 }
 
-
-
 const handleMouseMove = (e) => {
   if (spotlight.value) {
-    spotlight.value.style.transform = `translate(${e.clientX - 64}px, ${e.clientY - 64}px)`;
+    spotlight.value.style.transform = `translate(${e.clientX - 64}px, ${e.clientY - 64}px)`
   }
-};
+}
 
 onMounted(async () => {
   try {
-    const plans = await getAllSubPlans();
-    cardData.value = plans;
+    const plans = await getAllSubPlans()
+    cardData.value = plans
   } catch (err) {
-    console.warn('訂閱資料載入失敗');
+    console.warn('訂閱資料載入失敗')
   }
-
-  window.addEventListener('mousemove', handleMouseMove);
-});
+  window.addEventListener('mousemove', handleMouseMove)
+})
 
 onUnmounted(() => {
-  window.removeEventListener('mousemove', handleMouseMove);
-});
+  window.removeEventListener('mousemove', handleMouseMove)
+})
 </script>
 
 
@@ -113,11 +97,6 @@ onUnmounted(() => {
         </div>
       </div>
     </div>
-    <PaymentPendingModal 
-      v-if="showModal"
-      :modalMessage="modalMessage"
-      @close="showModal = false" 
-    />
   </div>
 </template>
 
