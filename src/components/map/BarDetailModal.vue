@@ -272,11 +272,9 @@ const closeModal = () => {
 };
 
 const toggleFavorite = () => {
-  // Use place_id for consistency based on BarList and MapView
   if (props.bar.place_id) {
     emit("toggle-wishlist", props.bar.place_id);
   } else if (props.bar.id) {
-    // Fallback to id if place_id is not available
     emit("toggle-wishlist", props.bar.id);
   }
 };
@@ -359,7 +357,6 @@ const getTagLabel = (tag) => {
 }
 
 .image-gallery-container {
-  /* 恢復為圖片一的佈局 */
   width: 50%;
   height: 100%;
   overflow: hidden;
@@ -391,8 +388,8 @@ const getTagLabel = (tag) => {
 }
 
 .nav-button {
-  background-color: rgba(0, 0, 0, 0.5); /* 恢復圖片一的背景 */
-  color: white; /* 恢復圖片一的文字顏色 */
+  background-color: rgba(0, 0, 0, 0.5);
+  color: white;
   border: none;
   border-radius: 50%;
   width: 32px;
@@ -402,16 +399,16 @@ const getTagLabel = (tag) => {
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  transition: background-color 0.2s; /* 調整過渡效果 */
+  transition: background-color 0.2s;
 }
 .nav-button:hover {
-  background-color: rgba(0, 0, 0, 0.7); /* 恢復圖片一的 hover 背景 */
-  transform: scale(1); /* 移除上次加入的 hover 縮放效果 */
+  background-color: rgba(0, 0, 0, 0.7);
+  transform: scale(1);
 }
 
 .image-dots {
   position: absolute;
-  bottom: 10px; /* 恢復圖片一的位置 */
+  bottom: 10px;
   left: 50%;
   transform: translateX(-50%);
   display: flex;
@@ -421,12 +418,12 @@ const getTagLabel = (tag) => {
 .dot {
   width: 8px;
   height: 8px;
-  background-color: rgba(255, 255, 255, 0.6); /* 恢復圖片一的顏色 */
+  background-color: rgba(255, 255, 255, 0.6);
   border-radius: 50%;
   cursor: pointer;
   transition:
     background-color 0.2s,
-    transform 0.2s; /* 調整過渡效果 */
+    transform 0.2s;
 }
 .dot.active {
   background-color: #fff;
@@ -434,14 +431,14 @@ const getTagLabel = (tag) => {
 }
 
 .detail-info-section {
-  width: 50%; /* 恢復圖片一的寬度 */
-  padding: 80px 25px 20px 25px; /* 恢復圖片一的 padding */
+  width: 50%;
+  padding: 80px 25px 20px 25px;
   overflow-y: auto;
   flex-grow: 1;
   display: flex;
   flex-direction: column;
   padding-bottom: 20px;
-  background-color: #f8fafc; /* 與圖片一背景相似 */
+  background-color: #f8fafc;
 }
 
 .header-main {
@@ -449,7 +446,7 @@ const getTagLabel = (tag) => {
   align-items: center;
   justify-content: flex-start;
   margin-bottom: 10px;
-  padding-top: 0; /* 恢復原始 */
+  padding-top: 0;
 }
 
 .bar-detail-name {
@@ -463,12 +460,12 @@ const getTagLabel = (tag) => {
 .rating-info {
   display: flex;
   align-items: center;
-  gap: 15px; /* 恢復圖片一的間距 */
+  gap: 15px;
   margin-bottom: 15px;
   font-size: 16px;
   color: #555;
-  padding-bottom: 10px; /* 恢復圖片一的間距 */
-  border-bottom: 1px solid #f0f0f0; /* 恢復圖片一的邊框 */
+  padding-bottom: 10px;
+  border-bottom: 1px solid #f0f0f0;
 }
 .rating-text {
   font-weight: 500;
@@ -477,13 +474,13 @@ const getTagLabel = (tag) => {
 .contact-info p {
   margin-bottom: 8px;
   font-size: 15px;
-  color: #666; /* 恢復圖片一的顏色 */
+  color: #666;
   display: flex;
   align-items: center;
   gap: 8px;
 }
 .contact-info a {
-  color: #007bff; /* 恢復圖片一的顏色 */
+  color: #007bff;
   text-decoration: none;
 }
 .contact-info a:hover {
@@ -532,13 +529,13 @@ const getTagLabel = (tag) => {
 }
 
 .detail-tag {
-  background-color: #e6f7ff; /* 恢復圖片一的顏色 */
-  color: #1890ff; /* 恢復圖片一的顏色 */
+  background-color: #e6f7ff;
+  color: #1890ff;
   padding: 6px 12px;
   border-radius: 20px;
   font-size: 14px;
   white-space: nowrap;
-  border: 1px solid #91d5ff; /* 恢復圖片一的邊框 */
+  border: 1px solid #91d5ff;
 }
 
 .google-review-section {
@@ -546,12 +543,12 @@ const getTagLabel = (tag) => {
 }
 
 .review-card {
-  background-color: #f9f9f9; /* 恢復圖片一的背景 */
+  background-color: #f9f9f9;
   border-radius: 8px;
   padding: 15px;
   margin-top: 15px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
-  border: none; /* 恢復圖片一的無邊框 */
+  border: none;
 }
 
 .review-header {
@@ -605,11 +602,11 @@ const getTagLabel = (tag) => {
   left: 0;
   width: 100%;
   display: flex;
-  justify-content: space-between; /* 內容兩端對齊 */
+  justify-content: space-between;
   align-items: center;
   padding: 15px 25px;
   background-color: #fff;
-  border-top: 1px solid #f0f0f0; /* 恢復圖片一的邊框 */
+  border-top: 1px solid #f0f0f0;
   box-shadow: 0 -4px 10px rgba(0, 0, 0, 0.05);
   z-index: 5;
   box-sizing: border-box;
@@ -617,15 +614,15 @@ const getTagLabel = (tag) => {
 
 .action-buttons-group {
   display: flex;
-  gap: 15px; /* 恢復圖片一的間距 */
+  gap: 15px;
 }
 
 .action-button {
   background: none;
-  border: 1px solid #e2e8f0; /* 恢復圖片一的邊框 */
-  border-radius: 12px; /* 恢復圖片一的圓角 */
-  width: 44px; /* 恢復圖片一的大小 */
-  height: 44px; /* 恢復圖片一的大小 */
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  width: 44px;
+  height: 44px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -638,30 +635,28 @@ const getTagLabel = (tag) => {
 .action-button:hover {
   background-color: #f7fafc;
   border-color: #cbd5e0;
-  transform: translateY(-2px); /* 恢復圖片一的 hover 效果 */
+  transform: translateY(-2px);
 }
 
 .action-button .icon {
   width: 24px;
   height: 24px;
-  filter: brightness(0.5); /* 恢復圖片一的濾鏡 */
+  filter: brightness(0.5);
 }
 
 .wishlist-detail-button .heart-icon {
-  width: 20px; /* 恢復圖片一的大小 */
-  height: 20px; /* 恢復圖片一的大小 */
+  width: 20px;
+  height: 20px;
   transition:
     fill 0.3s ease,
     stroke 0.3s ease;
 }
-/* 恢復圖片一的收藏按鈕 hover 效果 */
 .wishlist-detail-button:not([fill="red"]):hover .heart-icon {
   fill: #ffebeb;
   stroke: red;
 }
 
 .start-event-button {
-  /* 恢復圖片一的樣式 */
   background-image: linear-gradient(to right, #a8d87b, #d8dbaf, #daa258);
   color: #333;
   border: none;
@@ -701,7 +696,6 @@ const getTagLabel = (tag) => {
   opacity: 0;
 }
 
-/* Tooltip 樣式恢復 */
 .action-button[data-tooltip] {
   position: relative;
 }
