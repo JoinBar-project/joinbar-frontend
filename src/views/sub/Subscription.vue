@@ -1,10 +1,10 @@
 <script setup>
-import Subscription from '@/components/sub/Subscription.vue'
+import SubsCard from '@/components/sub/SubsCard.vue'
 </script>
 
 <template>
 
-  <Subscription />
+  <SubsCard />
 </template>
 
 <style scoped>
