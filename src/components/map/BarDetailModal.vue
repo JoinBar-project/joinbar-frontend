@@ -155,15 +155,13 @@
             </button>
             <button
               class="action-button icon-button wishlist-detail-button"
-              @click.stop="toggleFavorite"
-              :aria-label="bar.isWishlisted ? '取消收藏' : '加入收藏'"
-              :data-tooltip="bar.isWishlisted ? '取消收藏' : '加入收藏'"
+              @click.stop="toggleFavorite" :aria-label="favoritesStore.isBarFavorited(bar.place_id) ? '取消收藏' : '加入收藏'"
+              :data-tooltip="favoritesStore.isBarFavorited(bar.place_id) ? '取消收藏' : '加入收藏'"
             >
               <svg
                 xmlns="http://www.w3.org/2000/svg"
                 viewBox="0 0 24 24"
-                :fill="bar.isWishlisted ? 'red' : 'none'"
-                :stroke="bar.isWishlisted ? 'red' : '#7f7f7f'"
+                :fill="favoritesStore.isBarFavorited(bar.place_id) ? 'red' : 'none'" :stroke="favoritesStore.isBarFavorited(bar.place_id) ? 'red' : '#7f7f7f'"
                 stroke-width="1.5"
                 class="heart-icon"
               >
@@ -191,6 +189,7 @@
 import { ref, watch, computed } from "vue";
 import { useRouter } from "vue-router";
 import placeTypeMap from "@/composables/placeTypeMap";
+import { useFavoritesStore } from '@/stores/favorites'; // 引入 Pinia Store
 
 const props = defineProps({
   bar: {
@@ -199,9 +198,10 @@ const props = defineProps({
   },
 });
 
-const emit = defineEmits(["close", "toggle-wishlist"]);
+const emit = defineEmits(["close"]); // 移除 "toggle-wishlist" emit
 
 const router = useRouter();
+const favoritesStore = useFavoritesStore(); // 實例化 Pinia Store
 
 const currentImageIndex = ref(0);
 const defaultImage =
@@ -227,7 +227,7 @@ const currentOpenStatus = computed(() => {
   if (props.bar.is_open === false) {
     return '<span style="color: red;">目前休息中</span>';
   }
-  // return "未提供營業時間資訊";
+  return "未提供營業時間資訊";
 });
 
 watch(
@@ -266,14 +266,9 @@ const closeModal = () => {
   emit("close");
 };
 
+// 直接呼叫 Pinia Store 的 toggleFavorite action
 const toggleFavorite = () => {
-  // Use place_id for consistency based on BarList and MapView
-  if (props.bar.place_id) {
-    emit("toggle-wishlist", props.bar.place_id);
-  } else if (props.bar.id) {
-    // Fallback to id if place_id is not available
-    emit("toggle-wishlist", props.bar.id);
-  }
+  favoritesStore.toggleFavorite(props.bar);
 };
 
 const goToBarActivities = () => {
@@ -293,6 +288,7 @@ const getTagLabel = (tag) => {
 </script>
 
 <style scoped>
+/* 樣式保持不變 */
 .bar-detail-modal-overlay {
   position: fixed;
   top: 0;

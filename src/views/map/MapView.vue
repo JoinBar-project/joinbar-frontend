@@ -50,8 +50,7 @@
         <BarList
           :bars="filteredBars"
           @bar-selected="handleBarSelected"
-          @toggle-wishlist="handleToggleWishlist"
-        />
+          />
       </div>
     </aside>
 
@@ -70,8 +69,7 @@
       v-if="isBarDetailModalOpen"
       :bar="selectedBarForDetail"
       @close="closeBarDetailModal"
-      @toggle-wishlist="handleToggleWishlistFromDetail"
-    />
+      />
 
     <div v-if="combinedLoading" class="loading-overlay">
       <div class="loader"></div>
@@ -91,14 +89,16 @@ import FilterPanel from "../../components/map/FilterPanel.vue";
 import BarList from "../../components/map/BarList.vue";
 import BarDetailModal from "../../components/map/BarDetailModal.vue";
 
-
 import { useGoogleMaps } from "@/composables/useGoogleMaps/userIndex.js";
 import { COMMON_PLACE_TYPES_TO_EXCLUDE, BAR_PLACE_TYPES } from "@/composables/googleMapsConstants";
+
+import { useFavoritesStore } from '@/stores/favorites'; // 引入 Pinia Store
 
 const googleMapsApiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
 const myMapId = import.meta.env.VITE_MAP_ID;
 
 const mapContainer = ref(null);
+const favoritesStore = useFavoritesStore(); // 實例化 Pinia Store
 
 const {
   map,
@@ -383,7 +383,7 @@ async function selectSuggestion(suggestion) {
             )
           : [],
         description: "點擊查看更多詳情...",
-        isWishlisted: false,
+        // isWishlisted: false, // 不再由 MapView 管理，由 Pinia 管理
         phone: detail.international_phone_number || null,
         website: detail.website || null,
         url: detail.url,
@@ -539,25 +539,26 @@ function closeBarDetailModal() {
   }
 }
 
-function handleToggleWishlist(barId) {
-  const barIndex = googleBars.value.findIndex((b) => b.place_id === barId);
-  if (barIndex > -1) {
-    const updatedBar = { ...googleBars.value[barIndex] };
-    updatedBar.isWishlisted = !updatedBar.isWishlisted;
-    googleBars.value.splice(barIndex, 1, updatedBar);
-  }
-  if (
-    selectedBarForDetail.value &&
-    selectedBarForDetail.value.place_id === barId
-  ) {
-    selectedBarForDetail.value.isWishlisted =
-      !selectedBarForDetail.value.isWishlisted;
-  }
-}
+// 移除 handleToggleWishlist 和 handleToggleWishlistFromDetail
+// function handleToggleWishlist(barId) {
+//   const barIndex = googleBars.value.findIndex((b) => b.place_id === barId);
+//   if (barIndex > -1) {
+//     const updatedBar = { ...googleBars.value[barIndex] };
+//     updatedBar.isWishlisted = !updatedBar.isWishlisted;
+//     googleBars.value.splice(barIndex, 1, updatedBar);
+//   }
+//   if (
+//     selectedBarForDetail.value &&
+//     selectedBarForDetail.value.place_id === barId
+//   ) {
+//     selectedBarForDetail.value.isWishlisted =
+//       !selectedBarForDetail.value.isWishlisted;
+//   }
+// }
 
-const handleToggleWishlistFromDetail = (barId) => {
-  handleToggleWishlist(barId);
-};
+// const handleToggleWishlistFromDetail = (barId) => {
+//   handleToggleWishlist(barId);
+// };
 
 function handleTagClick(tag) {
   if (!tag) {
@@ -620,6 +621,9 @@ onMounted(async () => {
     if (mapContainer.value) {
       await initMap();
       requestGeolocationPermission();
+      // 在地圖載入後，立即從 Local Storage 載入收藏列表
+      favoritesStore.loadFavoritesFromLocalStorage(); //
+
       let gotLocation = false;
       try {
         const sidebarWidth = document.querySelector('.bar-list-sidebar')?.offsetWidth || 0;
@@ -696,6 +700,7 @@ function getTypeForKeyword(q) {
 </script>
 
 <style scoped>
+/* 樣式保持不變 */
 .map-view-container {
   display: flex;
   height: 100vh;

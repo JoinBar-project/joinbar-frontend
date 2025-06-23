@@ -24,14 +24,12 @@
           />
           <button
             class="wishlist-button"
-            @click.stop="emitToggleWishlist(bar.place_id)"
-            :aria-label="bar.isWishlisted ? '取消收藏' : '加入收藏'"
+            @click.stop="toggleFavorite(bar)" :aria-label="favoritesStore.isBarFavorited(bar.place_id) ? '取消收藏' : '加入收藏'"
           >
             <svg
               xmlns="http://www.w3.org/2000/svg"
               class="wishlist-icon"
-              :fill="bar.isWishlisted ? 'red' : 'white'"
-              viewBox="0 0 24 24"
+              :fill="favoritesStore.isBarFavorited(bar.place_id) ? 'red' : 'white'" viewBox="0 0 24 24"
               stroke="none"
             >
               <path
@@ -64,6 +62,7 @@
 <script setup>
 import { watch, ref } from "vue";
 import placeTypeMap from "@/composables/placeTypeMap";
+import { useFavoritesStore } from '@/stores/favorites'; // 引入 Pinia Store
 
 const props = defineProps({
   bars: {
@@ -72,8 +71,9 @@ const props = defineProps({
   },
 });
 
-const emit = defineEmits(["bar-selected", "toggle-wishlist"]);
+const emit = defineEmits(["bar-selected"]); // 移除 "toggle-wishlist" emit
 
+const favoritesStore = useFavoritesStore(); // 實例化 Pinia Store
 const defaultPlaceholderImage =
   "https://placehold.co/300x200/decdd5/860914?text=Bar+Image";
 
@@ -96,12 +96,9 @@ const selectBar = (bar) => {
   emit("bar-selected", bar);
 };
 
-const emitToggleWishlist = (placeId) => {
-  if (!placeId) {
-    console.warn("無法收藏/取消收藏，因為 place_id 不存在。");
-    return;
-  }
-  emit("toggle-wishlist", placeId);
+// 直接呼叫 Pinia Store 的 toggleFavorite action
+const toggleFavorite = (bar) => {
+  favoritesStore.toggleFavorite(bar);
 };
 
 const getTagLabel = (tag) => {
@@ -121,6 +118,7 @@ watch(
 </script>
 
 <style scoped>
+/* 樣式保持不變 */
 .bar-list-wrapper {
   padding: 16px;
 }
