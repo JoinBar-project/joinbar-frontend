@@ -45,6 +45,7 @@
                 :type="field.type === 'password' ? (showPassword ? 'text' : 'password') : field.type" 
                 :placeholder="field.placeholder" 
                 v-model="registrationForm[field.model]"
+                :disabled="authStore.isAnyLoading"
                 @input="clearError(field.model)"
                 :class="[
                   'w-full outline-none placeholder-opacity-70 transition-colors text-sm',
@@ -87,7 +88,7 @@
               <img src="/google.svg" alt="Google" class="w-5 h-5 mr-2" /> register for Google 
             </button>
             <button @click="handleLineLogin" 
-                    :disabled="authStore.isLoading" 
+                    :disabled="authStore.isLineLoading" 
                     class="btn bg-[var(--color-line-green)] text-white border-[var(--color-line-green-dark)] border-2 flex items-center px-4 py-2 rounded-lg hover:shadow-md transition">
                     <img src="/line.svg" alt="LINE" class="w-5 h-5 mr-2" />
                     <span v-if="authStore.isLineLoading">載入中...</span>
@@ -152,7 +153,7 @@
             </button>
             <button
               @click="handleEmailRegistration"
-              :disabled="authStore.isLoading"
+              :disabled="authStore.isEmailLoading"
               class="px-4 py-2 bg-gradient-to-r from-[var(--color-secondary-green)] via-[#d8dbaf] to-[var(--color-primary-orange)] text-[var(--color-black)] rounded-lg font-medium shadow-md transition duration-300 transform hover:scale-105 hover:brightness-110 hover:shadow-lg">
               <span v-if="authStore.isEmailLoading">註冊中...</span>
               <span v-else>完成註冊</span>

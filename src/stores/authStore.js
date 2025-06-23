@@ -7,14 +7,13 @@ export const useAuthStore = defineStore('auth', () => {
   const user = ref(null);
   const accessToken = ref(null);
   const refreshToken = ref(null);
+  const isLoading = ref(false);
   const isEmailLoading = ref(false);
-  const isEmailRegistering = ref(false);
   const isLineLoading = ref(false);
   const errorMessage = ref('');
 
   const currentUser = computed(() => user.value);
-  const isLoading = computed(() => isEmailLoading.value || isLineLoading.value || isEmailRegistering.value);
-
+  const isAnyLoading = computed(() => isLoading.value || isEmailLoading.value || isLineLoading.value);
   const isAuthenticated = computed(() => {
     // 有用戶資訊就算已認證（不管是 token 還是 cookie）
     return !!user.value;
@@ -537,7 +536,7 @@ export const useAuthStore = defineStore('auth', () => {
     isEmailLoading,
     isLineLoading,
     errorMessage,
-    isEmailRegistering,
+    isAnyLoading,
 
     // 計算屬性
     isAuthenticated,
