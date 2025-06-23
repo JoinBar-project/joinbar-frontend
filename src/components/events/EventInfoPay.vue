@@ -65,10 +65,10 @@ const handleEventUpdate = () => {
   reloadEventData();
 };
 
-const addToCart = () => {
+const addToCart = async () => {
   try {
     const e = eventRef.value;
-    cart.addItem({
+    const result = await cart.addItem({
       id: e.id,
       name: e.name,
       price: e.price,
@@ -80,15 +80,17 @@ const addToCart = () => {
       maxPeople: e.maxPeople,
       hostUser: e.hostUser,
     });
-    alert('已加入購物車！');
+    alert(result.message || '已加入購物車！');
   } catch (error) {
     alert(error.message);
   }
 };
 
-const buyNow = () => {
+const buyNow = async () => {
   try {
-    if (!isInCart.value) addToCart();
+    if (!isInCart.value) {
+      await addToCart();
+    }
     router.push('/payment');
   } catch (error) {
     alert(error.message);
