@@ -11,9 +11,26 @@ const getAllSubPlans  = async() => {
   }
 }
 
+// const cancelPendingOrdersIfAny = async () => {
+//   try {
+//     const { data } = await apiClient.get('/orders/history')
+//     const pendingOrder = data.orders.find(order => order.status === 'pending')
+
+//     if (pendingOrder) {
+//       await apiClient.post(`/orders/${pendingOrder.id}/cancel`, {
+//         reason: '自動取消未付款訂單'
+//       })
+//       console.log(`✅ 已自動取消訂單 ${pendingOrder.id}`)
+//     }
+//   } catch (err) {
+//     console.warn('取消訂單失敗（可忽略）', err)
+//   }
+// }
+
 const createSubscriptionOrder = async (subscriptionType) => {
   try {
     const response = await apiClient.post('/orders/create', {
+      
       items: [
         {
           itemType: 2,
@@ -23,8 +40,11 @@ const createSubscriptionOrder = async (subscriptionType) => {
       ],
       paymentMethod: 'LINE_PAY'
     });
+    console.log('🔍 建立訂單回傳結果:', response.data)
 
     return response.data.order;
+
+
   } catch (err) {
     console.error('建立訂閱訂單失敗:', err);
     throw err;
@@ -34,12 +54,12 @@ const createSubscriptionOrder = async (subscriptionType) => {
 const createLinePayment = async (order) => {
   try {
     const payload = {
-      orderId: order.id,
+      orderId: order.orderId, // 修正這裡
       orderNumber: order.orderNumber,
-      amount: order.totalAmount,
+      amount: Number(order.totalAmount),
     };
 
-    const res = await apiClient.post('/linepay/create', payload)
+    const res = await apiClient.post('/linepay/create', payload);
 
     const { success, data, message } = res.data;
 
@@ -53,7 +73,6 @@ const createLinePayment = async (order) => {
       // 導向付款頁
       window.location.href = paymentUrl;
 
-      // LINE Pay 的訂單編號 跟 過期時間
       return { transactionId, expireTime };
     } else {
       throw new Error(message || '建立付款請求失敗');
@@ -65,20 +84,21 @@ const createLinePayment = async (order) => {
 };
 
 const confirmLinePayment = async (transactionId, orderId) => {
-  try{
+  try {
     const res = await apiClient.get('/linepay/confirm', {
-      params: {
-        transactionId,
-        orderId
-      }
-    })
-    return res.data;
+      params: { transactionId, orderId }
+    });
 
-  }catch (err) {
-    console.error(err);
-    throw err; 
+    if (res.data.success === false) {
+      throw new Error(res.data.message || '付款確認失敗');
     }
-  };
+
+    return res.data;
+  } catch (err) {
+    console.error('確認付款失敗:', err);
+    throw err;
+  }
+};
   
 
 

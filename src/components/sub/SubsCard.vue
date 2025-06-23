@@ -1,106 +1,56 @@
 <script setup>
-import { ref, onMounted, onUnmounted } from 'vue'
-import PaymentResultModal from '@/components/sub/PaymentResultModal.vue';
-import { getAllSubPlans, createSubscriptionOrder, createLinePayment, confirmLinePayment } from '@/api/subsCard';
+import { ref, onMounted, onUnmounted } from 'vue';
+import { getAllSubPlans, createSubscriptionOrder, createLinePayment } from '@/api/subsCard';
 
-const spotlight = ref(null)
-const cardData = ref([])
-const showModal = ref(false)
+const spotlight = ref(null);
+const cardData = ref([]);
 
-onMounted(async() => {
-  try{
-    const plans = await getAllSubPlans();
-    cardData.value = plans;
+const handleSubscribe = async (subscriptionType) => {
+  try {
 
-  }catch (err) {
-    console.warn('訂閱資料載入失敗');
-  }
-})
-
-const handleSubscribe = async(subscriptionType) => {
-
-  try{
+    // await cancelPendingOrdersIfAny()
+    console.log('🟢 1. 建立訂閱訂單中...')
     const order = await createSubscriptionOrder(subscriptionType);
+    if (!order || !order.orderId?.toString?.()) throw new Error('訂單建立失敗');
 
-    if (!order || !order.id) {
-      throw new Error('訂單建立失敗');
-    }
-
+    console.log('🟢 2. 建立 LINE Pay 付款中...', order.id)
+    console.log('📥 createSubscriptionOrder 回傳', order)
     const { paymentUrl, transactionId, expireTime } = await createLinePayment(order);
 
+    // 3. 將資訊存入 localStorage，供付款成功頁使用
     localStorage.setItem('transactionId', transactionId);
     localStorage.setItem('expireTime', expireTime);
     localStorage.setItem('orderId', order.id);
+    localStorage.setItem('subType', subscriptionType); // ← 傳給付款成功頁用
 
+    // 4. 導向付款頁
     window.location.href = paymentUrl;
-
-  }catch (err) {
+  } catch (err) {
     console.error('訂閱流程發生錯誤', err);
-    alert('訂閱流程發生錯誤，請稍後再試');
+    alert('訂閱流程發生錯誤，請稍後再試一次');
   }
-}
+};
 
-function isPaymentConfirmed(){
-  const transactionId = localStorage.getItem('transactionId');
-  const expireTime = localStorage.getItem('expireTime');
-  const orderId = localStorage.getItem('orderId');
-
-  return !!(transactionId && expireTime && orderId)
-}
-
-onMounted(() => {
-  if (isPaymentConfirmed()) {
-    showModal.value = true;
-  } else {
-    console.error('付款未完成');
+const handleMouseMove = (e) => {
+  if (spotlight.value) {
+    spotlight.value.style.transform = `translate(${e.clientX - 64}px, ${e.clientY - 64}px)`;
   }
-});
-
-const modalMessage = ref({
-  title: '',
-  message: ''
-});
+};
 
 onMounted(async () => {
-  const transactionId = localStorage.getItem('transactionId')
-  const orderId = localStorage.getItem('orderId')
-
-  if (transactionId && orderId) {
-    try {
-      const res = await confirmLinePayment(transactionId, orderId)
-
-      modalMessage.value = {
-        title: '付款成功',
-        message: '優惠券已送出'
-      }
-    } catch (err) {
-      modalMessage.value = {
-        title: '付款失敗',
-        message: '請稍後再試一次'
-      }
-    }
-
-    showModal.value = true
+  try {
+    const plans = await getAllSubPlans();
+    cardData.value = plans;
+  } catch (err) {
+    console.warn('訂閱資料載入失敗');
   }
-})
 
-
-
-function handleMouseMove(e) {
-  if (spotlight.value) {
-    spotlight.value.style.transform = `translate(${e.clientX - 64}px, ${e.clientY - 64}px)`
-  }
-}
-
-onMounted(() => {
-  window.addEventListener('mousemove', handleMouseMove)
-})
+  window.addEventListener('mousemove', handleMouseMove);
+});
 
 onUnmounted(() => {
-  window.removeEventListener('mousemove', handleMouseMove)
-})
-
-
+  window.removeEventListener('mousemove', handleMouseMove);
+});
 </script>
 
 
