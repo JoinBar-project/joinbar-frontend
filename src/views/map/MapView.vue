@@ -87,7 +87,7 @@ import dayjs from "dayjs";
 import isBetween from "dayjs/plugin/isBetween";
 dayjs.extend(isBetween);
 
-import { useRoute, useRouter } from 'vue-router';
+import { useRoute, useRouter } from "vue-router";
 const route = useRoute();
 const router = useRouter();
 
@@ -140,7 +140,6 @@ const {
 const isFilterPanelOpen = ref(false);
 const searchQuery = ref("");
 const suggestions = ref([]);
-
 
 const currentFilters = ref({
   address: "current_location",
@@ -356,7 +355,7 @@ const debouncedSearchSuggestions = debounce(async () => {
 async function selectSuggestion(suggestion) {
   searchQuery.value = suggestion.description;
   suggestions.value = [];
-  handleSearch()
+  handleSearch();
   isLoading.value = true;
   clearMarkers("all");
   closeInfoWindow();
@@ -417,22 +416,22 @@ async function selectSuggestion(suggestion) {
 
 // 點擊欄位以外區域會收起建議清單
 function handleClickOutside(event) {
-  const el = searchInputRef.value
+  const el = searchInputRef.value;
   if (el && !el.contains(event.target)) {
-    suggestions.value = []
+    suggestions.value = [];
   }
 }
 
 onMounted(() => {
-  document.addEventListener('click', handleClickOutside)
-})
+  document.addEventListener("click", handleClickOutside);
+});
 
 onUnmounted(() => {
-  document.removeEventListener('click', handleClickOutside)
-})
+  document.removeEventListener("click", handleClickOutside);
+});
 
 async function handleSearch() {
-  suggestions.value = []; 
+  suggestions.value = [];
 
   if (!isReady.value) {
     alert("地圖尚未載入完成，請稍候再試");
@@ -588,7 +587,6 @@ async function handleGetCurrentLocation() {
       const bars = await searchBarsInMapBounds(false);
       googleBars.value = bars;
     }
-    alert("無法獲取您的目前位置，請檢查瀏覽器權限設定");
   } finally {
     isLoading.value = false;
   }
@@ -618,15 +616,15 @@ async function handleBarSelected(bar) {
 
   const params = new URLSearchParams({
     barId: bar.place_id || bar.id,
-    name: bar.name || '',
-    rating: bar.rating || '',
+    name: bar.name || "",
+    rating: bar.rating || "",
     reviews: bar.reviews || 0,
-    address: bar.address || ''
+    address: bar.address || "",
   });
 
-  router.replace({ 
-    query: { ...route.query, ...Object.fromEntries(params) }
-  })
+  router.replace({
+    query: { ...route.query, ...Object.fromEntries(params) },
+  });
 
   if (bar.location && map && googleMapsInstance()) {
     panTo(bar.location);
@@ -653,14 +651,14 @@ function closeBarDetailModal() {
   selectedBarForDetail.value = null;
   closeInfoWindow();
 
-  const newQuery = { ...route.query }
-  delete newQuery.barId
-  delete newQuery.name
-  delete newQuery.rating
-  delete newQuery.reviews
-  delete newQuery.address
-  
-  router.replace({ query: newQuery })
+  const newQuery = { ...route.query };
+  delete newQuery.barId;
+  delete newQuery.name;
+  delete newQuery.rating;
+  delete newQuery.reviews;
+  delete newQuery.address;
+
+  router.replace({ query: newQuery });
 }
 
 function handleToggleWishlist(barId) {
@@ -710,38 +708,42 @@ watch(
 );
 
 const checkUrlForBarDetail = async () => {
-  const barId = route.query.barId
-  
+  const barId = route.query.barId;
+
   if (barId && !isBarDetailModalOpen.value) {
     // 先檢查現有的酒吧列表中是否有這個酒吧
-    let barFromList = googleBars.value.find(bar => 
-      (bar.place_id === barId || bar.id === barId)
-    )
-    
+    let barFromList = googleBars.value.find(
+      (bar) => bar.place_id === barId || bar.id === barId
+    );
+
     if (barFromList) {
-      selectedBarForDetail.value = barFromList
-      isBarDetailModalOpen.value = true
+      selectedBarForDetail.value = barFromList;
+      isBarDetailModalOpen.value = true;
     } else {
       // 從參數創建基本資訊
       const barFromUrl = {
         id: barId,
         place_id: barId,
-        name: route.query.name || '載入中...',
+        name: route.query.name || "載入中...",
         rating: parseFloat(route.query.rating) || null,
         reviews: parseInt(route.query.reviews) || 0,
-        address: route.query.address || '',
+        address: route.query.address || "",
         // 添加載入標記
         isQuickLoad: true,
-        isWishlisted: false
-      }
-      
-      selectedBarForDetail.value = barFromUrl
-      isBarDetailModalOpen.value = true
-      
+        isWishlisted: false,
+      };
+
+      selectedBarForDetail.value = barFromUrl;
+      isBarDetailModalOpen.value = true;
+
       // 在背景載入完整資料
       try {
-        const fullData = await getPlaceDetails(barId)
-        if (fullData && selectedBarForDetail.value && selectedBarForDetail.value.place_id === barId) {
+        const fullData = await getPlaceDetails(barId);
+        if (
+          fullData &&
+          selectedBarForDetail.value &&
+          selectedBarForDetail.value.place_id === barId
+        ) {
           const detailedBar = {
             id: fullData.place_id,
             place_id: fullData.place_id,
@@ -753,18 +755,24 @@ const checkUrlForBarDetail = async () => {
             rating: fullData.rating || 0,
             reviews: fullData.user_ratings_total || 0,
             address: fullData.formatted_address || "未知地址",
-            priceRange: fullData.price_level !== undefined 
-              ? `等級 ${fullData.price_level}` 
-              : null,
-            tags: fullData.types 
-              ? fullData.types.filter(type => !COMMON_PLACE_TYPES_TO_EXCLUDE.includes(type))
+            priceRange:
+              fullData.price_level !== undefined
+                ? `等級 ${fullData.price_level}`
+                : null,
+            tags: fullData.types
+              ? fullData.types.filter(
+                  (type) => !COMMON_PLACE_TYPES_TO_EXCLUDE.includes(type)
+                )
               : [],
             opening_hours: fullData.opening_hours,
-            imageUrl: fullData.photos && fullData.photos.length > 0
-              ? fullData.photos[0].getUrl({ maxWidth: 400, maxHeight: 400 })
-              : "",
-            images: fullData.photos 
-              ? fullData.photos.map(p => p.getUrl({ maxWidth: 800, maxHeight: 600 }))
+            imageUrl:
+              fullData.photos && fullData.photos.length > 0
+                ? fullData.photos[0].getUrl({ maxWidth: 400, maxHeight: 400 })
+                : "",
+            images: fullData.photos
+              ? fullData.photos.map((p) =>
+                  p.getUrl({ maxWidth: 800, maxHeight: 600 })
+                )
               : [],
             description: "點擊查看更多詳情...",
             isWishlisted: false,
@@ -772,35 +780,40 @@ const checkUrlForBarDetail = async () => {
             website: fullData.website || null,
             url: fullData.url,
             googleReviews: fullData.reviews || [],
-          }
+          };
 
-          selectedBarForDetail.value = detailedBar
+          selectedBarForDetail.value = detailedBar;
 
           // 將完整資料加入到酒吧列表中
-          const existingIndex = googleBars.value.findIndex(bar => bar.place_id === barId)
+          const existingIndex = googleBars.value.findIndex(
+            (bar) => bar.place_id === barId
+          );
           if (existingIndex === -1) {
-            googleBars.value.unshift(detailedBar)
+            googleBars.value.unshift(detailedBar);
           }
 
           // 如果有位置資訊，移動地圖視角
           if (detailedBar.location && map.value) {
-            panTo(detailedBar.location)
+            panTo(detailedBar.location);
           }
         }
       } catch (error) {
-        console.error('載入完整酒吧資料失敗:', error)
+        console.error("載入完整酒吧資料失敗:", error);
       }
     }
   }
-}
+};
 
-watch(() => route.query.barId, (newBarId, oldBarId) => {
-  if (newBarId && newBarId !== oldBarId) {
-    checkUrlForBarDetail()
-  } else if (!newBarId && isBarDetailModalOpen.value) {
-    closeBarDetailModal()
+watch(
+  () => route.query.barId,
+  (newBarId, oldBarId) => {
+    if (newBarId && newBarId !== oldBarId) {
+      checkUrlForBarDetail();
+    } else if (!newBarId && isBarDetailModalOpen.value) {
+      closeBarDetailModal();
+    }
   }
-})
+);
 
 watch(isReady, (ready) => {
   if (
@@ -883,7 +896,7 @@ onMounted(async () => {
   } finally {
     isLoading.value = false;
   }
-  await checkUrlForBarDetail()
+  await checkUrlForBarDetail();
 });
 
 function getTypeForKeyword(q) {
