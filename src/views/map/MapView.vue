@@ -9,7 +9,7 @@
       </button>
 
       <div class="search-panel-map">
-        <div class="input-group">
+        <div class="input-group" ref="searchInputRef">
           <input
             type="text"
             id="searchInput"
@@ -81,7 +81,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, computed, watch } from "vue";
+import { ref, onMounted, onUnmounted, computed, watch } from "vue";
 import debounce from "lodash/debounce";
 import dayjs from "dayjs";
 import isBetween from "dayjs/plugin/isBetween";
@@ -136,6 +136,8 @@ const {
 const isFilterPanelOpen = ref(false);
 const searchQuery = ref("");
 const suggestions = ref([]);
+
+
 const currentFilters = ref({
   address: "current_location",
   ratingSort: "any",
@@ -152,6 +154,7 @@ const isBarDetailModalOpen = ref(false);
 const selectedBarForDetail = ref(null);
 const isLoading = ref(false);
 const googleBars = ref([]);
+const searchInputRef = ref(null);
 const mainBarForSearch = ref(null);
 const selectedTag = ref(null);
 
@@ -349,6 +352,7 @@ const debouncedSearchSuggestions = debounce(async () => {
 async function selectSuggestion(suggestion) {
   searchQuery.value = suggestion.description;
   suggestions.value = [];
+  handleSearch()
   isLoading.value = true;
   clearMarkers("all");
   closeInfoWindow();
@@ -407,7 +411,25 @@ async function selectSuggestion(suggestion) {
   }
 }
 
+// 點擊欄位以外區域會收起建議清單
+function handleClickOutside(event) {
+  const el = searchInputRef.value
+  if (el && !el.contains(event.target)) {
+    suggestions.value = []
+  }
+}
+
+onMounted(() => {
+  document.addEventListener('click', handleClickOutside)
+})
+
+onUnmounted(() => {
+  document.removeEventListener('click', handleClickOutside)
+})
+
 async function handleSearch() {
+  suggestions.value = []; 
+
   if (!isReady.value) {
     alert("地圖尚未載入完成，請稍候再試");
     return;
