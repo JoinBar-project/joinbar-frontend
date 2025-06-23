@@ -9,18 +9,29 @@ const authStore = useAuthStore()
 </script>
 
 <template>
-  <div class="min-h-screen flex items-center justify-center bg-gray-50 px-4">
-		<div class="max-w-md w-full mx-auto p-6 bg-white rounded-xl shadow-lg">
+  <div class="flex items-center justify-center min-h-screen px-4 bg-gray-50">
+		<div class="w-full max-w-md p-6 mx-auto bg-white shadow-lg rounded-xl">
 
 			<!-- 載入中狀態 -->
       <div v-if="isVerifying" class="text-center">
 				<div class="animate-spin rounded-full h-12 w-12 border-b-2 border-[var(--color-secondary-green)] mx-auto mb-4"></div>
-        <h2 class="text-xl text-gray-700 mb-2">驗證中...</h2>
+        <h2 class="mb-2 text-xl text-gray-700">驗證中...</h2>
         <p class="text-gray-500">請稍候，正在驗證您的信箱</p>
 			</div>
 
 			<!-- 驗證成功 -->
-			<div></div>
+			<div class="text-center">
+				<div class="flex items-center justify-center w-16 h-16 mx-auto mb-4 bg-green-100 rounded-full">
+          <i class="text-2xl text-green-500 fas fa-check"></i>
+        </div>
+				<h2 class="mb-2 text-xl font-semibold text-gray-800">驗證成功！</h2>
+				<p class="mb-6 text-gray-600">您的信箱已成功驗證，現在可以正常使用所有功能了</p>
+				<button 
+          class="w-full px-4 py-2 text-black bg-green-200 rounded-lg cursor-pointer hover:opacity-75 hover:shadow-lg active:opacity-50"
+        >
+          前往登入
+        </button>
+			</div>
 			<!-- 驗證失敗 -->
 			<div></div>
 			<!-- 無效連結 -->
