@@ -17,6 +17,9 @@ export const lineLogout = () => apiClient.post('/auth/line/logout');
 
 export const emailSignup = (userData) => apiClient.post('/auth/signup', userData);
 
+// 信箱驗證
+export const verifyEmail = (token) => apiClient.get(`/auth/verify-email?token=${token}`);
+
 // 儲存酒吧偏好設定
 export const saveBarTags = (userId, preferencesData) => apiClient.post(`/barTags/user/${userId}`, preferencesData);
 

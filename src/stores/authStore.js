@@ -1,7 +1,7 @@
 import { defineStore } from 'pinia';
 import { ref, computed } from 'vue';
 import Swal from 'sweetalert2';
-import { verifyAuth, resendVerification, emaillogin as emailLoginAPI, lineLogin as lineLoginAPI, emailSignup as emailSignupAPI, saveBarTags as saveBarTagsAPI, lineLogout as lineLogoutAPI } from '../api/auth';
+import { verifyAuth, resendVerification, emaillogin as emailLoginAPI, lineLogin as lineLoginAPI, emailSignup as emailSignupAPI, saveBarTags as saveBarTagsAPI, lineLogout as lineLogoutAPI, verifyEmail as verifyEmailAPI } from '../api/auth';
 
 export const useAuthStore = defineStore('auth', () => {
   const user = ref(null);
@@ -153,6 +153,80 @@ export const useAuthStore = defineStore('auth', () => {
       return false;
     }
   }
+
+  async function verifyEmail(token) {
+  if (!token) {
+    return { success: false, error: '缺少驗證 token', type: 'validation' };
+  }
+
+  try {
+    await verifyEmailAPI(token);
+
+    await Swal.fire({
+      title: '驗證成功！',
+      html: `
+        <div class="text-center">
+          <p class="mb-3">您的信箱已成功驗證</p>
+          <div class="bg-green-50 p-3 rounded-lg text-sm">
+            <p class="text-green-700">
+              <i class="fas fa-check-circle mr-1"></i>
+              現在您可以正常登入並使用所有功能了
+            </p>
+          </div>
+        </div>
+      `,
+      icon: 'success',
+      confirmButtonText: '前往登入',
+      confirmButtonColor: '#860914',
+      width: '400px'
+    });
+
+    return { success: true, message: '信箱驗證成功', handled: true };
+
+  } catch (err) {
+    console.error('信箱驗證失敗:', err);
+    
+    let errorMessage = '驗證失敗';
+    let errorTitle = '驗證失敗';
+    let errorType = 'unknown';
+    
+    if (err.response?.data?.error) {
+      errorMessage = err.response.data.error;
+
+      if (errorMessage.includes('已過期')) {
+        errorTitle = '驗證連結已過期';
+        errorType = 'expired';
+      } else if (errorMessage.includes('已經驗證')) {
+        errorTitle = '信箱已驗證';
+        errorType = 'already_verified';
+        
+        await Swal.fire({
+          title: errorTitle,
+          text: '您的信箱已經驗證完成，可以直接登入',
+          icon: 'info',
+          confirmButtonText: '前往登入',
+          confirmButtonColor: '#860914'
+        });
+        
+        return { success: true, message: '信箱已經驗證完成', type: 'already_verified', handled: true };
+      } else if (errorMessage.includes('無效')) {
+        errorTitle = '無效的驗證連結';
+        errorType = 'invalid';
+      } else if (errorMessage.includes('缺少')) {
+        errorType = 'validation';
+      }
+    }
+
+    await Swal.fire({
+      title: errorTitle,
+      text: errorMessage,
+      icon: 'error',
+      confirmButtonText: '確認'
+    });
+
+    return { success: false, error: errorMessage, type: errorType, handled: true };
+  }
+}
 
   function init() {
     // 嘗試從 localStorage 恢復 Email 登入狀態
@@ -557,6 +631,7 @@ export const useAuthStore = defineStore('auth', () => {
     handleResendVerification,
     saveBarTags,
     lineLogout,
-    logout
+    logout,
+    verifyEmail
   };
 });
