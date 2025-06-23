@@ -53,7 +53,18 @@ const authStore = useAuthStore()
 				</div>
 			</div>
 			<!-- 無效連結 -->
-			<div></div>
+			<div class="text-center">
+				<div class="flex items-center justify-center w-16 h-16 mx-auto mb-4 bg-green-100 rounded-full">
+          <i class="text-2xl text-yellow-500 fas fa-exclamation-triangle"></i>
+        </div>
+				<h2 class="mb-2 text-xl font-semibold text-gray-800">無效的驗證連結！</h2>
+				<p class="mb-6 text-gray-600">此連結可能已過期或無效</p>
+				<button 
+          class="w-full px-4 py-2 text-black bg-green-200 rounded-lg cursor-pointer hover:opacity-75 hover:shadow-lg active:opacity-50"
+        >
+          返回登入頁
+        </button>
+			</div>
 			<!-- 重新寄送驗證信表單 -->
 			<div></div>
 		</div>
