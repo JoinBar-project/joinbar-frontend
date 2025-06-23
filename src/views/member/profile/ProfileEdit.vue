@@ -44,7 +44,7 @@ const isDefaultAvatar = computed(() => {
 const errors = ref({
   username: '',
   nickname: '',
-  birthday: ''
+  birthday: '',
 });
 
 const profileFields = [
@@ -82,7 +82,7 @@ const toggleSelection = (arr, value) => {
   else arr.push(value);
 };
 
-const handleAvatarChange = (event) => {
+const handleAvatarChange = event => {
   const file = event.target.files[0];
   if (file && file.type.startsWith('image/')) {
     avatarFile.value = file;
@@ -130,27 +130,29 @@ const handleSubmit = async () => {
   }
 
   if (!valid) return;
-  
+
   try {
     const submitData = {
       username: form.value.username,
       nickname: form.value.nickname === '' ? null : form.value.nickname,
       birthday: form.value.birthday === '' ? null : form.value.birthday,
-      // nickname: form.value.nickname || undefined,
-      // birthday: form.value.birthday || undefined,
-      preferences: form.value.preferences
+      preferences: form.value.preferences,
     };
     await userProfileStore.updateUserProfile(userId.value, submitData);
     if (avatarFile.value) {
       await updateUserAvatar(userId.value, avatarFile.value);
     }
-    authStore.updateAuthUser(submitData);
+    authStore.updateAuthUser({
+      ...submitData,
+      avatarUrl: profile.value.avatarUrl,
+    });
     triggerAlert();
 
     setTimeout(() => {
       router.push({ name: 'MemberProfile', params: { id: userId.value } });
     }, 1500);
   } catch (err) {
+    console.error('更新失敗', err);
     alert('更新失敗');
   }
 };
@@ -176,21 +178,20 @@ const cancel = () => {
     <form @submit.prevent="handleSubmit" class="flex flex-col md:flex-row items-center md:items-start gap-10">
       <!-- 左側：頭像 + 上傳 & 移除按鈕 -->
       <div class="flex flex-col items-center md:w-1/3">
-        <UserAvatar 
-        :avatar-url="avatarPreview || profile.avatarUrl || '/default-user-avatar.png'" 
-        :display-name="profile.username" 
-        size="lg" />
+        <UserAvatar :avatar-url="avatarPreview || profile.avatarUrl || '/default-user-avatar.png'" :display-name="profile.username" size="lg" />
         <label
           for="avatar"
           class="mt-4 px-4 py-2 bg-[var(--color-black)] text-[var(--color-secondary-pink)] rounded cursor-pointer hover:bg-opacity-80 active:scale-98 transition-all duration-150">
           <i class="fa-solid fa-arrow-up-from-bracket mr-1"></i> 上傳頭像
         </label>
         <input type="file" hidden id="avatar" @change="handleAvatarChange" />
-        <button type="button"
-        v-if="!isDefaultAvatar"
-        @click="handleRemoveAvatar"
-        class="mt-2 px-4 py-2  bg-gray-400 text-white rounded cursor-pointer active:scale-98 transition-all duration-150">
-        <i class="fa-solid fa-user-minus"></i> 移除頭像</button>
+        <button
+          type="button"
+          v-if="!isDefaultAvatar"
+          @click="handleRemoveAvatar"
+          class="mt-2 px-4 py-2 bg-gray-400 text-white rounded cursor-pointer active:scale-98 transition-all duration-150">
+          <i class="fa-solid fa-user-minus"></i> 移除頭像
+        </button>
       </div>
 
       <!-- 右側：表單 + 按鈕 -->
