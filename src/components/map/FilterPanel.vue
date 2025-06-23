@@ -154,7 +154,7 @@
 
     <div class="filter-actions">
       <button @click="resetFilters" class="action-button reset-button">
-        重設
+        確定
       </button>
     </div>
   </div>

@@ -42,7 +42,7 @@ const apiClient = axios.create({
 
 apiClient.interceptors.request.use(
  (config) => {
-   const token = localStorage.getItem('auth_token')
+   const token = localStorage.getItem('access_token')
    if (token) {
      config.headers.Authorization = `Bearer ${token}`
    }
@@ -65,8 +65,8 @@ apiClient.interceptors.response.use(
    console.error(`❌ API 響應錯誤:`, error.response?.data || error.message)
    
    if (error.response?.status === 401) {
-     localStorage.removeItem('auth_token')
-     localStorage.removeItem('user_info')
+     localStorage.removeItem('access_token')
+     localStorage.removeItem('user')
    }
    
    return Promise.reject(error)
@@ -97,8 +97,8 @@ const formattedTotalAmount = computed(() => {
 })
 
 const clearAuth = () => {
-  localStorage.removeItem('auth_token')
-  localStorage.removeItem('user_info')
+  localStorage.removeItem('access_token')
+  localStorage.removeItem('user')
 }
 
 const handleApiError = (error, defaultMessage = '請求失敗') => {
@@ -188,7 +188,7 @@ const createOrder = async (orderData) => {
 
     validateOrderData(orderData)
     
-    const response = await apiClient.post('/api/orders/create', orderData)
+    const response = await apiClient.post('/orders/create', orderData)
 
     if (response.data.order) {
       currentOrder.value = response.data.order
@@ -217,7 +217,7 @@ const getOrderDetails = async (orderId) => {
     error.value = ''
 
     const processedOrderId = validateOrderId(orderId)
-    const response = await apiClient.get(`/api/orders/${processedOrderId}/details`)
+    const response = await apiClient.get(`/orders/${processedOrderId}/details`)
     
     if (response.data.order) {
       currentOrder.value = response.data.order
@@ -246,7 +246,7 @@ const confirmPayment = async (orderId, paymentData) => {
     console.log(`🔄 確認付款，更新訂單狀態...`)
     const processedOrderId = validateOrderId(orderId)
     
-    const response = await apiClient.put(`/api/orders/confirm-payment/${processedOrderId}`, {
+    const response = await apiClient.put(`/orders/confirm-payment/${processedOrderId}`, {
       paymentId: paymentData.paymentId,
       paymentMethod: paymentData.paymentMethod
     })
@@ -278,7 +278,7 @@ const cancelOrder = async (orderId, reason = '') => {
     error.value = ''
 
     const processedOrderId = validateOrderId(orderId)
-    const response = await apiClient.delete(`/api/orders/${processedOrderId}`, {
+    const response = await apiClient.delete(`/orders/${processedOrderId}`, {
       data: { reason }
     })
 
@@ -326,7 +326,7 @@ const getOrderHistory = async () => {
     isLoading.value = true
     error.value = ''
 
-    const response = await apiClient.get('/api/orders/history')
+    const response = await apiClient.get('/orders/history')
     
     if (response.data.orders) {
       orderHistory.value = response.data.orders
@@ -412,7 +412,7 @@ const pollPaymentStatus = async (orderId, maxAttempts = 30, interval = 2000, ski
       
       if (skipLoading) {
         const processedOrderId = validateOrderId(orderId)
-        const response = await apiClient.get(`/api/orders/${processedOrderId}/details`)
+        const response = await apiClient.get(`/orders/${processedOrderId}/details`)
         orderData = response.data
       } else {
         orderData = await getOrderDetails(orderId)
@@ -478,6 +478,33 @@ const syncPaymentStatus = async (orderId) => {
   }
 }
 
+const getUserOrderHistory = async () => {
+  try {
+    isLoading.value = true
+    error.value = ''
+    console.log('🔄 載入用戶訂單歷史...')
+    const response = await apiClient.get('/orders/history')
+    
+    if (response.data.orders) {
+      orderHistory.value = response.data.orders
+      if (response.data.summary) {
+        stats.totalOrders = response.data.summary.totalOrders
+        stats.totalAmount = response.data.summary.totalAmount
+        stats.pendingCount = response.data.summary.pendingCount
+        stats.completedCount = response.data.summary.confirmedCount
+      }
+    }
+    console.log('✅ 訂單歷史載入成功:', response.data.total)
+    return response.data
+  } catch (err) {
+    const errorMessage = handleApiError(err, '載入訂單歷史失敗')
+    error.value = errorMessage
+    throw new Error(errorMessage)
+  } finally {
+    isLoading.value = false
+  }
+}
+
 return {
   isLoading,
   error,
@@ -510,6 +537,7 @@ return {
   apiClient,
   processLinePayPayment,
   pollPaymentStatus,
-  syncPaymentStatus
+  syncPaymentStatus,
+  getUserOrderHistory
 }
 }
