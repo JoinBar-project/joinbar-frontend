@@ -53,6 +53,13 @@ const avatarURL = computed(() => {
         >
       </li>
       <li>
+        <div
+          v-if="isAuthenticated"
+          class="cursor-pointer flex flex-col items-center gap-1">
+          登出
+        </div>
+      </li>
+      <li>
         <RouterLink to="/cart"
           ><img
             class="cart-icon"
