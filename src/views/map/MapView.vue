@@ -140,7 +140,7 @@ const currentFilters = ref({
   address: "current_location",
   ratingSort: "any",
   minDistance: 0,
-  maxDistance: 10000,
+  maxDistance: 5000,
   minOpenHour: 0,
   minOpenMinute: 0,
   maxOpenHour: 24,
