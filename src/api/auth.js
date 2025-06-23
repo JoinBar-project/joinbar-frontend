@@ -12,6 +12,9 @@ export const emaillogin = (email, password) => apiClient.post('/auth/login', { e
 // 取得 LINE 登入授權 URL
 export const lineLogin = () => apiClient.get('/auth/line/url');
 
+// LINE 登出 - 新增
+export const lineLogout = () => apiClient.post('/auth/line/logout');
+
 export const emailSignup = (userData) => apiClient.post('/auth/signup', userData);
 
 // 儲存酒吧偏好設定

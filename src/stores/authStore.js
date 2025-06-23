@@ -1,7 +1,7 @@
 import { defineStore } from 'pinia';
 import { ref, computed } from 'vue';
 import Swal from 'sweetalert2';
-import { verifyAuth, resendVerification, emaillogin as emailLoginAPI, lineLogin as lineLoginAPI, emailSignup as emailSignupAPI, saveBarTags as saveBarTagsAPI } from '../api/auth';
+import { verifyAuth, resendVerification, emaillogin as emailLoginAPI, lineLogin as lineLoginAPI, emailSignup as emailSignupAPI, saveBarTags as saveBarTagsAPI, lineLogout as lineLogoutAPI } from '../api/auth';
 
 export const useAuthStore = defineStore('auth', () => {
   const user = ref(null);
@@ -37,7 +37,7 @@ export const useAuthStore = defineStore('auth', () => {
     errorMessage.value = '';
   }
 
-  // 清除認證狀態攔截器使用
+  // 清除認證狀態
   function clearAuthState() {
     user.value = null;
     accessToken.value = null;
@@ -80,31 +80,6 @@ export const useAuthStore = defineStore('auth', () => {
       return false;
     }
   }
-
-  // 統一的錯誤處理
-  const handleError = (err, defaultTitle = '操作失敗') => {
-    console.error(defaultTitle + ':', err);
-
-    if (err.response) {
-      errorMessage.value = err.response.data.error || defaultTitle;
-
-      let title = defaultTitle;
-      if (err.response.status === 401) {
-        title = '帳號或密碼錯誤';
-        errorMessage.value = '請檢查您的電子郵件和密碼是否正確';
-      } else if (err.response.status === 500) {
-        title = '伺服器發生錯誤';
-      }
-
-      return { title, message: errorMessage.value };
-    } else if (err.request) {
-      errorMessage.value = '網路連線失敗，請檢查網路狀態';
-      return { title: '網路發生錯誤!', message: errorMessage.value };
-    } else {
-      errorMessage.value = '發生未知錯誤，請稍後再試';
-      return { title: '發生未知錯誤!', message: errorMessage.value };
-    }
-  };
 
   // 重新寄送驗證信
   async function handleResendVerification(email) {
@@ -490,6 +465,42 @@ export const useAuthStore = defineStore('auth', () => {
     return null;
   }
 
+  async function lineLogout() {
+    clearError();
+    try {
+      console.log('開始 LINE 登出流程');
+
+      try {
+        await lineLogoutAPI();
+        console.log('後端登出成功');
+      } catch (err) {
+        console.warn('後端登出失敗，但仍會清除本地狀態:', err);
+      }
+
+      clearAuthState();
+      console.log('LINE 登出完成');
+
+      return { success: true };
+    } catch (err) {
+      console.error('LINE 登出過程發生錯誤:', err);
+      // 即使出錯也要清除本地狀態
+      clearAuthState();
+      return { 
+        success: true,
+        warning: '登出時發生錯誤，但本地狀態已清除' 
+      };
+    }
+  }
+
+  async function logout() {
+    if (loginMethod.value === 'line') {
+      return await lineLogout();
+    } else {
+      clearAuthState();
+      return { success: true };
+    }
+  }
+
   async function saveBarTags(preferences) {
     clearError();
     
@@ -545,6 +556,8 @@ export const useAuthStore = defineStore('auth', () => {
     updateAuthUser,
     checkAuthStatus,
     handleResendVerification,
-    saveBarTags
+    saveBarTags,
+    lineLogout,
+    logout
   };
 });

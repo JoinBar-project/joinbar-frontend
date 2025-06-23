@@ -4,6 +4,8 @@ import { useAuthStore } from '@/stores/authStore';
 import { storeToRefs } from 'pinia';
 import { computed } from 'vue';
 import UserAvatar from '@/components/UserAvatar.vue';
+import Swal from 'sweetalert2';
+
 
 const router = useRouter();
 const authStore = useAuthStore();
@@ -16,8 +18,60 @@ const goToMember = () => {
   });
 };
 
+const handleLogout = async () => {
+  if(authStore.loginMethod === 'line' ) {
+    try {
+      const result = await authStore.lineLogout();
+
+      if (result.success) {
+        await Swal.fire({
+          title: '登出成功！',
+          text: '您已安全登出，感謝使用',
+          icon: 'success',
+          confirmButtonText: '確認',
+          timer: 1500,
+          timerProgressBar: true
+        });
+        router.push('/login');
+      }
+    } catch (error) {
+      console.error('登出失敗:', error);
+      await Swal.fire({
+        title: '登出失敗',
+        text: '請稍後再試',
+        icon: 'error',
+        confirmButtonText: '確認'
+      });
+    }
+  } else {
+    try {
+      const result = await authStore.logout();
+
+      if (result.success) {
+        await Swal.fire({
+          title: '登出成功！',
+          text: '您已安全登出，感謝使用',
+          icon: 'success',
+          confirmButtonText: '確認',
+          timer: 1500,
+          timerProgressBar: true
+        });
+        router.push('/login');
+      }
+    } catch (error) {
+      console.error('登出失敗:', error);
+      await Swal.fire({
+        title: '登出失敗',
+        text: '請稍後再試',
+        icon: 'error',
+        confirmButtonText: '確認'
+      });
+    }
+  }
+};
+
 const avatarURL = computed(() => {
-  return user.value.avatar || '/default-user-avatar.png';
+  return user.value?.avatar || '/default-user-avatar.png';
 });
 </script>
 
@@ -54,9 +108,10 @@ const avatarURL = computed(() => {
       </li>
       <li>
         <div
+          @click="handleLogout"
           v-if="isAuthenticated"
-          class="cursor-pointer flex flex-col items-center gap-1">
-          登出
+          class="cursor-pointer flex flex-col items-center gap-1 logout-button">
+          <span>登出</span>
         </div>
       </li>
       <li>
@@ -97,5 +152,9 @@ const avatarURL = computed(() => {
 
 .cart-icon {
   @apply h-[55%] w-auto block;
+}
+
+.logout-button {
+  @apply hover:text-gray-300 transition-colors duration-200;
 }
 </style>
