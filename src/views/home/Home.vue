@@ -223,7 +223,7 @@ const bars = [
 
 .features-section h2,
 .popular-bars-section h2 {
-  @apply text-center text-[32px] mb-[16px] font-bold;
+  @apply text-center text-[32px] mb-[16px] font-bold relative z-10;
 }
 
 .bar-cards-container {

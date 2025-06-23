@@ -66,13 +66,13 @@ const routes = [
     ],
   },
   { path: '/reviews', name: 'Reviews', component: Reviews },
-  { path: '/subscription', name: 'Subscription', component: Subscription, meta: { requiresAuth: true } },
+  { path: '/subscription', name: 'Subscription', component: Subscription },
   { path: '/cart', name: 'Cart', component: Cart, meta: { requiresAuth: true } },
   { path: '/payment', name: 'Payment', component: Payment, meta: { requiresAuth: true } },
   { path: '/payment-waiting', name: 'PaymentWaiting', component: PaymentWaiting },
-  { path: '/sub', name: 'SubEventInformation', component: EventInfo },
-  { path: '/order-success/:orderNumber', name: 'OrderSuccess', component: OrderSuccess, props: true },
+  { path: '/order-success/:orderNumber', name: 'OrderSuccess', component: OrderSuccess, props: true, meta: { requiresAuth: true } },
   { path: '/preferences', name: 'Preferences', component: Preferences, meta: { requiresAuth: true } },
+  // 404 路由放到最後，並且更精確
   { path: '/404', name: 'NotFound', component: NotFound },
   { 
     path: '/:pathMatch(.*)*', 
@@ -99,7 +99,7 @@ router.beforeEach((to, from, next) => {
   
   const urlParams = new URLSearchParams(window.location.search);
   const isLineCallback = urlParams.get('success') || urlParams.get('error');
-  
+
   if (isLineCallback && to.path === '/login') {
     console.log('LINE 登入回調偵測，跳過路由守衛初始化');
     next();
@@ -114,7 +114,7 @@ router.beforeEach((to, from, next) => {
     console.log('需要登入，重導向到登入頁');
     next('/login');
   } 
-  
+
   else if (to.meta.requiresGuest && authStore.isAuthenticated) {
     console.log('已登入用戶，重導向到首頁');
     next('/home');
