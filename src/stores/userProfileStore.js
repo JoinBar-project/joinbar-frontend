@@ -16,7 +16,7 @@ export const useUserProfileStore = defineStore('userProfile', () => {
 
   const isLoading = ref(false);
 
-  const getUserProfile = async (id) => {
+  const getUserProfile = async id => {
     isLoading.value = true;
 
     try {
@@ -65,6 +65,7 @@ export const useUserProfileStore = defineStore('userProfile', () => {
       const { data } = await patchUserAvatar(id, file);
       profile.value.avatarUrl = data.avatarUrl;
       console.log('會員頭像更新成功', data);
+      return data.avatarUrl;
     } catch (err) {
       console.error('會員頭像更新失敗', err);
       throw err;
@@ -73,7 +74,7 @@ export const useUserProfileStore = defineStore('userProfile', () => {
     }
   };
 
-  const removeUserAvatar = async (id) => {
+  const removeUserAvatar = async id => {
     isLoading.value = true;
     try {
       const { data } = await deleteUserAvatar(id);

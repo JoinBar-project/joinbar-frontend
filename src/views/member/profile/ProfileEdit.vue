@@ -138,16 +138,19 @@ const handleSubmit = async () => {
       birthday: form.value.birthday === '' ? null : form.value.birthday,
       preferences: form.value.preferences,
     };
+
+    let updatedAvatarUrl = profile.value.avatarUrl;
+
     await userProfileStore.updateUserProfile(userId.value, submitData);
     if (avatarFile.value) {
-      await updateUserAvatar(userId.value, avatarFile.value);
+      updatedAvatarUrl = await updateUserAvatar(userId.value, avatarFile.value);
     }
     authStore.updateAuthUser({
       ...submitData,
-      avatarUrl: profile.value.avatarUrl,
+      avatarUrl: updatedAvatarUrl,
     });
-    triggerAlert();
 
+    triggerAlert();
     setTimeout(() => {
       router.push({ name: 'MemberProfile', params: { id: userId.value } });
     }, 1500);
