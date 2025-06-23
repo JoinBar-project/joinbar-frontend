@@ -118,11 +118,11 @@ function scrollToTop() {
 
 .no-more-text {
   font-size: 16px;
-  color: #999;
+  color: #c9c9c9;
   margin-top: 10px;
   cursor: pointer;
 }
 .no-more-text:hover {
-  color: #555;
+  color: #ffffff;
 }
 </style>

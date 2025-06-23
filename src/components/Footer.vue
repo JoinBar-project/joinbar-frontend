@@ -40,7 +40,6 @@ onUnmounted(() => {
       </div>
     <div class="footer-links">
       <router-link to="/map">酒吧地圖</router-link>
-      <router-link to="/reviews">酒吧評論</router-link>
       <router-link to="/event">酒吧活動</router-link>
       <router-link to="/subscription">訂閱優惠</router-link>
       <router-link to="/contact">聯絡我們</router-link>
