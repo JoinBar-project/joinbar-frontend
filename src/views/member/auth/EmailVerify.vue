@@ -33,7 +33,25 @@ const authStore = useAuthStore()
         </button>
 			</div>
 			<!-- 驗證失敗 -->
-			<div></div>
+			<div class="text-center">
+				<div class="flex items-center justify-center w-16 h-16 mx-auto mb-4 bg-red-100 rounded-full">
+          <i class="text-2xl text-red-500 fas fa-times"></i>
+        </div>
+				<h2 class="mb-2 text-xl font-semibold text-gray-800">驗證失敗！</h2>
+				<p class="mb-6 text-gray-600">{{ errorMessage }}</p>
+				<div class="flex justify-center gap-4">
+          <button 
+            class="px-4 py-2 text-black bg-green-200 rounded-lg cursor-pointer hover:opacity-75 hover:shadow-lg active:opacity-50"
+          >
+            返回登入頁
+          </button>
+          <button 
+            class="px-4 py-2 text-black bg-red-200 rounded-lg cursor-pointer hover:opacity-75 hover:shadow-lg active:opacity-50"
+          >
+            重寄驗證信
+          </button>
+				</div>
+			</div>
 			<!-- 無效連結 -->
 			<div></div>
 			<!-- 重新寄送驗證信表單 -->
