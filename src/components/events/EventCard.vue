@@ -4,8 +4,8 @@ import 'dayjs/locale/zh-tw'
 import weekday from 'dayjs/plugin/weekday'
 import localizedFormat from 'dayjs/plugin/localizedFormat'
 import updateLocale from 'dayjs/plugin/updateLocale'
-import ModalEdit from '@/components/events/ModalEdit.vue'
 import { useTagStore } from '@/stores/tag'
+import { useRouter } from 'vue-router'
 
 dayjs.extend(localizedFormat)
 dayjs.extend(weekday)
@@ -21,9 +21,11 @@ const props = defineProps({
     }
   },
 })
+
 const emit = defineEmits(['update'])
 
 const tagStore = useTagStore()
+const router = useRouter()
 
 function getTagName(id) {
   return tagStore.tagsMap[id] || '未知標籤'
@@ -33,7 +35,7 @@ function formatEventDate(dateStr) {
   if (!dateStr) return ''
   const weekMap = ['日', '一', '二', '三', '四', '五', '六']
   const d = dayjs(dateStr)
-  return `${d.format('YYYY.MM.DD')}(${weekMap[d.day()]}) ${d.format('HH:mm')}`
+  return `${d.format('LL')}(${weekMap[d.day()]}) ${d.format('HH:mm')}`
 }
 
 function sliceChinese(str, n) {
@@ -42,14 +44,20 @@ function sliceChinese(str, n) {
   if (!matches) return ''
   return matches.slice(0, n).join('')
 }
+
+function goToInfo() {
+  router.push(`/event/${props.event.id}`)
+}
 </script>
 
 <template>
-  <div class="event-card">
-    <img :src="props.event.imageUrl" alt="活動圖片" class="event-img"/>
+  <div class="event-card" @click="goToInfo">
+    <img :src="props.event.imageUrl" alt="活動圖片" class="event-img" />
     <div class="event-info">
-      <p class="time">{{ formatEventDate(props.event.startDate) }} ~ {{ formatEventDate(props.event.endDate) }}</p>
-      <h3 class="title">{{ props.event.name }}</h3>
+      <p class="time text-gray-400">
+        {{ formatEventDate(props.event.startAt) }} ~ {{ formatEventDate(props.event.endAt) }}
+      </p>
+      <h3 class="title h-[5.5rem]">{{ props.event.name }}</h3>
       <p>
         <span class="location">📍{{ sliceChinese(props.event.location, 6) }}</span>｜<span class="bar-name">{{ props.event.barName }}</span>
       </p>
@@ -59,11 +67,9 @@ function sliceChinese(str, n) {
             #{{ getTagName(tagId) }}
           </span>
         </div>
-        <ModalEdit
-          v-if="props.event.id"
-          :event-id="props.event.id"
-          @update="emit('update')"
-        />
+        <div class="btn-open-form btn-edit open-info-btn pointer-events-none">
+          查看詳情
+        </div>
       </div>
     </div>
   </div>
@@ -73,7 +79,7 @@ function sliceChinese(str, n) {
 @reference "tailwindcss";
 
 .event-card {
-  @apply bg-gray-100 rounded-2xl m-2;
+  @apply bg-gray-100 rounded-2xl m-2 transition duration-300 transform hover:-translate-y-1 hover:shadow-xl cursor-pointer;
 }
 
 .event-img {
@@ -81,7 +87,7 @@ function sliceChinese(str, n) {
 }
 
 .event-info {
-  @apply p-2;
+  @apply p-4;
 }
 
 .time {
@@ -90,6 +96,10 @@ function sliceChinese(str, n) {
 
 .title {
   @apply py-2 text-2xl font-bold;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 }
 
 .tags {
@@ -112,5 +122,17 @@ function sliceChinese(str, n) {
 
 .bottom-row {
   @apply flex items-center justify-between gap-2 mt-2;
+}
+
+.btn-open-form {
+  @apply flex justify-center mt-2 w-32 py-2 text-white rounded-2xl transition duration-200;
+}
+
+.btn-edit {
+  background-color: #afb18c;
+}
+
+.open-info-btn:hover {
+  background-color: #878a6a;
 }
 </style>

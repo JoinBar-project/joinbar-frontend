@@ -1,5 +1,6 @@
 <script setup>
-import { ref, watch } from 'vue'
+import { ref, watch, onMounted } from 'vue'
+
 const emit = defineEmits(['update:modelValue'])
 
 const props = defineProps({
@@ -19,14 +20,32 @@ const selectedTags = ref([])
 const modalOpen = ref(false)
 const warning = ref('')
 
+function initializeSelectedTags() {
+  if (props.modelValue && Array.isArray(props.modelValue) && props.modelValue.length > 0) {
+    if (typeof props.modelValue[0] === 'object' && props.modelValue[0].id !== undefined) {
+      selectedTags.value = props.modelValue.filter(tag => 
+        options.value.some(option => option.id === tag.id)
+      )
+    } else {
+      selectedTags.value = options.value.filter(option => 
+        props.modelValue.includes(option.id)
+      )
+    }
+  } else {
+    selectedTags.value = []
+  }
+}
+
 function openModal() {
   modalOpen.value = true
   warning.value = ''
 }
+
 function closeModal() {
   modalOpen.value = false
   warning.value = ''
 }
+
 function toggleTag(tag) {
   const idx = selectedTags.value.findIndex(t => t.id === tag.id)
   if (idx === -1) {
@@ -41,17 +60,32 @@ function toggleTag(tag) {
   }
   emit('update:modelValue', selectedTags.value.map(tag => tag.id))
 }
+
 function confirmTags() {
   emit('update:modelValue', selectedTags.value.map(tag => tag.id))
   closeModal()
 }
+
 function removeTag(tag) {
   toggleTag(tag)
 }
 
-// 同步：modelValue（id陣列）→ selectedTags（物件陣列）
-watch(() => props.modelValue, (val) => {
-  selectedTags.value = options.value.filter(option => val.includes(option.id))
+watch(() => props.modelValue, (newVal) => {
+  if (newVal && Array.isArray(newVal) && newVal.length > 0) {
+    if (typeof newVal[0] === 'object' && newVal[0].id !== undefined) {
+      selectedTags.value = newVal.filter(tag => 
+        options.value.some(option => option.id === tag.id)
+      )
+    } else {
+      selectedTags.value = options.value.filter(option => newVal.includes(option.id))
+    }
+  } else {
+    selectedTags.value = []
+  }
+}, { immediate: true, deep: true })
+
+onMounted(() => {
+  initializeSelectedTags()
 })
 </script>
 
@@ -61,12 +95,14 @@ watch(() => props.modelValue, (val) => {
     <div style="display:flex;align-items:center;gap:8px;width:100%;flex-wrap:wrap;">
       <button type="button" class="btn-hashtag-modal" @click="openModal">選擇</button>
       <div class="selected-tags">
+        <div v-if="selectedTags.length === 0" class="no-tags-info" style="color: #666; font-size: 12px;">
+          目前無選擇標籤
+        </div>
         <span v-for="tag in selectedTags" :key="tag.id" class="selected-tag">
           {{ tag.name }}
           <span class="remove-tag" @click="removeTag(tag)">×</span>
         </span>
       </div>
-      
     </div>
 
     <!-- Modal -->
@@ -101,39 +137,34 @@ watch(() => props.modelValue, (val) => {
 }
 
 .form-row label {
-  @apply text-xl text-center;
+  @apply text-base text-center;
 }
 
 .selected-tags {
-  @apply flex flex-wrap gap-2 min-h-8;
+  @apply flex flex-wrap gap-2 items-center; 
 }
 
 .selected-tag {
-  @apply relative flex items-center mb-1 py-1 text-sm rounded-2xl pr-[11px] pl-2;
-  background: #ffecf0;
-  color: #c9475d;
+  @apply relative flex items-center py-1 text-sm rounded-lg pr-[11px] pl-2 bg-orange-100 border-orange-200 text-orange-700;
 }
 
 .remove-tag {
-  @apply ml-2 cursor-pointer font-bold select-none text-sm;
-  color: #c9475d;
+  @apply ml-2 cursor-pointer font-bold select-none text-sm text-orange-700;
 }
 
 .btn-hashtag-modal {
-  @apply rounded-2xl py-1 px-4 border-[3px] border-gray-400 text-sm cursor-pointer bg-gray-100;
-}
-
-.btn-hashtag-modal:hover {
-  @apply bg-red-100;
+  @apply h-9 rounded-lg px-4 border-2 border-gray-300 text-base cursor-pointer bg-white
+         hover:bg-gray-50 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 focus:outline-none
+         transition-all duration-200 ease-in-out;
 }
 
 .hashtag-modal-overlay {
-  @apply fixed left-0 top-0 w-screen h-screen flex items-center justify-center z-[3000];
+  @apply fixed left-0 top-0 w-screen h-screen flex items-center justify-center z-[9999];
   background: rgba(0,0,0,0.20);
 }
 
 .hashtag-modal-content {
-  @apply bg-white rounded-2xl min-w-[300px] relative shadow-2xl p-[32px_28px_20px_28px];
+  @apply bg-white rounded-xl w-[400px] max-w-[90vw] mx-auto relative shadow-2xl p-[32px_28px_20px_28px];
   animation: popupFadeIn 0.25s;
 }
 
@@ -143,11 +174,11 @@ watch(() => props.modelValue, (val) => {
 }
 
 .modal-header {
-  @apply text-xl font-bold mb-4 flex justify-between items-center;
+  @apply text-lg font-bold mb-4 flex justify-between items-center;
 }
 
 .modal-close-btn {
-  @apply text-2xl bg-transparent border-none cursor-pointer;
+  @apply text-2xl bg-transparent border-none cursor-pointer hover:text-gray-600 transition-colors;
 }
 
 .modal-tags {
@@ -155,25 +186,32 @@ watch(() => props.modelValue, (val) => {
 }
 
 .tag-btn {
-  @apply text-base border-2 border-gray-400 rounded-2xl py-2 px-4 cursor-pointer transition-all duration-200 bg-gray-50;
+  @apply text-base border-2 border-gray-300 rounded-lg py-2 px-4 cursor-pointer transition-all duration-200 bg-white
+         hover:bg-gray-50 focus:outline-none;
 }
 
 .tag-btn.active,
 .tag-btn:active {
-  @apply bg-red-100 border-red-300;
+  @apply bg-orange-100 border-orange-200 text-orange-700;
 }
 
+
 .modal-actions {
-  @apply mt-2 text-right;
+  @apply mt-4 text-right;
 }
 
 .confirm-btn {
-  @apply border-none text-white rounded-2xl text-base py-1 px-6 cursor-pointer ml-3;
+  @apply border-none text-white rounded-lg text-base py-2 px-6 cursor-pointer ml-3
+         hover:opacity-90 focus:outline-none focus:ring-2 focus:ring-red-300 transition-all duration-200;
   background: var(--color-primary-red, #c9475d);
 }
 
 .warning {
   @apply text-sm mr-2;
   color: #c9475d;
+}
+
+.no-tags-info {
+  @apply text-xs text-gray-500 flex items-center;
 }
 </style>

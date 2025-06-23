@@ -2,6 +2,8 @@
 import { useEventForm } from '@/composables/useEventForm';
 import FormUpdate from './FormUpdate.vue';
 import AlertModal from '@/components/AlertModal.vue';
+import { useAuthStore } from '@/stores/authStore';
+
 
 const emit = defineEmits(['update']);
 const props = defineProps({
@@ -18,10 +20,6 @@ function handleUpdate() {
   emit('update');
 }
 
-function handleDelete() {
-  showForm.value = false;
-  emit('update');
-}
 </script>
 
 <template>
@@ -29,15 +27,15 @@ function handleDelete() {
     <AlertModal
       :visible="showAlert"
       @accept="handleAlertAccept"
-      @deny="handleAlertDeny" />
-    <div class="edit-btn-container">
-      <button
-        class="btn-open-form btn-edit"
-        @click="showForm = true"
-        :disabled="!props.eventId">
-        編輯活動
-      </button>
-    </div>
+      @deny="handleAlertDeny" 
+    />
+    <button
+      v-if="useAuthStore().isAuthenticated"
+      class="btn-open-form btn-edit"
+      @click="showForm = true"
+      :disabled="!props.eventId">
+      編輯活動
+    </button>
     <transition name="popup">
       <div
         v-if="showForm"
@@ -54,8 +52,7 @@ function handleDelete() {
               :event-id="props.eventId"
               @click.stop
               @update="handleUpdate"
-              @cancel="showAlert = true"
-              @delete="handleDelete" />
+              @cancel="showAlert = true"/>
           </div>
           <div v-else>
             <p>請選擇要編輯的活動</p>
@@ -69,20 +66,20 @@ function handleDelete() {
 <style scoped>
 @reference "tailwindcss";
 
+.btn-open-form {
+  @apply mt-[30px] mr-[30px] rounded-[20px] border-0 text-[24px] text-center shadow-md cursor-pointer transition-colors duration-200;
+}
+
+.btn-edit  {
+  @apply px-[16px] pt-[8px] pb-[10px] text-white bg-[var(--color-secondary-green)] hover:bg-[#8b8d6c];
+}
+
 .edit-btn-container {
   @apply flex justify-end;
 }
 
-.btn-open-form {
-  @apply flex justify-center mt-2 w-32 py-2 text-white rounded-2xl cursor-pointer;
-}
-
 .btn-create {
   background-color: var(--color-primary-red);
-}
-
-.btn-edit {
-  background-color: var(--color-primary-orange);
 }
 
 .popup-overlay {
@@ -95,7 +92,7 @@ function handleDelete() {
 }
 
 .popup-close-btn {
-  @apply absolute top-12 right-4 text-[30px] bg-transparent border-none text-black cursor-pointer z-[101] transition-colors duration-200;
+  @apply absolute right-4 text-[30px] bg-transparent border-none text-white cursor-pointer z-[101] transition-colors duration-200;
 }
 
 .popup-close-btn:hover {
