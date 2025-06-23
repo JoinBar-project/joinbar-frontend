@@ -1,14 +1,19 @@
 <script setup>
 import { ref, onMounted, onUnmounted } from 'vue';
 import { getAllSubPlans, createSubscriptionOrder, createLinePayment } from '@/api/subsCard';
+import PaymentPendingModal from '@/components/sub/PaymentPendingModal.vue'
 
 const spotlight = ref(null);
 const cardData = ref([]);
+const showModal = ref(false)
+const modalMessage = ref('')   
+const modalOrderId = ref('')
+const modalSubType = ref('')
+
 
 const handleSubscribe = async (subscriptionType) => {
   try {
 
-    // await cancelPendingOrdersIfAny()
     console.log('🟢 1. 建立訂閱訂單中...')
     const order = await createSubscriptionOrder(subscriptionType);
     if (!order || !order.orderId?.toString?.()) throw new Error('訂單建立失敗');
@@ -17,19 +22,27 @@ const handleSubscribe = async (subscriptionType) => {
     console.log('📥 createSubscriptionOrder 回傳', order)
     const { paymentUrl, transactionId, expireTime } = await createLinePayment(order);
 
-    // 3. 將資訊存入 localStorage，供付款成功頁使用
-    localStorage.setItem('transactionId', transactionId);
-    localStorage.setItem('expireTime', expireTime);
-    localStorage.setItem('orderId', order.id);
-    localStorage.setItem('subType', subscriptionType); // ← 傳給付款成功頁用
+    modalOrderId.value = order.orderId;
+    modalSubType.value = subscriptionType;
+    modalMessage.value = '即將前往付款頁';
+    showModal.value = true;
 
-    // 4. 導向付款頁
-    window.location.href = paymentUrl;
+    setTimeout(() => {
+      localStorage.setItem('transactionId', transactionId);
+      localStorage.setItem('expireTime', expireTime);
+      localStorage.setItem('orderId', order.id);
+      localStorage.setItem('subType', subscriptionType);
+
+      window.location.href = paymentUrl;
+    }, 1000);
+
   } catch (err) {
     console.error('訂閱流程發生錯誤', err);
     alert('訂閱流程發生錯誤，請稍後再試一次');
   }
-};
+}
+
+
 
 const handleMouseMove = (e) => {
   if (spotlight.value) {
@@ -100,9 +113,10 @@ onUnmounted(() => {
         </div>
       </div>
     </div>
-    <PaymentResultModal 
+    <PaymentPendingModal 
       v-if="showModal"
-      :modalMessage="modalMessage" 
+      :modalMessage="modalMessage"
+      @close="showModal = false" 
     />
   </div>
 </template>
