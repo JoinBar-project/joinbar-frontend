@@ -23,19 +23,35 @@ const emit = defineEmits(['accept', 'deny'])
       <!-- 黑色+模糊背景 -->
       <div class="absolute inset-0 bg-black/40 backdrop-blur-sm"></div>
       <!-- Alert本體 -->
-      <div
-        class="relative alert alert-vertical sm:alert-horizontal w-96 max-h-[80vh] bg-white shadow-lg z-[200]"
-        role="alert"
-      >
-        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" class="stroke-info h-6 w-6 shrink-0">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-        </svg>
-        <span>{{ props.message }}</span>
-        <div>
-          <button class="btn btn-sm" @click="emit('deny')">{{ props.denyText }}</button>
-          <button class="btn btn-sm btn-primary" @click="emit('accept')">{{ props.acceptText }}</button>
-        </div>
+      <div class="flex items-center justify-center z-50">
+    <div class="bg-white rounded-lg shadow-xl w-96 max-w-[90vw] p-6">
+      <!-- 標題 -->
+      <h3 class="text-lg font-semibold text-gray-900 mb-2">
+        您即將離開表單
+      </h3>
+      
+      <!-- 訊息內容 -->
+      <p class="text-sm text-gray-600 mb-6 leading-relaxed">
+        {{ props.message }}
+      </p>
+      
+      <!-- 按鈕區域 -->
+      <div class="flex justify-end gap-3">
+        <button 
+          @click="emit('deny')"
+          class="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 transition-colors"
+        >
+          {{ props.denyText }}
+        </button>
+        <button 
+          @click="emit('accept')"
+          class="px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 transition-colors"
+        >
+          {{ props.acceptText }}
+        </button>
       </div>
+    </div>
+  </div>
     </div>
   </transition>
 </template>

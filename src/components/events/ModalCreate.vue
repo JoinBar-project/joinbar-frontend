@@ -2,8 +2,30 @@
 import { useEventForm } from '@/composables/useEventForm';
 import FormCreate from './FormCreate.vue';
 import AlertModal from '@/components/AlertModal.vue';
+import { useAuthStore } from '@/stores/authStore';
+
+const emit = defineEmits(['submit', 'eventCreated']);
 
 const { showForm, showAlert, handleAlertAccept, handleAlertDeny, overlayClick } = useEventForm();
+const authStore = useAuthStore();
+
+function handleSubmit(result) {
+  if (result.success) {
+    emit('eventCreated', result.newEvent);
+    showForm.value = false;
+  
+  } else {
+    console.error('建立活動失敗:', result.error);
+  }
+}
+function handleClick() {
+  if (!authStore.isAuthenticated) {
+    alert('請先登入才能建立活動');
+    return;
+  }
+  showForm.value = true;
+}
+
 </script>
 
 <template>
@@ -11,10 +33,11 @@ const { showForm, showAlert, handleAlertAccept, handleAlertDeny, overlayClick } 
     <AlertModal
       :visible="showAlert"
       @accept="handleAlertAccept"
-      @deny="handleAlertDeny" />
+      @deny="handleAlertDeny" 
+    />
     <button
       class="btn-open-form btn-create"
-      @click="showForm = true">
+      @click="handleClick">
       建立活動
     </button>
     <transition name="popup">
@@ -30,7 +53,7 @@ const { showForm, showAlert, handleAlertAccept, handleAlertDeny, overlayClick } 
           </button>
           <FormCreate
             @click.stop
-            @submit="showForm = false" />
+            @submit="handleSubmit" />
         </div>
       </div>
     </transition>
@@ -41,15 +64,19 @@ const { showForm, showAlert, handleAlertAccept, handleAlertDeny, overlayClick } 
 @reference "tailwindcss";
 
 .btn-open-form {
-  @apply flex justify-center items-center mx-auto w-44 py-2 text-xl text-white border-none rounded-2xl cursor-pointer;
+  @apply mt-[30px] rounded-[20px] border-0 text-[24px] text-center shadow-md cursor-pointer transition-colors duration-200 mx-auto block;
 }
-
 .btn-create {
+  @apply px-6 py-3 text-white font-medium rounded-xl shadow-lg hover:shadow-xl hover:bg-[#a83c51] transform hover:scale-105 transition-all duration-300 ease-in-out;
   background-color: var(--color-primary-red);
 }
 
 .btn-edit {
-  background-color: var(--color-primary-orange);
+  @apply px-[16px] pt-[8px] pb-[10px] text-white bg-[var(--color-secondary-green)] hover:bg-[#8b8d6c];
+}
+
+.edit-btn-container {
+  @apply flex justify-end;
 }
 
 .popup-overlay {
@@ -62,10 +89,10 @@ const { showForm, showAlert, handleAlertAccept, handleAlertDeny, overlayClick } 
 }
 
 .popup-close-btn {
-  @apply absolute top-12 right-4 text-[30px] bg-transparent border-none text-black cursor-pointer z-[101] transition-colors duration-200;
+  @apply absolute right-4 text-[30px] bg-transparent border-none text-white cursor-pointer z-[101] transition-colors duration-200;
 }
 
 .popup-close-btn:hover {
-  @apply text-orange-600;
+  @apply text-red-600;
 }
 </style>
