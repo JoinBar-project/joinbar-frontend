@@ -1,7 +1,13 @@
-import { ref, watch, onMounted } from 'vue'
+import { ref, watch, computed } from 'vue'
+import { useAuthStore } from '@/stores/authStore'
 import { useEventStore } from '@/stores/event'
+import axios from 'axios'
 
 export function useEventForm(eventId = null) {
+  const authStore = useAuthStore()
+  const userRole = computed(() => authStore.user?.role || 'user')
+  const isAdmin = computed(() => userRole.value === 'admin')
+  const userId = authStore.user?.id || null
   const eventStore = useEventStore()
   
   const eventName = ref('')
@@ -28,18 +34,41 @@ export function useEventForm(eventId = null) {
   
   function toDatetimeLocal(dtString) {
     if (!dtString) return ''
-    const d = new Date(dtString)
-    const pad = n => n.toString().padStart(2, '0')
-    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`
+    // 取出前 16 字元，格式類似 "2025-06-20 10:04:17" → "2025-06-20T10:04"
+    const trimmed = dtString.trim().replace(' ', 'T').slice(0, 16)
+    return trimmed
   }
   
   function validateForm() {
-    return eventName.value &&
-           barName.value &&
-           eventStartDate.value &&
-           eventEndDate.value &&
-           eventPrice.value &&
-           eventPeople.value
+    const basicValid =
+      eventName.value &&
+      barName.value &&
+      eventStartDate.value &&
+      eventEndDate.value &&
+      eventPeople.value
+
+    const priceValid = isAdmin.value ? eventPrice.value !== '' && !isNaN(eventPrice.value) : true
+
+    const start = dayjs(eventStartDate.value);
+    const end = dayjs(eventEndDate.value);
+    const now = dayjs();
+
+    if (!start.isValid() || !end.isValid()) {
+      alert('開始或結束時間格式錯誤！');
+      return false;
+    }
+
+    if (start.isAfter(end)) {
+      alert('開始時間不能晚於結束時間！');
+      return false;
+    }
+
+    if (start.isBefore(now)) {
+      alert('開始時間不能早於現在時間！');
+      return false;
+    }
+
+    return basicValid && priceValid;
   }
   
   function createPayload() {
@@ -51,8 +80,8 @@ export function useEventForm(eventId = null) {
       endDate: eventEndDate.value,
       maxPeople: Number(eventPeople.value),
       imageUrl: eventImageUrl.value,
-      price: Number(eventPrice.value),
-      hostUser: 1, // 暫時寫死測試帳號，等會員系統建置完成
+      price: isAdmin.value ? Number(eventPrice.value) : 0,
+      hostUser: userId,
       tags: [...eventHashtags.value]
     }
   }
@@ -72,20 +101,82 @@ export function useEventForm(eventId = null) {
   async function loadEvent(id) {
     if (!id) return
     
-    await eventStore.fetchEvent(id)
-    const data = eventStore.event
-    
-    if (data && data.stringModel) {
-      eventName.value = data.stringModel.name || ''
-      barName.value = data.stringModel.barName || ''
-      eventLocation.value = data.stringModel.location || ''
-      eventStartDate.value = toDatetimeLocal(data.stringModel.startDate)
-      eventEndDate.value = toDatetimeLocal(data.stringModel.endDate)
-      eventImageUrl.value = data.stringModel.imageUrl || ''
-      eventPrice.value = data.stringModel.price || ''
-      eventPeople.value = data.stringModel.maxPeople || ''
-      eventHashtags.value = data.tagIds || []
+    try {
+      // 使用 EventStore 載入活動基本資料
+      await eventStore.fetchEvent(id)
+      const data = eventStore.event
+      
+      // 取得標籤資料，優先使用 EventStore，否則直接呼叫 API
+      let tagIds = eventStore.tagIds
+      if (!tagIds || tagIds === undefined) {
+        const apiRes = await axios.get(`/api/event/${id}`)
+        tagIds = apiRes.data.tags || []
+      }
+      
+      if (data) {
+        eventName.value = data.name || ''
+        barName.value = data.barName || ''
+        eventLocation.value = data.location || ''
+        eventStartDate.value = toDatetimeLocal(data.startAt)
+        eventEndDate.value = toDatetimeLocal(data.endAt)
+        eventImageUrl.value = data.imageUrl || ''
+        eventPrice.value = data.price || ''
+        eventPeople.value = data.maxPeople || ''
+        
+        eventHashtags.value = tagIds || []
+      }
+    } catch (error) {
+      console.error('載入活動失敗:', error)
     }
+  }
+
+  function createFormData(imageFile, processedHashtags = null) {
+    const formData = new FormData();
+
+    formData.append('name', eventName.value.trim());
+    formData.append('barName', barName.value.trim());
+    formData.append('location', eventLocation.value.trim());
+    formData.append('startAt', eventStartDate.value);
+    formData.append('endAt', eventEndDate.value);
+    formData.append('price', isAdmin.value ? (eventPrice.value || '0') : '0');
+    formData.append('maxPeople', eventPeople.value);
+
+    if (imageFile) {
+      formData.append('image', imageFile);
+    }
+
+    console.log('=== 標籤處理開始 ===');
+    console.log('eventHashtags.value:', eventHashtags.value);
+
+    if (Array.isArray(eventHashtags.value) && eventHashtags.value.length > 0) {
+      const tagIds = eventHashtags.value
+        .map(tag => (typeof tag === 'object' && tag !== null ? tag.id || tag.value || tag : tag))
+        .filter(id => id !== undefined && id !== null && id !== '' && !isNaN(id))
+        .map(id => parseInt(id));
+
+      if (tagIds.length > 0) {
+        formData.append('tagIds', tagIds.join(','));
+        formData.append('tagIdsJson', JSON.stringify(tagIds));
+        tagIds.forEach((id, index) => {
+          formData.append('tagIdList[]', id.toString());
+        });
+        console.log('🔥 總共發送了', tagIds.length, '個標籤，使用 3 種格式');
+      } else {
+        console.log('⚠️ 沒有有效的標籤 ID');
+      }
+    } else {
+      console.log('⚠️ 標籤陣列為空或無效');
+    }
+    console.log('=== 標籤處理結束 ===');
+
+    for (let [key, value] of formData.entries()) {
+      console.log(`${key}:`, value);
+    }
+
+    const tagsToUse = processedHashtags || eventHashtags.value;
+    formData.append('hashtags', JSON.stringify(tagsToUse));
+    
+    return formData;
   }
   
   function handleCreate() {
@@ -130,12 +221,16 @@ export function useEventForm(eventId = null) {
     }
   }
   
-  if (eventId) {
-    onMounted(() => {
-      loadEvent(eventId)
-    })
-  }
-  
+  watch(
+    () => eventId,
+    (newId) => {
+      if (newId) {
+        loadEvent(newId)
+      }
+    },
+    { immediate: true }
+  )
+
   return {
     eventName,
     barName,
@@ -146,6 +241,7 @@ export function useEventForm(eventId = null) {
     eventPrice,
     eventPeople,
     eventHashtags,
+    isAdmin,
     
     showForm,
     showAlert,
@@ -155,6 +251,7 @@ export function useEventForm(eventId = null) {
     handleDelete,
     loadEvent,
     resetForm,
+    createFormData,
     handleAlertAccept,
     handleAlertDeny,
     overlayClick
