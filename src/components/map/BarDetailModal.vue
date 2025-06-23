@@ -41,7 +41,7 @@
               <h2 class="bar-detail-name">{{ bar.name }}</h2>
             </div>
 
-            <div class="rating-price-info">
+            <div class="rating-info">
               <span class="rating-text"
                 >⭐️ {{ bar.rating || "N/A" }} ({{
                   bar.reviews || 0
@@ -86,7 +86,8 @@
                   v-for="(tag, index) in bar.tags"
                   :key="index"
                   class="detail-tag"
-                >{{ getTagLabel(tag) }}</span>
+                  >{{ getTagLabel(tag) }}</span
+                >
               </div>
             </div>
 
@@ -98,12 +99,27 @@
             <div class="google-review-section">
               <h3>熱門評論</h3>
               <template v-if="bar.googleReviews && bar.googleReviews.length">
-                <div class="review-card" v-for="(review, idx) in bar.googleReviews.slice(0, 5)" :key="idx">
+                <div
+                  class="review-card"
+                  v-for="(review, idx) in bar.googleReviews.slice(0, 5)"
+                  :key="idx"
+                >
                   <div class="review-header">
-                    <img :src="review.profile_photo_url || 'https://via.placeholder.com/40'" alt="User Avatar" class="user-avatar" />
+                    <img
+                      :src="
+                        review.profile_photo_url ||
+                        'https://via.placeholder.com/40'
+                      "
+                      alt="User Avatar"
+                      class="user-avatar"
+                    />
                     <div class="user-info">
-                      <span class="user-name">{{ review.author_name || '匿名用戶' }}</span>
-                      <span class="review-date">{{ formatReviewDate(review.time) }}</span>
+                      <span class="user-name">{{
+                        review.author_name || "匿名用戶"
+                      }}</span>
+                      <span class="review-date">{{
+                        formatReviewDate(review.time)
+                      }}</span>
                     </div>
                   </div>
                   <p class="review-text">{{ review.text }}</p>
@@ -119,34 +135,22 @@
         </div>
 
         <div class="footer-actions">
-          <div class="icon-buttons">
+          <div class="action-buttons-group">
             <button
-              class="action-icon-button upload-photo-button"
-              @click="triggerFileUpload"
-              data-tooltip="上傳照片"
+              class="action-button icon-button share-button"
+              data-tooltip="分享"
             >
-              <img
-                src="@/assets/icons/mapicons/add-photo-icon.svg"
-                alt="新增照片"
-                class="icon"
-              />
-            </button>
-            <input
-              type="file"
-              ref="fileInput"
-              style="display: none"
-              accept="image/*"
-              @change="handleFileUpload"
-            />
-
-            <button class="action-icon-button share-button" data-tooltip="分享">
               <img
                 src="@/assets/icons/mapicons/share-icon.svg"
                 alt="分享"
                 class="icon"
               />
             </button>
-            <button class="action-icon-button navigate-button" data-tooltip="導航" @click="() => navigateToBar(bar)">
+            <button
+              class="action-button icon-button navigate-button"
+              data-tooltip="導航"
+              @click="() => navigateToBar(bar)"
+            >
               <img
                 src="@/assets/icons/mapicons/navigation-icon.svg"
                 alt="導航"
@@ -154,7 +158,7 @@
               />
             </button>
             <button
-              class="action-icon-button wishlist-detail-button"
+              class="action-button icon-button wishlist-detail-button"
               @click.stop="toggleFavorite"
               :aria-label="bar.isWishlisted ? '取消收藏' : '加入收藏'"
               :data-tooltip="bar.isWishlisted ? '取消收藏' : '加入收藏'"
@@ -162,7 +166,7 @@
               <svg
                 xmlns="http://www.w3.org/2000/svg"
                 viewBox="0 0 24 24"
-                :fill="bar.isWishlisted ? 'red' : 'white'"
+                :fill="bar.isWishlisted ? 'red' : 'none'"
                 :stroke="bar.isWishlisted ? 'red' : '#7f7f7f'"
                 stroke-width="1.5"
                 class="heart-icon"
@@ -190,8 +194,8 @@
 <script setup>
 import { ref, watch, computed } from "vue";
 import { useRouter } from "vue-router";
-import placeTypeMap from '@/composables/placeTypeMap';
-import { navigateToBar } from '@/utils/useGoogleMapNavigation';
+import placeTypeMap from "@/composables/placeTypeMap";
+import { navigateToBar } from "@/utils/useGoogleMapNavigation";
 
 const props = defineProps({
   bar: {
@@ -208,21 +212,27 @@ const currentImageIndex = ref(0);
 const defaultImage =
   "https://placehold.co/800x600/decdd5/860914?text=No+Image+Available";
 
-const google = computed(() => window.google && window.google.maps ? window.google.maps : null);
+// 確保 google 實例可用
+const google = computed(() =>
+  window.google && window.google.maps ? window.google.maps : null
+);
 
 const currentImage = computed(() => {
   if (props.bar.images && props.bar.images.length > 0) {
-    return props.bar.images[currentImageIndex.value];
+    return props.bar.images?.[currentImageIndex.value];
   }
   return props.bar.imageUrl || defaultImage;
 });
 
+// 修改營業狀態判斷邏輯，直接使用 is_open
 const currentOpenStatus = computed(() => {
-  if (props.bar.opening_hours && google.value) {
-    return props.bar.opening_hours.isOpen()
-      ? '<span style="color: green;">正在營業中</span>'
-      : '<span style="color: red;">目前休息中</span>';
+  if (props.bar.is_open === true) {
+    return '<span style="color: green;">正在營業中</span>';
   }
+  if (props.bar.is_open === false) {
+    return '<span style="color: red;">目前休息中</span>';
+  }
+  // return "未提供營業時間資訊";
 });
 
 watch(
@@ -262,9 +272,11 @@ const closeModal = () => {
 };
 
 const toggleFavorite = () => {
-  if (props.bar.placeId) {
-    emit("toggle-wishlist", props.bar.placeId);
+  // Use place_id for consistency based on BarList and MapView
+  if (props.bar.place_id) {
+    emit("toggle-wishlist", props.bar.place_id);
   } else if (props.bar.id) {
+    // Fallback to id if place_id is not available
     emit("toggle-wishlist", props.bar.id);
   }
 };
@@ -274,38 +286,14 @@ const goToBarActivities = () => {
   router.push("/event");
 };
 
-const fileInput = ref(null);
-
-const triggerFileUpload = () => {
-  fileInput.value?.click();
-};
-
-const handleFileUpload = (event) => {
-  const target = event.target;
-  const files = target.files;
-
-  if (files && files.length > 0) {
-    const selectedFile = files[0];
-    console.log("Selected file for upload:", selectedFile);
-
-    alert(
-      `選取了檔案：${selectedFile.name} (大小: ${selectedFile.size} bytes)\n此處僅為前端選取示範，實際圖片上傳需連接後端。`
-    );
-
-    if (fileInput.value) {
-      fileInput.value.value = "";
-    }
-  }
-};
-
 function formatReviewDate(unixTime) {
-  if (!unixTime) return '';
+  if (!unixTime) return "";
   const date = new Date(unixTime * 1000);
   return `${date.getFullYear()}年${date.getMonth() + 1}月${date.getDate()}日`;
 }
 
 const getTagLabel = (tag) => {
-  return placeTypeMap[tag] || tag;
+  return placeTypeMap?.[tag] || tag;
 };
 </script>
 
@@ -355,17 +343,23 @@ const getTagLabel = (tag) => {
   justify-content: center;
   cursor: pointer;
   z-index: 10;
+  background-color: rgba(255, 255, 255, 0.9);
+  backdrop-filter: blur(4px);
+  transition: all 0.2s ease;
 }
 .close-button:hover {
   transform: scale(1.1);
+  background-color: #fff;
 }
 
 .close-button .close-icon {
-  width: 100%;
-  height: 100%;
+  width: 20px;
+  height: 20px;
+  filter: brightness(0.5);
 }
 
 .image-gallery-container {
+  /* 恢復為圖片一的佈局 */
   width: 50%;
   height: 100%;
   overflow: hidden;
@@ -376,6 +370,7 @@ const getTagLabel = (tag) => {
   justify-content: center;
   color: #666;
   font-size: 1.2rem;
+  min-height: 200px;
 }
 
 .main-image {
@@ -396,8 +391,8 @@ const getTagLabel = (tag) => {
 }
 
 .nav-button {
-  background-color: rgba(0, 0, 0, 0.5);
-  color: white;
+  background-color: rgba(0, 0, 0, 0.5); /* 恢復圖片一的背景 */
+  color: white; /* 恢復圖片一的文字顏色 */
   border: none;
   border-radius: 50%;
   width: 32px;
@@ -407,15 +402,16 @@ const getTagLabel = (tag) => {
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  transition: background-color 0.2s;
+  transition: background-color 0.2s; /* 調整過渡效果 */
 }
 .nav-button:hover {
-  background-color: rgba(0, 0, 0, 0.7);
+  background-color: rgba(0, 0, 0, 0.7); /* 恢復圖片一的 hover 背景 */
+  transform: scale(1); /* 移除上次加入的 hover 縮放效果 */
 }
 
 .image-dots {
   position: absolute;
-  bottom: 10px;
+  bottom: 10px; /* 恢復圖片一的位置 */
   left: 50%;
   transform: translateX(-50%);
   display: flex;
@@ -425,12 +421,12 @@ const getTagLabel = (tag) => {
 .dot {
   width: 8px;
   height: 8px;
-  background-color: rgba(255, 255, 255, 0.6);
+  background-color: rgba(255, 255, 255, 0.6); /* 恢復圖片一的顏色 */
   border-radius: 50%;
   cursor: pointer;
   transition:
     background-color 0.2s,
-    transform 0.2s;
+    transform 0.2s; /* 調整過渡效果 */
 }
 .dot.active {
   background-color: #fff;
@@ -438,13 +434,14 @@ const getTagLabel = (tag) => {
 }
 
 .detail-info-section {
-  width: 50%;
-  padding: 80px 25px 20px 25px;
+  width: 50%; /* 恢復圖片一的寬度 */
+  padding: 80px 25px 20px 25px; /* 恢復圖片一的 padding */
   overflow-y: auto;
   flex-grow: 1;
   display: flex;
   flex-direction: column;
-  padding-bottom: calc(20px + 60px + 15px);
+  padding-bottom: 20px;
+  background-color: #f8fafc; /* 與圖片一背景相似 */
 }
 
 .header-main {
@@ -452,6 +449,7 @@ const getTagLabel = (tag) => {
   align-items: center;
   justify-content: flex-start;
   margin-bottom: 10px;
+  padding-top: 0; /* 恢復原始 */
 }
 
 .bar-detail-name {
@@ -462,37 +460,15 @@ const getTagLabel = (tag) => {
   line-height: 1.2;
 }
 
-.wishlist-detail-button {
-  cursor: pointer;
-  z-index: 10;
-  outline: none;
-  transition: transform 0.2s ease-in-out;
-}
-
-.wishlist-detail-button:hover {
-  transform: scale(1.1);
-}
-
-.wishlist-detail-button .heart-icon {
-  width: 24px;
-  height: 24px;
-  transition:
-    fill 0.3s ease,
-    stroke 0.3s ease;
-}
-
-.wishlist-detail-button:not([fill="red"]):hover .heart-icon {
-  fill: #ffebeb;
-  stroke: red;
-}
-
-.rating-price-info {
+.rating-info {
   display: flex;
   align-items: center;
-  gap: 15px;
+  gap: 15px; /* 恢復圖片一的間距 */
   margin-bottom: 15px;
   font-size: 16px;
   color: #555;
+  padding-bottom: 10px; /* 恢復圖片一的間距 */
+  border-bottom: 1px solid #f0f0f0; /* 恢復圖片一的邊框 */
 }
 .rating-text {
   font-weight: 500;
@@ -501,13 +477,13 @@ const getTagLabel = (tag) => {
 .contact-info p {
   margin-bottom: 8px;
   font-size: 15px;
-  color: #666;
+  color: #666; /* 恢復圖片一的顏色 */
   display: flex;
   align-items: center;
   gap: 8px;
 }
 .contact-info a {
-  color: #007bff;
+  color: #007bff; /* 恢復圖片一的顏色 */
   text-decoration: none;
 }
 .contact-info a:hover {
@@ -556,13 +532,13 @@ const getTagLabel = (tag) => {
 }
 
 .detail-tag {
-  background-color: #e6f7ff;
-  color: #1890ff;
+  background-color: #e6f7ff; /* 恢復圖片一的顏色 */
+  color: #1890ff; /* 恢復圖片一的顏色 */
   padding: 6px 12px;
   border-radius: 20px;
   font-size: 14px;
   white-space: nowrap;
-  border: 1px solid #91d5ff;
+  border: 1px solid #91d5ff; /* 恢復圖片一的邊框 */
 }
 
 .google-review-section {
@@ -570,11 +546,12 @@ const getTagLabel = (tag) => {
 }
 
 .review-card {
-  background-color: #f9f9f9;
+  background-color: #f9f9f9; /* 恢復圖片一的背景 */
   border-radius: 8px;
   padding: 15px;
   margin-top: 15px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  border: none; /* 恢復圖片一的無邊框 */
 }
 
 .review-header {
@@ -625,54 +602,68 @@ const getTagLabel = (tag) => {
 .footer-actions {
   position: absolute;
   bottom: 0;
-  left: 50%;
-  width: 50%;
-  transform: translateX(0%);
+  left: 0;
+  width: 100%;
   display: flex;
-  justify-content: space-between;
+  justify-content: space-between; /* 內容兩端對齊 */
   align-items: center;
   padding: 15px 25px;
   background-color: #fff;
-  border-top: 1px solid #eee;
+  border-top: 1px solid #f0f0f0; /* 恢復圖片一的邊框 */
   box-shadow: 0 -4px 10px rgba(0, 0, 0, 0.05);
   z-index: 5;
   box-sizing: border-box;
 }
 
-.icon-buttons {
+.action-buttons-group {
   display: flex;
-  gap: 15px;
+  gap: 15px; /* 恢復圖片一的間距 */
 }
 
-.action-icon-button {
+.action-button {
   background: none;
-  border: 1px solid #ccc;
-  border-radius: 50%;
-  width: 40px;
-  height: 40px;
+  border: 1px solid #e2e8f0; /* 恢復圖片一的邊框 */
+  border-radius: 12px; /* 恢復圖片一的圓角 */
+  width: 44px; /* 恢復圖片一的大小 */
+  height: 44px; /* 恢復圖片一的大小 */
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  transition:
-    background-color 0.2s,
-    border-color 0.2s;
+  transition: all 0.2s ease;
   padding: 0;
+  background-color: #fff;
 }
 
-.action-icon-button:hover {
-  background-color: #f0f0f0;
-  border-color: #aaa;
+.action-button:hover {
+  background-color: #f7fafc;
+  border-color: #cbd5e0;
+  transform: translateY(-2px); /* 恢復圖片一的 hover 效果 */
 }
 
-.action-icon-button .icon {
+.action-button .icon {
   width: 24px;
   height: 24px;
+  filter: brightness(0.5); /* 恢復圖片一的濾鏡 */
+}
+
+.wishlist-detail-button .heart-icon {
+  width: 20px; /* 恢復圖片一的大小 */
+  height: 20px; /* 恢復圖片一的大小 */
+  transition:
+    fill 0.3s ease,
+    stroke 0.3s ease;
+}
+/* 恢復圖片一的收藏按鈕 hover 效果 */
+.wishlist-detail-button:not([fill="red"]):hover .heart-icon {
+  fill: #ffebeb;
+  stroke: red;
 }
 
 .start-event-button {
-  background-color: #daa258;
-  color: white;
+  /* 恢復圖片一的樣式 */
+  background-image: linear-gradient(to right, #a8d87b, #d8dbaf, #daa258);
+  color: #333;
   border: none;
   border-radius: 25px;
   padding: 10px 20px;
@@ -682,11 +673,14 @@ const getTagLabel = (tag) => {
   display: flex;
   align-items: center;
   gap: 8px;
-  transition: background-color 0.2s;
+  transition: all 0.2s ease;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
 }
 
 .start-event-button:hover {
-  background-color: #c37b1c;
+  transform: scale(1.05);
+  filter: brightness(1.1);
+  box-shadow: 0 6px 10px rgba(0, 0, 0, 0.15);
 }
 
 .icon-plus {
@@ -707,6 +701,32 @@ const getTagLabel = (tag) => {
   opacity: 0;
 }
 
+/* Tooltip 樣式恢復 */
+.action-button[data-tooltip] {
+  position: relative;
+}
+.action-button[data-tooltip]:hover::after {
+  content: attr(data-tooltip);
+  position: absolute;
+  bottom: 110%;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #333;
+  color: #fff;
+  padding: 5px 12px;
+  border-radius: 6px;
+  font-size: 13px;
+  white-space: nowrap;
+  z-index: 20;
+  opacity: 1;
+  pointer-events: none;
+  transition: opacity 0.2s;
+}
+.action-button[data-tooltip]::after {
+  opacity: 0;
+  pointer-events: none;
+}
+
 @media (max-width: 768px) {
   .bar-detail-modal-content {
     flex-direction: column;
@@ -724,13 +744,13 @@ const getTagLabel = (tag) => {
   }
   .detail-info-section {
     width: 100%;
-    padding: 60px 15px 20px 15px;
+    padding: 20px 15px;
     padding-bottom: calc(20px + 60px + 10px);
   }
   .bar-detail-name {
     font-size: 24px;
   }
-  .rating-price-info {
+  .rating-info {
     font-size: 14px;
   }
   .close-button {
@@ -741,8 +761,8 @@ const getTagLabel = (tag) => {
   }
 
   .close-button .close-icon {
-    width: 100%;
-    height: 100%;
+    width: 18px;
+    height: 18px;
   }
 
   .wishlist-detail-button .heart-icon {
@@ -759,14 +779,15 @@ const getTagLabel = (tag) => {
     box-shadow: 0 -2px 5px rgba(0, 0, 0, 0.1);
     border-top: none;
   }
-  .icon-buttons {
+  .action-buttons-group {
     gap: 10px;
   }
-  .action-icon-button {
+  .action-button {
     width: 36px;
     height: 36px;
+    border-radius: 10px;
   }
-  .action-icon-button .icon {
+  .action-button .icon {
     width: 20px;
     height: 20px;
   }
@@ -779,30 +800,5 @@ const getTagLabel = (tag) => {
     width: 18px;
     height: 18px;
   }
-}
-
-.action-icon-button[data-tooltip] {
-  position: relative;
-}
-.action-icon-button[data-tooltip]:hover::after {
-  content: attr(data-tooltip);
-  position: absolute;
-  bottom: 110%;
-  left: 50%;
-  transform: translateX(-50%);
-  background: #333;
-  color: #fff;
-  padding: 5px 12px;
-  border-radius: 6px;
-  font-size: 13px;
-  white-space: nowrap;
-  z-index: 20;
-  opacity: 1;
-  pointer-events: none;
-  transition: opacity 0.2s;
-}
-.action-icon-button[data-tooltip]::after {
-  opacity: 0;
-  pointer-events: none;
 }
 </style>
