@@ -66,7 +66,7 @@ const routes = [
     ],
   },
   { path: '/reviews', name: 'Reviews', component: Reviews },
-  { path: '/subscription', name: 'Subscription', component: Subscription, meta: { requiresAuth: true } },
+  { path: '/subscription', name: 'Subscription', component: Subscription },
   { path: '/cart', name: 'Cart', component: Cart, meta: { requiresAuth: true } },
   { path: '/payment', name: 'Payment', component: Payment, meta: { requiresAuth: true } },
   { path: '/payment-waiting', name: 'PaymentWaiting', component: PaymentWaiting },
