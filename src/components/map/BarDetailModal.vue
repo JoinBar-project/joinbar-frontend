@@ -371,50 +371,33 @@ const closeShareModal = () => {
   shareModalVisible.value = false;
 };
 
-const handleShareFallback = async (shareText, shareUrl) => {
-  try {
-    const fullContent = `${shareText}\n${shareUrl}`;
-    await navigator.clipboard.writeText(fullContent);
-    alert('分享內容已複製到剪貼簿！\n\n請開啟 Line app 手動貼上分享。');
-    closeShareModal();
-  } catch (error) {
-    console.error('複製失敗:', error);
-    alert('分享失敗，請稍後再試');
-  }
-};
-
-const generateBarShareUrl = () => {
-  const barId = props.bar.placeId || props.bar.id || props.bar.place_id;
-  if (!barId) {
-    console.warn('找不到酒吧 ID，使用 Google Maps URL');
-    return props.bar.url;
-  }
-
+const generateShareableUrl = () => {
+  const barId = props.bar.id || props.bar.place_id;
+  const currentPath = window.location.pathname
   const baseUrl = window.location.origin;
-  const barUrl = `${baseUrl}/bar/${encodeURIComponent(barId)}`;
 
-  const params = new URLSearchParams({
-    name: props.bar.name || '',
-    rating: props.bar.rating || '',
-    reviews: props.bar.reviews || 0,
-    address: props.bar.address || '',
-    originalUrl: props.bar.url || ''
-  });
-  const finalUrl = `${barUrl}?${params.toString()}`;
-  return finalUrl;
+  const params = new URLSearchParams()
+  params.set('barId', barId)
+  params.set('name', props.bar.name || '')
+  params.set('rating', props.bar.rating || '')
+  params.set('reviews', props.bar.reviews || 0)
+  params.set('address', props.bar.address || '')
+  return `${baseUrl}${currentPath}?${params.toString()}`
 }
 
+
 const shareUrl = computed(() => {
-  return generateBarShareUrl();
-});
+  return generateShareableUrl()
+})
 
 const copyUrl = async () => {
   try {
-    const appShareUrl = generateBarShareUrl();
-    await navigator.clipboard.writeText(appShareUrl);
+    const shareUrl = generateShareableUrl()
+    await navigator.clipboard.writeText(shareUrl);
     alert('酒吧專屬連結已複製到剪貼簿！\n\n點擊此連結就能直接查看酒吧詳情。');
     closeShareModal();
   } catch (error) {
+    console.error('複製失敗:', error)
     alert('複製失敗，請手動複製網址');
   }
 };
@@ -427,10 +410,10 @@ const shareToLine = () => {
 
     const shareText = `推薦酒吧：${barName}\n評價：${barRating}星\n${barAddress}`;
 
-    const appShareUrl = generateBarShareUrl();
+    const shareUrl = generateShareableUrl();
 
     const lineShareUrl = `https://social-plugins.line.me/lineit/share?` +
-                          `url=${encodeURIComponent(appShareUrl)}&` +
+                          `url=${encodeURIComponent(shareUrl)}&` +
                           `text=${encodeURIComponent(shareText)}`;
     
     const lineWindow = window.open(lineShareUrl, 'lineShare', 'width=600,height=500');
@@ -438,7 +421,7 @@ const shareToLine = () => {
     if (lineWindow) {
       closeShareModal();
     } else {
-      handleShareFallback(shareText, appShareUrl);
+      copyUrl(`${shareText}\n${shareUrl}`)
     }
     
   } catch (error) {
