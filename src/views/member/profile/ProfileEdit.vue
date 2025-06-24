@@ -31,11 +31,13 @@ const form = ref({
 const userId = computed(() => user.value?.id);
 const avatarFile = ref(null);
 const avatarPreview = ref('');
+const defaultAvatar = '/default-user-avatar.png';
+const isAvatarRemoved = ref(false);
 
 const isDefaultAvatar = computed(() => {
   const currentUrl = avatarPreview.value || profile.value.avatarUrl;
 
-  if (!currentUrl || currentUrl.includes('default-user-avatar.png')) {
+  if (!currentUrl || currentUrl.includes(defaultAvatar)) {
     return true;
   }
   return false;
@@ -82,7 +84,7 @@ const toggleSelection = (arr, value) => {
   else arr.push(value);
 };
 
-const handleAvatarChange = event => {
+const handleAvatarChange = (event) => {
   const file = event.target.files[0];
   if (file && file.type.startsWith('image/')) {
     avatarFile.value = file;
@@ -92,16 +94,10 @@ const handleAvatarChange = event => {
   }
 };
 
-const handleRemoveAvatar = async () => {
-  try {
-    await removeUserAvatar(userId.value);
-    profile.value.avatarUrl = '';
-    authStore.user.avatarUrl = '';
+const handleRemoveAvatar = () => {
+    isAvatarRemoved.value = true;
     avatarFile.value = null;
-    avatarPreview.value = '';
-  } catch (err) {
-    alert('頭像移除失敗');
-  }
+    avatarPreview.value = defaultAvatar;
 };
 
 const handleSubmit = async () => {
@@ -142,9 +138,15 @@ const handleSubmit = async () => {
     let updatedAvatarUrl = profile.value.avatarUrl;
 
     await userProfileStore.updateUserProfile(userId.value, submitData);
+
     if (avatarFile.value) {
       updatedAvatarUrl = await updateUserAvatar(userId.value, avatarFile.value);
+    // 如果使用者未上傳新頭像 & 按了移除頭像，則呼叫移除頭像 API
+    } else if (isAvatarRemoved.value) {
+      await removeUserAvatar(userId.value);
+      updatedAvatarUrl = '';
     }
+
     authStore.updateAuthUser({
       ...submitData,
       avatarUrl: updatedAvatarUrl,
@@ -155,8 +157,8 @@ const handleSubmit = async () => {
       router.push({ name: 'MemberProfile', params: { id: userId.value } });
     }, 1500);
   } catch (err) {
-    console.error('更新失敗', err);
-    alert('更新失敗');
+    console.error('會員資料更新失敗', err);
+    alert('會員資料更新失敗');
   }
 };
 
@@ -181,7 +183,10 @@ const cancel = () => {
     <form @submit.prevent="handleSubmit" class="flex flex-col md:flex-row items-center md:items-start gap-10">
       <!-- 左側：頭像 + 上傳 & 移除按鈕 -->
       <div class="flex flex-col items-center md:w-1/3">
-        <UserAvatar :avatar-url="avatarPreview || profile.avatarUrl || '/default-user-avatar.png'" :display-name="profile.username" size="lg" />
+        <UserAvatar 
+        :avatar-url="avatarPreview || profile.avatarUrl || defaultAvatar" 
+        :display-name="profile.username" 
+        size="lg" />
         <label
           for="avatar"
           class="mt-4 px-4 py-2 bg-[var(--color-black)] text-[var(--color-secondary-pink)] rounded cursor-pointer hover:bg-opacity-80 active:scale-98 transition-all duration-150">
@@ -208,8 +213,17 @@ const cancel = () => {
           :toggleSelection="toggleSelection"
           :errors="errors" />
         <div class="mt-4 flex gap-2">
-          <button type="button" @click="cancel" class="px-4 py-2 bg-gray-400 text-white rounded cursor-pointer">取消</button>
-          <button type="submit" class="px-4 py-2 bg-[var(--color-primary-orange)] text-white rounded cursor-pointer">儲存</button>
+          <button
+            type="button"
+            @click="cancel"
+            class="px-4 py-2 bg-gray-400 text-white rounded cursor-pointer active:scale-98 transition-all duration-150">
+            取消
+          </button>
+          <button
+            type="submit"
+            class="px-4 py-2 bg-[var(--color-primary-orange)] text-white rounded cursor-pointer active:scale-98 transition-all duration-150">
+            儲存
+          </button>
         </div>
       </div>
     </form>

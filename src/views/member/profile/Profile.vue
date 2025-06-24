@@ -17,7 +17,7 @@ const { profile, isLoading } = storeToRefs(userProfileStore);
 const userId = computed(() => user.value?.id);
 
 const profileFields = [
-  { model: 'username', label: '姓名', placeholder: '請輸入姓名', icon: 'fa-solid fa-user', type: 'text' },
+  { model: 'username', label: '姓名*', placeholder: '請輸入姓名', icon: 'fa-solid fa-user', type: 'text' },
   { model: 'nickname', label: '暱稱', placeholder: '請輸入暱稱', icon: 'fa-solid fa-tag', type: 'text' },
   { model: 'birthday', label: '生日', placeholder: '請輸入生日', icon: 'fa-solid fa-cake-candles', type: 'date' },
 ];
@@ -63,7 +63,9 @@ const goToEdit = () => {
           :toggleSelection="() => {}"
           :errors="{ username: '', nickname: '', birthday: '' }" />
         <div class="text-center md:text-left">
-          <button type="button" class="px-4 py-2 bg-gray-800 text-white rounded cursor-pointer" @click="goToEdit">編輯個人資料</button>
+          <button type="button" 
+          class="px-4 py-2 bg-gray-800 text-white rounded cursor-pointer active:scale-98 transition-all duration-150"
+          @click="goToEdit">編輯個人資料</button>
         </div>
       </div>
     </div>
