@@ -62,7 +62,32 @@ const handleLogout = async () => {
 };
 
 const handleAccountDeletion = async () => {
-  try {} catch(err) {
+  try {
+    console.log('開始會員註銷');
+
+    Swal.fire({
+      title: '載入中...',
+      text: '正在載入您的帳戶資訊',
+      icon: 'info',
+      allowOutsideClick: false,
+      showConfirmButton: false,
+      didOpen: () => {
+        Swal.showLoading();
+      },
+    });
+
+    console.log('獲取帳戶資訊');
+    const warningResponse = await authStore.getAccountDeletionWarning();
+    console.log('回應:', warningResponse);
+
+    if(!warningResponse.success) {
+      console.error('調用失敗:', warningResponse.error);
+      throw new Error(warningResponse.error || '無法載入帳戶資訊');
+    }
+
+    const warningInfo = warningResponse.data;
+    console.log('帳戶載入成功:', warningInfo);
+  } catch(err) {
     console.error('註銷過程發生錯誤:', err);
     
     let errorTitle = '註銷失敗';
