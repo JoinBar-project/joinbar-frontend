@@ -241,14 +241,4 @@ const formatTime = (timeString) => {
   justify-content: center;
   flex-wrap: wrap;
 }
-
-@media (max-width: 640px) {
-  .action-buttons {
-    flex-direction: column;
-  }
-  
-  .action-buttons a {
-    margin: 0 0 8px 0 !important;
-  }
-}
 </style>
