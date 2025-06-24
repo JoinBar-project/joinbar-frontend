@@ -3,13 +3,15 @@
     <div class="max-w-[424px] mx-auto p-6 bg-[var(--color-black)] rounded-xl shadow-xl  relative">
     
     <transition name="alert-slide">
-      <div v-if="showRegisterSuccess" role="alert" class="alert alert-success absolute -top-8 left-0 right-0 z-10">
+      <div v-if="showRegisterSuccess" role="alert" class="alert alert-success alert-soft absolute -top-8 left-0 right-0 z-10">
         <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 shrink-0 stroke-current" fill="none" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
         </svg>
         <span>註冊成功！請前往 Email 驗證帳號</span>
       </div>
     </transition>
+
+    
     
     <div class="flex border-b border-[var(--color-icon-secondary)]">
       <router-link to="/login" class="flex-1 py-2 text-center font-semibold text-[var(--color-icon-secondary)] hover:text-[var(--color-secondary-green)] transition">
