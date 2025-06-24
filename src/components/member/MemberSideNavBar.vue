@@ -87,6 +87,115 @@ const handleAccountDeletion = async () => {
 
     const warningInfo = warningResponse.data;
     console.log('帳戶載入成功:', warningInfo);
+
+    const { value: formData } = await Swal.fire({
+      title: '<span style="color: #dc2626; font-weight: bold;">會員註銷確認</span>',
+      html: `
+        <div style="text-align: left; max-height: 500px; overflow-y: auto;">
+
+          <!-- 重要警告 -->
+          <div style="background: #fef2f2; border: 2px solid #fecaca; border-radius: 8px; padding: 16px; margin-bottom: 20px;">
+            <h4 style="color: #dc2626; font-weight: bold; margin: 0 0 12px 0; font-size: 16px;">
+              <i class="fas fa-exclamation-triangle"></i> 重要警告
+            </h4>
+            <p style="margin: 0 0 12px 0; color: #7f1d1d;">此操作將：</p>
+            <ul style="margin: 0; padding-left: 20px; color: #7f1d1d;">
+              <li style="margin-bottom: 8px;"><strong>永久刪除</strong>您的所有個人資料</li>
+              <li style="margin-bottom: 8px;"><strong>無法恢復</strong>您的帳戶和資料</li>
+              <li style="margin-bottom: 8px;"><strong>立即生效</strong>且不可逆轉</li>
+              <li style="margin-bottom: 8px;"><strong>清除所有</strong>活動紀錄和收藏</li>
+            </ul>
+          </div>
+
+          <!-- 帳戶資訊 -->
+          <div style="background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 8px; padding: 16px; margin-bottom: 20px;">
+            <h4 style="color: #374151; font-weight: bold; margin: 0 0 12px 0; font-size: 16px;">您的帳戶資訊</h4>
+            <div style="font-size: 14px;">
+              <div style="margin-bottom: 8px;">
+                <span style="font-weight: 500; color: #6b7280;">使用者名稱：</span>
+                <span style="margin-left: 8px; color: #111827;">${warningInfo.accountInfo.username}</span>
+              </div>
+              ${warningInfo.accountInfo.email ? `
+                <div style="margin-bottom: 8px;">
+                  <span style="font-weight: 500; color: #6b7280;">電子郵件：</span>
+                  <span style="margin-left: 8px; color: #111827;">${warningInfo.accountInfo.email}</span>
+                </div>
+              ` : ''}
+              ${warningInfo.accountInfo.lineUserId ? `
+                <div style="margin-bottom: 8px;">
+                  <span style="font-weight: 500; color: #6b7280;">LINE 帳號：</span>
+                  <span style="margin-left: 8px; color: #059669;">已連結</span>
+                </div>
+              ` : ''}
+              <div>
+                <span style="font-weight: 500; color: #6b7280;">登入方式：</span>
+                <span style="margin-left: 8px; color: #111827;">${warningInfo.accountInfo.providerType === 'email' ? 'email' : 'LINE'}</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- 註銷後果 -->
+          <div style="background: #fef2f2; border: 1px solid #fecaca; border-radius: 8px; padding: 16px; margin-bottom: 20px;">
+            <h4 style="color: #dc2626; font-weight: bold; margin: 0 0 12px 0; font-size: 16px;">註銷後果</h4>
+            <ul style="margin: 0; padding-left: 20px; font-size: 14px;">
+              ${warningInfo.consequences.map(consequence => `
+                <li style="margin-bottom: 6px; color: #7f1d1d;">
+                  <i class="fas fa-times-circle" style="color: #dc2626; margin-right: 6px;"></i>
+                  ${consequence}
+                </li>
+              `).join('')}
+            </ul>
+          </div>
+
+          <div style="border: 2px solid #dc2626; border-radius: 8px; padding: 16px; background: #fffbeb;">
+            <h4 style="color: #dc2626; font-weight: bold; margin: 0 0 16px 0; font-size: 16px;">
+              <i class="fas fa-shield-alt"></i> 安全驗證安全驗證
+            </h4>
+            ${warningInfo.accountInfo.providerType === 'email' ? `
+              <div style="margin-bottom: 16px;">
+                <label style="display: block; font-weight: 500; color: #374151; margin-bottom: 6px;">
+                  請輸入您的密碼以確認身份 <span style="color: #dc2626;">*</span>
+                </label>
+                <input
+                  id="swal-password"
+                  type="password"
+                  style="width: 100%; padding: 8px 12px; border: 2px solid #d1d5db; border-radius: 6px; font-size: 14px;"
+                  placeholder="請輸入密碼"
+                />
+              </div>
+            ` : ''}
+            <div style="margin-bottom: 16px;">
+              <label style="display: block; font-weight: 500; color: #374151; margin-bottom: 6px;">
+                請輸入「<span style="color: #dc2626; font-weight: bold;">刪除我的帳戶</span>」以確認 <span style="color: #dc2626;">*</span>
+              </label>
+              <input
+                id="swal-confirm-text"
+                type="text"
+                style="width: 100%; padding: 8px 12px; border: 2px solid #d1d5db; border-radius: 6px; font-size: 14px;"
+                placeholder="刪除我的帳戶"
+              />
+            </div>
+            <div style="display: flex; align-items: flex-start;">
+              <input
+                id="swal-final-confirm"
+                type="checkbox"
+                style="margin-top: 4px; margin-right: 8px; width: 16px; height: 16px;"
+              />
+              <label for="swal-final-confirm" style="font-size: 14px; color: #374151; line-height: 1.4;">
+                我了解此操作無法復原，並確認要永久刪除我的帳戶 <span style="color: #dc2626;">*</span>
+              </label>
+            </div>
+          </div>
+
+          <!-- 最終警告 -->
+          <div style="background: #7f1d1d; color: white; border-radius: 8px; padding: 12px; margin-top: 20px; text-align: center;">
+            <p style="margin: 0; font-weight: bold;">
+              <i class="fas fa-exclamation-triangle" style="margin-right: 6px;"></i>
+              確認後將立即且永久刪除您的帳戶
+            </p>
+          </div>
+        </div>`,
+    });
   } catch(err) {
     console.error('註銷過程發生錯誤:', err);
     
