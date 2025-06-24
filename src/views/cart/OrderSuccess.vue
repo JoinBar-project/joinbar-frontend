@@ -77,7 +77,7 @@ import { useOrder } from '@/composables/useOrder'
 
 const route = useRoute()
 const router = useRouter()
-const { getOrderDetails, getStatusText, getPaymentMethodText, formatAmount } = useOrder()
+const { getOrderDetails, getStatusText, formatAmount } = useOrder()
 
 const orderInfo = ref(null)
 const isLoading = ref(true)

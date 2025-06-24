@@ -162,7 +162,7 @@
 import { useCartStore } from '@/stores/cartStore'
 import { useOrder } from '@/composables/useOrder'
 import { useLinePay } from '@/composables/useLinePay'
-import { computed, ref, onMounted, onUnmounted, watch } from 'vue'
+import { computed, ref, onMounted, watch } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import dayjs from 'dayjs'
 import utc from 'dayjs/plugin/utc'
@@ -190,7 +190,6 @@ const {
 
 const { 
  createLinePayment, 
- redirectToLinePay,
  isLoading: linePayLoading,
  error: linePayError,
  clearState: clearLinePayState
@@ -253,9 +252,6 @@ onMounted(async () => {
       displayItems.value = cart.items;
       loadUserInfo(); 
     }
-    
-    handleLinePayReturn();
-    window.addEventListener('message', handlePopupMessage);
 
   } catch (error) {
     console.error('❌ 載入付款頁面時發生錯誤:', error);
@@ -263,49 +259,6 @@ onMounted(async () => {
   } finally {
     isLoading.value = false;
   }
-
-  // 監聽 LINE Pay 結果 - 新增這段
-  const handleLinePaySuccess = (event) => {
-    const data = event.detail;
-    console.log('✅ LINE Pay 付款成功！', data);
-    
-    alert(`🎉 付款成功！\n訂單：${data.orderNumber}`);
-    
-    if (!isRetryMode.value) {
-      cart.clearCart();
-    }
-    
-    clearAllErrors();
-    
-    // 修復路由跳轉
-    if (data.orderNumber && data.orderNumber !== 'unknown') {
-      router.push({
-        name: 'OrderSuccess',
-        params: { orderNumber: data.orderNumber },
-        query: { orderId: data.orderId }
-      });
-    } else {
-      // 降級處理：直接用 orderId 跳轉
-      router.push(`/payment-waiting?orderId=${data.orderId}`);
-    }
-  };
-
-  const handleLinePayError = (event) => {
-    const data = event.detail;
-    console.error('❌ LINE Pay 付款失敗:', data);
-    setError(`付款失敗: ${data.message}`);
-  };
-
-  // 註冊事件監聽
-  window.addEventListener('linepay-success', handleLinePaySuccess);
-  window.addEventListener('linepay-error', handleLinePayError);
-
-  // 清理事件監聽器
-  onUnmounted(() => {
-    window.removeEventListener('linepay-success', handleLinePaySuccess);
-    window.removeEventListener('linepay-error', handleLinePayError);
-    window.removeEventListener('message', handlePopupMessage);
-  });
 });
 
 const calcSubtotal = (item) => (item.price * item.quantity).toLocaleString()
@@ -369,80 +322,25 @@ function loadUserInfo() {
  }
 }
 
-const handleLinePayReturn = () => {
- const urlParams = new URLSearchParams(window.location.search)
- const transactionId = urlParams.get('transactionId')
- const orderId = urlParams.get('orderId')
- 
- if (transactionId && orderId) {
-   console.log('🔄 檢測到 LINE Pay 回調:', { transactionId, orderId })
-   router.replace(`/payment-waiting?orderId=${orderId}&transactionId=${transactionId}`)
- }
-}
-
-const handlePopupMessage = (event) => {
- if (event.origin !== window.location.origin) {
-   console.warn('⚠️ 收到來自未知來源的消息:', event.origin)
-   return
- }
- 
- console.log('📨 收到彈出視窗消息:', event.data)
- 
- if (event.data.type === 'LINEPAY_SUCCESS') {
-   console.log('✅ LINE Pay 付款成功！')
-   
-   alert(`🎉 LINE Pay 付款成功！\n\n訂單編號：${event.data.orderNumber}\n金額：$${formatAmount(event.data.totalAmount)}\n\n即將跳轉到訂單詳情頁面`)
-   
-   cart.clearCart()
-   
-   clearAllErrors()
-   
-   router.push({
-     name: 'OrderSuccess',
-     params: { orderNumber: event.data.orderNumber },
-     query: { orderId: event.data.orderId }
-   })
-   
- } else if (event.data.type === 'LINEPAY_ERROR') {
-   console.error('❌ LINE Pay 付款失敗:', event.data.error)
-   
-   setError(`付款失敗: ${event.data.error}`)
-   
-   if (event.data.orderId) {
-     const retry = confirm('付款過程中發生錯誤。\n\n點擊「確定」檢查付款狀態\n點擊「取消」留在當前頁面')
-     if (retry) {
-       router.push(`/payment-waiting?orderId=${event.data.orderId}`)
-     }
-   }
- }
-}
-
-const formatAmount = (amount) => {
- if (!amount) return '0'
- return Number(amount).toLocaleString()
-}
-
 const submitOrder = async () => {
-  if (isSubmitting.value || !canSubmit.value) return
+  if (isSubmitting.value || !canSubmit.value) return;
 
   try {
-    isSubmitting.value = true
-    clearAllErrors()
+    isSubmitting.value = true;
+    clearAllErrors();
 
     if (!validateForm()) {
-      isSubmitting.value = false
-      return
+      isSubmitting.value = false;
+      return;
     }
 
-    let orderIdToPay;
-    let orderToPay;
+    let orderIdToPay, orderToPay;
 
     if (isRetryMode.value) {
       console.log(`🔄 為訂單 ${retryOrderId.value} 繼續付款`);
       orderIdToPay = retryOrderId.value;
       const response = await getOrderDetails(orderIdToPay);
       orderToPay = response.order;
-
     } else {
       console.log('🔄 開始建立新訂單...');
       const orderData = {
@@ -451,42 +349,32 @@ const submitOrder = async () => {
           quantity: 1
         })),
         paymentMethod: paymentMethod.value
-      }
-      const orderResponse = await createOrder(orderData)
-      orderToPay = orderResponse.order
-      orderIdToPay = orderToPay.id || orderToPay.orderId
+      };
+      const orderResponse = await createOrder(orderData);
+      orderToPay = orderResponse.order;
+      orderIdToPay = orderToPay.id || orderToPay.orderId;
       
       if (!orderIdToPay) {
-        throw new Error('訂單 ID 格式錯誤')
+        throw new Error('訂單 ID 格式錯誤');
       }
       console.log(`✅ 新訂單創建成功: ${orderIdToPay}`);
     }
 
-
     if (paymentMethod.value === 'linepay') {
-      console.log(`🔄 處理訂單 ${orderIdToPay} 的 LINE Pay 付款...`)
-      const paymentResult = await createLinePayment(orderIdToPay)
-      sessionStorage.setItem('pendingOrder', JSON.stringify({
-        orderId: orderIdToPay,
-        orderNumber: orderToPay.orderNumber,
-        transactionId: paymentResult.transactionId
-      }))
+      console.log(`🔄 處理訂單 ${orderIdToPay} 的 LINE Pay 付款...`);
+      const paymentResult = await createLinePayment(orderIdToPay);
       
-      const confirmRedirect = confirm(`✅ 訂單準備就緒！\n\n訂單編號：${orderToPay.orderNumber}\n金額：$${totalPrice.value}\n\n點擊「確定」前往 LINE Pay 付款`);
+      console.log('🔄 準備跳轉到 LINE Pay...');
       
-      if (confirmRedirect) {
-        redirectToLinePay(paymentResult.paymentUrl, () => {
-          setError('您已取消付款。訂單可於「我的訂單」頁面查詢並重新付款。');
-          isSubmitting.value = false;
-        });
-      } else {
-        setError('已取消付款，訂單已創建但尚未付款');
-        isSubmitting.value = false;
+      if (!isRetryMode.value) {
+        await cart.clearCart();
       }
-
+      
+      window.location.href = paymentResult.paymentUrl;
+      
     } else {
       console.log(`🔄 處理訂單 ${orderIdToPay} 的模擬付款...`);
-      const paymentData = { paymentMethod: paymentMethod.value, orderData: orderToPay }
+      const paymentData = { paymentMethod: paymentMethod.value, orderData: orderToPay };
       const paymentResult = await simulatePayment(paymentData);
       
       await confirmPayment(orderIdToPay, paymentResult);
@@ -494,7 +382,7 @@ const submitOrder = async () => {
       showPaymentSuccessMessage(orderToPay, paymentResult);
       
       if (!isRetryMode.value) {
-        cart.clearCart(); 
+        await cart.clearCart();
       }
       
       router.push({
@@ -505,14 +393,14 @@ const submitOrder = async () => {
     }
 
   } catch (error) {
-    console.error('❌ 訂單提交失敗:', error)
-    handleSubmitError(error)
+    console.error('❌ 訂單提交失敗:', error);
+    handleSubmitError(error);
   } finally {
     if (paymentMethod.value !== 'linepay') {
-      isSubmitting.value = false
+      isSubmitting.value = false;
     }
   }
-}
+};
 
 function validateForm() {
  formErrors.value = {}
@@ -548,9 +436,7 @@ function showPaymentSuccessMessage(order, paymentResult) {
  const paymentMethodName = paymentMethod.value === 'linepay' ? 'LINE Pay' : '信用卡'
  const amount = totalPrice.value
  
- if (paymentMethod.value === 'linepay') {
-   alert(`🟢 ${paymentMethodName} 模擬付款成功！\n\n訂單編號：${order.orderNumber}\n金額：${amount}\n付款ID：${paymentResult.paymentId}\n\n點擊確定前往訂單詳情`)
- } else if (paymentMethod.value === 'creditcard') {
+ if (paymentMethod.value === 'creditcard') {
    alert(`💳 ${paymentMethodName} 模擬付款成功！\n\n訂單編號：${order.orderNumber}\n金額：${amount}\n付款ID：${paymentResult.paymentId}\n\n點擊確定前往訂單詳情`)
  }
 }

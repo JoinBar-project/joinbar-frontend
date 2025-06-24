@@ -7,15 +7,6 @@
         <p class="waiting-description">
           請稍候，我們正在確認您的付款...
         </p>
-        <div class="progress-info">
-          <p>檢查次數: {{ currentAttempt }}/{{ maxAttempts }}</p>
-          <div class="progress-bar">
-            <div 
-              class="progress-fill" 
-              :style="{ width: `${(currentAttempt / maxAttempts) * 100}%` }"
-            ></div>
-          </div>
-        </div>
       </div>
 
       <div v-else-if="paymentStatus === 'success'" class="success-section">
@@ -25,6 +16,27 @@
         <div class="order-info" v-if="orderData">
           <p><strong>訂單編號：</strong>{{ orderData.orderNumber }}</p>
           <p><strong>付款金額：</strong>${{ formatAmount(orderData.totalAmount) }}</p>
+        </div>
+      </div>
+
+      <div v-else-if="paymentStatus === 'pending'" class="pending-section">
+        <div class="pending-icon">⏳</div>
+        <h2>訂單待確認</h2>
+        <p>您的訂單正在處理中，可能需要一些時間</p>
+        
+        <div class="order-info" v-if="orderData">
+          <p><strong>訂單編號：</strong>{{ orderData.orderNumber }}</p>
+          <p><strong>金額：</strong>${{ formatAmount(orderData.totalAmount) }}</p>
+          <p><strong>狀態：</strong>{{ getStatusText(orderData.status) }}</p>
+        </div>
+        
+        <div class="action-buttons">
+          <button @click="checkAgain" class="btn-retry" :disabled="isChecking">
+            重新檢查
+          </button>
+          <button @click="goToOrders" class="btn-orders">
+            查看我的訂單
+          </button>
         </div>
       </div>
 
@@ -50,6 +62,9 @@
           <button @click="retryCheck" class="btn-retry" :disabled="isChecking">
             重新檢查
           </button>
+          <button @click="goToOrders" class="btn-orders">
+            查看我的訂單
+          </button>
         </div>
       </div>
     </div>
@@ -57,21 +72,18 @@
 </template>
 
 <script setup>
-import { ref, onMounted, onUnmounted } from 'vue'
+import { ref, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useOrder } from '@/composables/useOrder'
 
 const route = useRoute()
 const router = useRouter()
-const { getOrderDetails, formatAmount } = useOrder()
+const { getOrderDetails, formatAmount, getOrderDetailsByNumber, getStatusText } = useOrder()
 
 const isChecking = ref(true)
 const paymentStatus = ref('checking')
 const errorMessage = ref('')
 const orderData = ref(null)
-const currentAttempt = ref(0)
-const maxAttempts = ref(15)
-const checkInterval = ref(null)
 
 onMounted(async () => {
   if (window.opener) {
@@ -90,121 +102,106 @@ onMounted(async () => {
     return;
   }
 
-  const orderId = route.query.orderId
+  const orderId = route.query.orderId;
   
-  console.log('🔄 PaymentWaiting 啟動:', { orderId })
+  console.log('🔄 PaymentWaiting 啟動:', { orderId });
   
   if (!orderId) {
-    paymentStatus.value = 'failed'
-    errorMessage.value = '缺少訂單 ID'
-    isChecking.value = false
-    return
+    paymentStatus.value = 'failed';
+    errorMessage.value = '缺少訂單 ID';
+    isChecking.value = false;
+    return;
   }
 
-  await startPaymentCheck(orderId)
+  // ✅ 只檢查一次，不做無限輪詢
+  await checkOrderStatus(orderId);
 });
 
-onUnmounted(() => {
-  if (checkInterval.value) {
-    clearInterval(checkInterval.value)
-  }
-})
-
-const startPaymentCheck = async (orderId) => {
-  try {
-    isChecking.value = true
-    paymentStatus.value = 'checking'
-    currentAttempt.value = 0
-    
-    const success = await checkOrderStatus(orderId)
-    if (success) return
-    
-    checkInterval.value = setInterval(async () => {
-      currentAttempt.value++
-      console.log(`🔄 第 ${currentAttempt.value} 次檢查...`)
-      
-      const success = await checkOrderStatus(orderId)
-      
-      if (success || currentAttempt.value >= maxAttempts.value) {
-        clearInterval(checkInterval.value)
-        
-        if (!success) {
-          paymentStatus.value = 'timeout'
-          isChecking.value = false
-        }
-      }
-    }, 3000)
-    
-  } catch (error) {
-    console.error('❌ 付款檢查失敗:', error)
-    paymentStatus.value = 'failed'
-    errorMessage.value = error.message || '系統錯誤'
-    isChecking.value = false
-  }
-}
-
+// ✅ 簡化的狀態檢查邏輯
 const checkOrderStatus = async (orderId) => {
   try {
-    const response = await getOrderDetails(orderId)
-    const order = response.order
+    isChecking.value = true;
+    paymentStatus.value = 'checking';
     
-    console.log(`📊 訂單狀態: ${order.status}`)
+    console.log(`🔍 檢查訂單狀態: ${orderId}`);
+    
+    let response;
+    
+    // 判斷是 orderNumber 還是數字 ID
+    if (orderId.includes('ORDER-')) {
+      console.log('📋 使用 orderNumber 查詢');
+      response = await getOrderDetailsByNumber(orderId);
+    } else {
+      console.log('🔢 使用 ID 查詢');
+      response = await getOrderDetails(orderId);
+    }
+    
+    const order = response.order;
+    orderData.value = order;
+    
+    console.log(`📊 訂單狀態: ${order.status}`);
     
     if (['confirmed', 'paid'].includes(order.status)) {
-      console.log('✅ 付款確認成功！')
-      paymentStatus.value = 'success'
-      orderData.value = order
-      isChecking.value = false
+      console.log('✅ 付款確認成功！');
+      paymentStatus.value = 'success';
       
       setTimeout(() => {
-        console.log('🔄 跳轉到訂單成功頁面...')
+        console.log('🔄 跳轉到訂單成功頁面...');
         router.replace({
           name: 'OrderSuccess',
           params: { orderNumber: order.orderNumber },
           query: { orderId: order.id || order.orderId }
-        })
-      }, 1500)
+        });
+      }, 1500);
       
-      return true
+    } else if (order.status === 'pending') {
+      console.log('⏳ 訂單仍在待確認狀態');
+      paymentStatus.value = 'pending';
+      
+    } else if (['cancelled', 'expired', 'refunded'].includes(order.status)) {
+      paymentStatus.value = 'failed';
+      errorMessage.value = `訂單${order.status === 'cancelled' ? '已取消' : order.status === 'expired' ? '已過期' : '已退款'}`;
+      
+    } else {
+      paymentStatus.value = 'failed';
+      errorMessage.value = `未知的訂單狀態: ${order.status}`;
     }
-    
-    if (['cancelled', 'expired', 'refunded'].includes(order.status)) {
-      paymentStatus.value = 'failed'
-      errorMessage.value = `訂單${order.status === 'cancelled' ? '已取消' : order.status === 'expired' ? '已過期' : '已退款'}`
-      isChecking.value = false
-      return true
-    }
-    
-    return false
     
   } catch (error) {
-    console.error('❌ 檢查訂單狀態失敗:', error)
-    
-    if (currentAttempt.value < 5) {
-      return false
-    }
-    
-    paymentStatus.value = 'failed'
-    errorMessage.value = '無法獲取訂單狀態'
-    isChecking.value = false
-    return true
+    console.error('❌ 檢查訂單狀態失敗:', error);
+    paymentStatus.value = 'failed';
+    errorMessage.value = error.message || '無法獲取訂單狀態';
+  } finally {
+    isChecking.value = false;
   }
-}
+};
+
+const checkAgain = async () => {
+  const orderId = route.query.orderId;
+  if (orderId) {
+    await checkOrderStatus(orderId);
+  }
+};
 
 const retryCheck = async () => {
-  const orderId = route.query.orderId
+  const orderId = route.query.orderId;
   if (orderId) {
-    currentAttempt.value = 0
-    if (checkInterval.value) {
-      clearInterval(checkInterval.value)
-    }
-    await startPaymentCheck(orderId)
+    await checkOrderStatus(orderId);
   }
-}
+};
 
 const goToPayment = () => {
-  router.push('/payment')
-}
+  router.push('/payment');
+};
+
+const goToOrders = () => {
+  try {
+    const user = JSON.parse(localStorage.getItem('user'));
+    router.push({ name: 'MemberOrderRecords', params: { id: user.id } });
+  } catch {
+    router.push('/login');
+  }
+};
 </script>
 
 <style scoped>
@@ -226,7 +223,8 @@ const goToPayment = () => {
 .checking-section h2,
 .success-section h2,
 .failed-section h2,
-.timeout-section h2 {
+.timeout-section h2,
+.pending-section h2 {
   margin: 24px 0 16px 0;
   font-size: 24px;
   font-weight: 600;
@@ -252,28 +250,10 @@ const goToPayment = () => {
   margin-bottom: 32px;
 }
 
-.progress-info {
-  margin-top: 24px;
-}
-
-.progress-bar {
-  width: 100%;
-  height: 8px;
-  background: #f3f4f6;
-  border-radius: 4px;
-  overflow: hidden;
-  margin-top: 8px;
-}
-
-.progress-fill {
-  height: 100%;
-  background: #dc2626;
-  transition: width 0.3s ease;
-}
-
 .success-icon,
 .failed-icon,
-.timeout-icon {
+.timeout-icon,
+.pending-icon {
   font-size: 64px;
   margin-bottom: 16px;
 }
@@ -300,13 +280,15 @@ const goToPayment = () => {
 }
 
 .btn-retry,
-.btn-back {
+.btn-back,
+.btn-orders {
   padding: 12px 20px;
   border-radius: 8px;
   font-weight: 600;
   cursor: pointer;
   border: none;
   transition: all 0.2s;
+  font-size: 14px;
 }
 
 .btn-retry {
@@ -332,10 +314,28 @@ const goToPayment = () => {
   background: #4b5563;
 }
 
+.btn-orders {
+  background: #3b82f6;
+  color: white;
+}
+
+.btn-orders:hover {
+  background: #2563eb;
+}
+
 .error-message {
   color: #dc2626;
   font-weight: 500;
   margin: 16px 0;
+}
+
+.pending-section {
+  color: #d97706;
+}
+
+.pending-icon {
+  font-size: 64px;
+  margin-bottom: 16px;
 }
 
 @media (max-width: 768px) {
