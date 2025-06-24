@@ -113,11 +113,9 @@ onMounted(async () => {
     return;
   }
 
-  // ✅ 只檢查一次，不做無限輪詢
   await checkOrderStatus(orderId);
 });
 
-// ✅ 簡化的狀態檢查邏輯
 const checkOrderStatus = async (orderId) => {
   try {
     isChecking.value = true;
@@ -127,7 +125,6 @@ const checkOrderStatus = async (orderId) => {
     
     let response;
     
-    // 判斷是 orderNumber 還是數字 ID
     if (orderId.includes('ORDER-')) {
       console.log('📋 使用 orderNumber 查詢');
       response = await getOrderDetailsByNumber(orderId);

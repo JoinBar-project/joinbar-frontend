@@ -172,7 +172,6 @@ const getPaymentText = (method) => {
   border-bottom: 1px solid #f3f4f6;
 }
 
-/* 將 .status 相關的樣式全部重命名為 order-status-label */
 .order-status-label {
   padding: 4px 8px;
   border-radius: 4px;
@@ -185,8 +184,6 @@ const getPaymentText = (method) => {
 .order-status-label.confirmed, .order-status-label.paid { background: #d1fae5; color: #065f46; }
 .order-status-label.cancelled { background: #e5e7eb; color: #4b5563; }
 
-
-/* 以下為不變的其他樣式 */
 .loading, .error {
   text-align: center;
   padding: 60px 20px;

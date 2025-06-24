@@ -162,7 +162,6 @@ export function useLinePay() {
  }
 
  const redirectToLinePay = (paymentUrl, onCloseCallback = null) => {
-   // 清除舊狀態
    localStorage.removeItem('linepay-result');
    
    const paymentWindow = window.open(paymentUrl, 'linePayWindow', 'width=400,height=600');
@@ -174,7 +173,6 @@ export function useLinePay() {
    
    let isProcessed = false;
    
-   // 每秒檢查 localStorage
    const checkResult = setInterval(() => {
      const result = localStorage.getItem('linepay-result');
      
@@ -182,17 +180,13 @@ export function useLinePay() {
        isProcessed = true;
        const data = JSON.parse(result);
        
-       // 清除結果
        localStorage.removeItem('linepay-result');
        
-       // 關閉彈窗
        paymentWindow.close();
        
        if (data.success) {
-         // 觸發成功處理
          window.dispatchEvent(new CustomEvent('linepay-success', { detail: data }));
        } else {
-         // 觸發失敗處理
          window.dispatchEvent(new CustomEvent('linepay-error', { detail: data }));
        }
        
@@ -201,7 +195,6 @@ export function useLinePay() {
      }
    }, 1000);
    
-   // 檢測視窗關閉
    const checkClosed = setInterval(() => {
      if (paymentWindow.closed) {
        clearInterval(checkResult);

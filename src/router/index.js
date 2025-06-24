@@ -30,6 +30,7 @@ const routes = [
   {
     path: '/member/:id',
     name: 'MemberDashboard',
+    // meta: { requiresAuth: true },
     component: MemberDashboard,
     children: [
       {
@@ -66,19 +67,11 @@ const routes = [
   },
   { path: '/reviews', name: 'Reviews', component: Reviews },
   { path: '/subscription', name: 'Subscription', component: Subscription },
-  
-  { 
-    path: '/subscription-success', 
-    name: 'SubscriptionSuccess', 
-    component: () => import('@/views/sub/SubscriptionSuccess.vue')
-  },
-  
   { path: '/cart', name: 'Cart', component: Cart, meta: { requiresAuth: true } },
   { path: '/payment', name: 'Payment', component: Payment, meta: { requiresAuth: true } },
   { path: '/payment-waiting', name: 'PaymentWaiting', component: PaymentWaiting },
-  { path: '/order-success/:orderNumber', name: 'OrderSuccess', component: OrderSuccess, props: true },
+  { path: '/order-success/:orderNumber', name: 'OrderSuccess', component: OrderSuccess, props: true, meta: { requiresAuth: true } },
   { path: '/preferences', name: 'Preferences', component: Preferences, meta: { requiresAuth: true } },
-  
   { path: '/404', name: 'NotFound', component: NotFound },
   { 
     path: '/:pathMatch(.*)*', 

@@ -505,32 +505,6 @@ const getUserOrderHistory = async () => {
   }
 }
 
-const getOrderDetailsByNumber = async (orderNumber) => {
-  try {
-    isLoading.value = true
-    error.value = ''
-
-    console.log(`🔍 通過訂單號查詢: ${orderNumber}`);
-    
-    const response = await apiClient.get(`/orders/number/${orderNumber}/details`)
-    
-    if (response.data.order) {
-      currentOrder.value = response.data.order
-    }
-
-    console.log('✅ 訂單詳情載入成功 (by orderNumber):', response.data.order?.orderNumber)
-    return response.data
-  } catch (err) {
-    console.error('❌ 通過訂單號查詢失敗:', err);
-    const errorMessage = handleApiError(err, '載入訂單詳情失敗')
-    error.value = errorMessage
-    throw new Error(errorMessage)
-  } finally {
-    isLoading.value = false
-  }
-}
-
-
 return {
   isLoading,
   error,
@@ -541,7 +515,6 @@ return {
   formattedTotalAmount,
   createOrder,
   getOrderDetails,
-  getOrderDetailsByNumber,
   confirmPayment,
   cancelOrder,
   simulatePayment,
