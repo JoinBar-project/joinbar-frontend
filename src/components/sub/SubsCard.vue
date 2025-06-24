@@ -8,6 +8,8 @@ const cardData = ref([])
 const handleSubscribe = async (subscriptionType) => {
   try {
     const order = await createSubscriptionOrder(subscriptionType)
+    console.log('🧾 建立訂單結果 order:', order)
+
     if (!order?.orderId) throw new Error('訂單建立失敗')
 
     const { paymentUrl, transactionId, expireTime } = await createLinePayment(order)
@@ -19,8 +21,19 @@ const handleSubscribe = async (subscriptionType) => {
     localStorage.setItem('orderId', order.orderId)
     localStorage.setItem('subType', subscriptionType)
 
+    console.log('🔗 付款網址:', paymentUrl)
+    console.log('🧾 傳送的訂單 ID:', order.orderId)
+    console.log('📦 儲存 localStorage:', {
+      transactionId,
+      expireTime,
+      orderId: order.id,
+      subType: subscriptionType
+    })
+
     // ✅ 確保儲存完成再導向
-    window.location.href = paymentUrl
+    setTimeout(() => {
+      window.location.href = paymentUrl
+    }, 8000)
 
     console.log('🔗 LINE Pay URL:', paymentUrl)
   } catch (err) {
