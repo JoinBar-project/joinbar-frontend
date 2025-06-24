@@ -30,7 +30,7 @@ const routes = [
   {
     path: '/member/:id',
     name: 'MemberDashboard',
-    // meta: { requiresAuth: true },
+    meta: { requiresAuth: true },
     component: MemberDashboard,
     children: [
       {
@@ -85,6 +85,25 @@ const router = createRouter({
   history: createWebHistory(),
   routes,
 });
+
+const hasUserCookie = () => {
+  try {
+    const userInfoCookie = document.cookie
+      .split('; ')
+      .find(row => row.startsWith('user_info='))
+      ?.split('=')
+      .slice(1)
+      .join('=');
+    
+    if (userInfoCookie) {
+      const userData = JSON.parse(decodeURIComponent(userInfoCookie));
+      return userData && userData.id;
+    }
+  } catch (error) {
+    console.error('檢查用戶 cookie 失敗:', error);
+  }
+  return false;
+};
 
 router.beforeEach((to, from, next) => {
   if (process.env.NODE_ENV === 'development') {
