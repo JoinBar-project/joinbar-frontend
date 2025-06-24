@@ -21,8 +21,22 @@ const profileFields = [
   { model: 'nickname', label: '暱稱', placeholder: '請輸入暱稱', icon: 'fa-solid fa-tag', type: 'text' },
   { model: 'birthday', label: '生日', placeholder: '請輸入生日', icon: 'fa-solid fa-cake-candles', type: 'date' },
 ];
-const barTypes = ['運動酒吧', '音樂酒吧', '學生酒吧', '餐酒館', '暢飲店'];
-const barMoods = ['熱鬧歡樂', '浪漫私密', '復古懷舊', '高級精緻', '輕鬆悠閒'];
+
+const barTypes = [
+  { key: 'sport', label: '運動酒吧', icon: 'fa-solid fa-football' },
+  { key: 'music', label: '音樂酒吧', icon: 'fa-solid fa-music' },
+  { key: 'student', label: '學生酒吧', icon: 'fa-solid fa-graduation-cap' },
+  { key: 'bistro', label: '餐酒館', icon: 'fa-solid fa-utensils' },
+  { key: 'drink', label: '暢飲店', icon: 'fa-solid fa-beer' }
+];
+
+const barMoods = [
+  { key: 'joy', label: '熱鬧歡樂', icon: 'fa-solid fa-champagne-glasses' },
+  { key: 'romantic', label: '浪漫私密', icon: 'fa-solid fa-heart' },
+  { key: 'oldschool', label: '復古懷舊', icon: 'fa-solid fa-record-vinyl' },
+  { key: 'highlevel', label: '高級精緻', icon: 'fa-solid fa-crown' },
+  { key: 'easy', label: '輕鬆悠閒', icon: 'fa-solid fa-leaf' }
+];
 
 watch(
   userId,
@@ -52,7 +66,7 @@ const goToEdit = () => {
         size="lg" />
       </div>
 
-      <!-- 右側：個人資料 + 酒吧偏好 + 編輯按鈕 -->
+      <!-- 右側：個人資料 + 酒吧偏好 + 修改按鈕 -->
       <div class="w-full md:w-2/3 space-y-6 flex flex-col items-center md:items-start">
         <ProfileForm
           :form="profile"
@@ -64,8 +78,8 @@ const goToEdit = () => {
           :errors="{ username: '', nickname: '', birthday: '' }" />
         <div class="text-center md:text-left">
           <button type="button" 
-          class="px-4 py-2 bg-gray-800 text-white rounded cursor-pointer active:scale-98 transition-all duration-150"
-          @click="goToEdit">編輯個人資料</button>
+          class="px-4 py-2 bg-[var(--color-black)] text-white rounded cursor-pointer active:scale-98 transition-all duration-150"
+          @click="goToEdit">修改個人資料 <i class="fa-solid fa-pen"></i></button>
         </div>
       </div>
     </div>
