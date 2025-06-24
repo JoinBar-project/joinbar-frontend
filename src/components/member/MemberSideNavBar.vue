@@ -129,7 +129,7 @@ const handleAccountDeletion = async () => {
               ` : ''}
               <div>
                 <span style="font-weight: 500; color: #6b7280;">登入方式：</span>
-                <span style="margin-left: 8px; color: #111827;">${warningInfo.accountInfo.providerType === 'email' ? 'email' : 'LINE'}</span>
+                <span style="margin-left: 8px; color: #111827;">${warningInfo.accountInfo.providerType === 'email' ? '電子郵件' : 'LINE'}</span>
               </div>
             </div>
           </div>
@@ -149,7 +149,7 @@ const handleAccountDeletion = async () => {
 
           <div style="border: 2px solid #dc2626; border-radius: 8px; padding: 16px; background: #fffbeb;">
             <h4 style="color: #dc2626; font-weight: bold; margin: 0 0 16px 0; font-size: 16px;">
-              <i class="fas fa-shield-alt"></i> 安全驗證安全驗證
+              <i class="fas fa-shield-alt"></i> 安全驗證
             </h4>
             ${warningInfo.accountInfo.providerType === 'email' ? `
               <div style="margin-bottom: 16px;">
@@ -202,10 +202,6 @@ const handleAccountDeletion = async () => {
       confirmButtonColor: '#dc2626',
       cancelButtonColor: '#6b7280',
       width: '650px',
-      customClass: {
-        popup: 'swal-wide-popup',
-        htmlContainer: 'swal-scroll-container'
-      },
       preConfirm: () => {
         const password = document.getElementById('swal-password')?.value || '';
         const confirmText = document.getElementById('swal-confirm-text').value;
@@ -236,6 +232,62 @@ const handleAccountDeletion = async () => {
         };
       }
     });
+
+    if (!formData) {
+      return;
+    }
+
+    // 執行註銷
+    Swal.fire({
+      title: '處理中...',
+      text: '正在註銷您的帳戶，請稍候',
+      icon: 'info',
+      allowOutsideClick: false,
+      showConfirmButton: false,
+      didOpen: () => {
+        Swal.showLoading();
+      },
+    });
+
+    const deleteData = {
+      confirmText: formData.confirmText
+    };
+
+    if (formData.password) {
+      deleteData.password = formData.password;
+    }
+
+    const result = await authStore.deleteAccount(deleteData);
+    if (!result.success) {
+      throw new Error(result.error || '註銷失敗');
+    }
+
+    // 註銷成功
+    await Swal.fire({
+      title: '帳戶註銷成功',
+      html: `
+        <div style="text-align: center;">
+          <div style="margin-bottom: 20px;">
+            <i class="fas fa-check-circle" style="color: #059669; font-size: 48px;"></i>
+          </div>
+          <p style="margin-bottom: 16px; font-size: 18px; font-weight: 500;">您的帳戶已成功註銷</p>
+          <div style="background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 8px; padding: 16px;">
+            <p style="margin: 0 0 8px 0; color: #166534; font-size: 14px;">感謝您曾經使用我們的服務</p>
+            <p style="margin: 0; color: #166534; font-size: 14px;">祝您一切順利！</p>
+          </div>
+        </div>
+      `,
+      icon: 'success',
+      confirmButtonText: '確認',
+      confirmButtonColor: '#059669',
+      allowOutsideClick: false,
+      allowEscapeKey: false,
+      width: '400px'
+    });
+
+    // 清除登入狀態並導向首頁
+    authStore.clearAuthState();
+    router.push('/home');
   } catch(err) {
     console.error('註銷過程發生錯誤:', err);
     
@@ -260,8 +312,8 @@ const handleAccountDeletion = async () => {
           errorTitle = '帳戶驗證失敗';
         }
       }
-    } else if (error.message) {
-      errorMessage = error.message;
+    } else if (err.message) {
+      errorMessage = err.message;
     }
     await Swal.fire({
       title: errorTitle,
