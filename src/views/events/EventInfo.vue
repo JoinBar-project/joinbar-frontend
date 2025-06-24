@@ -19,12 +19,8 @@ onMounted( async() => {
   try{
       const res = await axios.get(`/api/event/${eventId}`)
       const data = res.data
-
       event.value = data.event
       eventTags.value = data.tags
-
-      console.log('活動資料:', data.event)
-      console.log('活動標籤:', data.tags)
 
   }catch(err){
     if( err.response && err.response.status == 404){
@@ -53,12 +49,7 @@ const isFree = computed(() => {
     <EventInfoFree v-else-if="isFree" :event="event" :tags="eventTags" />
     <EventInfoPay v-else :event="event" :tags="eventTags" />
 
-
   </div>
-
-
-
-
 </template>
 
 

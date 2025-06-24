@@ -76,7 +76,7 @@
           @input="updateDistance"
           class="range-number-input"
           min="0"
-          max="10000"
+          max="5000"
         />
         <span>-</span>
         <input
@@ -85,7 +85,7 @@
           @input="updateDistance"
           class="range-number-input"
           min="0"
-          max="10000"
+          max="5000"
         />
       </div>
       <input
@@ -94,12 +94,12 @@
         @input="updateDistanceRange"
         class="range-slider"
         min="0"
-        max="10000"
+        max="5000"
         step="100"
       />
       <div class="range-labels">
         <span>0</span>
-        <span>10000</span>
+        <span>5000</span>
       </div>
     </div>
 
@@ -154,7 +154,7 @@
 
     <div class="filter-actions">
       <button @click="resetFilters" class="action-button reset-button">
-        重設
+        確定
       </button>
     </div>
   </div>
@@ -162,7 +162,7 @@
 
 <script setup>
 import { ref, watch, computed } from "vue";
-import placeTypeMap from '@/composables/placeTypeMap';
+import placeTypeMap from "@/composables/placeTypeMap";
 
 const emit = defineEmits(["filter-changed", "close-panel", "tag-click"]);
 
@@ -173,7 +173,7 @@ const props = defineProps({
       address: "current_location",
       ratingSort: "any",
       minDistance: 0,
-      maxDistance: 10000,
+      maxDistance: 5000,
       minOpenHour: 0,
       minOpenMinute: 0,
       maxOpenHour: 24,
@@ -219,8 +219,8 @@ const appliedFiltersForDisplay = computed(() => {
       });
     });
   } else if (
-    typeof filters.value.address === "string" && 
-    filters.value.address !== "current_location" && 
+    typeof filters.value.address === "string" &&
+    filters.value.address !== "current_location" &&
     filters.value.address !== "any"
   ) {
     displayFilters.push({
@@ -250,7 +250,7 @@ const appliedFiltersForDisplay = computed(() => {
     });
   }
 
-  if (filters.value.minDistance !== 0 || filters.value.maxDistance !== 10000) {
+  if (filters.value.minDistance !== 0 || filters.value.maxDistance !== 5000) {
     const min = filters.value.minDistance;
     const max = filters.value.maxDistance;
     displayFilters.push({
@@ -324,7 +324,7 @@ const removeAppliedFilter = (type, value) => {
       break;
     case "distance":
       filters.value.minDistance = 0;
-      filters.value.maxDistance = 10000;
+      filters.value.maxDistance = 5000;
       break;
     case "openHour":
       filters.value.minOpenHour = 0;
@@ -347,11 +347,11 @@ const updateDistance = () => {
   }
   filters.value.minDistance = Math.max(
     0,
-    Math.min(filters.value.minDistance, 10000)
+    Math.min(filters.value.minDistance, 5000)
   );
   filters.value.maxDistance = Math.max(
     0,
-    Math.min(filters.value.maxDistance, 10000)
+    Math.min(filters.value.maxDistance, 5000)
   );
   applyFilters();
 };
@@ -413,7 +413,7 @@ const resetFilters = () => {
     address: "current_location",
     ratingSort: "any",
     minDistance: 0,
-    maxDistance: 10000,
+    maxDistance: 5000,
     minOpenHour: 0,
     minOpenMinute: 0,
     maxOpenHour: 24,
@@ -451,9 +451,9 @@ watch(
 
 function handleTagClick(tag) {
   if (props.selectedTag === tag) {
-    emit('tag-click', null);
+    emit("tag-click", null);
   } else {
-    emit('tag-click', tag);
+    emit("tag-click", tag);
   }
 }
 </script>

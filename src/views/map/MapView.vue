@@ -9,7 +9,7 @@
       </button>
 
       <div class="search-panel-map">
-        <div class="input-group">
+        <div class="input-group" ref="searchInputRef">
           <input
             type="text"
             id="searchInput"
@@ -81,11 +81,15 @@
 </template>
 
 <script setup>
-import { ref, onMounted, computed, watch } from "vue";
+import { ref, onMounted, onUnmounted, computed, watch } from "vue";
 import debounce from "lodash/debounce";
 import dayjs from "dayjs";
 import isBetween from "dayjs/plugin/isBetween";
 dayjs.extend(isBetween);
+
+import { useRoute, useRouter } from "vue-router";
+const route = useRoute();
+const router = useRouter();
 
 import FilterPanel from "../../components/map/FilterPanel.vue";
 import BarList from "../../components/map/BarList.vue";
@@ -129,18 +133,19 @@ const {
   mapId: myMapId,
   onError: (msg) => {
     console.error("useGoogleMaps 錯誤:", msg);
-    alert(`地圖載入失敗：${msg}，請檢查API Key或網路連線。`);
+    alert(`地圖載入失敗：${msg}。`);
   },
 });
 
 const isFilterPanelOpen = ref(false);
 const searchQuery = ref("");
 const suggestions = ref([]);
+
 const currentFilters = ref({
   address: "current_location",
   ratingSort: "any",
   minDistance: 0,
-  maxDistance: 10000,
+  maxDistance: 5000,
   minOpenHour: 0,
   minOpenMinute: 0,
   maxOpenHour: 24,
@@ -152,6 +157,7 @@ const isBarDetailModalOpen = ref(false);
 const selectedBarForDetail = ref(null);
 const isLoading = ref(false);
 const googleBars = ref([]);
+const searchInputRef = ref(null);
 const mainBarForSearch = ref(null);
 const selectedTag = ref(null);
 
@@ -349,6 +355,7 @@ const debouncedSearchSuggestions = debounce(async () => {
 async function selectSuggestion(suggestion) {
   searchQuery.value = suggestion.description;
   suggestions.value = [];
+  handleSearch();
   isLoading.value = true;
   clearMarkers("all");
   closeInfoWindow();
@@ -407,7 +414,25 @@ async function selectSuggestion(suggestion) {
   }
 }
 
+// 點擊欄位以外區域會收起建議清單
+function handleClickOutside(event) {
+  const el = searchInputRef.value;
+  if (el && !el.contains(event.target)) {
+    suggestions.value = [];
+  }
+}
+
+onMounted(() => {
+  document.addEventListener("click", handleClickOutside);
+});
+
+onUnmounted(() => {
+  document.removeEventListener("click", handleClickOutside);
+});
+
 async function handleSearch() {
+  suggestions.value = [];
+
   if (!isReady.value) {
     alert("地圖尚未載入完成，請稍候再試");
     return;
@@ -562,7 +587,6 @@ async function handleGetCurrentLocation() {
       const bars = await searchBarsInMapBounds(false);
       googleBars.value = bars;
     }
-    alert("無法獲取您的目前位置，請檢查瀏覽器權限設定");
   } finally {
     isLoading.value = false;
   }
@@ -589,6 +613,19 @@ async function handleBarSelected(bar) {
   }
   selectedBarForDetail.value = bar || {};
   isBarDetailModalOpen.value = true;
+
+  const params = new URLSearchParams({
+    barId: bar.place_id || bar.id,
+    name: bar.name || "",
+    rating: bar.rating || "",
+    reviews: bar.reviews || 0,
+    address: bar.address || "",
+  });
+
+  router.replace({
+    query: { ...route.query, ...Object.fromEntries(params) },
+  });
+
   if (bar.location && map && googleMapsInstance()) {
     panTo(bar.location);
     const tempMarker = new window.google.maps.Marker({
@@ -596,7 +633,7 @@ async function handleBarSelected(bar) {
         bar.location.lat,
         bar.location.lng
       ),
-      map: map,
+      map: map.value,
       title: bar.name,
       icon: {
         url: bar.isBarLike ? "/wine.png" : "/MapMarker.png",
@@ -613,6 +650,15 @@ function closeBarDetailModal() {
   isBarDetailModalOpen.value = false;
   selectedBarForDetail.value = null;
   closeInfoWindow();
+
+  const newQuery = { ...route.query };
+  delete newQuery.barId;
+  delete newQuery.name;
+  delete newQuery.rating;
+  delete newQuery.reviews;
+  delete newQuery.address;
+
+  router.replace({ query: newQuery });
 }
 
 function handleToggleWishlist(barId) {
@@ -659,6 +705,114 @@ watch(
     }
   },
   { immediate: true }
+);
+
+const checkUrlForBarDetail = async () => {
+  const barId = route.query.barId;
+
+  if (barId && !isBarDetailModalOpen.value) {
+    // 先檢查現有的酒吧列表中是否有這個酒吧
+    let barFromList = googleBars.value.find(
+      (bar) => bar.place_id === barId || bar.id === barId
+    );
+
+    if (barFromList) {
+      selectedBarForDetail.value = barFromList;
+      isBarDetailModalOpen.value = true;
+    } else {
+      // 從參數創建基本資訊
+      const barFromUrl = {
+        id: barId,
+        place_id: barId,
+        name: route.query.name || "載入中...",
+        rating: parseFloat(route.query.rating) || null,
+        reviews: parseInt(route.query.reviews) || 0,
+        address: route.query.address || "",
+        // 添加載入標記
+        isQuickLoad: true,
+        isWishlisted: false,
+      };
+
+      selectedBarForDetail.value = barFromUrl;
+      isBarDetailModalOpen.value = true;
+
+      // 在背景載入完整資料
+      try {
+        const fullData = await getPlaceDetails(barId);
+        if (
+          fullData &&
+          selectedBarForDetail.value &&
+          selectedBarForDetail.value.place_id === barId
+        ) {
+          const detailedBar = {
+            id: fullData.place_id,
+            place_id: fullData.place_id,
+            name: fullData.name,
+            location: {
+              lat: fullData.geometry.location.lat(),
+              lng: fullData.geometry.location.lng(),
+            },
+            rating: fullData.rating || 0,
+            reviews: fullData.user_ratings_total || 0,
+            address: fullData.formatted_address || "未知地址",
+            priceRange:
+              fullData.price_level !== undefined
+                ? `等級 ${fullData.price_level}`
+                : null,
+            tags: fullData.types
+              ? fullData.types.filter(
+                  (type) => !COMMON_PLACE_TYPES_TO_EXCLUDE.includes(type)
+                )
+              : [],
+            opening_hours: fullData.opening_hours,
+            imageUrl:
+              fullData.photos && fullData.photos.length > 0
+                ? fullData.photos[0].getUrl({ maxWidth: 400, maxHeight: 400 })
+                : "",
+            images: fullData.photos
+              ? fullData.photos.map((p) =>
+                  p.getUrl({ maxWidth: 800, maxHeight: 600 })
+                )
+              : [],
+            description: "點擊查看更多詳情...",
+            isWishlisted: false,
+            phone: fullData.international_phone_number || null,
+            website: fullData.website || null,
+            url: fullData.url,
+            googleReviews: fullData.reviews || [],
+          };
+
+          selectedBarForDetail.value = detailedBar;
+
+          // 將完整資料加入到酒吧列表中
+          const existingIndex = googleBars.value.findIndex(
+            (bar) => bar.place_id === barId
+          );
+          if (existingIndex === -1) {
+            googleBars.value.unshift(detailedBar);
+          }
+
+          // 如果有位置資訊，移動地圖視角
+          if (detailedBar.location && map.value) {
+            panTo(detailedBar.location);
+          }
+        }
+      } catch (error) {
+        console.error("載入完整酒吧資料失敗:", error);
+      }
+    }
+  }
+};
+
+watch(
+  () => route.query.barId,
+  (newBarId, oldBarId) => {
+    if (newBarId && newBarId !== oldBarId) {
+      checkUrlForBarDetail();
+    } else if (!newBarId && isBarDetailModalOpen.value) {
+      closeBarDetailModal();
+    }
+  }
 );
 
 watch(isReady, (ready) => {
@@ -742,6 +896,7 @@ onMounted(async () => {
   } finally {
     isLoading.value = false;
   }
+  await checkUrlForBarDetail();
 });
 
 function getTypeForKeyword(q) {

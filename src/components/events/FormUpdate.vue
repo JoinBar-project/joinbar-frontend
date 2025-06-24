@@ -1,10 +1,15 @@
 <script setup>
+import { ref, watch, onMounted } from 'vue';
+import axios from 'axios';
 import { useEventForm } from '@/composables/useEventForm';
-import { watch } from 'vue';
+import { useEventStore } from '@/stores/event';
 import Hashtag from './Hashtag.vue';
+import { useRouter } from 'vue-router';
 
 const emit = defineEmits(['update', 'delete', 'cancel']);
 const props = defineProps({ eventId: String });
+
+const eventStore = useEventStore();
 
 const {
   eventName,
@@ -15,49 +20,159 @@ const {
   eventPrice,
   eventPeople,
   eventHashtags,
+  eventImageUrl,
   handleUpdate,
   handleDelete,
   loadEvent,
+  isAdmin,
 } = useEventForm(props.eventId);
+
+const imageFile = ref(null);
+const loading = ref(false);
+const imagePreview = ref(null);
+const fileInput = ref(null);
+
+onMounted(async () => {
+  if (props.eventId) {
+    await loadEvent(props.eventId);
+    if (!imageFile.value && eventImageUrl.value) {
+      imagePreview.value = eventImageUrl.value;
+    }
+  }
+});
 
 watch(
   () => props.eventId,
-  newId => {
-    if (newId) loadEvent(newId);
+  async (newId) => {
+    if (newId) {
+      await loadEvent(newId);
+      if (!imageFile.value && eventImageUrl.value) {
+        imagePreview.value = eventImageUrl.value;
+      }
+    }
   },
   { immediate: true }
 );
 
 async function onUpdate() {
+  if (loading.value) return;
+
+  loading.value = true;
   try {
-    const success = await handleUpdate(props.eventId);
-    if (success) {
-      emit('update');
+    const token = localStorage.getItem('access_token');
+    if (!token) {
+      alert('登入已過期，請重新登入');
+      return;
     }
+
+    const formData = new FormData();
+    formData.append('name', eventName.value || '');
+    formData.append('barName', barName.value || '');
+    formData.append('location', eventLocation.value || '');
+    formData.append('startAt', eventStartDate.value || '');
+    formData.append('endAt', eventEndDate.value || '');
+    formData.append('price', eventPrice.value || '');
+    formData.append('maxPeople', eventPeople.value || '');
+
+    if (imageFile.value) {
+      formData.append('image', imageFile.value);
+    }
+
+    if (Array.isArray(eventHashtags.value)) {
+      const tagIds = eventHashtags.value.map(tag => tag.id ?? tag);
+      formData.append('tags', JSON.stringify(tagIds));
+    }
+
+    const res = await axios.put(`/api/event/update/${props.eventId}`, formData, {
+      headers: {
+        'Authorization': `Bearer ${token}`,
+      },
+      validateStatus: () => true,
+    });
+
+    if (res.status >= 200 && res.status < 300) {
+      alert('活動更新成功！');
+      emit('update');
+    } else {
+      alert(`更新失敗：${res.data?.message || '後端回傳錯誤'}`);
+    }
+
   } catch (error) {
-    console.error('更新失敗:', error);
+    console.error('[活動更新失敗]', error);
+    alert('網路或系統錯誤，請稍後再試');
+  } finally {
+    loading.value = false;
   }
 }
 
+const router = useRouter();
+
 async function onDelete() {
+  if (loading.value || !confirm('確定要刪除這個活動嗎？')) return;
+
+  loading.value = true;
   try {
-    await handleDelete(props.eventId);
-    emit('delete');
+    await eventStore.deleteEvent(props.eventId);
+    router.push({
+      path: '/event',
+      state: { message: '活動已成功刪除！' }
+    });
   } catch (error) {
-    console.error('刪除失敗:', error);
+    const errorMessage = eventStore.error || error?.message || '刪除失敗，請稍後再試';
+    alert(`刪除失敗: ${errorMessage}`);
+  } finally {
+    loading.value = false;
   }
+}
+
+function handleImageSelect(event) {
+  const file = event.target.files[0];
+  if (file && file.type.startsWith('image/') && file.size <= 5 * 1024 * 1024) {
+    imageFile.value = file;
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      imagePreview.value = e.target.result;
+    };
+    reader.readAsDataURL(file);
+  } else {
+    alert(file?.size > 1 * 1024 * 1024 ? '圖片檔案大小不能超過 1MB' : '請選擇圖片檔案');
+  }
+}
+
+function triggerFileInput() {
+  fileInput.value?.click();
 }
 </script>
 
 <template>
-  <section
-    class="event-form"
-    id="edit-event">
+  <section class="event-form" id="edit-event">
     <div class="form-header">編輯中</div>
     <div class="form-container">
-      <div class="form-image-upload">
-        <div class="event-image-placeholder">點擊更換活動圖</div>
+      <div class="form-image-upload" @click="triggerFileInput">
+        <input
+          ref="fileInput"
+          type="file"
+          accept="image/*"
+          @change="handleImageSelect"
+          style="display: none;"
+        />
+        
+        <div v-if="!imagePreview" class="event-image-placeholder">
+          點擊更換活動圖
+        </div>
+        
+        <div v-else class="relative w-full h-full">
+          <img
+            :src="imagePreview"
+            alt="活動圖片預覽"
+            class="w-full h-full object-cover"
+          />
+          <div class="absolute inset-0 opacity-0 hover:opacity-100 transition-opacity rounded-t-xl flex items-center justify-center backdrop-blur-sm">
+            <span class="text-white text-lg font-medium">點擊重新選擇</span>
+          </div>
+        </div>
       </div>
+      
       <div class="form-layout">
         <div class="form-left">
           <div class="form-row">
@@ -93,7 +208,7 @@ async function onDelete() {
               id="event-end-date"
               v-model="eventEndDate" />
           </div>
-          <div class="form-row">
+          <div class="form-row" v-if="isAdmin">
             <label for="event-price">價格</label>
             <input
               type="number"
@@ -113,26 +228,36 @@ async function onDelete() {
           </div>
           <Hashtag v-model="eventHashtags" />
         </div>
-        <div class="form-right"></div>
+        <div class="form-right">
+          <iframe 
+            v-if="eventLocation"
+            :src="`https://www.google.com/maps?q=${encodeURIComponent(eventLocation)}&output=embed`"
+            class="w-full h-full rounded-lg border-0">
+          </iframe>
+        </div>
       </div>
+      
       <div class="form-bottom">
         <button
           type="button"
           class="btn-delete"
-          @click="onDelete">
-          刪除活動
+          @click="onDelete"
+          :disabled="loading">
+          {{ loading ? '處理中...' : '刪除活動' }}
         </button>
         <button
           type="button"
           class="btn-cancle"
-          @click="$emit('cancel')">
+          @click="() => emit('cancel')"
+          :disabled="loading">
           取消修改
         </button>
         <button
           type="button"
           class="btn-confirm"
-          @click="onUpdate">
-          完成發佈
+          @click="onUpdate"
+          :disabled="loading">
+          {{ loading ? '更新中...' : '完成發佈' }}
         </button>
       </div>
     </div>
@@ -147,28 +272,28 @@ async function onDelete() {
 }
 
 .form-header {
-  @apply w-36 text-center mx-auto text-lg p-1 rounded-t-2xl text-white;
-  background-color: var(--color-primary-orange);
+  @apply text-center mx-auto text-lg p-2 rounded-t-xl text-white;
+  background-color: var(--color-black);
 }
 
 .form-container {
-  @apply mx-auto w-[700px] rounded-xl bg-gray-300;
+  @apply mx-auto w-[700px] rounded-xl bg-gray-200;
 }
 
 .form-image-upload {
-  @apply flex justify-center items-center w-full h-72 text-xl text-gray-400 rounded-t-xl bg-gray-200;
+  @apply flex justify-center items-center w-full h-72 text-xl text-gray-400 bg-gray-200;
 }
 
 .form-layout {
-  @apply p-5 grid grid-cols-[1.5fr_1fr] items-center gap-5;
+  @apply p-5 grid grid-cols-[2fr_1fr] items-start gap-5;
 }
 
 .form-left {
-  @apply text-xl;
+  @apply text-base;
 }
 
 .form-right {
-  @apply flex justify-center items-center w-full h-full rounded-2xl;
+  @apply flex justify-center items-center w-full h-full rounded-xl;
   background-color: var(--color-black);
 }
 
@@ -177,11 +302,14 @@ async function onDelete() {
 }
 
 .form-row label {
-  @apply text-xl text-center;
+  @apply text-base text-center;
 }
 
 .form-row input {
-  @apply h-10 px-2 text-lg border-[3px] border-gray-400 rounded-2xl bg-white;
+  @apply h-9 px-4 text-base border-2 border-gray-300 rounded-lg bg-white 
+         focus:border-blue-500 focus:ring-2 focus:ring-blue-200 focus:outline-none
+         transition-all duration-200 ease-in-out
+         placeholder:text-gray-400;
 }
 
 .event-location {
@@ -194,18 +322,36 @@ async function onDelete() {
 }
 
 .form-bottom button {
-  @apply block mx-auto w-44 py-1 text-xl text-white border-none rounded-xl cursor-pointer;
+  @apply block mx-auto w-44 py-1 text-lg rounded-xl cursor-pointer;
+}
+
+.form-bottom button:disabled {
+  @apply opacity-50 cursor-not-allowed;
 }
 
 .btn-delete {
-  @apply bg-gray-400;
+  @apply border-2 border-gray-500 text-gray-700 
+         hover:bg-gray-600 hover:text-white hover:border-gray-600
+         transition-all duration-200 ease-in-out;
 }
 
 .btn-cancle {
+  @apply border-2 text-green-600
+         hover:text-white transition-all duration-200 ease-in-out;
+  border-color: var(--color-secondary-green);
+  color: var(--color-secondary-green);
+}
+
+.btn-cancle:hover {
   background-color: var(--color-secondary-green);
 }
 
 .btn-confirm {
+  @apply text-white transition-all duration-200 ease-in-out;
+  background-color: var(--color-primary-orange);
+}
+
+.btn-confirm:hover {
   background-color: var(--color-primary-red);
 }
 </style>

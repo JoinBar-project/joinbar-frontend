@@ -20,22 +20,22 @@ export function useLinePay() {
 
      console.log('🔄 創建 LINE Pay 付款...', orderId)
 
-     const token = localStorage.getItem('auth_token')
+     const token = localStorage.getItem('access_token')
      if (!token) {
        throw new Error('請先登入')
      }
 
      const response = await axios.post(
-       `${API_BASE_URL}/api/linepay/create`,
-       { orderId: String(orderId) }, 
-       {
-         headers: {
-           'Authorization': `Bearer ${token}`,
-           'Content-Type': 'application/json'
-         },
-         timeout: 15000
-       }
-     )
+        `${API_BASE_URL}/linepay/create`, 
+        { orderId: String(orderId) }, 
+        {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          },
+          timeout: 15000
+        }
+      )
 
      if (response.data.success) {
        paymentUrl.value = response.data.data.paymentUrl
@@ -72,8 +72,8 @@ export function useLinePay() {
        switch (status) {
          case 401:
            errorMessage = '登入已過期，請重新登入'
-           localStorage.removeItem('auth_token')
-           localStorage.removeItem('user_info')
+           localStorage.removeItem('access_token')
+           localStorage.removeItem('user')
            break
          case 404:
            errorMessage = '找不到訂單，請確認訂單狀態'
@@ -115,20 +115,20 @@ export function useLinePay() {
    try {
      console.log('🔍 檢查 LINE Pay 狀態...', orderId)
 
-     const token = localStorage.getItem('auth_token')
+     const token = localStorage.getItem('access_token')
      if (!token) {
        throw new Error('請先登入')
      }
 
      const response = await axios.get(
-       `${API_BASE_URL}/api/linepay/status/${orderId}`,
+       `${API_BASE_URL}/linepay/status/${orderId}`, 
        {
          headers: {
            'Authorization': `Bearer ${token}`
          },
          timeout: 10000
        }
-     )
+      )
 
      console.log('✅ 付款狀態檢查成功:', response.data)
      return response.data
@@ -161,39 +161,181 @@ export function useLinePay() {
    }
  }
 
- const redirectToLinePay = (paymentUrl) => {
-   if (!paymentUrl) {
-     throw new Error('付款 URL 無效')
-   }
-
-   console.log('🔄 跳轉到 LINE Pay 頁面...', paymentUrl)
+ const redirectToLinePay = (paymentUrl, onCloseCallback = null) => {
+   // 清除舊狀態
+   localStorage.removeItem('linepay-result');
    
-   const paymentWindow = window.open(
-     paymentUrl,
-     'linePayWindow',
-     'width=400,height=600,scrollbars=yes,resizable=yes'
-   )
-
+   const paymentWindow = window.open(paymentUrl, 'linePayWindow', 'width=400,height=600');
+   
    if (!paymentWindow) {
-     console.log('彈出視窗被阻擋，在當前視窗跳轉')
-     window.location.href = paymentUrl
-   } else {
-     const checkClosed = setInterval(() => {
-       if (paymentWindow.closed) {
-         clearInterval(checkClosed)
-         console.log('LINE Pay 視窗已關閉')
-       }
-     }, 1000)
+     window.location.href = paymentUrl;
+     return;
    }
-
-   return paymentWindow
- }
+   
+   let isProcessed = false;
+   
+   // 每秒檢查 localStorage
+   const checkResult = setInterval(() => {
+     const result = localStorage.getItem('linepay-result');
+     
+     if (result && !isProcessed) {
+       isProcessed = true;
+       const data = JSON.parse(result);
+       
+       // 清除結果
+       localStorage.removeItem('linepay-result');
+       
+       // 關閉彈窗
+       paymentWindow.close();
+       
+       if (data.success) {
+         // 觸發成功處理
+         window.dispatchEvent(new CustomEvent('linepay-success', { detail: data }));
+       } else {
+         // 觸發失敗處理
+         window.dispatchEvent(new CustomEvent('linepay-error', { detail: data }));
+       }
+       
+       clearInterval(checkResult);
+       clearInterval(checkClosed);
+     }
+   }, 1000);
+   
+   // 檢測視窗關閉
+   const checkClosed = setInterval(() => {
+     if (paymentWindow.closed) {
+       clearInterval(checkResult);
+       clearInterval(checkClosed);
+       
+       if (!isProcessed && onCloseCallback) {
+         onCloseCallback();
+       }
+     }
+   }, 1000);
+   
+   return paymentWindow;
+ };
 
  const clearState = () => {
    error.value = ''
    paymentUrl.value = ''
    transactionId.value = ''
  }
+
+ const checkDetailedPaymentStatus = async (orderId) => {
+  try {
+    console.log('🔍 檢查詳細付款狀態...', orderId)
+
+    const token = localStorage.getItem('access_token')
+    if (!token) {
+      throw new Error('請先登入')
+    }
+
+    const response = await axios.get(
+      `${API_BASE_URL}/linepay/status/${orderId}`, 
+      {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        },
+        timeout: 10000
+      }
+    )
+
+    console.log('✅ 詳細付款狀態檢查成功:', response.data)
+    
+    return {
+      success: true,
+      orderStatus: response.data.status,
+      orderInfo: {
+        orderId: response.data.orderId,
+        orderNumber: response.data.orderNumber,
+        amount: response.data.amount,
+        paymentMethod: response.data.paymentMethod,
+        paidAt: response.data.paidAt
+      },
+      linePayInfo: response.data.linePayStatus || null
+    }
+
+  } catch (err) {
+    console.error('❌ 詳細付款狀態檢查失敗:', err)
+    
+    let errorMessage = '無法檢查付款狀態'
+    
+    if (err.response) {
+      const { status, data } = err.response
+      
+      switch (status) {
+        case 401:
+          errorMessage = '登入已過期'
+          break
+        case 404:
+          errorMessage = '找不到訂單'
+          break
+        case 403:
+          errorMessage = '無權限查看此訂單'
+          break
+        default:
+          errorMessage = data.message || '狀態查詢失敗'
+      }
+    }
+    
+    throw new Error(errorMessage)
+  }
+}
+
+const formatPaymentStatusDisplay = (statusData) => {
+  let display = {
+    title: '',
+    message: '',
+    color: '',
+    icon: ''
+  }
+
+  if (!statusData.success) {
+    display.title = '狀態檢查失敗'
+    display.message = '無法獲取付款狀態'
+    display.color = 'red'
+    display.icon = '❌'
+    return display
+  }
+
+  const { orderStatus, linePayInfo } = statusData
+
+  switch (orderStatus) {
+    case 'pending':
+      display.title = '待付款'
+      display.message = '訂單已建立，等待付款'
+      display.color = 'orange'
+      display.icon = '⏳'
+      break
+    case 'confirmed':
+      display.title = '已確認'
+      display.message = '付款完成，訂單已確認'
+      display.color = 'green'
+      display.icon = '✅'
+      break
+    case 'cancelled':
+      display.title = '已取消'
+      display.message = '訂單已取消'
+      display.color = 'gray'
+      display.icon = '🚫'
+      break
+    default:
+      display.title = orderStatus
+      display.message = '未知狀態'
+      display.color = 'gray'
+      display.icon = '❓'
+  }
+
+  if (linePayInfo) {
+    display.message += `\n\nLINE Pay: ${linePayInfo.isPaid ? '✅ 已付款' : '❌ 未付款'}`
+    if (linePayInfo.transactionId) {
+      display.message += `\n交易號: ${linePayInfo.transactionId}`
+    }
+  }
+
+  return display
+}
 
  return {
    isLoading,
@@ -203,6 +345,8 @@ export function useLinePay() {
    createLinePayment,
    checkPaymentStatus,
    redirectToLinePay,
-   clearState
+   clearState,
+   checkDetailedPaymentStatus, 
+   formatPaymentStatusDisplay
  }
 }
