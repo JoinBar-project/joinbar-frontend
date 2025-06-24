@@ -92,7 +92,7 @@ const avatarURL = computed(() => {
       <li>
         <div
           v-if="isAuthenticated"
-          class="cursor-pointer flex flex-col items-center gap-1">
+          class="flex flex-col items-center gap-1 cursor-pointer">
           <UserAvatar
             :avatar-url="avatarURL"
             :display-name="user.username"
@@ -110,7 +110,7 @@ const avatarURL = computed(() => {
         <div
           @click="handleLogout"
           v-if="isAuthenticated"
-          class="cursor-pointer flex flex-col items-center gap-1 logout-button">
+          class="flex flex-col items-center gap-1 cursor-pointer logout-button">
           <span>登出</span>
         </div>
       </li>
