@@ -10,7 +10,7 @@ const getEventById = async (eventId) => {
   }
 };
 
-const joinEvent = async (eventId) => {
+const joinEventById  = async (eventId) => {
   try {
     const res = await apiClient.post(`/event/${eventId}/join`);
     return res.data;
@@ -20,4 +20,4 @@ const joinEvent = async (eventId) => {
   }
 };
 
-export { getEventById, joinEvent };
+export { getEventById, joinEventById  };

@@ -3,6 +3,7 @@ import dayjs from 'dayjs';
 import utc from 'dayjs/plugin/utc';
 import timezone from 'dayjs/plugin/timezone';
 import 'dayjs/locale/zh-tw'
+import { joinEventById } from '@/api/event'
 
 dayjs.extend(utc)
 dayjs.extend(timezone)
@@ -34,13 +35,15 @@ export function useEvent(event){
     return `${formattedStart} ~ ${formattedEnd}`
   })
 
-  function toggleJoin(){
-    isJoin.value = !isJoin.value
-
-    if( isJoin.value == true){
+  const toggleJoin = async () => {
+    if (!event.value?.id) return
+  
+    try {
+      await joinEventById(event.value.id)
+      isJoin.value = true
       joinedNum.value++
-    }else{
-      joinedNum.value--
+    } catch (err) {
+      console.warn('報名失敗:', err?.response?.data?.message || err.message)
     }
   }
 
@@ -67,6 +70,5 @@ export function useEvent(event){
     openCancelModal,
     closeModal,
     handleConfirmCancel
-
   }
 }
