@@ -195,6 +195,46 @@ const handleAccountDeletion = async () => {
             </p>
           </div>
         </div>`,
+      focusConfirm: false,
+      showCancelButton: true,
+      confirmButtonText: '<i class="fas fa-trash-alt"></i> 確認刪除帳戶',
+      cancelButtonText: '<i class="fas fa-times"></i> 取消',
+      confirmButtonColor: '#dc2626',
+      cancelButtonColor: '#6b7280',
+      width: '650px',
+      customClass: {
+        popup: 'swal-wide-popup',
+        htmlContainer: 'swal-scroll-container'
+      },
+      preConfirm: () => {
+        const password = document.getElementById('swal-password')?.value || '';
+        const confirmText = document.getElementById('swal-confirm-text').value;
+        const finalConfirm = document.getElementById('swal-final-confirm').checked;
+
+        // 驗證表單
+        const needsPassword = warningInfo.accountInfo.providerType === 'email';
+        
+        if (needsPassword && !password.trim()) {
+          Swal.showValidationMessage('請輸入密碼');
+          return false;
+        }
+
+        if (confirmText !== '刪除我的帳戶') {
+          Swal.showValidationMessage('請輸入正確的確認文字：刪除我的帳戶');
+          return false;
+        }
+
+        if (!finalConfirm) {
+          Swal.showValidationMessage('請確認您了解此操作的後果');
+          return false;
+        }
+
+        return {
+          password: needsPassword ? password : undefined,
+          confirmText,
+          finalConfirm
+        };
+      }
     });
   } catch(err) {
     console.error('註銷過程發生錯誤:', err);
