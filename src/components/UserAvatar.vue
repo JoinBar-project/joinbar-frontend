@@ -2,7 +2,6 @@
 const defaultAvatar = '/default-user-avatar.png';
 const sizeClass = {
   sm: 'w-8 h-8',
-  md: 'w-10 h-10',
   lg: 'w-48 h-48',
 };
 
@@ -18,10 +17,10 @@ defineProps({
 </script>
 
 <template>
-  <div @click="onAvatarClick">
+  <div @click="onAvatarClick" :class="[sizeClass[size],'aspect-square rounded-full overflow-hidden border-2 border-white cursor-pointer']">
     <img
       :src="avatarUrl || defaultAvatar"
-      alt="user-avatarURL"
-      :class="[sizeClass[size], 'object-cover rounded-full border-2 border-white']" />
+      alt="user-avatarUrl"
+      class="w-full h-full object-cover" />
   </div>
 </template>
