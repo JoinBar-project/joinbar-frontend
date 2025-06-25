@@ -243,7 +243,7 @@ const handleCancelConfirm = async () => {
       </div>
     </div>
 
-    <EventHoster />
+    <EventHoster :user="currentEvent.hostUser" />
     <MessageBoard v-if="isJoin" />
   </div>
 </template>

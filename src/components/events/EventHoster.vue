@@ -1,35 +1,16 @@
 <script setup>
-
-import { ref, watch } from 'vue';
+import { computed } from 'vue'
 
 const props = defineProps({
   user: {
-    type: Object
+    type: Object,
+    required: true,
   }
 })
 
-console.log(`================${props.user}`)
+const hostUser = computed(() => props.user)
 
-const hostUser = ref(null)
-
-const fetchUser = async(id) => {
-
-  try{
-    const res = hostUser.value = await getUserById(id)
-    hostUser.value = res.user
-  }catch (err) {
-    console.error('主辦人載入失敗', err)
-  }
-}
-
-watch(
-  () => props.userId,
-  async (newId) => {
-    if (!newId) return
-    await fetchUser(newId)
-  },
-  { immediate: true }
-)
+const defaultAvatar = new URL('@/components/events/picture/大頭照.png', import.meta.url).href;
 
 
 
@@ -44,12 +25,12 @@ watch(
         活動發起人
         </div>
         <div class="headshot">
-          <img src="@/components/events/picture/大頭照.png" alt="大頭照">
+          <img :src="hostUser.avatarUrl || defaultAvatar" alt="大頭照">
         </div>
         <div class="hoster-info">
           <div class="hoster-account">
-            <p class="hoster-name">{{ hostUser?.username }}</p>
-            <p class="account-number">{{ `@${hostUser?.nickname}` }}</p>
+            <p class="hoster-name">{{ hostUser.username }}</p>
+            <p class="account-number">{{ `@${hostUser.nickname}` }}</p>
           </div>
           <button class="follow-btn">追 蹤</button>
         </div>
