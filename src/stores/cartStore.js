@@ -45,63 +45,40 @@ export const useCartStore = defineStore('cart', () => {
       error.value = null
       
       const token = localStorage.getItem('access_token')
-      
-      const authMethod = token ? 'bearer' : 'cookie';
-      console.log('🛒 購物車 API 認證:', {
-        method: authMethod,
-        hasToken: !!token,
-        url: `${API_BASE_URL}/cart${url}`
-      });
+      if (!token) {
+        throw new Error('請先登入')
+      }
       
       const config = {
         method,
         url: `${API_BASE_URL}/cart${url}`, 
         headers: {
+          'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
         },
-        timeout: 10000,
-        withCredentials: true 
-      }
-      
-      if (token) {
-        config.headers.Authorization = `Bearer ${token}`
-        console.log('🔑 使用 Bearer Token 認證')
-      } else {
-        console.log('🍪 使用 Cookie 認證，withCredentials: true')
+        timeout: 10000
       }
       
       if (data) {
         config.data = data
       }
       
-      console.log(`🔄 購物車 API 請求: ${method} ${config.url}`)
+      console.log(`🔄 API 請求: ${method} ${config.url}`)
       const response = await axios(config)
-      console.log(`✅ 購物車 API 響應:`, response.data)
+      console.log(`✅ API 響應:`, response.data)
       
       return response.data
       
     } catch (err) {
-      console.error(`❌ 購物車 API 錯誤:`, err)
+      console.error(`❌ API 錯誤:`, err)
       
       let errorMessage = '請求失敗'
       
       if (err.response) {
         const { status, data } = err.response
-        
-        console.error('🔍 購物車 API 錯誤詳情:', {
-          status,
-          data,
-          authMethod: data?.authMethod,
-          url: err.config?.url
-        });
-        
         switch (status) {
           case 401:
-            if (data?.authMethod === 'cookie') {
-              errorMessage = 'LINE 登入已過期，請重新登入'
-            } else {
-              errorMessage = '登入已過期，請重新登入'
-            }
+            errorMessage = '登入已過期，請重新登入'
             localStorage.removeItem('access_token')
             localStorage.removeItem('user')
             break
@@ -404,7 +381,7 @@ export const useCartStore = defineStore('cart', () => {
     }
     return items.value.some((item) => String(item.id) === String(id) || String(item.eventId) === String(id))
   }
-
+  
   const getOrderData = (customerInfo, paymentMethod) => {
     if (!customerInfo || !customerInfo.name || !customerInfo.phone || !customerInfo.email) {
       throw new Error('客戶資訊不完整')
@@ -418,13 +395,23 @@ export const useCartStore = defineStore('cart', () => {
       throw new Error('購物車是空的')
     }
 
-    return {
-      items: items.value.map(item => ({
-        eventId: String(item.eventId || item.id),
-        quantity: 1
-      })),
+    console.log('🔍 購物車原始數據:', items.value);
+
+    const orderData = {
+      items: items.value.map(item => {
+        const orderItem = {
+          itemType: 1,  
+          eventId: String(item.eventId || item.id),
+          quantity: 1
+        };
+        console.log('🔍 轉換訂單項目:', { original: item, converted: orderItem });
+        return orderItem;
+      }),
       paymentMethod: paymentMethod
-    }
+    };
+
+    console.log('🔍 最終訂單數據:', JSON.stringify(orderData, null, 2));
+    return orderData;
   }
 
   const getCartSummary = computed(() => ({
