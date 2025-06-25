@@ -45,40 +45,63 @@ export const useCartStore = defineStore('cart', () => {
       error.value = null
       
       const token = localStorage.getItem('access_token')
-      if (!token) {
-        throw new Error('請先登入')
-      }
+      
+      const authMethod = token ? 'bearer' : 'cookie';
+      console.log('🛒 購物車 API 認證:', {
+        method: authMethod,
+        hasToken: !!token,
+        url: `${API_BASE_URL}/cart${url}`
+      });
       
       const config = {
         method,
         url: `${API_BASE_URL}/cart${url}`, 
         headers: {
-          'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
         },
-        timeout: 10000
+        timeout: 10000,
+        withCredentials: true 
+      }
+      
+      if (token) {
+        config.headers.Authorization = `Bearer ${token}`
+        console.log('🔑 使用 Bearer Token 認證')
+      } else {
+        console.log('🍪 使用 Cookie 認證，withCredentials: true')
       }
       
       if (data) {
         config.data = data
       }
       
-      console.log(`🔄 API 請求: ${method} ${config.url}`)
+      console.log(`🔄 購物車 API 請求: ${method} ${config.url}`)
       const response = await axios(config)
-      console.log(`✅ API 響應:`, response.data)
+      console.log(`✅ 購物車 API 響應:`, response.data)
       
       return response.data
       
     } catch (err) {
-      console.error(`❌ API 錯誤:`, err)
+      console.error(`❌ 購物車 API 錯誤:`, err)
       
       let errorMessage = '請求失敗'
       
       if (err.response) {
         const { status, data } = err.response
+        
+        console.error('🔍 購物車 API 錯誤詳情:', {
+          status,
+          data,
+          authMethod: data?.authMethod,
+          url: err.config?.url
+        });
+        
         switch (status) {
           case 401:
-            errorMessage = '登入已過期，請重新登入'
+            if (data?.authMethod === 'cookie') {
+              errorMessage = 'LINE 登入已過期，請重新登入'
+            } else {
+              errorMessage = '登入已過期，請重新登入'
+            }
             localStorage.removeItem('access_token')
             localStorage.removeItem('user')
             break
