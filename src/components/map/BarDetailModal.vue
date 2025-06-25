@@ -163,6 +163,7 @@
               @click.stop="toggleFavorite"
               :aria-label="bar.isWishlisted ? '取消收藏' : '加入收藏'"
               :data-tooltip="bar.isWishlisted ? '取消收藏' : '加入收藏'"
+              :disabled="favoriteLoading"
             >
               <svg
                 xmlns="http://www.w3.org/2000/svg"
@@ -260,8 +261,10 @@
 </template>
 
 <script setup>
-import { ref, watch, computed } from "vue";
+import { ref, watch, computed, onMounted } from "vue";
 import { useRouter } from "vue-router";
+import { useFavoritesStore } from "@/stores/favorites"; // 新增
+import { storeToRefs } from "pinia"; // 新增
 import placeTypeMap from "@/composables/placeTypeMap";
 import { navigateToBar } from "@/utils/useGoogleMapNavigation";
 
@@ -275,12 +278,14 @@ const props = defineProps({
 const emit = defineEmits(["close", "toggle-wishlist"]);
 
 const router = useRouter();
+const favoritesStore = useFavoritesStore(); // 新增
+const { loading: favoriteLoading } = storeToRefs(favoritesStore); // 新增
 
+// 其他原有的 ref 和 computed 保持不變
 const currentImageIndex = ref(0);
 const defaultImage =
   "https://placehold.co/800x600/decdd5/860914?text=No+Image+Available";
 
-// 確保 google 實例可用
 const google = computed(() =>
   window.google && window.google.maps ? window.google.maps : null
 );
@@ -292,7 +297,13 @@ const currentImage = computed(() => {
   return props.bar.imageUrl || defaultImage;
 });
 
-// 修改營業狀態判斷邏輯，直接使用 is_open
+// 修改：計算收藏狀態
+const isWishlisted = computed(() => {
+  return favoritesStore.isFavorited(
+    props.bar.place_id || props.bar.googlePlaceId || props.bar.id
+  );
+});
+
 const currentOpenStatus = computed(() => {
   if (props.bar.is_open === true) {
     return '<span style="color: green;">正在營業中</span>';
@@ -303,6 +314,7 @@ const currentOpenStatus = computed(() => {
   // return "未提供營業時間資訊";
 });
 
+// 原有的 watch 和其他函數保持不變
 watch(
   () => props.bar,
   () => {
@@ -339,11 +351,52 @@ const closeModal = () => {
   emit("close");
 };
 
-const toggleFavorite = () => {
-  if (props.bar.place_id) {
-    emit("toggle-wishlist", props.bar.place_id);
-  } else if (props.bar.id) {
-    emit("toggle-wishlist", props.bar.id);
+// 修改：更新收藏切換功能
+const toggleFavorite = async () => {
+  try {
+    // 準備完整的酒吧資料
+    const barData = {
+      ...props.bar,
+      // 確保有正確的識別碼
+      place_id: props.bar.place_id || props.bar.googlePlaceId,
+      googlePlaceId: props.bar.googlePlaceId || props.bar.place_id,
+      // 確保有完整資訊（從 Google Maps 來的資料可能格式不同）
+      name: props.bar.name,
+      address: props.bar.address || props.bar.formatted_address,
+      rating: props.bar.rating,
+      reviews: props.bar.reviews || props.bar.user_ratings_total,
+      imageUrl: props.bar.imageUrl || props.bar.images?.[0],
+      phone: props.bar.phone || props.bar.international_phone_number,
+      website: props.bar.website,
+      opening_hours: props.bar.opening_hours,
+      tags: props.bar.tags || props.bar.types || [],
+      // 如果有位置資訊，確保格式正確
+      location:
+        props.bar.location ||
+        (props.bar.geometry?.location
+          ? {
+              lat:
+                typeof props.bar.geometry.location.lat === "function"
+                  ? props.bar.geometry.location.lat()
+                  : props.bar.geometry.location.lat,
+              lng:
+                typeof props.bar.geometry.location.lng === "function"
+                  ? props.bar.geometry.location.lng()
+                  : props.bar.geometry.location.lng,
+            }
+          : null),
+    };
+
+    await favoritesStore.toggleFavorite(barData);
+
+    // 通知父組件
+    emit(
+      "toggle-wishlist",
+      props.bar.place_id || props.bar.googlePlaceId || props.bar.id
+    );
+  } catch (error) {
+    console.error("Failed to toggle favorite:", error);
+    alert("操作失敗，請稍後再試");
   }
 };
 
@@ -362,7 +415,7 @@ const getTagLabel = (tag) => {
   return placeTypeMap?.[tag] || tag;
 };
 
-// 分享
+// 分享功能相關（保持原有）
 const shareModalVisible = ref(false);
 const urlInput = ref(null);
 
@@ -435,6 +488,15 @@ const shareToLine = () => {
     alert("Line 分享失敗，請稍後再試");
   }
 };
+
+// 載入時確保收藏狀態是最新的
+onMounted(() => {
+  // 如果 store 還沒載入收藏列表，先載入
+  if (favoritesStore.favoriteBars.length === 0) {
+    favoritesStore.fetchFavorites();
+  }
+});
+
 console.log("=== 酒吧 Props 內容 ===");
 console.log(props.bar);
 </script>
