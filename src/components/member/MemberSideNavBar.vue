@@ -3,15 +3,62 @@ import { ref, computed } from 'vue';
 import { RouterLink, useRouter } from 'vue-router';
 import { useAuthStore } from '@/stores/authStore';
 import { storeToRefs } from 'pinia';
+import Swal from 'sweetalert2';
 
 const authStore = useAuthStore();
-const { clearAuthState } = authStore;
 const { user } = storeToRefs(authStore);
 const router = useRouter();
 
-const handleLogout = () => {
-  clearAuthState();
-  router.push('/home');
+const handleLogout = async () => {
+  if(authStore.loginMethod === 'line' ) {
+    try {
+      const result = await authStore.lineLogout();
+
+      if (result.success) {
+        await Swal.fire({
+          title: '登出成功！',
+          text: '您已安全登出，感謝使用',
+          icon: 'success',
+          confirmButtonText: '確認',
+          timer: 1500,
+          timerProgressBar: true
+        });
+        router.push('/login');
+      }
+    } catch (error) {
+      console.error('登出失敗:', error);
+      await Swal.fire({
+        title: '登出失敗',
+        text: '請稍後再試',
+        icon: 'error',
+        confirmButtonText: '確認'
+      });
+    }
+  } else {
+    try {
+      const result = await authStore.logout();
+
+      if (result.success) {
+        await Swal.fire({
+          title: '登出成功！',
+          text: '您已安全登出，感謝使用',
+          icon: 'success',
+          confirmButtonText: '確認',
+          timer: 1500,
+          timerProgressBar: true
+        });
+        router.push('/login');
+      }
+    } catch (error) {
+      console.error('登出失敗:', error);
+      await Swal.fire({
+        title: '登出失敗',
+        text: '請稍後再試',
+        icon: 'error',
+        confirmButtonText: '確認'
+      });
+    }
+  }
 };
 
 const userId = computed(() => user.value?.id);
