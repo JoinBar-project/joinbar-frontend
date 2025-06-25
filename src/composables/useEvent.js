@@ -19,19 +19,19 @@ export function useEvent(event){
   const now = ref(dayjs())
 
   const isOver24hr = computed(() => {
-    if( !event.value?.startDate ) return null
-    return dayjs(event.value.startDate).tz(tz).diff(now.value, 'hour') > 24
+    if( !event.value?.startAt ) return null
+    return dayjs(event.value.startAt).tz(tz).diff(now.value, 'hour') > 24
   })
 
   const formattedEventTime = computed(() =>{
     if (!event.value) return ''
-    const start = event.value?.startDate
-    const end = event.value?.endDate
+    const start = event.value?.startAt
+    const end = event.value?.endAt
 
     if (!start || !end) return ''
 
-    const formattedStart =  dayjs(event.value.startDate).tz(tz).format('YYYY.MM.DD HH:mm (ddd)')
-    const formattedEnd =  dayjs(event.value.endDate).tz(tz).format('YYYY.MM.DD HH:mm (ddd)')
+    const formattedStart =  dayjs(event.value.startAt).tz(tz).format('YYYY.MM.DD HH:mm (ddd)')
+    const formattedEnd =  dayjs(event.value.endAt).tz(tz).format('YYYY.MM.DD HH:mm (ddd)')
     return `${formattedStart} ~ ${formattedEnd}`
   })
 

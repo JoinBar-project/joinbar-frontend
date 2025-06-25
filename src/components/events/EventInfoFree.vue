@@ -1,7 +1,7 @@
 <script setup>
 import { useEvent } from '@/composables/useEvent.js';
-import { toRef, computed, ref, watch } from 'vue';
-import axios from 'axios';
+import { toRef, computed, ref, watch, onMounted } from 'vue';
+import { getEventById } from '@/api/event';
 import EventHoster from './EventHoster.vue';
 import MessageBoard from './MessageBoard.vue';
 import ModalEdit from '@/components/events/ModalEdit.vue'
@@ -13,6 +13,10 @@ const props = defineProps({
   event: Object,
   tags: Array,
   eventId: String,
+  user: {
+    type: Object,
+    required: true,
+}
 });
 
 const currentUserId = computed(() => {
@@ -22,6 +26,10 @@ const currentUserId = computed(() => {
 
 const isHostUser = computed(() => {
   return currentUserId.value !== null && Number(currentEvent.value.hostUser) === currentUserId.value;
+});
+
+onMounted(() => {
+  console.log('🔥 onMounted currentEvent:', currentEvent.value);
 });
 
 const eventRef = toRef(props, 'event');
@@ -59,27 +67,22 @@ async function reloadEventData() {
     isUpdating.value = true;
     console.log('開始重新載入活動資料...');
     
-    const token = localStorage.getItem('access_token');
-    const response = await axios.get(`/api/event/${eventId}`, {
-      headers: token ? { 'Authorization': `Bearer ${token}` } : {}
-    });
-    
-    if (response.data) {
+    const { event: updatedEvent, tags: updatedTags } = await getEventById(eventId);
+ 
 
-      if (response.data.event) {
-        localEvent.value = { ...response.data.event };
-      }
-      if (response.data.tags) {
-        localTags.value = [...response.data.tags];
-      }
-      
-      console.log('活動資料重新載入成功:', response.data);
-      
-      emit('update', {
-        event: localEvent.value,
-        tags: localTags.value
-      });
+    if (updatedEvent) {
+      localEvent.value = { ...updatedEvent };
+      console.log('🔥 取得的 event 資料:', updatedEvent); // ← 看有沒有 barName
+      console.log('🔥 localEvent.barName:', localEvent.value.barName); // ← 看是否成功寫入
     }
+    if (updatedTags) {
+      localTags.value = [...updatedTags];
+    }
+    console.log('活動資料重新載入成功:', { updatedEvent, updatedTags });
+    emit('update', {
+      event: localEvent.value,
+      tags: localTags.value
+    });
     
   } catch (error) {
     console.error('重新載入活動資料失敗:', error);

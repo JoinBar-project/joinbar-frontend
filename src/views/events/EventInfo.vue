@@ -1,7 +1,7 @@
 <script setup>
 import { useRoute } from 'vue-router'
 import { ref, onMounted, computed } from 'vue';
-import axios from 'axios'
+import { getEventById } from '@/api/event'
 
 import EventInfoFree from '@/components/events/EventInfoFree.vue'
 import EventInfoPay from '@/components/events/EventInfoPay.vue'
@@ -17,10 +17,11 @@ const eventTags = ref([])
 
 onMounted( async() => {
   try{
-      const res = await axios.get(`/api/event/${eventId}`)
-      const data = res.data
-      event.value = data.event
-      eventTags.value = data.tags
+    const data = await getEventById(eventId)
+    console.log(`data:${data}`)
+    event.value = data.event
+    console.log(`data:${event.value}`)
+    eventTags.value = data.tags
 
   }catch(err){
     if( err.response && err.response.status == 404){
@@ -46,8 +47,16 @@ const isFree = computed(() => {
     <p v-else-if="notFound">找不到活動</p>
     <p v-else-if="errorMsg">{{ errorMsg }}</p>
 
-    <EventInfoFree v-else-if="isFree" :event="event" :tags="eventTags" />
-    <EventInfoPay v-else :event="event" :tags="eventTags" />
+    <EventInfoFree v-else-if="isFree" 
+      :event="event" 
+      :tags="eventTags"
+      :user="event.hostUser"
+    />
+    <EventInfoPay v-else 
+      :event="event" 
+      :tags="eventTags"
+      :user="event.hostUser"
+    />
 
   </div>
 </template>

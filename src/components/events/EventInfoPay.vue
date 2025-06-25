@@ -12,6 +12,10 @@ import ModalEdit from '@/components/events/ModalEdit.vue';
 const props = defineProps({
   event: Object,
   tags: Array,
+  userId: {
+    type: Number,
+    required: true,
+  }
 });
 
 const emit = defineEmits(['update']);

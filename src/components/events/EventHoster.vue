@@ -1,3 +1,40 @@
+<script setup>
+
+import { ref, watch } from 'vue';
+
+const props = defineProps({
+  user: {
+    type: Object
+  }
+})
+
+console.log(`================${props.user}`)
+
+const hostUser = ref(null)
+
+const fetchUser = async(id) => {
+
+  try{
+    const res = hostUser.value = await getUserById(id)
+    hostUser.value = res.user
+  }catch (err) {
+    console.error('主辦人載入失敗', err)
+  }
+}
+
+watch(
+  () => props.userId,
+  async (newId) => {
+    if (!newId) return
+    await fetchUser(newId)
+  },
+  { immediate: true }
+)
+
+
+
+</script>
+
 <template>
   <div class="event-hoster-section">
     <div class="event-hoster-card">
@@ -11,8 +48,8 @@
         </div>
         <div class="hoster-info">
           <div class="hoster-account">
-            <p class="hoster-name">板橋許光漢</p>
-            <p class="account-number">@handsome_boy</p>
+            <p class="hoster-name">{{ hostUser?.username }}</p>
+            <p class="account-number">{{ `@${hostUser?.nickname}` }}</p>
           </div>
           <button class="follow-btn">追 蹤</button>
         </div>
