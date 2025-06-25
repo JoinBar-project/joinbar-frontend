@@ -3,13 +3,15 @@
     <div class="max-w-[424px] mx-auto p-6 bg-[var(--color-black)] rounded-xl shadow-xl  relative">
     
     <transition name="alert-slide">
-      <div v-if="showRegisterSuccess" role="alert" class="alert alert-success absolute -top-8 left-0 right-0 z-10">
+      <div v-if="showRegisterSuccess" role="alert" class="alert alert-success alert-soft absolute -top-8 left-0 right-0 z-10">
         <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 shrink-0 stroke-current" fill="none" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
         </svg>
         <span>註冊成功！請前往 Email 驗證帳號</span>
       </div>
     </transition>
+
+    
     
     <div class="flex border-b border-[var(--color-icon-secondary)]">
       <router-link to="/login" class="flex-1 py-2 text-center font-semibold text-[var(--color-icon-secondary)] hover:text-[var(--color-secondary-green)] transition">
@@ -45,6 +47,7 @@
                 :type="field.type === 'password' ? (showPassword ? 'text' : 'password') : field.type" 
                 :placeholder="field.placeholder" 
                 v-model="registrationForm[field.model]"
+                :disabled="authStore.isAnyLoading"
                 @input="clearError(field.model)"
                 :class="[
                   'w-full outline-none placeholder-opacity-70 transition-colors text-sm',
@@ -87,7 +90,7 @@
               <img src="/google.svg" alt="Google" class="w-5 h-5 mr-2" /> register for Google 
             </button>
             <button @click="handleLineLogin" 
-                    :disabled="authStore.isLoading" 
+                    :disabled="authStore.isLineLoading" 
                     class="btn bg-[var(--color-line-green)] text-white border-[var(--color-line-green-dark)] border-2 flex items-center px-4 py-2 rounded-lg hover:shadow-md transition">
                     <img src="/line.svg" alt="LINE" class="w-5 h-5 mr-2" />
                     <span v-if="authStore.isLineLoading">載入中...</span>
@@ -152,7 +155,7 @@
             </button>
             <button
               @click="handleEmailRegistration"
-              :disabled="authStore.isLoading"
+              :disabled="authStore.isEmailLoading"
               class="px-4 py-2 bg-gradient-to-r from-[var(--color-secondary-green)] via-[#d8dbaf] to-[var(--color-primary-orange)] text-[var(--color-black)] rounded-lg font-medium shadow-md transition duration-300 transform hover:scale-105 hover:brightness-110 hover:shadow-lg">
               <span v-if="authStore.isEmailLoading">註冊中...</span>
               <span v-else>完成註冊</span>

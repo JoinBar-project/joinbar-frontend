@@ -40,7 +40,7 @@
         placeholder="電子郵件" 
         v-model="loginForm.email"
         @input="clearError('email')"
-        :disabled="authStore.isLoading"
+        :disabled="authStore.isAnyLoading"
         :class="[
           'w-full outline-none placeholder-opacity-70 transition-colors text-sm ml-2',
           errors.email 
@@ -70,6 +70,7 @@
               placeholder="密碼" 
               v-model="loginForm.password"
               @input="clearError('password')"
+              :disabled="authStore.isAnyLoading"
               :class="[
                 'w-full outline-none placeholder-opacity-70 transition-colors text-sm ml-2',
                 errors.password 
@@ -108,7 +109,6 @@
 
         <button 
           @click="handleLineLogin"
-          :disabled="authStore.isLoading"
         class="btn bg-[var(--color-line-green)] text-white border-[var(--color-line-green-dark)] border-2 flex items-center px-4 py-2 rounded-lg hover:scale-105 transition">
           <img src="/line.svg" alt="Line logo" class="w-5 h-5 mr-2" />
           <span v-if="authStore.isLineLoading">載入中...</span>
@@ -120,7 +120,7 @@
       <div class="flex justify-center">
         <button
           @click="handleEmailLogin"
-          :disabled="authStore.isLoading"
+          :disabled="authStore.isEmailLoading"
           class="w-full max-w-[180px] py-2 bg-gradient-to-r from-[var(--color-secondary-green)] via-[#d8dbaf] to-[var(--color-primary-orange)] text-[var(--color-black)] rounded-lg font-semibold mt-4 shadow-md transition duration-300 transform hover:scale-105 hover:brightness-110 hover:shadow-lg">
           <span v-if="authStore.isEmailLoading">登入中...</span>
           <span v-else>登入</span>
@@ -299,12 +299,12 @@ const useTestAccount = () => {
   errors.value.email = false
   errors.value.password = false
 
-  Swal.fire({
-    title: '測試帳號已填入',
-    text: '已自動填入測試用的電子郵件和密碼',
-    icon: 'info',
-    confirmButtonText: '確認'
-  })
+  // Swal.fire({
+  //   title: '測試帳號已填入',
+  //   text: '已自動填入測試用的電子郵件和密碼',
+  //   icon: 'info',
+  //   confirmButtonText: '確認'
+  // })
 }
 
 // 組件掛載時檢查 LINE 登入狀態
