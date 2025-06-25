@@ -21,20 +21,32 @@ export function useLinePay() {
      console.log('🔄 創建 LINE Pay 付款...', orderId)
 
      const token = localStorage.getItem('access_token')
-     if (!token) {
-       throw new Error('請先登入')
+     
+     const authMethod = token ? 'bearer' : 'cookie';
+     console.log('🔑 金流認證方式:', {
+       method: authMethod,
+       hasToken: !!token,
+       tokenLength: token?.length || 0
+     });
+
+     const config = {
+       headers: {
+         'Content-Type': 'application/json'
+       },
+       timeout: 15000,
+       withCredentials: true 
+     };
+
+     if (token) {
+       config.headers['Authorization'] = `Bearer ${token}`;
+     } else {
+       console.log('🍪 使用 Cookie 認證模式，確保 withCredentials: true');
      }
 
      const response = await axios.post(
         `${API_BASE_URL}/linepay/create`, 
         { orderId: String(orderId) }, 
-        {
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json'
-          },
-          timeout: 15000
-        }
+        config
       )
 
      if (response.data.success) {
@@ -69,9 +81,20 @@ export function useLinePay() {
      if (err.response) {
        const { status, data } = err.response
        
+       console.error('🔍 LINE Pay API 錯誤詳情:', {
+         status,
+         data,
+         authMethod: data?.authMethod,
+         suggestion: data?.suggestion
+       });
+       
        switch (status) {
          case 401:
-           errorMessage = '登入已過期，請重新登入'
+           if (data?.authMethod === 'cookie') {
+             errorMessage = 'LINE 登入已過期，請重新登入'
+           } else {
+             errorMessage = '登入已過期，請重新登入'
+           }
            localStorage.removeItem('access_token')
            localStorage.removeItem('user')
            break
