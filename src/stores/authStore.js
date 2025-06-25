@@ -1,20 +1,19 @@
 import { defineStore } from 'pinia';
 import { ref, computed } from 'vue';
 import Swal from 'sweetalert2';
-import { verifyAuth, resendVerification, emaillogin as emailLoginAPI, lineLogin as lineLoginAPI, emailSignup as emailSignupAPI, saveBarTags as saveBarTagsAPI } from '../api/auth';
+import { verifyAuth, resendVerification, emaillogin as emailLoginAPI, lineLogin as lineLoginAPI, emailSignup as emailSignupAPI, saveBarTags as saveBarTagsAPI, lineLogout as lineLogoutAPI, verifyEmail as verifyEmailAPI } from '../api/auth';
 
 export const useAuthStore = defineStore('auth', () => {
   const user = ref(null);
   const accessToken = ref(null);
   const refreshToken = ref(null);
+  const isLoading = ref(false);
   const isEmailLoading = ref(false);
-  const isEmailRegistering = ref(false);
   const isLineLoading = ref(false);
   const errorMessage = ref('');
 
   const currentUser = computed(() => user.value);
-  const isLoading = computed(() => isEmailLoading.value || isLineLoading.value || isEmailRegistering.value);
-
+  const isAnyLoading = computed(() => isLoading.value || isEmailLoading.value || isLineLoading.value);
   const isAuthenticated = computed(() => {
     // 有用戶資訊就算已認證（不管是 token 還是 cookie）
     return !!user.value;
@@ -37,7 +36,7 @@ export const useAuthStore = defineStore('auth', () => {
     errorMessage.value = '';
   }
 
-  // 清除認證狀態攔截器使用
+  // 清除認證狀態
   function clearAuthState() {
     user.value = null;
     accessToken.value = null;
@@ -53,7 +52,7 @@ export const useAuthStore = defineStore('auth', () => {
   function updateAuthUser(updatedData) {
     if (!user.value) return;
 
-    const fieldsToUpdate = ['username', 'nickname', 'birthday', 'avatar'];
+    const fieldsToUpdate = ['username', 'nickname', 'birthday', 'avatarUrl'];
 
     fieldsToUpdate.forEach(field => {
       if (updatedData[field] !== undefined) {
@@ -80,31 +79,6 @@ export const useAuthStore = defineStore('auth', () => {
       return false;
     }
   }
-
-  // 統一的錯誤處理
-  const handleError = (err, defaultTitle = '操作失敗') => {
-    console.error(defaultTitle + ':', err);
-
-    if (err.response) {
-      errorMessage.value = err.response.data.error || defaultTitle;
-
-      let title = defaultTitle;
-      if (err.response.status === 401) {
-        title = '帳號或密碼錯誤';
-        errorMessage.value = '請檢查您的電子郵件和密碼是否正確';
-      } else if (err.response.status === 500) {
-        title = '伺服器發生錯誤';
-      }
-
-      return { title, message: errorMessage.value };
-    } else if (err.request) {
-      errorMessage.value = '網路連線失敗，請檢查網路狀態';
-      return { title: '網路發生錯誤!', message: errorMessage.value };
-    } else {
-      errorMessage.value = '發生未知錯誤，請稍後再試';
-      return { title: '發生未知錯誤!', message: errorMessage.value };
-    }
-  };
 
   // 重新寄送驗證信
   async function handleResendVerification(email) {
@@ -179,6 +153,80 @@ export const useAuthStore = defineStore('auth', () => {
       return false;
     }
   }
+
+  async function verifyEmail(token) {
+  if (!token) {
+    return { success: false, error: '缺少驗證 token', type: 'validation' };
+  }
+
+  try {
+    await verifyEmailAPI(token);
+
+    await Swal.fire({
+      title: '驗證成功！',
+      html: `
+        <div class="text-center">
+          <p class="mb-3">您的信箱已成功驗證</p>
+          <div class="bg-green-50 p-3 rounded-lg text-sm">
+            <p class="text-green-700">
+              <i class="fas fa-check-circle mr-1"></i>
+              現在您可以正常登入並使用所有功能了
+            </p>
+          </div>
+        </div>
+      `,
+      icon: 'success',
+      confirmButtonText: '前往登入',
+      confirmButtonColor: '#860914',
+      width: '400px'
+    });
+
+    return { success: true, message: '信箱驗證成功', handled: true };
+
+  } catch (err) {
+    console.error('信箱驗證失敗:', err);
+    
+    let errorMessage = '驗證失敗';
+    let errorTitle = '驗證失敗';
+    let errorType = 'unknown';
+    
+    if (err.response?.data?.error) {
+      errorMessage = err.response.data.error;
+
+      if (errorMessage.includes('已過期')) {
+        errorTitle = '驗證連結已過期';
+        errorType = 'expired';
+      } else if (errorMessage.includes('已經驗證')) {
+        errorTitle = '信箱已驗證';
+        errorType = 'already_verified';
+        
+        await Swal.fire({
+          title: errorTitle,
+          text: '您的信箱已經驗證完成，可以直接登入',
+          icon: 'info',
+          confirmButtonText: '前往登入',
+          confirmButtonColor: '#860914'
+        });
+        
+        return { success: true, message: '信箱已經驗證完成', type: 'already_verified', handled: true };
+      } else if (errorMessage.includes('無效')) {
+        errorTitle = '無效的驗證連結';
+        errorType = 'invalid';
+      } else if (errorMessage.includes('缺少')) {
+        errorType = 'validation';
+      }
+    }
+
+    await Swal.fire({
+      title: errorTitle,
+      text: errorMessage,
+      icon: 'error',
+      confirmButtonText: '確認'
+    });
+
+    return { success: false, error: errorMessage, type: errorType, handled: true };
+  }
+}
 
   function init() {
     // 嘗試從 localStorage 恢復 Email 登入狀態
@@ -490,6 +538,42 @@ export const useAuthStore = defineStore('auth', () => {
     return null;
   }
 
+  async function lineLogout() {
+    clearError();
+    try {
+      console.log('開始 LINE 登出流程');
+
+      try {
+        await lineLogoutAPI();
+        console.log('後端登出成功');
+      } catch (err) {
+        console.warn('後端登出失敗，但仍會清除本地狀態:', err);
+      }
+
+      clearAuthState();
+      console.log('LINE 登出完成');
+
+      return { success: true };
+    } catch (err) {
+      console.error('LINE 登出過程發生錯誤:', err);
+      // 即使出錯也要清除本地狀態
+      clearAuthState();
+      return { 
+        success: true,
+        warning: '登出時發生錯誤，但本地狀態已清除' 
+      };
+    }
+  }
+
+  async function logout() {
+    if (loginMethod.value === 'line') {
+      return await lineLogout();
+    } else {
+      clearAuthState();
+      return { success: true };
+    }
+  }
+
   async function saveBarTags(preferences) {
     clearError();
     
@@ -526,7 +610,7 @@ export const useAuthStore = defineStore('auth', () => {
     isEmailLoading,
     isLineLoading,
     errorMessage,
-    isEmailRegistering,
+    isAnyLoading,
 
     // 計算屬性
     isAuthenticated,
@@ -545,6 +629,9 @@ export const useAuthStore = defineStore('auth', () => {
     updateAuthUser,
     checkAuthStatus,
     handleResendVerification,
-    saveBarTags
+    saveBarTags,
+    lineLogout,
+    logout,
+    verifyEmail
   };
 });

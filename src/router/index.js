@@ -13,9 +13,10 @@ import Cart from '@/views/cart/Cart.vue';
 import Payment from "@/views/cart/Payment.vue";
 import PaymentWaiting from '@/views/cart/PaymentWaiting.vue';
 import OrderSuccess from '@/views/cart/OrderSuccess.vue';
-import Login from "@/views/member/auth/Login.vue";
-import Register from "@/views/member/auth/Register.vue";
+import Login from '@/views/member/auth/Login.vue';
+import Register from '@/views/member/auth/Register.vue';
 import Preferences from '@/components/Preferences.vue';
+import EmailVerify from '@/views/member/auth/EmailVerify.vue';
 import NotFound from '../views/NotFound.vue';
 
 const routes = [
@@ -72,6 +73,7 @@ const routes = [
   { path: '/payment-waiting', name: 'PaymentWaiting', component: PaymentWaiting },
   { path: '/order-success/:orderNumber', name: 'OrderSuccess', component: OrderSuccess, props: true, meta: { requiresAuth: true } },
   { path: '/preferences', name: 'Preferences', component: Preferences, meta: { requiresAuth: true } },
+  { path: '/verify-email', name: 'EmailVerify', component: EmailVerify, meta: { requiresGuest: true } },
   { path: '/404', name: 'NotFound', component: NotFound },
   { 
     path: '/:pathMatch(.*)*', 
