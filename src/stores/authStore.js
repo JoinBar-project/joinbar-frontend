@@ -61,7 +61,7 @@ export const useAuthStore = defineStore('auth', () => {
   function updateAuthUser(updatedData) {
     if (!user.value) return;
 
-    const fieldsToUpdate = ['username', 'nickname', 'birthday', 'avatar'];
+    const fieldsToUpdate = ['username', 'nickname', 'birthday', 'avatarUrl'];
 
     fieldsToUpdate.forEach(field => {
       if (updatedData[field] !== undefined) {
