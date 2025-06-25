@@ -1,5 +1,5 @@
 <script setup>
-import { computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 
 const props = defineProps({
   user: {
@@ -9,10 +9,57 @@ const props = defineProps({
 })
 
 const hostUser = computed(() => props.user)
-
 const defaultAvatar = new URL('@/components/events/picture/大頭照.png', import.meta.url).href;
 
 
+const followHost = (hostId) => {
+  const raw = localStorage.getItem('followedHosts') || '[]'
+  const followed = JSON.parse(raw)
+  if (!followed.includes(hostId)) {
+    followed.push(hostId)
+    localStorage.setItem('followedHosts', JSON.stringify(followed))
+  }
+}
+
+const unfollowHost = (hostId) => {
+  const raw = localStorage.getItem('followedHosts') || '[]'
+  const followed = JSON.parse(raw)
+  const updated = followed.filter(id => id !== hostId)
+  localStorage.setItem('followedHosts', JSON.stringify(updated))
+}
+
+const isFollowing = (hostId) => {
+  const raw = localStorage.getItem('followedHosts') || '[]'
+  const followed = JSON.parse(raw)
+  return followed.includes(hostId)
+}
+
+const toggleFollow = ref(isFollowing(hostUser.value.id))
+
+const handleFollowClick = () => {
+  if (toggleFollow.value) {
+    unfollowHost(hostUser.value.id)
+  } else {
+    followHost(hostUser.value.id)
+  }
+  toggleFollow.value = !toggleFollow.value
+}
+
+
+const subtitle = ref('')
+
+const subtitles = [
+  '喜歡喝酒，不喜歡喝醉 🔥',
+  '今晚喝一杯，明天不後悔 🍻',
+  '來一杯，認識新朋友 👯‍♂️',
+  '喝的是酒，聊的是人生 🥂',
+  '今晚不醉不歸，但記得回家 😎'
+]
+
+onMounted(() => {
+  const index = Math.floor(Math.random() * subtitles.length)
+  subtitle.value = subtitles[index]
+})
 
 </script>
 
@@ -32,11 +79,13 @@ const defaultAvatar = new URL('@/components/events/picture/大頭照.png', impor
             <p class="hoster-name">{{ hostUser.username }}</p>
             <p class="account-number">{{ `@${hostUser.nickname}` }}</p>
           </div>
-          <button class="follow-btn">追 蹤</button>
+          <button @click="handleFollowClick" class="follow-btn">
+            {{ toggleFollow ? '已 追 蹤' : '追 蹤' }}
+          </button>
         </div>
         <div class="hoster-message">
           <div class="trigle"></div>
-          <p>喜歡喝酒，不喜歡喝醉🔥</p>
+          <p>{{ subtitle }}</p>
         </div>
         <div class="badge badge-card-1">
           <div>
