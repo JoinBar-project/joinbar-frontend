@@ -1,7 +1,7 @@
 <template>
   <div class="fixed bottom-6 right-6 z-50">
-    <button @click="toggleChat" class="bg-pink-500 text-white rounded-full w-14 h-14 shadow-lg hover:scale-110 transition">
-      🤖
+    <button @click="toggleChat" class="w-20 h-20 rounded-full shadow-lg hover:scale-110 transition overflow-hidden p-0 border-none bg-transparent">
+      <img src="/JoinBot.png" alt="JoinBot Icon" class="w-full h-full object-contain" />
     </button>
 
     <div v-if="visible" class="bg-white border p-4 rounded-xl shadow-lg w-80 mt-2">
