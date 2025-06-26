@@ -10,7 +10,7 @@ import MemberDashboard from '@/views/member/MemberDashboard.vue';
 import Reviews from '@/views/reviews/Reviews.vue';
 import Subscription from '@/views/sub/Subscription.vue';
 import Cart from '@/views/cart/Cart.vue';
-import Payment from "@/views/cart/Payment.vue";
+import Payment from '@/views/cart/Payment.vue';
 import PaymentWaiting from '@/views/cart/PaymentWaiting.vue';
 import OrderSuccess from '@/views/cart/OrderSuccess.vue';
 import Login from '@/views/member/auth/Login.vue';
@@ -31,7 +31,7 @@ const routes = [
   {
     path: '/member/:id',
     name: 'MemberDashboard',
-    // meta: { requiresAuth: true },
+    meta: { requiresAuth: true },
     component: MemberDashboard,
     children: [
       {
@@ -41,27 +41,32 @@ const routes = [
       },
       {
         path: 'profile/edit',
-        name: 'MemberProfileEdit',
+        name: 'ProfileEdit',
         component: () => import('@/views/member/profile/ProfileEdit.vue'),
       },
       {
-        path: 'event-records',
-        name: 'MemberEventRecords',
-        component: () => import('@/views/member/profile/EventRecords.vue'),
+        path: 'event-records/published',
+        name: 'PublishedEvents',
+        component: () => import('@/views/member/profile/PublishedEvents.vue'),
+      },
+      {
+        path: 'event-records/joined',
+        name: 'JoinedEvents',
+        component: () => import('@/views/member/profile/JoinedEvent.vue'),
       },
       {
         path: 'bar-favorites',
-        name: 'MemberBarFavorites',
+        name: 'BarFavorites',
         component: () => import('@/views/member/profile/BarFavorites.vue'),
       },
       {
-        path: 'membercard',
+        path: 'member-card',
         name: 'MemberCard',
         component: () => import('@/views/member/profile/MemberCard.vue'),
       },
       {
         path: 'order-records',
-        name: 'MemberOrderRecords',
+        name: 'OrderRecords',
         component: () => import('@/views/member/profile/OrderRecords.vue'),
       },
     ],
@@ -76,11 +81,11 @@ const routes = [
   { path: '/verify-email', name: 'EmailVerify', component: EmailVerify, meta: { requiresGuest: true } },
   // 404 路由放到最後，並且更精確
   { path: '/404', name: 'NotFound', component: NotFound },
-  { 
-    path: '/:pathMatch(.*)*', 
+  {
+    path: '/:pathMatch(.*)*',
     name: 'Catch-All',
     component: NotFound,
-  }
+  },
 ];
 
 const router = createRouter({
@@ -93,12 +98,12 @@ router.beforeEach((to, from, next) => {
     console.log('路由跳轉:', {
       from: from.path,
       to: to.path,
-      query: to.query
+      query: to.query,
     });
   }
 
   const authStore = useAuthStore();
-  
+
   const urlParams = new URLSearchParams(window.location.search);
   const isLineCallback = urlParams.get('success') || urlParams.get('error');
 
@@ -115,18 +120,15 @@ router.beforeEach((to, from, next) => {
   if (to.meta.requiresAuth && !authStore.isAuthenticated) {
     console.log('需要登入，重導向到登入頁');
     next('/login');
-  } 
-
-  else if (to.meta.requiresGuest && authStore.isAuthenticated) {
+  } else if (to.meta.requiresGuest && authStore.isAuthenticated) {
     console.log('已登入用戶，重導向到首頁');
     next('/home');
-  }
-  else {
+  } else {
     next();
   }
 });
 
-router.onError((error) => {
+router.onError(error => {
   console.error('❌ 路由錯誤:', error);
 });
 
