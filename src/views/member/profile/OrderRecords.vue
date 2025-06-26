@@ -62,8 +62,12 @@
               <h4>購買項目 ({{ order.items.length }})</h4>
               <div v-for="item in order.items" :key="item.id" class="item">
                 <div class="item-details">
-                  <span class="item-name">{{ item.eventName }}</span>
-                  <span v-if="item.barName" class="item-bar">📍 {{ item.barName }}</span>
+                  <span class="item-name">
+                    {{ getItemDisplayName(item) }}
+                  </span>
+                  <span v-if="getItemSubtitle(item)" class="item-bar">
+                    {{ getItemSubtitle(item) }}
+                  </span>
                 </div>
                 <span class="item-price">${{ formatAmount(item.price) }}</span>
               </div>
@@ -71,7 +75,10 @@
           </div>
 
           <div class="order-actions">
-            <button @click="viewOrder(order.id)" class="btn">
+            <button 
+              v-if="order.status === 'confirmed'"
+              @click="viewOrder(order.id)" 
+              class="btn">
               查看詳情
             </button>
             
@@ -172,11 +179,35 @@ const getStatusText = (status) => {
   return statusMap[status] || status
 }
 
-// 動態 class 也從 status-xxx 改為 order-status-label-xxx
 const getStatusClass = (status) => `order-status-label-${status}`
 
 const getPaymentText = (method) => {
   return method === 'linepay' ? 'LINE Pay' : '信用卡'
+}
+
+const getItemDisplayName = (item) => {
+  if (item.itemType === 2) {
+    return getSubscriptionName(item.subscriptionType) || '訂閱方案'
+  } else {
+    return item.eventName || '活動票券'
+  }
+}
+
+const getItemSubtitle = (item) => {
+  if (item.itemType === 2) {
+    return `📋 ${item.subscriptionType || '訂閱服務'}`
+  } else {
+    return item.barName ? `📍 ${item.barName}` : null
+  }
+}
+
+const getSubscriptionName = (subType) => {
+  const subNames = {
+    'vip': '尊爵黑卡',
+    'seasonal': '季訂方案', 
+    'monthly': '小資月卡'
+  }
+  return subNames[subType] || subType
 }
 
 const viewOrder = (orderId) => {
@@ -185,6 +216,24 @@ const viewOrder = (orderId) => {
     showToast('找不到訂單', 'error')
     return
   }
+  
+  if (order.items && order.items.length > 0) {
+    const hasSubscription = order.items.some(item => item.itemType === 2)
+    const hasEvent = order.items.some(item => item.itemType === 1)
+    
+    if (hasSubscription && !hasEvent) {
+      router.push({
+        path: '/payment-result',
+        query: { 
+          orderId: order.id,
+          orderNumber: order.orderNumber,
+          transactionId: order.transactionId || 'completed'
+        }
+      })
+      return
+    }
+  }
+  
   router.push({ 
     name: 'OrderSuccess', 
     params: { orderNumber: order.orderNumber },
@@ -226,7 +275,6 @@ onMounted(loadOrders)
   border-bottom: 1px solid #e9ecef;
 }
 
-/* 將 .status 相關的樣式全部重命名為 order-status-label */
 .order-status-label {
   padding: 4px 12px;
   border-radius: 15px;
@@ -242,8 +290,6 @@ onMounted(loadOrders)
 .order-status-label-refunded { background: #e2e3e5; color: #383d41; }
 .order-status-label-expired { background: #f5c6cb; color: #721c24; }
 
-
-/* 以下為不變的其他樣式 */
 .orders-header {
   display: flex;
   justify-content: space-between;
