@@ -72,8 +72,6 @@ async function reloadEventData() {
 
     if (updatedEvent) {
       localEvent.value = { ...updatedEvent };
-      console.log('🔥 取得的 event 資料:', updatedEvent); // ← 看有沒有 barName
-      console.log('🔥 localEvent.barName:', localEvent.value.barName); // ← 看是否成功寫入
     }
     if (updatedTags) {
       localTags.value = [...updatedTags];

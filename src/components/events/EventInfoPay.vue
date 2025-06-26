@@ -4,7 +4,7 @@ import { useCartStore } from '@/stores/cartStore';
 import { useRouter } from 'vue-router';
 import { useAuthStore } from '@/stores/authStore';
 import { ref, computed, onMounted } from 'vue';
-import axios from 'axios';
+import { getEventById } from '@/api/event';
 import EventHoster from './EventHoster.vue';
 import MessageBoard from './MessageBoard.vue';
 import ModalEdit from '@/components/events/ModalEdit.vue';
@@ -12,8 +12,9 @@ import ModalEdit from '@/components/events/ModalEdit.vue';
 const props = defineProps({
   event: Object,
   tags: Array,
-  userId: {
-    type: Number,
+  eventId: String,
+  user: {
+    type: Object,
     required: true,
   }
 });
@@ -35,7 +36,6 @@ const isOwner = computed(() => {
 const {
   isJoin,
   joinedNum,
-  toggleJoin,
   isOver24hr,
   showModal,
   formattedEventTime,
@@ -46,19 +46,9 @@ const {
 
 const reloadEventData = async () => {
   try {
-    const token = localStorage.getItem('access_token');
-    const res = await axios.get(`/api/event/${eventRef.value.id}`, {
-      headers: token ? { Authorization: `Bearer ${token}` } : {},
-    });
-
-    if (res.data?.event) {
-      eventRef.value = { ...res.data.event };
-    }
-
-    if (res.data?.tags) {
-      tagList.value = [...res.data.tags];
-    }
-
+    const { event, tags } = await getEventById(eventRef.value.id);
+    if (event) eventRef.value = { ...event };
+    if (tags) tagList.value = [...tags];
     emit('update', { event: eventRef.value, tags: tagList.value });
   } catch (error) {
     console.error('活動資料更新失敗', error);
@@ -79,8 +69,8 @@ const addToCart = async () => {
       imageUrl: e.imageUrl,
       barName: e.barName,
       location: e.location,
-      startDate: e.startDate,
-      endDate: e.endDate,
+      starAt: e.startAt,
+      endAt: e.endAt,
       maxPeople: e.maxPeople,
       hostUser: e.hostUser,
     });
@@ -197,7 +187,7 @@ onMounted(() => {
       </div>
     </div>
   </div>
-  <EventHoster />
+  <EventHoster :user="eventRef.hostUser" />
   <MessageBoard v-if="isJoin" />
 </template>
 

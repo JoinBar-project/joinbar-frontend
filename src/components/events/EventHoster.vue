@@ -67,10 +67,9 @@ const subscriptions = ref([])
 onMounted(async () => {
   try {
     const data = await getUserSubscriptionHistory(hostUser.value.id)
-    console.log('主辦人訂閱紀錄:', data)  // ⬅️ 確認這裡有 ['monthly', 'seasonal', 'vip'] 之類
     subscriptions.value = data
   } catch (err) {
-    console.warn('🚫 無法取得主辦人訂閱記錄')
+    console.warn('無法取得主辦人訂閱記錄')
   }
 })
 
@@ -109,8 +108,12 @@ const showBadges = computed(() => {
           </div>
           <button 
             @click="handleFollowClick" 
-            class="bg-[var(--color-secondary-green)] p-[10px] max-w-[175px] w-[175px] border-0 
-            rounded-[30px] text-[20px] font-bold cursor-pointer mt-[20px] hover:bg-[var(--color-primary-orange)] text-white"
+            :class="[
+              'p-[10px] max-w-[175px] w-[175px] border-0 rounded-[30px] text-[20px] font-bold cursor-pointer text-white transition-colors duration-200',
+              toggleFollow 
+                ? 'bg-[var(--color-primary-orange)]'
+                : 'bg-[var(--color-secondary-green)] hover:bg-[var(--color-primary-orange)]'
+            ]"
           >
             {{ toggleFollow ? '已 追 蹤' : '追 蹤' }}
           </button>
@@ -126,7 +129,7 @@ const showBadges = computed(() => {
             :key="badge.key"
             class="text-center w-[80px] h-[80px]"
           >
-            <img class="badge-img" :src="badge.image" :alt="badge.name">
+            <img class="w-full aspect-square object-cover" :src="badge.image" :alt="badge.name">
             <p class="pt-[10px] text-base text-center">{{ badge.name }}</p>
           </div>
         </div>
@@ -146,11 +149,4 @@ const showBadges = computed(() => {
   clip-path: polygon(100% 0, 0 50%, 100% 100%);
   background-color: #fff;
 }
-
-.badge-img{
-  width: 100%;
-  aspect-ratio: 1 / 1; 
-  object-fit: cover; 
-}
-
 </style>
