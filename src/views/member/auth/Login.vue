@@ -299,12 +299,12 @@ const useTestAccount = () => {
   errors.value.email = false
   errors.value.password = false
 
-  Swal.fire({
-    title: '測試帳號已填入',
-    text: '已自動填入測試用的電子郵件和密碼',
-    icon: 'info',
-    confirmButtonText: '確認'
-  })
+  // Swal.fire({
+  //   title: '測試帳號已填入',
+  //   text: '已自動填入測試用的電子郵件和密碼',
+  //   icon: 'info',
+  //   confirmButtonText: '確認'
+  // })
 }
 
 // 組件掛載時檢查 LINE 登入狀態
