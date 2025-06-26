@@ -74,7 +74,6 @@ const routes = [
   { path: '/order-success/:orderNumber', name: 'OrderSuccess', component: OrderSuccess, props: true, meta: { requiresAuth: true } },
   { path: '/preferences', name: 'Preferences', component: Preferences, meta: { requiresAuth: true } },
   { path: '/verify-email', name: 'EmailVerify', component: EmailVerify, meta: { requiresGuest: true } },
-  // 404 路由放到最後，並且更精確
   { path: '/404', name: 'NotFound', component: NotFound },
   { 
     path: '/:pathMatch(.*)*', 
