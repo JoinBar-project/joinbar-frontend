@@ -26,8 +26,8 @@ const menuItems = [
     label: '揪團活動紀錄',
     icon: 'fa-calendar',
     children: [
-      { name: 'published', label: '發布紀錄', icon: 'fa-bullhorn', to: { name: 'PublishedEvents', params: { id: userId.value } } },
-      { name: 'joined', label: '參加紀錄', icon: 'fa-calendar-check', to: { name: 'JoinedEvents', params: { id: userId.value } } }
+      { name: 'published', label: '我發布的活動', icon: 'fa-bullhorn', to: { name: 'PublishedEvents', params: { id: userId.value } } },
+      { name: 'joined', label: '我參加的活動', icon: 'fa-calendar-check', to: { name: 'JoinedEvents', params: { id: userId.value } } }
     ]
   },
   { name: 'bar', label: '我的酒吧收藏', icon: 'fa-beer-mug-empty', to: barLink },
