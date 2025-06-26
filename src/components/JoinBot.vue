@@ -20,8 +20,7 @@
 
       <h3 class="font-bold text-lg mb-2">你的 JoinBot 智慧酒吧推薦小幫手</h3>
       
-      <div class="text-sm whitespace-pre-wrap mb-2" v-if="response">
-        {{ response }}
+      <div class="text-sm whitespace-pre-wrap mb-2" v-if="response" v-html="response">
       </div>
       <input
         @input="clearInputError"
@@ -75,17 +74,6 @@ function clearInputError() {
   }
 }
 
-// 舊版：直接請 AI 推薦（不帶使用者輸入）
-// async function askForBars() {
-//   response.value = '正在查詢推薦中...'
-//   try {
-//     const res = await axios.get('/api/barAi/recommend')
-//     response.value = res.data.result
-//   } catch (err) {
-//     response.value = '取得推薦失敗，請稍後再試 🥲'
-//   }
-// }
-
 async function askJoinBot() {
   if (!userMessage.value.trim()) {
     inputError.value = true
@@ -93,7 +81,7 @@ async function askJoinBot() {
     return
   }
 
-  response.value = '思考中...'
+  response.value = '我來想想唷...'
   try {
     const res = await axios.post('/api/barAi/recommendAI', {
       message: userMessage.value
@@ -128,6 +116,17 @@ onMounted(() => {
 
 .animate-pop-in {
   animation: pop-in 0.4s ease-out forwards;
+}
+
+:deep(a) {
+  color: #2563eb;
+  text-decoration: underline;
+  font-weight: 500;
+}
+
+:deep(a:hover) {
+  color: #1d4ed8;
+  text-decoration: none;
 }
 
 </style>
