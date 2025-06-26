@@ -1,5 +1,7 @@
 <script setup>
 import { ref, computed } from 'vue';
+import { Listbox, ListboxButton, ListboxOptions, ListboxOption } from '@headlessui/vue';
+import { CheckIcon, ChevronUpDownIcon } from '@heroicons/vue/20/solid';
 
 const publishedEvents = ref([
   {
@@ -88,22 +90,83 @@ const filteredEvents = computed(() => {
   <section class="w-full max-w-4xl mx-auto">
     <h2 class="mb-4 text-2xl font-semibold text-[var(--color-primary-orange)]">我發布的活動</h2>
     <div class="flex flex-wrap items-center gap-4 mb-6 text-sm">
-      <label>
-        <span class="text-[var(--color-secondary-green)] font-bold">活動狀態： </span>
-        <select v-model="statusFilter" class="w-40 px-3 py-1.5 border border-gray-200 rounded bg-white shadow-sm focus:outline-none">
-          <option value="全部">全部</option>
-          <option value="進行中">進行中</option>
-          <option value="已結束">已結束</option>
-        </select>
-      </label>
+      <div class="flex items-center gap-2 text-sm w-fit">
+        <span class="text-[var(--color-secondary-green)] font-bold">活動狀態：</span>
+        <Listbox v-model="statusFilter">
+          <div class="relative">
+            <ListboxButton
+              class="relative w-35 cursor-default rounded border border-gray-200 bg-white py-1.5 pl-3 pr-10 text-left shadow-sm focus:outline-none">
+              <span class="block truncate">{{ statusFilter }}</span>
+              <span class="absolute inset-y-0 right-0 flex items-center pr-2 pointer-events-none">
+                <ChevronUpDownIcon class="w-4 h-4 text-gray-400" />
+              </span>
+            </ListboxButton>
 
-      <label>
-        <span class="text-[var(--color-secondary-green)] font-bold">時間排序： </span>
-        <select v-model="sortOrder" class="w-40 px-3 py-1.5 border border-gray-200 rounded bg-white shadow-sm focus:outline-none">
-          <option value="desc">新 → 舊</option>
-          <option value="asc">舊 → 新</option>
-        </select>
-      </label>
+            <ListboxOptions
+              class="absolute z-10 w-full py-1 mt-1 overflow-auto text-sm bg-white rounded-md shadow-lg max-h-60 ring-1 ring-black/10 focus:outline-none">
+              <ListboxOption v-for="option in ['全部', '進行中', '已結束']" :key="option" :value="option" as="template" v-slot="{ selected, active }">
+                <li
+                  class="relative py-2 pl-10 pr-4 cursor-default select-none"
+                  :class="{
+                    'bg-[var(--color-primary-orange)] text-white': active,
+                    'text-gray-900': !active
+                  }">
+                  <span :class="{ 'font-semibold': selected, 'font-normal': !selected }">
+                    {{ option }}
+                  </span>
+                  <span v-if="selected" class="absolute inset-y-0 left-0 flex items-center pl-3 text-white">
+                     <i class="w-4 h-4 fa-solid fa-check"></i>
+                  </span>
+                </li>
+              </ListboxOption>
+            </ListboxOptions>
+          </div>
+        </Listbox>
+      </div>
+
+      <div class="flex items-center gap-2 text-sm w-fit">
+        <span class="text-[var(--color-secondary-green)] font-bold">時間排序：</span>
+        <Listbox v-model="sortOrder">
+          <div class="relative">
+            <ListboxButton
+              class="relative w-35 cursor-default rounded border border-gray-200 bg-white py-1.5 pl-3 pr-10 text-left shadow-sm focus:outline-none">
+              <span class="block truncate">
+                {{ sortOrder === 'desc' ? '新 → 舊' : '舊 → 新' }}
+              </span>
+              <span class="absolute inset-y-0 right-0 flex items-center pr-2 pointer-events-none">
+                <ChevronUpDownIcon class="w-4 h-4 text-gray-400" />
+              </span>
+            </ListboxButton>
+
+            <ListboxOptions
+              class="absolute z-10 w-full py-1 mt-1 overflow-auto text-sm bg-white rounded-md shadow-lg max-h-60 ring-1 ring-black/10 focus:outline-none">
+              <ListboxOption
+                v-for="option in [
+                  { value: 'desc', label: '新 → 舊' },
+                  { value: 'asc', label: '舊 → 新' }
+                ]"
+                :key="option.value"
+                :value="option.value"
+                as="template"
+                v-slot="{ selected, active }">
+                <li
+                  class="relative py-2 pl-10 pr-4 cursor-default select-none"
+                  :class="{
+                    'bg-[var(--color-primary-orange)] text-white': active,
+                    'text-gray-900': !active
+                  }">
+                  <span :class="{ 'font-semibold': selected, 'font-normal': !selected }">
+                    {{ option.label }}
+                  </span>
+                  <span v-if="selected" class="absolute inset-y-0 left-0 flex items-center pl-3 text-white">
+                    <i class="w-4 h-4 fa-solid fa-check"></i>
+                  </span>
+                </li>
+              </ListboxOption>
+            </ListboxOptions>
+          </div>
+        </Listbox>
+      </div>
     </div>
 
     <div v-if="publishedEvents.length === 0" class="text-gray-500">尚未發布任何活動。</div>
@@ -126,9 +189,7 @@ const filteredEvents = computed(() => {
             <h3 class="text-lg font-bold">{{ event.title }}</h3>
             <span
               class="px-3 py-1 text-sm rounded-full"
-              :class="event.status === '進行中' 
-              ? 'bg-green-200 text-green-800' 
-              : 'bg-gray-300 text-gray-600'">
+              :class="event.status === '進行中' ? 'bg-green-200 text-green-800' : 'bg-gray-300 text-gray-600'">
               {{ event.status }}
             </span>
           </div>
