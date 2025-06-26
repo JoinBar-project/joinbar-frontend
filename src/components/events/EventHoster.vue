@@ -62,38 +62,26 @@ onMounted(() => {
   subtitle.value = subtitles[index]
 })
 
-onMounted( async() => {
-  try{
-    const sub = await getUserSubscriptionHistory(hostUser.value.id)
-    console.log('該主辦人的訂閱記錄:', subs)
+const subscriptions = ref([])
 
-    const hasMonthly = subs.some(sub => sub.subType == 'monthly')
-    const hasSeasonal  = subs.some(sub => sub.subType == 'seasonal')
-    const hasVip  = subs.some(sub => sub.subType == 'vip')
-
-  }catch (err){
-    console.warn('取得主辦人訂閱歷史失敗')
+onMounted(async () => {
+  try {
+    const data = await getUserSubscriptionHistory(hostUser.value.id)
+    console.log('主辦人訂閱紀錄:', data)  // ⬅️ 確認這裡有 ['monthly', 'seasonal', 'vip'] 之類
+    subscriptions.value = data
+  } catch (err) {
+    console.warn('🚫 無法取得主辦人訂閱記錄')
   }
 })
 
 const showBadges = computed(() => {
-  const badgeList = []
+  const userSubTypes = subscriptions.value.map(sub => sub.subType)
+  const badgeKeys = ['newbie']
+  if (userSubTypes.includes('monthly')) badgeKeys.push('monthly')
+  if (userSubTypes.includes('seasonal')) badgeKeys.push('seasonal')
+  if (userSubTypes.includes('vip')) badgeKeys.push('vip')
 
-  badgeList.push(allBadges.find(b => b.subType === 'newbie'))
-
-  if (subscriptions.value.some(sub => sub.subType === 'monthly')) {
-    badgeList.push(allBadges.find(b => b.subType === 'monthly'))
-  }
-
-  if (subscriptions.value.some(sub => sub.subType === 'seasonal')) {
-    badgeList.push(allBadges.find(b => b.subType === 'seasonal'))
-  }
-
-  if (subscriptions.value.some(sub => sub.subType === 'vip')) {
-    badgeList.push(allBadges.find(b => b.subType === 'vip'))
-  }
-
-  return badgeList
+  return allBadges.filter(b => badgeKeys.includes(b.key))
 })
 
 </script>
@@ -115,10 +103,15 @@ const showBadges = computed(() => {
         </div>
         <div class="flex flex-col col-start-3 col-span-2 row-start-2 row-span-2 items-center text-center mt-[25px]">
           <div class="items-center">
-            <p class="leading-[1.8] w-full m-0 text-[30px] max-w-[175px] overflow-hidden truncate whitespace-nowrap">{{ hostUser.username }}</p>
-            <p class="leading-[1.8] w-full m-0 text-[18px] pb-[40px]">{{ `@ ${hostUser.nickname}` }}</p>
+            <p class="leading-[1.8] w-full m-0 text-[30px] max-w-[175px] overflow-hidden truncate whitespace-nowrap">
+              {{ hostUser.username }}</p>
+            <p class="leading-[1.8] w-full m-0 text-[18px] pb-[20px]">{{ `@ ${hostUser.nickname}` }}</p>
           </div>
-          <button @click="handleFollowClick" class="bg-[var(--color-secondary-green)] p-[10px] max-w-[175px] w-[175px] border-0 rounded-[30px] text-[20px] font-bold cursor-pointer mt-[40px] hover:bg-[var(--color-primary-orange)] text-white">
+          <button 
+            @click="handleFollowClick" 
+            class="bg-[var(--color-secondary-green)] p-[10px] max-w-[175px] w-[175px] border-0 
+            rounded-[30px] text-[20px] font-bold cursor-pointer mt-[20px] hover:bg-[var(--color-primary-orange)] text-white"
+          >
             {{ toggleFollow ? '已 追 蹤' : '追 蹤' }}
           </button>
         </div>
@@ -126,14 +119,18 @@ const showBadges = computed(() => {
           <div class="trigle"></div>
           <p class="bg-white rounded-[10px] p-[10px] w-full text-[20px]">{{ subtitle }}</p>
         </div>
-        <template v-for="(badge, index) in showBadges" :key="badge.subType">
-          <div :class="`block text-center w-[80px] h-[80px] col-start-${6 + index} col-span-1 row-start-3`">
-            <div>
-              <img class="badge-img" :src="badge.image" :alt="badge.title">
-            </div>
-            <p class="pt-[30px]">{{ badge.title }}</p>
+
+        <div class="col-start-6 col-span-4 row-start-3 grid grid-cols-4 gap-2 items-center justify-items-center">
+          <div
+            v-for="badge in showBadges"
+            :key="badge.key"
+            class="text-center w-[80px] h-[80px]"
+          >
+            <img class="badge-img" :src="badge.image" :alt="badge.name">
+            <p class="pt-[10px] text-base text-center">{{ badge.name }}</p>
           </div>
-        </template>
+        </div>
+        
       </div>      
     </div>
   </div>
@@ -142,130 +139,6 @@ const showBadges = computed(() => {
 
 <style scoped>
 
-/* .event-hoster-section{
-  max-width: 100vw;
-  padding-top: 2%;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-} */
-
-/* .event-hoster-card{
-  max-width: 1200px;
-  min-width: 1000px;
-  width: 100%;
-  background-color: #f1f1f1;
-  padding-bottom: 40px;
-  margin: 0 auto;
-  border-radius: 20px;
-} */
-
-/* .event-main-content{
-  max-width: 1036px;
-  width: 100%;
-  margin: 0 auto;
-  display: grid;
-  grid-template-columns: repeat(9, 1fr);
-  gap: 20px;
-
-} */
-
-/* .event-initiator{
-  padding: 10px 40px 10px 40px;
-  font-size: 20px;
-  margin: 0;
-  text-align: center;
-  background-color: var(--color-primary-orange);
-  color: white;
-  border-radius: 0 0px 20px 20px;
-  grid-column: 1 / span 2; grid-row: 1;
-} */
-
-/* .headshot{
-  grid-column: 1 / span 2;
-  grid-row: 2 / span 2;
-  display: flex;
-  align-items: center;
-} */
-
-/* .headshot img{
-  width: 100%;
-  background-color: #d4cbb1;
-  aspect-ratio: 1 / 1;
-  border-radius: 100%;
-  object-fit: cover;
-} */
-
-/* .hoster-info{
-  display: flex;
-  flex-direction: column;
-  grid-column: 3/ span 2;
-  grid-row: 2 / span 2;
-  align-items: center;
-  text-align: center;
-  justify-content: top;
-  margin-top: 25px;
-} */
-
-/* .hoster-account{
-  align-items: center;
-} */
-
-/* .hoster-name,
-.account-number{
-  line-height: 1.8;
-  width: 100%;
-  margin: 0;
-} */
-
-/* .hoster-name{
-  font-size: 30px;
-  max-width: 175px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-} */
-
-/* .account-number{
-  font-size: 18px;
-  padding-bottom: 40px;
-} */
-
-/* .follow-btn{
-  background-color: var(--color-secondary-green);
-  padding: 10px;
-  max-width: 175px;
-  width: 175px;
-  border: 0 solid;
-  border-radius: 30px;
-  font-size: 20px;
-  font-weight: bold;  
-  cursor: pointer;
-  margin-top: 40px;
-} */
-
-/* .follow-btn:hover{
-  background-color: var(--color-primary-orange);
-  color: white;
-} */
-
-/* .hoster-message{
-  grid-column: 6 / span 4; grid-row: 2;
-  max-width: 451px;
-  width: 100%;
-  display: flex;
-  align-items: center;
-  text-align: center;
-  margin-top: 10px;
-} */
-
-/* .hoster-message>p{
-  background-color: #fff;
-  border-radius: 10px;
-  padding: 10px;
-  width: 100%;
-  font-size: 18px;
-} */
 
 .trigle{
   width: 14px;
@@ -273,34 +146,6 @@ const showBadges = computed(() => {
   clip-path: polygon(100% 0, 0 50%, 100% 100%);
   background-color: #fff;
 }
-
-/* .badge{
-  display: block;
-  text-align: center;
-  width: 80px;
-  height: 80px;
-} */
-
-/* .badge-title{
-  padding-top: 50px;
-} */
-
-/* .badge-card-1{
-  grid-column: 6 / span 1; grid-row: 3;
-  align-items: center;
-}
-
-.badge-card-2{
-  grid-column: 7 / span 1; grid-row: 3;
-}
-
-.badge-card-3{
-  grid-column: 8 / span 1; grid-row: 3;
-}
-
-.badge-card-4{
-  grid-column: 9 / span 1; grid-row: 3;
-} */
 
 .badge-img{
   width: 100%;
