@@ -12,7 +12,13 @@ export const emaillogin = (email, password) => apiClient.post('/auth/login', { e
 // 取得 LINE 登入授權 URL
 export const lineLogin = () => apiClient.get('/auth/line/url');
 
+// LINE 登出 - 新增
+export const lineLogout = () => apiClient.post('/auth/line/logout');
+
 export const emailSignup = (userData) => apiClient.post('/auth/signup', userData);
+
+// 信箱驗證
+export const verifyEmail = (token) => apiClient.get(`/auth/verify-email?token=${token}`);
 
 // 儲存酒吧偏好設定
 export const saveBarTags = (userId, preferencesData) => apiClient.post(`/barTags/user/${userId}`, preferencesData);
