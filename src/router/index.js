@@ -79,7 +79,13 @@ const routes = [
     path: '/:pathMatch(.*)*', 
     name: 'Catch-All',
     component: NotFound,
-  }
+  },
+  { 
+    path: '/payment-result', 
+    name: 'PaymentResult', 
+    component: () => import('@/components/sub/PaymentResultModal.vue'),
+    meta: { requiresAuth: true }
+  },
 ];
 
 const router = createRouter({

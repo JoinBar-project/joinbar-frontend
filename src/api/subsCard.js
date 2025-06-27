@@ -1,4 +1,5 @@
 import apiClient from '@/api/axios';
+import dayjs from '@/utils/dayjs'
 
 const getAllSubPlans  = async() => {
   try {
@@ -10,22 +11,6 @@ const getAllSubPlans  = async() => {
     throw err;
   }
 }
-
-// const cancelPendingOrdersIfAny = async () => {
-//   try {
-//     const { data } = await apiClient.get('/orders/history')
-//     const pendingOrder = data.orders.find(order => order.status === 'pending')
-
-//     if (pendingOrder) {
-//       await apiClient.post(`/orders/${pendingOrder.id}/cancel`, {
-//         reason: '自動取消未付款訂單'
-//       })
-//       console.log(`✅ 已自動取消訂單 ${pendingOrder.id}`)
-//     }
-//   } catch (err) {
-//     console.warn('取消訂單失敗（可忽略）', err)
-//   }
-// }
 
 const createSubscriptionOrder = async (subscriptionType) => {
   try {
@@ -40,7 +25,7 @@ const createSubscriptionOrder = async (subscriptionType) => {
       ],
       paymentMethod: 'LINE_PAY'
     });
-    console.log('🔍 建立訂單回傳結果:', response.data)
+    console.log('建立訂單回傳結果:', response.data)
 
     return response.data.order;
 
@@ -56,7 +41,7 @@ const getSubOrderDetails  = async (orderId) => {
     const res = await apiClient.get(`/orders/${orderId}/details`);
     return res.data;
   } catch (err) {
-    console.error('❌ 取得訂單詳情失敗:', err);
+    console.error('取得訂單詳情失敗:', err);
     throw err;
   }
 };
@@ -99,10 +84,23 @@ const confirmLinePayment = async (transactionId, orderId) => {
     throw err;
   }
 };
+
+const checkSubscriptionStatus = async () => {
+  try {
+    const res = await apiClient.get('/sub/plan')
+    const now = dayjs()
+
+    const validSubs = res.data.subscriptions?.filter(sub =>
+      sub.status === 1 && dayjs(sub.endAt).isAfter(now)
+    )
+
+    return validSubs ?? []
+  } catch (err) {
+    if (err.response?.status === 404) return null
+    console.error('取得訂閱狀態失敗:', err)
+    return null
+  }
+}
   
-
-
-
-
-export { getAllSubPlans, createSubscriptionOrder, getSubOrderDetails , createLinePayment, confirmLinePayment };
+export { getAllSubPlans, createSubscriptionOrder, getSubOrderDetails , createLinePayment, confirmLinePayment, checkSubscriptionStatus };
 

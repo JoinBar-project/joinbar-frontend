@@ -1,14 +1,14 @@
 <script setup>
 import { ref, onMounted, onUnmounted } from 'vue'
-import { getAllSubPlans, createSubscriptionOrder, createLinePayment } from '@/api/subsCard'
+import { getAllSubPlans, createSubscriptionOrder, createLinePayment, checkSubscriptionStatus } from '@/api/subsCard'
 
 const spotlight = ref(null)
 const cardData = ref([])
+const activeSubTypes = ref([])
 
 const handleSubscribe = async (subscriptionType) => {
   try {
     const order = await createSubscriptionOrder(subscriptionType)
-    console.log('🧾 建立訂單結果 order:', order)
 
     if (!order?.orderId) throw new Error('訂單建立失敗')
 
@@ -21,25 +21,27 @@ const handleSubscribe = async (subscriptionType) => {
     localStorage.setItem('orderId', order.orderId)
     localStorage.setItem('subType', subscriptionType)
 
-    console.log('🔗 付款網址:', paymentUrl)
-    console.log('🧾 傳送的訂單 ID:', order.orderId)
-    console.log('📦 儲存 localStorage:', {
-      transactionId,
-      expireTime,
-      orderId: order.id,
-      subType: subscriptionType
-    })
-
-    // ✅ 確保儲存完成再導向
     setTimeout(() => {
       window.location.href = paymentUrl
-    }, 8000)
+    }, 1000)
 
-    console.log('🔗 LINE Pay URL:', paymentUrl)
   } catch (err) {
-    console.error('訂閱流程發生錯誤', err)
-    alert('訂閱流程發生錯誤，請稍後再試一次')
+    console.error('重複訂閱 或 未完成訂閱付款', err)
+    alert('您重複訂閱 或 未完成訂閱付款')
   }
+}
+
+onMounted(async () => {
+  try {
+    const currentSubs = await checkSubscriptionStatus()
+    activeSubTypes.value = currentSubs.map(sub => sub.subType)
+  } catch (err) {
+    console.warn('訂閱狀態讀取失敗')
+  }
+})
+
+const isSubscribed = (type) => {
+  return activeSubTypes.value.includes(type)
 }
 
 const handleMouseMove = (e) => {
@@ -70,7 +72,7 @@ onUnmounted(() => {
     <div 
       ref="spotlight"
       class="pointer-events-none fixed top-0 left-0 w-32 h-32 rounded-full
-             bg-yellow-400 opacity-40 blur-3xl z-50 transition-transform duration-75 mix-blend-screen">
+             bg-yellow-400 opacity-50 blur-3xl z-50 transition-transform duration-75 mix-blend-screen">
     </div>
 
     <div class="bg-[url('@/assets/sub/bar-background2.jpg')] py-20 w-full relative bg-cover bg-[center_88%] opacity-92">
@@ -103,13 +105,18 @@ onUnmounted(() => {
             </div>
             <button
               @click="handleSubscribe(card.type)"
+              :disabled="isSubscribed(card.type)"
               type="button"
-              class="mt-20 mb-10 px-6 py-2 text-lg
-                     text-stone-50 border-2 border-[var(--color-primary-orange)]
-                     rounded-[12px] bg-neutral-900 block mx-auto cursor-pointer
-                     hover:bg-[var(--color-primary-orange)]">
-              即刻擁有
+              :class="[
+                'mt-20 mb-10 px-6 py-2 text-lg rounded-[12px] block mx-auto transition',
+                isSubscribed(card.type)
+                  ? 'disabled:bg-[var(--color-primary-orange)] text-white text-2xl'
+                  : 'text-stone-50 border-2 border-[var(--color-primary-orange)] bg-neutral-900 hover:bg-[var(--color-primary-orange)]'
+              ]"
+            >
+              {{ isSubscribed(card.type) ? '已訂閱' : '即刻擁有' }}
             </button>
+          
           </div>
         </div>
       </div>

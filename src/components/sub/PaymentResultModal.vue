@@ -1,66 +1,89 @@
 <script setup>
 import { ref, onMounted } from 'vue'
-import { useRoute } from 'vue-router'
-import { confirmLinePayment } from '@/api/linepay'
-import apiClient from '@/api/axios'
+import { useRoute, useRouter } from 'vue-router'
+import ResultDialog from '@/components/common/BaseConfirmModal.vue'
 
 const route = useRoute()
+const router = useRouter()
 
+const dialogVisible = ref(false)
 const statusMessage = ref('')
 const detailMessage = ref('')
 const isSuccess = ref(false)
 
-onMounted(async () => {
-  console.log('🎯 回來時 token:', localStorage.getItem('access_token'))
+onMounted( () => {
   
-  const transactionId = route.query.transactionId || localStorage.getItem('transactionId')
-  const orderId = route.query.orderId || localStorage.getItem('orderId')
-  const subType = localStorage.getItem('subType')
+  const orderId = route.query.orderId
+  const orderNumber = route.query.orderNumber
+  const transactionId = route.query.transactionId
+  
+  let subType = localStorage.getItem('subType')
+  if (!subType) {
+    const pendingOrder = sessionStorage.getItem('pendingOrder')
+    if (pendingOrder) {
+      try {
+        const orderData = JSON.parse(pendingOrder)
+        subType = orderData.subscriptionType
+      } catch (err) {
+        console.warn('sessionStorage 數據解析失敗:', err)
+      }
+    }
+  }
 
-  try {
-    if (!transactionId || !orderId) throw new Error('付款失敗')
+  console.log('獲取到的參數:', { orderId, orderNumber, transactionId, subType })
 
-    await confirmLinePayment(transactionId, orderId)
-    await apiClient.post('/sub', { subType })
-
+  if (orderId && orderNumber && transactionId) {
     statusMessage.value = '付款成功'
     detailMessage.value = '訂閱已啟用，歡迎成為酒友卡會員！'
     isSuccess.value = true
-  } catch (err) {
-    const message = err?.response?.data?.message || err?.message || ''
-    if (message.includes('訂閱')) {
-      statusMessage.value = '付款成功，但訂閱建立失敗'
-      detailMessage.value = '請聯繫客服'
-    } else if (message.includes('付款')) {
-      statusMessage.value = '付款失敗'
-      detailMessage.value = '請確認付款狀況或稍後再試'
-    } else {
-      statusMessage.value = '操作失敗'
-      detailMessage.value = '請稍後再試一次'
-    }
+    
+    console.log('設定成功狀態')
+  } else {
+    console.error('缺少必要參數:', { orderId, orderNumber, transactionId })
+    statusMessage.value = '付款失敗'
+    detailMessage.value = '缺少必要參數，請聯繫客服'
     isSuccess.value = false
-  } finally {
+  }
+  
+  if (route.query.orderId || route.query.transactionId) {
+    router.replace({ query: {} });
+  }
+
+  try {
     localStorage.removeItem('transactionId')
     localStorage.removeItem('expireTime')
     localStorage.removeItem('orderId')
     localStorage.removeItem('subType')
+    sessionStorage.removeItem('pendingOrder')
+    
+  } catch (err) {
+    console.warn('清理暫存資料失敗:', err)
   }
+
+  dialogVisible.value = true
+  
 })
+
+function handleConfirm() {
+  if (isSuccess.value) {
+    router.push('/member/card')
+  } else {
+    router.push('/subs')
+  }
+}
+
+function handleCancel() {
+  handleConfirm()
+}
 </script>
 
 <template>
-  <div class="flex flex-col items-center justify-center min-h-screen bg-gray-50 px-6">
-    <div class="bg-white p-8 rounded-xl shadow-md text-center max-w-md w-full">
-      <h2 class="text-3xl font-bold text-gray-800 mb-4">{{ statusMessage }}</h2>
-      <p class="text-gray-600 text-lg">{{ detailMessage }}</p>
-
-      <router-link v-if="isSuccess" to="/member/card" class="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 transition">
-        查看優惠券
-      </router-link>
-
-      <router-link v-else to="/subs" class="px-4 py-2 bg-gray-600 text-white rounded hover:bg-gray-700 transition">
-        返回訂閱頁
-      </router-link>
-    </div>
-  </div>
+  <ResultDialog
+    :visible="dialogVisible"
+    :title="statusMessage"
+    :message="detailMessage"
+    confirm-text="前往"
+    @confirm="handleConfirm"
+    @cancel="handleCancel"
+  />
 </template>
