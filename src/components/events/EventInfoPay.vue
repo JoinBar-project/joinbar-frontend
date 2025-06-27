@@ -3,7 +3,9 @@ import { useEvent } from '@/composables/useEvent.js';
 import { useCartStore } from '@/stores/cartStore';
 import { useRouter } from 'vue-router';
 import { useAuthStore } from '@/stores/authStore';
-import { ref, computed, onMounted } from 'vue';
+import { useOrder } from '@/composables/useOrder';
+import { useLinePay } from '@/composables/useLinePay';
+import { ref, computed, onMounted, watch } from 'vue';
 import axios from 'axios';
 import EventHoster from './EventHoster.vue';
 import MessageBoard from './MessageBoard.vue';
@@ -17,28 +19,63 @@ const props = defineProps({
 const emit = defineEmits(['update']);
 const router = useRouter();
 const cart = useCartStore();
+const authStore = useAuthStore();
+
+const { createOrder } = useOrder();
+const { createLinePayment, redirectToLinePay } = useLinePay();
 
 const eventRef = ref({ ...props.event });
 const tagList = ref([...props.tags]);
+const isProcessing = ref(false);
+const hasParticipated = ref(false); 
 
 const isInCart = computed(() => cart.isInCart(eventRef.value.id));
-
-const authStore = useAuthStore();
-const isOwner = computed(() => {
-  return authStore.currentUser?.id === eventRef.value.hostUser;
-});
+const isOwner = computed(() => authStore.currentUser?.id === eventRef.value.hostUser);
+const isAuthenticated = computed(() => !!authStore.accessToken && !!authStore.user);
 
 const {
   isJoin,
   joinedNum,
-  toggleJoin,
-  isOver24hr,
   showModal,
   formattedEventTime,
-  openCancelModal,
   closeModal,
   handleConfirmCancel
 } = useEvent(eventRef);
+
+const checkUserParticipation = async () => {
+  if (!isAuthenticated.value || !eventRef.value.id) {
+    hasParticipated.value = false;
+    return;
+  }
+
+  try {
+    const token = localStorage.getItem('access_token');
+    
+    const response = await axios.get('/api/orders/history', {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    
+    const orders = response.data.orders || [];
+    const hasParticipatedInEvent = orders.some(order => 
+      order.status === 'confirmed' && 
+      order.items && order.items.some(item => 
+        String(item.eventId) === String(eventRef.value.id) && item.itemType === 1
+      )
+    );
+    
+    hasParticipated.value = hasParticipatedInEvent;
+    console.log('🔍 用戶參與狀態 (訂單歷史):', hasParticipated.value);
+
+    if (!hasParticipated.value && isJoin.value) {
+      hasParticipated.value = isJoin.value;
+      console.log('🔍 用戶參與狀態 (isJoin):', hasParticipated.value);
+    }
+
+  } catch (error) {
+    console.warn('檢查參與狀態失敗:', error);
+    hasParticipated.value = isJoin.value || false;
+  }
+};
 
 const reloadEventData = async () => {
   try {
@@ -50,10 +87,11 @@ const reloadEventData = async () => {
     if (res.data?.event) {
       eventRef.value = { ...res.data.event };
     }
-
     if (res.data?.tags) {
       tagList.value = [...res.data.tags];
     }
+
+    await checkUserParticipation();
 
     emit('update', { event: eventRef.value, tags: tagList.value });
   } catch (error) {
@@ -61,11 +99,12 @@ const reloadEventData = async () => {
   }
 };
 
-const handleEventUpdate = () => {
-  reloadEventData();
-};
-
 const addToCart = async () => {
+  if (hasParticipated.value) {
+    alert('您已經報名過此活動了！');
+    return;
+  }
+
   try {
     const e = eventRef.value;
     const result = await cart.addItem({
@@ -87,18 +126,102 @@ const addToCart = async () => {
 };
 
 const buyNow = async () => {
+  if (hasParticipated.value) {
+    alert('您已經報名過此活動了！');
+    return;
+  }
+
+  if (!isAuthenticated.value) {
+    const shouldLogin = confirm('請先登入後再進行購買\n\n點擊「確定」前往登入頁面');
+    if (shouldLogin) router.push('/login');
+    return;
+  }
+
   try {
-    if (!isInCart.value) {
-      await addToCart();
+    isProcessing.value = true;
+    console.log('🔄 開始立即購買流程...');
+
+    const orderData = {
+      items: [{
+        itemType: 1,
+        eventId: String(eventRef.value.id),
+        quantity: 1
+      }],
+      paymentMethod: 'linepay'
+    };
+
+    console.log('🔄 創建訂單:', orderData);
+    const orderResponse = await createOrder(orderData);
+    const orderId = orderResponse.order.id || orderResponse.order.orderId;
+
+    if (!orderId) {
+      throw new Error('訂單創建失敗，無法獲取訂單 ID');
     }
-    router.push('/payment');
+
+    console.log('✅ 訂單創建成功:', orderResponse.order.orderNumber);
+
+    console.log('🔄 創建 LINE Pay 付款...');
+    const paymentResult = await createLinePayment(orderId);
+
+    sessionStorage.setItem('pendingOrder', JSON.stringify({
+      orderId: orderId,
+      orderNumber: orderResponse.order.orderNumber,
+      transactionId: paymentResult.transactionId,
+      eventId: eventRef.value.id,
+      returnToEvent: true
+    }));
+
+    console.log('✅ LINE Pay 付款準備完成，跳轉中...');
+
+    redirectToLinePay(paymentResult.paymentUrl);
+
   } catch (error) {
-    alert(error.message);
+    console.error('❌ 立即購買失敗:', error);
+    
+    let errorMessage = '購買失敗，請重試';
+    if (error.message.includes('登入已過期')) {
+      errorMessage = '登入已過期，請重新登入';
+      localStorage.removeItem('access_token');
+      localStorage.removeItem('user');
+      setTimeout(() => router.push('/login'), 2000);
+    } else if (error.message.includes('已滿員')) {
+      errorMessage = '很抱歉，活動名額已滿！';
+    } else if (error.message.includes('已結束') || error.message.includes('過期')) {
+      errorMessage = '活動已結束，無法報名';
+    } else if (error.message.includes('重複') || error.message.includes('已參加過')) {
+      errorMessage = '您已經報名過此活動了';
+      hasParticipated.value = true;
+    } else if (error.message) {
+      errorMessage = error.message;
+    }
+    
+    alert(errorMessage);
+  } finally {
+    isProcessing.value = false;
   }
 };
 
-onMounted(() => {
+const handleEventUpdate = () => {
   reloadEventData();
+};
+
+watch(isJoin, (newValue) => {
+  if (newValue && !hasParticipated.value) {
+    hasParticipated.value = newValue;
+    console.log('🔄 從 isJoin 更新參與狀態:', hasParticipated.value);
+  }
+});
+
+onMounted(async () => {
+  await reloadEventData();
+  
+  const urlParams = new URLSearchParams(window.location.search);
+  if (urlParams.get('paymentSuccess') || urlParams.get('orderId')) {
+    console.log('🔄 從付款頁面返回，重新檢查參與狀態...');
+    setTimeout(async () => {
+      await checkUserParticipation();
+    }, 2000);
+  }
 });
 </script>
 
@@ -171,18 +294,35 @@ onMounted(() => {
           </div>
 
           <div class="edit-btn-container">
-            <button
-              @click="addToCart"
-              type="button"
-              class="event-btn event-btn-cart"
-              :disabled="isInCart"
-              :class="{ 'opacity-50 cursor-not-allowed': isInCart }"
-            >
-              {{ isInCart ? '✓ 已在購物車' : '加入購物車' }}
-            </button>
-            <button @click="buyNow" type="button" class="event-btn event-btn-pay">
-              立即報名
-            </button>
+            <div v-if="hasParticipated" class="participation-status">
+              <div class="participation-badge">
+                <i class="fa-solid fa-check-circle"></i>
+                <span>已報名此活動</span>
+              </div>
+            </div>
+
+            <template v-else>
+              <button
+                @click="addToCart"
+                type="button"
+                class="event-btn event-btn-cart"
+                :disabled="isInCart || isProcessing"
+                :class="{ 'opacity-50 cursor-not-allowed': isInCart || isProcessing }"
+              >
+                {{ isProcessing ? '處理中...' : (isInCart ? '✓ 已在購物車' : '加入購物車') }}
+              </button>
+              
+              <button 
+                @click="buyNow" 
+                type="button" 
+                class="event-btn event-btn-pay"
+                :disabled="isProcessing"
+                :class="{ 'opacity-50 cursor-not-allowed': isProcessing }"
+              >
+                {{ isProcessing ? '處理中...' : '立即報名' }}
+              </button>
+            </template>
+
             <ModalEdit
               v-if="isOwner && eventRef.id"
               :event-id="eventRef.id"
@@ -194,7 +334,7 @@ onMounted(() => {
     </div>
   </div>
   <EventHoster />
-  <MessageBoard v-if="isJoin" />
+  <MessageBoard v-if="hasParticipated" />
 </template>
 
 <style scoped>
@@ -202,6 +342,40 @@ onMounted(() => {
 
 .edit-btn-container {
   @apply flex;
+}
+
+.participation-badge {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background-color: white;
+  color: #333;
+  padding: 8px 28px 10px 28px;
+  border-radius: 20px;
+  font-size: 24px;
+  font-weight: 600;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+  margin-top: 30px;
+  margin-right: 30px;
+  border: 0;
+  text-align: center;
+  cursor: default;
+}
+
+.participation-badge i {
+  font-size: 20px;
+  color: #10b981;
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .event-information-section {
@@ -308,6 +482,7 @@ onMounted(() => {
   text-align: center;
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
   cursor: pointer;
+  transition: all 0.3s ease;
 }
 
 .event-btn-pay {
@@ -317,7 +492,7 @@ onMounted(() => {
   transition: background-color 0.3s ease, color 0.3s ease;
 }
 
-.event-btn-pay:hover {
+.event-btn-pay:hover:not(:disabled) {
   background-color: #d4624e;
 }
 
@@ -325,19 +500,47 @@ onMounted(() => {
   background-color: white;
   padding: 8px 28px 10px 28px;
   cursor: pointer;
-  transition: background-color 0.3s ease, color 0.3s ease;
 }
 
-.event-btn-cart:hover {
+.event-btn-cart:hover:not(:disabled) {
   background-color: #bbb;
   color: white;
-  padding: 8px 28px 10px 28px;
-  cursor: pointer;
+}
+
+.event-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 }
 
 button:disabled.event-btn-cart:hover {
   background-color: white;
   color: inherit;
   cursor: not-allowed;
+}
+
+@media (max-width: 768px) {
+  .participation-badge {
+    padding: 12px 24px;
+    font-size: 16px;
+    margin-top: 20px;
+  }
+  
+  .event-information-card {
+    min-width: auto;
+  }
+  
+  .event-content {
+    padding: 20px;
+  }
+  
+  .event-map {
+    position: relative;
+    left: 0;
+    bottom: 0;
+    width: 100%;
+    max-width: 100%;
+    height: 300px;
+    margin-bottom: 20px;
+  }
 }
 </style>
