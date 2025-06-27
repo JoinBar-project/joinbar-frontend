@@ -173,7 +173,7 @@ const {
  clearState: clearLinePayState
 } = useLinePay()
 
-const paymentMethod = ref('linepay') // 預設為 LINE Pay
+const paymentMethod = ref('linepay') 
 const isLoading = ref(true)
 const isSubmitting = ref(false)
 
@@ -330,7 +330,7 @@ const submitOrder = async () => {
           eventId: String(item.id || item.eventId),
           quantity: 1
         })),
-        paymentMethod: 'linepay' // 固定使用 LINE Pay
+        paymentMethod: 'linepay' 
       }
       
       console.log('🔍 準備發送的訂單數據:', JSON.stringify(orderData, null, 2));
@@ -366,7 +366,6 @@ const submitOrder = async () => {
     console.error('❌ 訂單提交失敗:', error)
     handleSubmitError(error)
   } finally {
-    // LINE Pay 不需要重置 isSubmitting，因為會跳轉到外部頁面
   }
 }
 
@@ -685,6 +684,13 @@ const goBack = () => {
   color: var(--color-text-selected, #f5d1c0);
  }
 
+ .cart-container .form-input,
+ .cart-container .customer-section .form-input,
+ .cart-container .customer-section .form-group .form-input {
+  background-color: rgba(245, 209, 192, 0.05);
+  color: var(--color-text-selected, #f5d1c0);
+ }
+
  .form-input::placeholder {
   color: var(--color-text-unselected, #937e7e);
  }
@@ -693,6 +699,30 @@ const goBack = () => {
   outline: none;
   border-color: var(--color-select, #d17361);
   box-shadow: 0 0 0 2px rgba(209, 115, 97, 0.2);
+ }
+
+ .cart-container .form-input:focus,
+ .cart-container .customer-section .form-input:focus,
+ .cart-container .customer-section .form-group .form-input:focus {
+  background-color: rgba(245, 209, 192, 0.05);
+ }
+
+ .cart-container .customer-section .form-group .form-input:-webkit-autofill,
+ .cart-container .customer-section .form-group .form-input:-webkit-autofill:hover,
+ .cart-container .customer-section .form-group .form-input:-webkit-autofill:focus,
+ .cart-container .customer-section .form-group .form-input:-webkit-autofill:active {
+  -webkit-box-shadow: 0 0 0 1000px rgba(245, 209, 192, 0.05) inset;
+  -webkit-text-fill-color: var(--color-text-selected, #f5d1c0);
+  border: 1px solid var(--color-icon-secondary, #bcaea4);
+  transition: background-color 99999s ease-in-out 0s;
+ }
+
+ .cart-container .customer-section .form-group .form-input[data-autocompleted],
+ .cart-container .customer-section .form-group .form-input:-internal-autofill-selected,
+ .cart-container .customer-section .form-group .form-input:-internal-autofill-previewed {
+  background-color: rgba(245, 209, 192, 0.05);
+  color: var(--color-text-selected, #f5d1c0);
+  border: 1px solid var(--color-icon-secondary, #bcaea4);
  }
  
  .form-input.input-error {
