@@ -381,7 +381,7 @@ export const useCartStore = defineStore('cart', () => {
     }
     return items.value.some((item) => String(item.id) === String(id) || String(item.eventId) === String(id))
   }
-
+  
   const getOrderData = (customerInfo, paymentMethod) => {
     if (!customerInfo || !customerInfo.name || !customerInfo.phone || !customerInfo.email) {
       throw new Error('客戶資訊不完整')
@@ -395,13 +395,23 @@ export const useCartStore = defineStore('cart', () => {
       throw new Error('購物車是空的')
     }
 
-    return {
-      items: items.value.map(item => ({
-        eventId: String(item.eventId || item.id),
-        quantity: 1
-      })),
+    console.log('🔍 購物車原始數據:', items.value);
+
+    const orderData = {
+      items: items.value.map(item => {
+        const orderItem = {
+          itemType: 1,  
+          eventId: String(item.eventId || item.id),
+          quantity: 1
+        };
+        console.log('🔍 轉換訂單項目:', { original: item, converted: orderItem });
+        return orderItem;
+      }),
       paymentMethod: paymentMethod
-    }
+    };
+
+    console.log('🔍 最終訂單數據:', JSON.stringify(orderData, null, 2));
+    return orderData;
   }
 
   const getCartSummary = computed(() => ({
