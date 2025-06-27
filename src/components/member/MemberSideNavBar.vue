@@ -345,8 +345,8 @@ const selectedItem = ref('profile');
 </script>
 
 <template>
-  <nav class="w-56 bg-gray-100 p-6 min-h-screen flex justify-center">
-    <ul class="space-y-1 w-full">
+  <nav class="flex justify-center w-56 min-h-screen p-6 bg-gray-100">
+    <ul class="w-full space-y-1">
       <li v-for="item in menuItems" :key="item.name">
         <RouterLink
           :to="item.to"
@@ -359,11 +359,14 @@ const selectedItem = ref('profile');
         </RouterLink>
       </li>
 
-      <li><button @click="handleAccountDeletion"  class="cursor-pointer">會員註銷</button></li>
+      <li>
+        <button @click="handleAccountDeletion"  class="flex items-center w-full gap-2 p-2 text-black transition rounded cursor-pointer hover:bg-gray-200">
+          <i class="w-4 fa-solid fa-user-slash" />會員註銷</button>
+      </li>
       <!-- 登出 -->
       <li>
-        <button @click="handleLogout" class="flex items-center gap-2 p-2 rounded w-full text-black hover:bg-gray-200 transition cursor-pointer">
-          <i class="fa-solid fa-arrow-right-from-bracket w-4" />登出</button>
+        <button @click="handleLogout" class="flex items-center w-full gap-2 p-2 text-black transition rounded cursor-pointer hover:bg-gray-200">
+          <i class="w-4 fa-solid fa-arrow-right-from-bracket" />登出</button>
       </li>
     </ul>
   </nav>
