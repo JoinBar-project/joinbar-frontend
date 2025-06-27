@@ -98,39 +98,28 @@
       </div>
 
       <div class="payment-method section-spacing">
-        <h3>選擇付款方式</h3>
-
-        <div class="payment-options">
-          <button 
-            class="payment-btn linepay-btn"
-            :class="{ 'selected': paymentMethod === 'linepay' }"
-            @click="paymentMethod = 'linepay'"
-          >
-            <IconLine />
-            LINE Pay
-          </button>
-        </div>
-
-        <div
-          v-if="paymentMethodError"
-          class="payment-error">
-          {{ paymentMethodError }}
-        </div>
-
-        <div class="total-bar section-spacing">
+        <div class="total-bar">
           <p class="total-label">
             總金額：<strong>${{ totalPrice }}</strong>
           </p>
+        </div>
+
+        <div class="payment-section">
           <button 
-            class="checkout-btn"
-            :class="{ 'btn-disabled': !canSubmit || isSubmitting || orderLoading }"
+            class="payment-btn linepay-btn"
             :disabled="!canSubmit || isSubmitting || orderLoading"
-            @click="submitOrder">
-            <span
-              v-if="isSubmitting || orderLoading"
-              class="loading loading-spinner loading-sm"></span>
-            {{ getSubmitButtonText() }}
+            @click="submitOrder"
+          >
+            <IconLine />
+            <span v-if="isSubmitting || orderLoading">處理中...</span>
+            <span v-else>LINE Pay 付款</span>
           </button>
+          
+          <div
+            v-if="paymentMethodError"
+            class="payment-error">
+            {{ paymentMethodError }}
+          </div>
         </div>
       </div>
  
@@ -259,8 +248,7 @@ const totalPrice = computed(() =>
 )
 
 const canSubmit = computed(() => {
- return paymentMethod.value && 
-        !isSubmitting.value && 
+ return !isSubmitting.value && 
         !orderLoading.value &&
         !linePayLoading.value &&
         isCustomerInfoValid.value &&
@@ -276,12 +264,6 @@ const isCustomerInfoValid = computed(() => {
         email && email.trim() && 
         emailRegex.test(email)
 })
-
-const getSubmitButtonText = () => {
- if (isSubmitting.value || orderLoading.value || linePayLoading.value) return '處理中...'
- if (!isCustomerInfoValid.value) return '請完成客戶資訊'
- return '確認付款'
-}
 
 watch(() => customerInfo.value.name, () => {
  if (formErrors.value.name) delete formErrors.value.name
@@ -348,7 +330,7 @@ const submitOrder = async () => {
           eventId: String(item.id || item.eventId),
           quantity: 1
         })),
-        paymentMethod: paymentMethod.value
+        paymentMethod: 'linepay' // 固定使用 LINE Pay
       }
       
       console.log('🔍 準備發送的訂單數據:', JSON.stringify(orderData, null, 2));
@@ -565,103 +547,70 @@ const goBack = () => {
   display: flex;
   justify-content: flex-end;
   align-items: center;
-  margin-top: 32px;
+  margin-bottom: 24px;
   gap: 16px;
 }
 
 .total-label {
   font-size: 19px;
   color: var(--color-text-selected, #f5d1c0);
- }
+  margin: 0;
+}
  
  .payment-method {
   font-size: 15px;
   margin-top: 16px;
 }
 
-.payment-options {
-  display: flex;
-  gap: 16px;
-  margin-top: 16px;
+.payment-section {
+  text-align: center;
 }
 
 .payment-btn {
-  padding: 12px 20px;
-  font-size: 16px;
-  font-weight: 500;
+  padding: 16px 32px;
+  font-size: 18px;
+  font-weight: 600;
   height: auto;
-  min-height: 60px;
-  width: 200px;
+  min-height: 80px;
+  width: 100%;
+  max-width: 400px;
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 8px;
-  border-radius: 6px;
-  border: 2px solid;
+  gap: 12px;
+  border-radius: 12px;
+  border: none;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: all 0.3s ease;
   position: relative;
+  margin: 0 auto;
  }
 
- .payment-btn:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+ .payment-btn:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+ }
+
+ .payment-btn:active:not(:disabled) {
+  transform: translateY(0);
+ }
+
+ .payment-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
  }
 
  .linepay-btn {
-  background-color: var(--color-line-green, #25c916);
+  background: linear-gradient(135deg, #25c916 0%, #20b012 100%);
   color: white;
-  border-color: var(--color-line-green, #25c916);
+  box-shadow: 0 4px 15px rgba(37, 201, 22, 0.3);
  }
 
- .linepay-btn:hover {
-  background-color: var(--color-line-green-dark, #20b012);
-  border-color: var(--color-line-green-dark, #20b012);
- }
-
- .linepay-btn.selected {
-  box-shadow: 0 0 0 2px var(--color-line-green, #25c916), 
-              0 0 0 4px rgba(37, 201, 22, 0.2);
- }
- 
- .checkout-btn {
-  background-color: var(--color-select, #d17361);
-  color: white;
-  border: 2px solid var(--color-select, #d17361);
-  font-size: 16px;
-  font-weight: 500;
-  padding: 12px 24px;
-  border-radius: 6px;
-  cursor: pointer;
-  transition: all 0.2s ease-in-out;
-  min-height: 48px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  white-space: nowrap;
- }
- 
- .checkout-btn:hover:not(.btn-disabled) {
-  background-color: var(--color-select-dark, #b85d4a);
-  border-color: var(--color-select-dark, #b85d4a);
-  transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(209, 115, 97, 0.3);
- }
- 
- .checkout-btn:active:not(.btn-disabled) {
-  transform: translateY(0);
-  box-shadow: 0 2px 8px rgba(209, 115, 97, 0.25);
- }
- 
- .checkout-btn.btn-disabled {
-  background-color: var(--color-icon-secondary, #bcaea4);
-  border-color: var(--color-icon-secondary, #bcaea4);
-  color: var(--color-text-unselected, #937e7e);
-  cursor: not-allowed;
-  opacity: 0.7;
-  transform: none;
-  box-shadow: none;
+ .linepay-btn:hover:not(:disabled) {
+  background: linear-gradient(135deg, #20b012 0%, #1a9e0f 100%);
+  box-shadow: 0 8px 25px rgba(37, 201, 22, 0.4);
  }
  
  .error-message {
@@ -701,13 +650,6 @@ const goBack = () => {
  }
  
  .customer-section h3 {
-  font-size: 18px;
-  font-weight: 600;
-  margin-bottom: 16px;
-  color: var(--color-text-selected, #f5d1c0);
- }
-
- .payment-method h3 {
   font-size: 18px;
   font-weight: 600;
   margin-bottom: 16px;
