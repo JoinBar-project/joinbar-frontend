@@ -1,7 +1,15 @@
 <script setup>
-import { ref, onMounted, onUnmounted } from 'vue'
+import { ref, onMounted, onUnmounted, nextTick } from 'vue'
 
 const isFooterVisible = ref(false)
+const footerHeight = ref(0)
+const footerRef = ref(null)
+
+const updateFooterHeight = () => {
+  if (footerRef.value) {
+    footerHeight.value = footerRef.value.getBoundingClientRect().height
+  }
+}
 
 const handleScroll = () => {
   const scrollTop = window.pageYOffset || document.documentElement.scrollTop
@@ -11,25 +19,27 @@ const handleScroll = () => {
   const threshold = 100
   const isNearBottom = scrollTop + windowHeight >= documentHeight - threshold
 
-  if (isNearBottom && !isFooterVisible.value) {
-    isFooterVisible.value = true
-  } else if (!isNearBottom && isFooterVisible.value) {
-    isFooterVisible.value = false
-  }
+  isFooterVisible.value = isNearBottom
 }
 
 onMounted(() => {
   window.addEventListener('scroll', handleScroll)
+  window.addEventListener('resize', updateFooterHeight)
+  nextTick(updateFooterHeight)
 })
 
 onUnmounted(() => {
   window.removeEventListener('scroll', handleScroll)
+  window.removeEventListener('resize', updateFooterHeight)
 })
 </script>
 
 <template>
+  <div :style="{ height: footerHeight + 'px' }"></div>
+
   <footer 
-    class="footer" 
+    ref="footerRef"
+    class="footer"
     :class="{ 'footer-visible': isFooterVisible }"
   >
     <div class="footer-content">
@@ -38,22 +48,24 @@ onUnmounted(() => {
           <img src="/joinbar-logo.png" alt="JoinBar Logo">
         </a>
       </div>
-    <div class="footer-links">
-      <router-link to="/map">酒吧地圖</router-link>
-      <router-link to="/event">酒吧活動</router-link>
-      <router-link to="/subscription">訂閱優惠</router-link>
-      <router-link to="/contact">聯絡我們</router-link>
-    </div>
+
+      <div class="footer-links">
+        <router-link to="/map">酒吧地圖</router-link>
+        <router-link to="/event">酒吧活動</router-link>
+        <router-link to="/subscription">訂閱優惠</router-link>
+        <router-link to="/contact">聯絡我們</router-link>
+      </div>
+
       <div class="footer-socials">
         <a href="#"><i class="fab fa-facebook-f"></i></a>
         <a href="#"><i class="fab fa-twitter"></i></a>
         <a href="#"><i class="fab fa-instagram"></i></a>
       </div>
+
       <div class="copyright">
         &copy; 2025 JoinBar. All rights reserved.
       </div>
     </div>
-
   </footer>
 </template>
 
@@ -61,7 +73,9 @@ onUnmounted(() => {
 @reference "tailwindcss";
 
 .footer {
-  @apply fixed bottom-0 left-0 w-full bg-black text-[#e0e0e0] px-[5%] py-8 box-border z-[1000] translate-y-full opacity-0 transition-all duration-[400ms] ease-[cubic-bezier(0.25,0.46,0.45,0.94)] shadow-[0_-1_5_rgba(0,0,0,0.3)];
+  @apply fixed bottom-0 left-0 w-full bg-black text-[#e0e0e0] px-[5%] py-8 box-border z-[1000]
+         translate-y-full opacity-0 transition-all duration-[400ms] ease-[cubic-bezier(0.25,0.46,0.45,0.94)]
+         shadow-[0_-1px_5px_rgba(0,0,0,0.3)];
 }
 
 .footer-visible {
@@ -104,5 +118,4 @@ onUnmounted(() => {
 .copyright {
   @apply text-center text-sm opacity-80 mx-auto max-w-[300px] pl-4;
 }
-
 </style>

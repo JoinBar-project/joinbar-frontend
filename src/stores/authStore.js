@@ -248,7 +248,7 @@ export const useAuthStore = defineStore('auth', () => {
       refreshToken.value = storedRefreshToken;
       try {
         user.value = JSON.parse(storedUser);
-        console.log('從 localStorage 恢復登入狀態 (Email 登入)');
+        console.log('從 localStorage 恢復登入狀態 (Email 登入):', user.value);
       } catch (err) {
         console.error('解析用戶資料失敗:', err);
         localStorage.removeItem('user');
@@ -275,13 +275,17 @@ export const useAuthStore = defineStore('auth', () => {
 
       if (userInfoCookie) {
         const userData = JSON.parse(decodeURIComponent(userInfoCookie));
+        console.log('從 cookie 讀取到用戶資訊:', userData);
 
         // 如果 cookie 中的用戶與當前用戶不同 更新狀態
         if (!user.value || user.value.id !== userData.id) {
           user.value = userData;
           localStorage.setItem('user', JSON.stringify(userData));
-          console.log('從 cookie 更新用戶資訊 (LINE 登入)');
+          console.log('從 cookie 更新用戶資訊 (LINE 登入):', userData);
         }
+      } else if (user.value && !storedAccessToken) {
+        // 如果有 localStorage 中的用戶但沒有 cookie，可能是 LINE 登入狀態已失效
+        console.log('檢查 LINE 登入狀態...');
       }
     } catch (err) {
       console.error('從 cookie 讀取用戶資訊失敗:', err);
@@ -295,6 +299,8 @@ export const useAuthStore = defineStore('auth', () => {
       localStorage.removeItem('refresh_token');
       localStorage.removeItem('user');
       console.log('清理無效的登入狀態');
+    } else {
+      console.log('AuthStore 初始化完成，用戶:', user.value.username || user.value.lineDisplayName);
     }
   }
 
