@@ -1,13 +1,13 @@
 <template>
   <transition name="modal-fade">
     <div v-if="visible" class="fixed inset-0 bg-[var(--color-black)] flex items-center justify-center z-50" @click.self="onCancel">
-      <div class="bg-white rounded-2xl shadow-xl p-6 w-full max-w-md space-y-4">
+      <div class="w-full max-w-md p-6 space-y-4 bg-white shadow-xl rounded-2xl">
         <h2 class="text-lg font-bold text-gray-900">{{ title }}</h2>
-        <p class="text-gray-700 text-sm">{{ message }}</p>
+        <p class="text-sm text-gray-700">{{ message }}</p>
         <div class="flex justify-center gap-4 pt-2">
           <button
             @click="onCancel"
-            class="px-4 py-2 rounded-sm border border-gray-300 text-gray-700 hover:bg-gray-100 hover:scale-105 transition">
+            class="px-4 py-2 text-gray-700 transition border border-gray-300 rounded-sm hover:bg-gray-100 hover:scale-105">
             取消
           </button>
           <button

@@ -17,6 +17,7 @@ import Login from '@/views/member/auth/Login.vue';
 import Register from '@/views/member/auth/Register.vue';
 import Preferences from '@/components/Preferences.vue';
 import EmailVerify from '@/views/member/auth/EmailVerify.vue';
+import TestModal from '@/views/member/auth/TestModal.vue'
 import NotFound from '../views/NotFound.vue';
 
 const routes = [
@@ -74,6 +75,11 @@ const routes = [
   { path: '/order-success/:orderNumber', name: 'OrderSuccess', component: OrderSuccess, props: true, meta: { requiresAuth: true } },
   { path: '/preferences', name: 'Preferences', component: Preferences, meta: { requiresAuth: true } },
   { path: '/verify-email', name: 'EmailVerify', component: EmailVerify, meta: { requiresGuest: true } },
+  {
+    path: '/test-modal',
+    name: 'TestModal',
+    component: TestModal
+  },
   { path: '/404', name: 'NotFound', component: NotFound },
   { 
     path: '/:pathMatch(.*)*', 
