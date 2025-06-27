@@ -1003,7 +1003,7 @@ onMounted(async () => {
 }
 
 .search-bt {
-  background-color: #decdd5;
+  background-color: var(--color-main-text);
   color: #3a3435;
   padding: 8px 12px;
   margin: 0;
@@ -1020,7 +1020,7 @@ onMounted(async () => {
 }
 
 .search-bt:hover {
-  background-color: #860914;
+  background-color: var(--color-primary-orange);
   color: #ffffff;
   transform: translateY(-2px);
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
@@ -1040,7 +1040,7 @@ onMounted(async () => {
   padding: 8px 12px;
   margin: 0;
   border: none;
-  background-color: #decdd5;
+  background-color: var(--color-main-text);
   color: #3a3435;
   border-radius: 5px;
   cursor: pointer;
@@ -1051,7 +1051,7 @@ onMounted(async () => {
 }
 
 .place-now-map:hover {
-  background-color: #860914;
+  background-color: var(--color-primary-orange);
   color: #ffffff;
 }
 
