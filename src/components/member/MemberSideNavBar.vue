@@ -9,8 +9,50 @@ const authStore = useAuthStore();
 const { user } = storeToRefs(authStore);
 const router = useRouter();
 
+const userId = computed(() => user.value?.id);
+
+const profileLink = computed(() => ({ name: 'MemberProfile', params: { id: userId.value } }));
+const barLink = computed(() => ({ name: 'BarFavorites', params: { id: userId.value } }));
+const memberCardLink = computed(() => ({ name: 'MemberCard', params: { id: userId.value } }));
+const ordersLink = computed(() => ({ name: 'OrderRecords', params: { id: userId.value } }));
+
+const selectedItem = ref('profile');
+const expandedEventRecords = ref(null);
+
+const menuItems = [
+  { name: 'profile', label: '會員資料', icon: 'fa-user', to: profileLink },
+  {
+    name: 'event-records',
+    label: '揪團活動紀錄',
+    icon: 'fa-calendar',
+    children: [
+      { name: 'published', label: '我發布的活動', icon: 'fa-bullhorn', to: { name: 'PublishedEvents', params: { id: userId.value } } },
+      { name: 'joined', label: '我參加的活動', icon: 'fa-calendar-check', to: { name: 'JoinedEvents', params: { id: userId.value } } }
+    ]
+  },
+  { name: 'bar', label: '我的酒吧收藏', icon: 'fa-beer-mug-empty', to: barLink },
+  { name: 'card', label: '酒友卡', icon: 'fa-id-card', to: memberCardLink },
+  { name: 'orders', label: '訂單紀錄', icon: 'fa-receipt', to: ordersLink }
+];
+
+const handleMainMenuClick = (item) => {
+  if (item.children) {
+    toggleEventRecords(item.name);
+  } else {
+    selectedItem.value = item.name;
+    router.push(item.to.value);
+  }
+};
+
+const toggleEventRecords = (name) => {
+  if (expandedEventRecords.value === name) {
+    expandedEventRecords.value = null;
+  } else {
+    expandedEventRecords.value = name;
+  }
+};
 const handleLogout = async () => {
-  if(authStore.loginMethod === 'line' ) {
+  if (authStore.loginMethod === 'line') {
     try {
       const result = await authStore.lineLogout();
 
@@ -324,39 +366,51 @@ const handleAccountDeletion = async () => {
     });
   }
 }
-
-const userId = computed(() => user.value?.id);
-
-const profileLink = computed(() => ({ name: 'MemberProfile', params: { id: userId.value } }));
-const eventLink = computed(() => ({ name: 'MemberEventRecords', params: { id: userId.value } }));
-const barLink = computed(() => ({ name: 'MemberBarFavorites', params: { id: userId.value } }));
-const memberCardLink = computed(() => ({ name: 'MemberCard', params: { id: userId.value } }));
-const ordersLink = computed(() => ({ name: 'MemberOrderRecords', params: { id: userId.value } }));
-
-const menuItems = [
-  { name: 'profile', label: '會員資料', icon: 'fa-user', to: profileLink },
-  { name: 'event', label: '揪團活動紀錄', icon: 'fa-calendar', to: eventLink },
-  { name: 'bar', label: '我的酒吧收藏', icon: 'fa-beer-mug-empty', to: barLink },
-  { name: 'card', label: '酒友卡', icon: 'fa-id-card', to: memberCardLink },
-  { name: 'orders', label: '訂單紀錄', icon: 'fa-receipt', to: ordersLink },
-];
-
-const selectedItem = ref('profile');
 </script>
 
 <template>
   <nav class="flex justify-center w-56 min-h-screen p-6 bg-gray-100">
     <ul class="w-full space-y-1">
       <li v-for="item in menuItems" :key="item.name">
-        <RouterLink
-          :to="item.to"
-          @click="selectedItem = item.name"
-          :class="['flex items-center gap-2 p-2 rounded w-full transition',selectedItem === item.name
-            ? 'bg-gray-200 text-black scale-[0.98]'
-            : 'hover:bg-gray-200 text-gray-700']">
-          <i :class="['fa-solid', item.icon, 'w-4']" />
-          {{ item.label }}
-        </RouterLink>
+        <!-- 左側選單 -->
+        <div
+          @click="handleMainMenuClick(item)"
+          :class="[
+            'flex items-center justify-between p-2 rounded w-full cursor-pointer transition',
+            selectedItem === item.name 
+            ? 'bg-gray-200 text-black scale-[0.98]' 
+            : 'hover:bg-gray-200 text-gray-700'
+          ]">
+          <div class="flex items-center gap-2">
+            <i :class="['fa-solid', item.icon, 'w-4']" />
+            <span>{{ item.label }}</span>
+          </div>
+          <i v-if="item.children"
+            :class="['fa-solid fa-caret-down transition-transform duration-200', 
+            expandedEventRecords === item.name 
+            ? 'rotate-180' 
+            : '']" />
+        </div>
+
+        <!-- 揪團活動紀錄的子選單 -->
+        <div v-if="item.children && expandedEventRecords === item.name" class="px-2 py-2 mt-1 bg-[#e1ac6747] rounded-lg shadow-inner">
+          <ul class="space-y-1">
+            <li v-for="child in item.children" :key="child.name">
+              <RouterLink
+                :to="child.to"
+                @click="selectedItem = child.name"
+                :class="[
+                  'flex items-center gap-2 px-4 py-2 rounded-md transition w-full text-sm text-gray-800',
+                  selectedItem === child.name 
+                  ? 'bg-[#d68c2c47] scale-[0.98] font-medium' 
+                  : 'hover:bg-[#e4bc8747]'
+                ]">
+                <i :class="['fa-solid', child.icon, 'w-4']" />
+                <span>{{ child.label }}</span>
+              </RouterLink>
+            </li>
+          </ul>
+        </div>
       </li>
 
       <li>
