@@ -49,14 +49,14 @@ watch(
 
 
 const goToEdit = () => {
-  router.push({ name: 'MemberProfileEdit', params: { id: userId.value } });
+  router.push({ name: 'ProfileEdit', params: { id: userId.value } });
 };
 </script>
 
 <template>
-  <div v-if="isLoading" class="text-center py-10">載入中...</div>
-  <div v-else class="w-full max-w-4xl mx-auto mt-10 px-4">
-    <div class="flex flex-col md:flex-row items-center md:items-start gap-10">
+  <div v-if="isLoading" class="py-10 text-center">載入中...</div>
+  <div v-else class="w-full max-w-4xl px-4 mx-auto mt-10">
+    <div class="flex flex-col items-center gap-10 md:flex-row md:items-start">
       <!-- 左側：會員頭像 -->
       <div class="flex justify-center md:block md:w-1/3">
         <UserAvatar 
@@ -67,7 +67,7 @@ const goToEdit = () => {
       </div>
 
       <!-- 右側：個人資料 + 酒吧偏好 + 修改按鈕 -->
-      <div class="w-full md:w-2/3 space-y-6 flex flex-col items-center md:items-start">
+      <div class="flex flex-col items-center w-full space-y-6 md:w-2/3 md:items-start">
         <ProfileForm
           :form="profile"
           :isEdit="false"

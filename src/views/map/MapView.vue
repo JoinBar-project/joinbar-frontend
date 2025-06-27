@@ -1,6 +1,6 @@
 <template>
-  <div class="map-view-container">
-    <div class="top-left-controls">
+  <div class="flex h-screen w-screen overflow-hidden relative">
+    <div class="top-left-controls absolute top-5 left-[400px] z-[100] flex flex-row flex-wrap items-center gap-[10px] p-[15px] bg-white/90 rounded-lg shadow-[0_4px_12px_rgba(0,0,0,0.2)] transition-[left] duration-300 ease-in-out">
       <button
         class="filter-toggle-button map-control-button"
         @click="toggleFilterPanel"
@@ -46,7 +46,7 @@
     </div>
 
     <aside class="bar-list-sidebar">
-      <div class="bar-list-scroll-area">
+      <div class="flex-grow overflow-y-auto p-4">
         <BarList
           :bars="filteredBars"
           @bar-selected="handleBarSelected"
@@ -735,8 +735,7 @@ const checkUrlForBarDetail = async () => {
 
       selectedBarForDetail.value = barFromUrl;
       isBarDetailModalOpen.value = true;
-
-      // 在背景載入完整資料
+      
       try {
         const fullData = await getPlaceDetails(barId);
         if (
@@ -899,160 +898,9 @@ onMounted(async () => {
   await checkUrlForBarDetail();
 });
 
-function getTypeForKeyword(q) {
-  const query = q.toLowerCase();
-
-  if (
-    [
-      "bar",
-      "酒吧",
-      "pub",
-      "night club",
-      "夜店",
-      "交易吧",
-      "intention",
-      "小酌",
-      "喝酒",
-      "夜生活",
-      "lounge",
-      "餐酒館",
-      "bistro",
-    ].some((k) => query.includes(k))
-  ) {
-    return ["bar", "night_club", "pub", "liquor_store"];
-  } else if (
-    [
-      "小吃",
-      "餐廳",
-      "美食",
-      "food",
-      "restaurant",
-      "吃飯",
-      "吃吃",
-      "用餐",
-      "料理",
-      "餐點",
-      "食堂",
-    ].some((k) => query.includes(k))
-  ) {
-    return ["restaurant", "food"];
-  } else if (
-    ["咖啡", "咖啡廳", "coffee", "coffe shop", "飲品", "飲料店"].some((k) =>
-      query.includes(k)
-    )
-  ) {
-    return ["cafe"];
-  } else if (
-    ["飲料", "手搖", "bubble tea", "tea", "茶飲", "手搖飲"].some((k) =>
-      query.includes(k)
-    )
-  ) {
-    return ["cafe", "food"];
-  } else if (
-    ["超市", "market", "超商", "便利商店", "雜貨店", "商店", "便利店"].some(
-      (k) => query.includes(k)
-    )
-  ) {
-    return ["supermarket", "convenience_store"];
-  } else if (
-    ["健身", "gym", "運動", "健身房", "運動中心", "體育館"].some((k) =>
-      query.includes(k)
-    )
-  ) {
-    return ["gym"];
-  } else if (
-    ["ktv", "KTV", "卡拉ok", "唱歌", "錢櫃", "好樂迪", "星聚點"].some((k) =>
-      query.includes(k)
-    )
-  ) {
-    return ["night_club", "establishment"];
-  } else if (
-    ["飯店", "旅館", "hotel", "住宿", "民宿", "旅店", "hostel", "inn"].some(
-      (k) => query.includes(k)
-    )
-  ) {
-    return ["lodging"];
-  } else if (
-    ["書店", "書局", "book", "library", "圖書館"].some((k) => query.includes(k))
-  ) {
-    return ["book_store", "library"];
-  } else if (
-    ["藥局", "pharmacy", "藥妝", "藥房"].some((k) => query.includes(k))
-  ) {
-    return ["pharmacy"];
-  } else if (
-    ["醫院", "hospital", "診所", "醫學中心"].some((k) => query.includes(k))
-  ) {
-    return ["hospital"];
-  } else if (
-    ["銀行", "atm", "提款機", "金融", "匯款"].some((k) => query.includes(k))
-  ) {
-    return ["bank", "atm"];
-  } else if (
-    ["加油站", "gas", "加汽油", "中油", "台塑"].some((k) => query.includes(k))
-  ) {
-    return ["gas_station"];
-  } else if (
-    ["停車場", "parking", "停車", "車位"].some((k) => query.includes(k))
-  ) {
-    return ["parking"];
-  } else if (
-    ["動物", "寵物", "zoo", "pet", "動物園", "寵物店", "獸醫院"].some((k) =>
-      query.includes(k)
-    )
-  ) {
-    return ["zoo", "pet_store", "veterinary_care"];
-  } else if (
-    [
-      "藝文",
-      "藝廊",
-      "美術館",
-      "museum",
-      "art",
-      "畫廊",
-      "展覽",
-      "文化中心",
-    ].some((k) => query.includes(k))
-  ) {
-    return ["art_gallery", "museum"];
-  } else if (
-    ["景點", "地標", "park", "公園", "觀光", "廣場", "古蹟"].some((k) =>
-      query.includes(k)
-    )
-  ) {
-    return ["park", "point_of_interest"];
-  }
-
-  return "establishment";
-}
 </script>
 
 <style scoped>
-.map-view-container {
-  display: flex;
-  height: 100vh;
-  width: 100vw;
-  overflow: hidden;
-  position: relative;
-}
-
-.top-left-controls {
-  position: absolute;
-  top: 20px;
-  left: calc(380px + 20px);
-  z-index: 100;
-  display: flex;
-  flex-direction: row;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 10px;
-  padding: 15px;
-  background-color: rgba(255, 255, 255, 0.9);
-  border-radius: 8px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
-  transition: left 0.3s ease-in-out;
-}
-
 .bar-list-sidebar {
   width: 380px;
   background-color: #f7f7f7;
@@ -1155,7 +1003,7 @@ function getTypeForKeyword(q) {
 }
 
 .search-bt {
-  background-color: #decdd5;
+  background-color: var(--color-main-text);
   color: #3a3435;
   padding: 8px 12px;
   margin: 0;
@@ -1172,7 +1020,7 @@ function getTypeForKeyword(q) {
 }
 
 .search-bt:hover {
-  background-color: #860914;
+  background-color: var(--color-primary-orange);
   color: #ffffff;
   transform: translateY(-2px);
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
@@ -1192,7 +1040,7 @@ function getTypeForKeyword(q) {
   padding: 8px 12px;
   margin: 0;
   border: none;
-  background-color: #decdd5;
+  background-color: var(--color-main-text);
   color: #3a3435;
   border-radius: 5px;
   cursor: pointer;
@@ -1203,7 +1051,7 @@ function getTypeForKeyword(q) {
 }
 
 .place-now-map:hover {
-  background-color: #860914;
+  background-color: var(--color-primary-orange);
   color: #ffffff;
 }
 
@@ -1233,66 +1081,6 @@ function getTypeForKeyword(q) {
 }
 .suggestions-list li:hover {
   background: #f0f0f0;
-}
-
-.info-window-content {
-  padding: 15px;
-  font-family: "Noto Sans TC", sans-serif;
-  color: #333;
-  max-width: 300px;
-}
-
-.info-window-title {
-  font-size: 22px;
-  font-weight: bold;
-  margin-bottom: 8px;
-  color: #2c3e50;
-  line-height: 1.3;
-}
-
-.info-window-meta {
-  font-size: 15px;
-  color: #555;
-  margin-bottom: 5px;
-}
-
-.info-window-description {
-  font-size: 14px;
-  color: #777;
-  margin-top: 10px;
-  line-height: 1.5;
-}
-
-.info-window-tags-container {
-  margin-top: 10px;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-}
-
-.info-window-tag {
-  display: inline-block;
-  background-color: #e9ecef;
-  color: #495057;
-  padding: 5px 10px;
-  border-radius: 15px;
-  font-size: 13px;
-  white-space: nowrap;
-}
-
-.info-window-image {
-  max-width: 100%;
-  height: auto;
-  margin-top: 10px;
-  margin-bottom: 10px;
-  border-radius: 8px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-}
-
-.bar-list-scroll-area {
-  flex-grow: 1;
-  overflow-y: auto;
-  padding: 16px;
 }
 
 .no-bars-message {
