@@ -70,7 +70,7 @@ const handleLogout = async () => {
   }
 };
 
-const avatarURL = computed(() => {
+const avatarUrl = computed(() => {
   return user.value?.avatarUrl || '/default-user-avatar.png';
 });
 </script>
@@ -88,7 +88,7 @@ const avatarURL = computed(() => {
       <li><RouterLink to="/event">酒吧活動</RouterLink></li>
       <li><RouterLink to="/subscription">訂閱優惠</RouterLink></li>
       <li>
-        <div v-if="isAuthenticated" class="cursor-pointer flex flex-col items-center gap-1">
+        <div v-if="isAuthenticated" class="flex flex-col items-center gap-1 cursor-pointer">
           <UserAvatar 
           :avatar-url="avatarUrl"
           :display-name="user.username"
@@ -102,7 +102,7 @@ const avatarURL = computed(() => {
         <div
           @click="handleLogout"
           v-if="isAuthenticated"
-          class="cursor-pointer flex flex-col items-center gap-1 logout-button">
+          class="flex flex-col items-center gap-1 cursor-pointer logout-button">
           <span>登出</span>
         </div>
       </li>
