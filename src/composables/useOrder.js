@@ -37,14 +37,20 @@ const apiClient = axios.create({
  timeout: 10000,
  headers: {
    'Content-Type': 'application/json'
- }
+ },
+ withCredentials: true 
 })
 
 apiClient.interceptors.request.use(
  (config) => {
    const token = localStorage.getItem('access_token')
+   
    if (token) {
      config.headers.Authorization = `Bearer ${token}`
+     console.log(`🔑 使用 Bearer Token: ${config.method?.toUpperCase()} ${config.url}`)
+   } else {
+     console.log(`🍪 使用 Cookie 認證: ${config.method?.toUpperCase()} ${config.url}`)
+     config.withCredentials = true
    }
    
    console.log(`🔄 API 請求: ${config.method?.toUpperCase()} ${config.url}`)
@@ -55,6 +61,7 @@ apiClient.interceptors.request.use(
    return Promise.reject(error)
  }
 )
+
 
 apiClient.interceptors.response.use(
  (response) => {
