@@ -24,7 +24,7 @@ function onClose() {
 // 根據類型設置按鈕
 const buttonClass = computed(() => {
   const classes = {
-    success: 'text-white bg-gradient-to-r from-green-500 to-green-600',
+    success: 'text-[var(--color-black)] bg-gradient-to-r from-[#a9ebd4] to-[#02bc7d]',
     error: 'text-white bg-gradient-to-r from-red-500 to-red-600',
     warning: 'text-white bg-gradient-to-r from-yellow-500 to-yellow-600',
     info: 'text-white bg-gradient-to-r from-blue-500 to-blue-600',
@@ -44,11 +44,7 @@ const buttonClass = computed(() => {
       <div class="w-full max-w-md p-6 space-y-4 text-center bg-white shadow-xl rounded-2xl">
         <slot name="icon">
           <!-- 根據類型顯示不同圖標 -->
-          <div v-if="type === 'success'" class="flex items-center justify-center w-16 h-16 mx-auto bg-green-100 rounded-full">
-            <svg class="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
-            </svg>
-          </div>
+          <img v-if="type === 'success'" src="/checkmark.png" class="w-12 h-12 mx-auto" alt="成功 icon" />
 
           <div v-else-if="type === 'error'" class="flex items-center justify-center w-16 h-16 mx-auto bg-red-100 rounded-full">
             <svg class="w-8 h-8 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -68,8 +64,12 @@ const buttonClass = computed(() => {
             </svg>
           </div>
 
-          <!-- 預設 -->
-          <img v-else src="/checkmark.png" class="w-12 h-12 mx-auto" alt="成功 icon" />
+          <div v-else class="flex items-center justify-center w-16 h-16 mx-auto bg-green-100 rounded-full">
+            <svg class="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+            </svg>
+          </div>
+
         </slot>
 
         <h2 class="text-xl font-semibold text-gray-800">{{ title }}</h2>
