@@ -108,7 +108,7 @@ const handleLogout = async () => {
   <nav class="flex justify-center w-56 min-h-screen p-6 bg-gradient-to-b from-[#f5f5f5] to-[#dcdcdc]">
     <ul class="w-full space-y-1">
       <li v-for="item in menuItems" :key="item.name">
-        <!-- 主選單項目 -->
+        <!-- 左側選單 -->
         <div
           @click="handleMainMenuClick(item)"
           :class="[
@@ -149,7 +149,6 @@ const handleLogout = async () => {
         </div>
       </li>
 
-      <!-- 登出 -->
       <li>
         <button @click="handleLogout" class="flex items-center w-full gap-2 p-2 text-black transition rounded cursor-pointer hover:bg-gray-200">
           <i class="w-4 fa-solid fa-arrow-right-from-bracket" />登出

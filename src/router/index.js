@@ -7,7 +7,6 @@ import EventInfo from '@/views/events/EventInfo.vue';
 import MapView from '@/views/map/MapView.vue';
 import Member from '@/views/member/auth/Member.vue';
 import MemberDashboard from '@/views/member/MemberDashboard.vue';
-import Reviews from '@/views/reviews/Reviews.vue';
 import Subscription from '@/views/sub/Subscription.vue';
 import Cart from '@/views/cart/Cart.vue';
 import Payment from '@/views/cart/Payment.vue';
@@ -71,7 +70,6 @@ const routes = [
       },
     ],
   },
-  { path: '/reviews', name: 'Reviews', component: Reviews },
   { path: '/subscription', name: 'Subscription', component: Subscription },
   { path: '/cart', name: 'Cart', component: Cart, meta: { requiresAuth: true } },
   { path: '/payment', name: 'Payment', component: Payment, meta: { requiresAuth: true } },

@@ -1,7 +1,7 @@
 <script setup>
 import { ref, computed } from 'vue';
 import { Listbox, ListboxButton, ListboxOptions, ListboxOption } from '@headlessui/vue';
-import { CheckIcon, ChevronUpDownIcon } from '@heroicons/vue/20/solid';
+import { ChevronUpDownIcon } from '@heroicons/vue/20/solid';
 
 const publishedEvents = ref([
   {
@@ -89,13 +89,13 @@ const filteredEvents = computed(() => {
 <template>
   <section class="w-full max-w-4xl mx-auto">
     <h2 class="mb-4 text-2xl font-semibold text-[var(--color-primary-orange)]">我發布的活動</h2>
-    <div class="flex flex-wrap items-center gap-4 mb-6 text-sm">
-      <div class="flex items-center gap-2 text-sm w-fit">
+    <div class="flex flex-col flex-wrap items-start gap-4 mb-6 text-sm md:flex-row md:items-center">
+      <div class="flex flex-col flex-wrap items-center w-full gap-2 text-sm md:flex-row md:w-fit">
         <span class="text-[var(--color-secondary-green)] font-bold">活動狀態：</span>
         <Listbox v-model="statusFilter">
           <div class="relative">
             <ListboxButton
-              class="relative w-35 cursor-default rounded border border-gray-200 bg-white py-1.5 pl-3 pr-10 text-left shadow-sm focus:outline-none">
+              class="relative w-32 cursor-default rounded border border-gray-200 bg-white py-1.5 pl-3 pr-10 text-left shadow-sm focus:outline-none">
               <span class="block truncate">{{ statusFilter }}</span>
               <span class="absolute inset-y-0 right-0 flex items-center pr-2 pointer-events-none">
                 <ChevronUpDownIcon class="w-4 h-4 text-gray-400" />
@@ -124,12 +124,12 @@ const filteredEvents = computed(() => {
         </Listbox>
       </div>
 
-      <div class="flex items-center gap-2 text-sm w-fit">
+      <div class="flex flex-col flex-wrap items-center w-full gap-2 text-sm md:flex-row md:w-fit">
         <span class="text-[var(--color-secondary-green)] font-bold">時間排序：</span>
         <Listbox v-model="sortOrder">
           <div class="relative">
             <ListboxButton
-              class="relative w-35 cursor-default rounded border border-gray-200 bg-white py-1.5 pl-3 pr-10 text-left shadow-sm focus:outline-none">
+              class="relative w-32 cursor-default rounded border border-gray-200 bg-white py-1.5 pl-3 pr-10 text-left shadow-sm focus:outline-none">
               <span class="block truncate">
                 {{ sortOrder === 'desc' ? '新 → 舊' : '舊 → 新' }}
               </span>
@@ -175,15 +175,10 @@ const filteredEvents = computed(() => {
       <li
         v-for="event in filteredEvents"
         :key="event.id"
-        class="grid grid-cols-[8rem_1fr] gap-4 p-6 bg-white rounded-xl border border-gray-100 shadow-sm translate-y-0 scale-100 transform hover:-translate-y-1 hover:scale-[1.005] hover:shadow-lg transition-all duration-300 ease-in-out cursor-pointer">
-        <!-- <li
-        v-for="event in filteredEvents"
-        :key="event.id"
-        class="grid grid-cols-[8rem_1fr] gap-4 p-6 bg-white border rounded-lg shadow-sm hover:shadow-md"> -->
-        <div class="w-32 h-32 overflow-hidden rounded">
+        class="grid grid-cols-1 md:grid-cols-[8rem_1fr] gap-4 p-6 bg-white rounded-xl border border-gray-100 shadow-sm hover:-translate-y-1 hover:scale-[1.005] hover:shadow-lg transition-all duration-300 ease-in-out cursor-pointer">
+        <div class="w-full overflow-hidden rounded aspect-square md:w-32">
           <img :src="event.imageUrl" alt="event-image" class="object-cover w-full h-full" />
         </div>
-
         <div class="flex flex-col justify-between h-full">
           <div class="flex items-start justify-between">
             <h3 class="text-lg font-bold">{{ event.title }}</h3>
