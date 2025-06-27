@@ -735,8 +735,7 @@ const checkUrlForBarDetail = async () => {
 
       selectedBarForDetail.value = barFromUrl;
       isBarDetailModalOpen.value = true;
-
-      // 在背景載入完整資料
+      
       try {
         const fullData = await getPlaceDetails(barId);
         if (
@@ -902,10 +901,6 @@ onMounted(async () => {
 </script>
 
 <style scoped>
-
-
-
-
 .bar-list-sidebar {
   width: 380px;
   background-color: #f7f7f7;
