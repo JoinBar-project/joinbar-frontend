@@ -48,8 +48,8 @@
         <h3>購買項目 ({{ orderInfo.items.length }})</h3>
         <div v-for="item in orderInfo.items" :key="item.id" class="item">
           <div>
-            <div class="item-name">{{ item.eventName }}</div>
-            <div v-if="item.barName" class="item-bar">📍 {{ item.barName }}</div>
+            <div class="item-name">{{ getItemDisplayName(item) }}</div>
+            <div v-if="getItemSubtitle(item)" class="item-bar">{{ getItemSubtitle(item) }}</div>
           </div>
           <div class="item-price">${{ formatAmount(item.price) }}</div>
         </div>
@@ -66,7 +66,6 @@
         </button>
       </div>
     </div>
-
   </div>
 </template>
 
@@ -126,11 +125,64 @@ const loadOrder = async () => {
     const response = await getOrderDetails(orderId || route.params.orderNumber)
     orderInfo.value = response.order
     
+    if (response.order.items && response.order.items.length > 0) {
+      const hasSubscription = response.order.items.some(item => item.itemType === 2)
+      const hasEvent = response.order.items.some(item => item.itemType === 1)
+      
+      if (hasSubscription && !hasEvent) {
+        console.log('🔄 檢測到訂閱訂單，重定向到 payment-result');
+        router.replace({
+          path: '/payment-result',
+          query: {
+            orderId: response.order.id,
+            orderNumber: response.order.orderNumber,
+            transactionId: response.order.transactionId || route.query.transactionId || 'completed'
+          }
+        });
+        return;
+      }
+    }
+    
   } catch (err) {
     error.value = err.message || '載入失敗'
   } finally {
     isLoading.value = false
   }
+}
+
+const getItemDisplayName = (item) => {
+  if (item.itemType === 2) {
+    return getSubscriptionName(item.subscriptionType) || '訂閱方案'
+  } else {
+    return item.eventName || '活動票券'
+  }
+}
+
+const getItemSubtitle = (item) => {
+  if (item.itemType === 2) {
+    const duration = getSubscriptionDuration(item.subscriptionType)
+    return `📋 ${item.subscriptionType || '訂閱服務'}${duration ? ` (${duration})` : ''}`
+  } else {
+    return item.barName ? `📍 ${item.barName}` : null
+  }
+}
+
+const getSubscriptionName = (subType) => {
+  const subNames = {
+    'vip': '尊爵黑卡',
+    'seasonal': '季訂方案', 
+    'monthly': '小資月卡'
+  }
+  return subNames[subType] || subType
+}
+
+const getSubscriptionDuration = (subType) => {
+  const durations = {
+    'vip': '365天',
+    'seasonal': '90天',
+    'monthly': '30天'
+  }
+  return durations[subType] || ''
 }
 
 const retry = () => loadOrder()
@@ -172,7 +224,6 @@ const getPaymentText = (method) => {
   border-bottom: 1px solid #f3f4f6;
 }
 
-/* 將 .status 相關的樣式全部重命名為 order-status-label */
 .order-status-label {
   padding: 4px 8px;
   border-radius: 4px;
@@ -185,8 +236,6 @@ const getPaymentText = (method) => {
 .order-status-label.confirmed, .order-status-label.paid { background: #d1fae5; color: #065f46; }
 .order-status-label.cancelled { background: #e5e7eb; color: #4b5563; }
 
-
-/* 以下為不變的其他樣式 */
 .loading, .error {
   text-align: center;
   padding: 60px 20px;

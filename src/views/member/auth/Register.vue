@@ -11,8 +11,6 @@
       </div>
     </transition>
 
-    
-    
     <div class="flex border-b border-[var(--color-icon-secondary)]">
       <router-link to="/login" class="flex-1 py-2 text-center font-semibold text-[var(--color-icon-secondary)] hover:text-[var(--color-secondary-green)] transition">
         會員登入
@@ -26,7 +24,7 @@
 
     <transition name="slide-fade" mode="out-in">
       <div :key="step" class="w-[380px]">
-        <!-- Step 1: 註冊表單 -->
+
         <div v-if="step === 1" class="space-y-4 mt-6">
           <h2 class="text-lg font-semibold mb-4" style="color: var(--color-primary-orange);">建立帳號</h2>
           
@@ -69,7 +67,6 @@
               </button>
             </div>
 
-            <!-- 顯示具體的錯誤訊息 -->
             <div v-if="errors[field.model]" class="text-[var(--color-primary-orange)] text-xs ml-1">
               <span v-if="field.model === 'username'">{{ usernameErrorMessage }}</span>
               <span v-else-if="field.model === 'nickname'">{{ nicknameErrorMessage }}</span>
@@ -104,7 +101,6 @@
           下一步
         </button>
 
-          <!-- 登入提示 -->
           <div class="text-center mt-4 pt-4 border-t border-gray-300">
             <span class="text-sm text-gray-300">已有帳號？</span>
             <router-link
@@ -115,7 +111,6 @@
           </div>
         </div>
 
-        <!-- Step 2: 偏好選擇 -->
         <div v-else class="space-y-4 mt-6">
           <h2 class="text-lg font-semibold mb-4 text-[var(--color-primary-orange)]">選擇你的酒吧偏好</h2>
 
@@ -205,7 +200,6 @@ const registerFields = [
 const barTypes = ['運動酒吧', '音樂酒吧', '學生酒吧', '餐酒館', '暢飲店'];
 const barMoods = ['熱鬧歡樂', '浪漫私密', '復古懷舊', '高級精緻', '輕鬆悠閒'];
 
-// 紀錄每個欄位是否有錯誤
 const errors = ref({
   username: false,
   nickname: false,
@@ -214,7 +208,6 @@ const errors = ref({
   birthday: false
 });
 
-// 錯誤訊息
 const usernameErrorMessage = ref('');
 const nicknameErrorMessage = ref('');
 const emailErrorMessage = ref('');
@@ -225,7 +218,6 @@ const clearError = (fieldName) => {
   if (errors.value[fieldName]) {
     errors.value[fieldName] = false;
     
-    // 清除對應的錯誤訊息
     if (fieldName === 'username') {
       usernameErrorMessage.value = ''
     } else if (fieldName === 'nickname') {
@@ -268,7 +260,6 @@ const validateEmail = (email) => {
   return true;
 }
 
-// 驗證密碼格式
 const validatePassword = (password) => {
   if (!password || password.trim() === '') {
     passwordErrorMessage.value = '密碼為必填欄位';
@@ -294,7 +285,6 @@ const validatePassword = (password) => {
   return true;
 }
 
-// 驗證生日格式
 const validateBirthday = (birthday) => {
   if (!birthday || birthday.trim() === '') {
     return true;
@@ -306,7 +296,6 @@ const validateBirthday = (birthday) => {
     return false;
   }
 
-  // 檢查是否為未來日期
   const birthDate = new Date(birthday);
   const today = new Date();
   today.setHours(0, 0, 0, 0);
@@ -447,11 +436,9 @@ const handleLineLogin = async () => {
   }
 }
 
-// 組件掛載時檢查 LINE 登入狀態
 onMounted(async () => {
-  // 初始化 store
+
   authStore.init()
-  // 檢查 LINE 登入回調
   const result = await authStore.checkLineCallback()
   if (result?.success) {
     router.push(result.redirect)
