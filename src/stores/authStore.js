@@ -44,6 +44,7 @@ export const useAuthStore = defineStore('auth', () => {
     localStorage.removeItem('access_token');
     localStorage.removeItem('refresh_token');
     localStorage.removeItem('user');
+    document.cookie = 'user_info=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; sameSite=lax';
     clearError();
     console.log('認證狀態已清除');
   }
