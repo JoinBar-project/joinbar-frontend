@@ -22,7 +22,7 @@
     </div>
 
     <div v-if="isLogin" class="mt-6 space-y-4">
-    <!-- 一般登入表單 -->
+
     <div class="space-y-1">
       <div 
       :class="[
@@ -116,7 +116,6 @@
         </button>
       </div>
 
-      <!-- 登入按鈕 -->
       <div class="flex justify-center">
         <button
           @click="handleEmailLogin"
@@ -166,7 +165,6 @@ const errors = ref({
   password: false
 })
 
-// 錯誤訊息
 const emailErrorMessage = ref('')
 const passwordErrorMessage = ref('')
 
@@ -174,7 +172,6 @@ const clearError = (fieldName) => {
   if (errors.value[fieldName]) {
     errors.value[fieldName] = false
     
-    // 清除對應的錯誤訊息
     if (fieldName === 'email') {
       emailErrorMessage.value = ''
     } else if (fieldName === 'password') {
@@ -203,7 +200,6 @@ const validateEmail = (email) => {
   return true
 }
 
-// 驗證密碼格式
 const validatePassword = (password) => {
   if (!password || password.trim() === '') {
     passwordErrorMessage.value = '密碼為必填欄位'
@@ -295,16 +291,8 @@ const useTestAccount = () => {
   loginForm.value.email = 'admin@test.com'
   loginForm.value.password = 'Aa201201'
 
-  // 清除所有錯誤狀態
   errors.value.email = false
   errors.value.password = false
-
-  // Swal.fire({
-  //   title: '測試帳號已填入',
-  //   text: '已自動填入測試用的電子郵件和密碼',
-  //   icon: 'info',
-  //   confirmButtonText: '確認'
-  // })
 }
 
 // 組件掛載時檢查 LINE 登入狀態
