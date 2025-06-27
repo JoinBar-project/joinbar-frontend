@@ -109,15 +109,6 @@
             <IconLine />
             LINE Pay
           </button>
- 
-          <button 
-            class="payment-btn creditcard-btn"
-            :class="{ 'selected': paymentMethod === 'creditcard' }"
-            @click="paymentMethod = 'creditcard'"
-          >
-            <IconCreditCard />  
-            信用卡
-          </button>
         </div>
 
         <div
@@ -169,7 +160,6 @@ import utc from 'dayjs/plugin/utc'
 import timezone from 'dayjs/plugin/timezone'
 
 import IconLine from '@/components/icons/IconLine.vue'
-import IconCreditCard from '@/components/icons/IconCreditCard.vue'
 
 dayjs.extend(utc)
 dayjs.extend(timezone)
@@ -180,8 +170,6 @@ const route = useRoute()
 
 const { 
  createOrder, 
- confirmPayment, 
- simulatePayment,
  getOrderDetails, 
  isLoading: orderLoading,
  error: orderError,
@@ -196,7 +184,7 @@ const {
  clearState: clearLinePayState
 } = useLinePay()
 
-const paymentMethod = ref('')
+const paymentMethod = ref('linepay') // 預設為 LINE Pay
 const isLoading = ref(true)
 const isSubmitting = ref(false)
 
@@ -291,7 +279,6 @@ const isCustomerInfoValid = computed(() => {
 
 const getSubmitButtonText = () => {
  if (isSubmitting.value || orderLoading.value || linePayLoading.value) return '處理中...'
- if (!paymentMethod.value) return '請選擇付款方式'
  if (!isCustomerInfoValid.value) return '請完成客戶資訊'
  return '確認付款'
 }
@@ -306,10 +293,6 @@ watch(() => customerInfo.value.phone, () => {
 
 watch(() => customerInfo.value.email, () => {
  if (formErrors.value.email) delete formErrors.value.email
-})
-
-watch(() => paymentMethod.value, () => {
- paymentMethodError.value = ''
 })
 
 function loadUserInfo() {
@@ -379,52 +362,29 @@ const submitOrder = async () => {
       }
     }
 
-    if (paymentMethod.value === 'linepay') {
-      console.log(`🔄 處理訂單 ${orderIdToPay} 的 LINE Pay 付款...`)
-      
-      const paymentResult = await createLinePayment(orderIdToPay)
-      
-      sessionStorage.setItem('pendingOrder', JSON.stringify({
-        orderId: orderIdToPay,
-        orderNumber: orderToPay.orderNumber,
-        transactionId: paymentResult.transactionId
-      }))
-      
-      console.log('✅ 訂單準備完成，跳轉到 LINE Pay...')
-      
-      if (!isRetryMode.value) {
-        cart.clearCart()
-      }
-      
-      redirectToLinePay(paymentResult.paymentUrl)
-      
-    } else {
-      console.log(`🔄 處理訂單 ${orderIdToPay} 的模擬付款...`);
-      const paymentData = { paymentMethod: paymentMethod.value, orderData: orderToPay }
-      const paymentResult = await simulatePayment(paymentData);
-      
-      await confirmPayment(orderIdToPay, paymentResult);
-      
-      showPaymentSuccessMessage(orderToPay, paymentResult);
-      
-      if (!isRetryMode.value) {
-        cart.clearCart(); 
-      }
-      
-      router.push({
-        name: 'OrderSuccess',
-        params: { orderNumber: orderToPay.orderNumber },
-        query: { orderId: orderIdToPay }
-      });
+    console.log(`🔄 處理訂單 ${orderIdToPay} 的 LINE Pay 付款...`)
+    
+    const paymentResult = await createLinePayment(orderIdToPay)
+    
+    sessionStorage.setItem('pendingOrder', JSON.stringify({
+      orderId: orderIdToPay,
+      orderNumber: orderToPay.orderNumber,
+      transactionId: paymentResult.transactionId
+    }))
+    
+    console.log('✅ 訂單準備完成，跳轉到 LINE Pay...')
+    
+    if (!isRetryMode.value) {
+      cart.clearCart()
     }
+    
+    redirectToLinePay(paymentResult.paymentUrl)
 
   } catch (error) {
     console.error('❌ 訂單提交失敗:', error)
     handleSubmitError(error)
   } finally {
-    if (paymentMethod.value !== 'linepay') {
-      isSubmitting.value = false
-    }
+    // LINE Pay 不需要重置 isSubmitting，因為會跳轉到外部頁面
   }
 }
 
@@ -445,28 +405,12 @@ function validateForm() {
    formErrors.value.email = '電子郵件格式不正確'
  }
  
- if (!paymentMethod.value) {
-   paymentMethodError.value = '請選擇付款方式'
-   return false
- }
- 
  if (Object.keys(formErrors.value).length > 0) {
    setError('請修正表單錯誤')
    return false
  }
 
  return true
-}
-
-function showPaymentSuccessMessage(order, paymentResult) {
- const paymentMethodName = paymentMethod.value === 'linepay' ? 'LINE Pay' : '信用卡'
- const amount = totalPrice.value
- 
- if (paymentMethod.value === 'linepay') {
-   alert(`🟢 ${paymentMethodName} 模擬付款成功！\n\n訂單編號：${order.orderNumber}\n金額：${amount}\n付款ID：${paymentResult.paymentId}\n\n點擊確定前往訂單詳情`)
- } else if (paymentMethod.value === 'creditcard') {
-   alert(`💳 ${paymentMethodName} 模擬付款成功！\n\n訂單編號：${order.orderNumber}\n金額：${amount}\n付款ID：${paymentResult.paymentId}\n\n點擊確定前往訂單詳情`)
- }
 }
 
 function handleSubmitError(error) {
@@ -678,22 +622,6 @@ const goBack = () => {
  .linepay-btn.selected {
   box-shadow: 0 0 0 2px var(--color-line-green, #25c916), 
               0 0 0 4px rgba(37, 201, 22, 0.2);
- }
-
- .creditcard-btn {
-  background-color: var(--color-creditcard, #ffd4d4);
-  color: var(--color-creditcard-text, #333);
-  border-color: var(--color-creditcard, #ffd4d4);
- }
-
- .creditcard-btn:hover {
-  background-color: #ffcaca;
-  border-color: #ffcaca;
- }
-
- .creditcard-btn.selected {
-  box-shadow: 0 0 0 2px var(--color-creditcard, #ffd4d4), 
-              0 0 0 4px rgba(255, 212, 212, 0.3);
  }
  
  .checkout-btn {

@@ -54,7 +54,7 @@
             <div class="order-info">
               <span>總金額：<strong>${{ formatAmount(order.totalAmount) }}</strong></span>
               <span v-if="order.paymentMethod">
-                付款：{{ getPaymentText(order.paymentMethod) }}
+                付款：LINE Pay
               </span>
             </div>
 
@@ -180,10 +180,6 @@ const getStatusText = (status) => {
 }
 
 const getStatusClass = (status) => `order-status-label-${status}`
-
-const getPaymentText = (method) => {
-  return method === 'linepay' ? 'LINE Pay' : '信用卡'
-}
 
 const getItemDisplayName = (item) => {
   if (item.itemType === 2) {

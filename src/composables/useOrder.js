@@ -28,8 +28,7 @@ export const ORDER_STATUS_TEXT = {
 }
 
 export const PAYMENT_METHOD_TEXT = {
-'linepay': 'LINE Pay',
-'creditcard': '信用卡'
+'linepay': 'LINE Pay'
 }
 
 const apiClient = axios.create({
@@ -241,6 +240,28 @@ const getOrderDetails = async (orderId) => {
   }
 }
 
+const getOrderDetailsByNumber = async (orderNumber) => {
+  try {
+    isLoading.value = true
+    error.value = ''
+
+    const response = await apiClient.get(`/orders/number/${orderNumber}/details`)
+    
+    if (response.data.order) {
+      currentOrder.value = response.data.order
+    }
+
+    console.log('✅ 訂單詳情載入成功:', response.data.order?.orderNumber)
+    return response.data
+  } catch (err) {
+    const errorMessage = handleApiError(err, '載入訂單詳情失敗')
+    error.value = errorMessage
+    throw new Error(errorMessage)
+  } finally {
+    isLoading.value = false
+  }
+}
+
 const confirmPayment = async (orderId, paymentData) => {
   try {
     isLoading.value = true
@@ -304,30 +325,6 @@ const cancelOrder = async (orderId, reason = '') => {
   }
 }
 
-const simulatePayment = async (paymentData) => {
-  const { paymentMethod, orderData } = paymentData
-  
-  if (!paymentMethod || !orderData) {
-    throw new Error('付款方式和訂單數據不能為空')
-  }
-  
-  console.log(`💳 開始模擬 ${PAYMENT_METHOD_TEXT[paymentMethod]} 付款...`)
-  
-  const processingTime = paymentMethod === 'linepay' ? 1500 : 2000
-  await new Promise(resolve => setTimeout(resolve, processingTime))
-  
-  const result = {
-    success: true,
-    paymentId: `${paymentMethod.toUpperCase()}_${Date.now()}`,
-    paymentMethod,
-    orderId: String(orderData.orderId),
-    timestamp: dayjs().tz('Asia/Taipei').toISOString()
-  }
-  
-  console.log(`✅ 付款模擬完成:`, result)
-  return result
-}
-
 const getOrderHistory = async () => {
   try {
     isLoading.value = true
@@ -384,7 +381,7 @@ const getStatusText = (status) => {
 }
 
 const getPaymentMethodText = (method) => {
-  return PAYMENT_METHOD_TEXT[method] || method
+  return PAYMENT_METHOD_TEXT[method] || 'LINE Pay'
 }
 
 const clearError = () => {
@@ -522,9 +519,9 @@ return {
   formattedTotalAmount,
   createOrder,
   getOrderDetails,
+  getOrderDetailsByNumber,
   confirmPayment,
   cancelOrder,
-  simulatePayment,
   getOrderHistory,
   validateOrderData,
   validateOrderId,
