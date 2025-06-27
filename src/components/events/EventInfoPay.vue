@@ -6,7 +6,6 @@ import { useAuthStore } from '@/stores/authStore';
 import { useOrder } from '@/composables/useOrder';
 import { useLinePay } from '@/composables/useLinePay';
 import { ref, computed, onMounted, watch } from 'vue';
-import axios from 'axios';
 import EventHoster from './EventHoster.vue';
 import MessageBoard from './MessageBoard.vue';
 import ModalEdit from '@/components/events/ModalEdit.vue';
@@ -21,7 +20,7 @@ const router = useRouter();
 const cart = useCartStore();
 const authStore = useAuthStore();
 
-const { createOrder } = useOrder();
+const { createOrder, apiClient } = useOrder();
 const { createLinePayment, redirectToLinePay } = useLinePay();
 
 const eventRef = ref({ ...props.event });
@@ -31,7 +30,12 @@ const hasParticipated = ref(false);
 
 const isInCart = computed(() => cart.isInCart(eventRef.value.id));
 const isOwner = computed(() => authStore.currentUser?.id === eventRef.value.hostUser);
-const isAuthenticated = computed(() => !!authStore.accessToken && !!authStore.user);
+const isAuthenticated = computed(() => {
+  return authStore.isAuthenticated || 
+         !!authStore.user || 
+         !!localStorage.getItem('access_token') ||
+         document.cookie.includes('access_token=');
+});
 
 const {
   isJoin,
@@ -49,11 +53,9 @@ const checkUserParticipation = async () => {
   }
 
   try {
-    const token = localStorage.getItem('access_token');
+    console.log('🔍 檢查用戶參與狀態...');
     
-    const response = await axios.get('/api/orders/history', {
-      headers: { Authorization: `Bearer ${token}` }
-    });
+    const response = await apiClient.get('/orders/history');
     
     const orders = response.data.orders || [];
     const hasParticipatedInEvent = orders.some(order => 
@@ -68,7 +70,7 @@ const checkUserParticipation = async () => {
 
     if (!hasParticipated.value && isJoin.value) {
       hasParticipated.value = isJoin.value;
-      console.log('🔍 用戶參與狀態 (isJoin):', hasParticipated.value);
+      console.log('🔍 用戶參與狀態 (isJoin 補充):', hasParticipated.value);
     }
 
   } catch (error) {
@@ -79,23 +81,28 @@ const checkUserParticipation = async () => {
 
 const reloadEventData = async () => {
   try {
-    const token = localStorage.getItem('access_token');
-    const res = await axios.get(`/api/event/${eventRef.value.id}`, {
-      headers: token ? { Authorization: `Bearer ${token}` } : {},
-    });
+    console.log('🔄 重新載入活動資料...');
+    
+    const res = await apiClient.get(`/event/${eventRef.value.id}`);
 
     if (res.data?.event) {
       eventRef.value = { ...res.data.event };
+      console.log('✅ 活動資料已更新');
     }
     if (res.data?.tags) {
       tagList.value = [...res.data.tags];
+      console.log('✅ 標籤資料已更新');
     }
 
     await checkUserParticipation();
 
     emit('update', { event: eventRef.value, tags: tagList.value });
   } catch (error) {
-    console.error('活動資料更新失敗', error);
+    console.error('❌ 活動資料更新失敗:', error);
+    
+    if (isAuthenticated.value) {
+      await checkUserParticipation();
+    }
   }
 };
 
@@ -126,16 +133,28 @@ const addToCart = async () => {
 };
 
 const buyNow = async () => {
+  console.log('🔍 認證狀態檢查:', {
+    'authStore.isAuthenticated': authStore.isAuthenticated,
+    'authStore.user': !!authStore.user,
+    'authStore.accessToken': !!authStore.accessToken,
+    'localStorage.access_token': !!localStorage.getItem('access_token'),
+    'cookie.access_token': document.cookie.includes('access_token='),
+    'computed.isAuthenticated': isAuthenticated.value
+  });
+
   if (hasParticipated.value) {
     alert('您已經報名過此活動了！');
     return;
   }
 
   if (!isAuthenticated.value) {
+    console.warn('❌ 認證檢查失敗，用戶未登入');
     const shouldLogin = confirm('請先登入後再進行購買\n\n點擊「確定」前往登入頁面');
     if (shouldLogin) router.push('/login');
     return;
   }
+
+  console.log('✅ 認證檢查通過，開始購買流程');
 
   try {
     isProcessing.value = true;
@@ -151,6 +170,7 @@ const buyNow = async () => {
     };
 
     console.log('🔄 創建訂單:', orderData);
+    
     const orderResponse = await createOrder(orderData);
     const orderId = orderResponse.order.id || orderResponse.order.orderId;
 
@@ -158,11 +178,23 @@ const buyNow = async () => {
       throw new Error('訂單創建失敗，無法獲取訂單 ID');
     }
 
-    console.log('✅ 訂單創建成功:', orderResponse.order.orderNumber);
+    console.log('✅ 訂單創建成功:', {
+      orderId,
+      orderNumber: orderResponse.order.orderNumber
+    });
 
     console.log('🔄 創建 LINE Pay 付款...');
-    const paymentResult = await createLinePayment(orderId);
+    
+    const paymentResponse = await apiClient.post('/linepay/create', {
+      orderId: String(orderId)
+    });
 
+    if (!paymentResponse.data.success) {
+      throw new Error(paymentResponse.data.message || 'LINE Pay 創建失敗');
+    }
+
+    const paymentResult = paymentResponse.data.data;
+    
     sessionStorage.setItem('pendingOrder', JSON.stringify({
       orderId: orderId,
       orderNumber: orderResponse.order.orderNumber,
@@ -173,13 +205,21 @@ const buyNow = async () => {
 
     console.log('✅ LINE Pay 付款準備完成，跳轉中...');
 
-    redirectToLinePay(paymentResult.paymentUrl);
+    window.location.href = paymentResult.paymentUrl;
 
   } catch (error) {
     console.error('❌ 立即購買失敗:', error);
     
+    if (error.response) {
+      console.error('❌ API 錯誤詳情:', {
+        status: error.response.status,
+        data: error.response.data,
+        url: error.response.config?.url
+      });
+    }
+    
     let errorMessage = '購買失敗，請重試';
-    if (error.message.includes('登入已過期')) {
+    if (error.message.includes('登入已過期') || error.response?.status === 401) {
       errorMessage = '登入已過期，請重新登入';
       localStorage.removeItem('access_token');
       localStorage.removeItem('user');
@@ -191,6 +231,8 @@ const buyNow = async () => {
     } else if (error.message.includes('重複') || error.message.includes('已參加過')) {
       errorMessage = '您已經報名過此活動了';
       hasParticipated.value = true;
+    } else if (error.response?.data?.message) {
+      errorMessage = error.response.data.message;
     } else if (error.message) {
       errorMessage = error.message;
     }
@@ -213,11 +255,12 @@ watch(isJoin, (newValue) => {
 });
 
 onMounted(async () => {
+  console.log('🔄 組件掛載，開始載入資料...');
   await reloadEventData();
   
   const urlParams = new URLSearchParams(window.location.search);
   if (urlParams.get('paymentSuccess') || urlParams.get('orderId')) {
-    console.log('🔄 從付款頁面返回，重新檢查參與狀態...');
+    console.log('🔄 從付款頁面返回，延遲重新檢查參與狀態...');
     setTimeout(async () => {
       await checkUserParticipation();
     }, 2000);

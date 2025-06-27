@@ -65,7 +65,7 @@ const routes = [
       },
       {
         path: 'order-records',
-        name: 'OrderRecords',
+        name: 'MemberOrderRecords',
         component: () => import('@/views/member/profile/OrderRecords.vue'),
       },
     ],
