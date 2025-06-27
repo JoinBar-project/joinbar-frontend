@@ -1,3 +1,39 @@
+<script setup>
+import { computed } from 'vue';
+
+const props = defineProps({
+  visible: Boolean,
+  title: String,
+  message: String,
+  type: {
+    type: String,
+    default: 'default',
+    validator: (value) => ['success', 'error', 'warning', 'info', 'default'].includes(value)
+  },
+  confirmText: {
+    type: String,
+    default: '確認'
+  }
+})
+const emit = defineEmits(['close'])
+
+function onClose() {
+  emit('close')
+}
+
+// 根據類型設置按鈕
+const buttonClass = computed(() => {
+  const classes = {
+    success: 'text-white bg-gradient-to-r from-green-500 to-green-600',
+    error: 'text-white bg-gradient-to-r from-red-500 to-red-600',
+    warning: 'text-white bg-gradient-to-r from-yellow-500 to-yellow-600',
+    info: 'text-white bg-gradient-to-r from-blue-500 to-blue-600',
+    default: 'text-[var(--color-black)] bg-gradient-to-r from-[#a9ebd4] to-[#02bc7d]'
+  }
+  return classes[props.type] || classes.default
+})
+</script>
+
 <template>
   <transition name="modal-fade">
     <div
@@ -32,7 +68,7 @@
             </svg>
           </div>
 
-          <!-- 預設使用原本的 checkmark 圖片 -->
+          <!-- 預設 -->
           <img v-else src="/checkmark.png" class="w-12 h-12 mx-auto" alt="成功 icon" />
         </slot>
 
@@ -49,23 +85,6 @@
     </div>
   </transition>
 </template>
-
-<script setup>
-const props = defineProps({
-  visible: Boolean,
-  title: String,
-  message: String,
-  confirmText: {
-    type: String,
-    default: '確認'
-  }
-})
-const emit = defineEmits(['close'])
-
-function onClose() {
-  emit('close')
-}
-</script>
 
 <style scoped>
 .modal-fade-enter-active,
