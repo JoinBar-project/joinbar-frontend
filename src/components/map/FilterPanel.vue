@@ -1,7 +1,7 @@
 <template>
   <div class="text-gray-800 filter-panel-container">
     <div class="filter-header">
-      <h2 class="filter-title">篩選</h2>
+      <h2 class="text-[26px] font-bold text-[var(--color-black)]">篩選</h2>
       <button @click="closePanel" class="close-button">
         <img
           src="@/assets/icons/mapicons/close-button.svg"
@@ -12,7 +12,7 @@
     </div>
 
     <div
-      class="applied-filters-list-wrapper"
+      class="mb-6 flex flex-wrap gap-2 px-[5px] max-w-full break-all"
       v-if="appliedFiltersForDisplay.length > 0"
     >
       <div
@@ -34,8 +34,8 @@
       </div>
     </div>
 
-    <div class="filter-section">
-      <label for="addressFilter" class="filter-label">地點</label>
+    <div class="mb-8">
+      <label for="addressFilter" class="block font-semibold text-[var(--color-black)] mb-[13px] text-[16px]">地點</label>
       <select
         id="addressFilter"
         v-model="filters.address"
@@ -52,8 +52,8 @@
       </select>
     </div>
 
-    <div class="filter-section">
-      <label for="ratingFilter" class="filter-label">評價</label>
+    <div class="mb-8">
+      <label for="ratingFilter" class="block font-semibold text-[var(--color-black)] mb-[13px] text-[16px]">評價</label>
       <select
         id="ratingFilter"
         v-model="filters.ratingSort"
@@ -67,8 +67,8 @@
       </select>
     </div>
 
-    <div class="filter-section">
-      <label class="filter-label">距離 (公尺)</label>
+    <div class="mb-8">
+      <label class="block font-semibold text-[var(--color-black)] mb-[13px] text-[16px]">距離 (公尺)</label>
       <div class="range-inputs">
         <input
           type="number"
@@ -103,8 +103,8 @@
       </div>
     </div>
 
-    <div class="filter-section">
-      <label class="filter-label">營業時間</label>
+    <div class="mb-8">
+      <label class="block font-semibold text-[var(--color-black)] mb-[13px] text-[16px]">營業時間</label>
       <div class="time-picker-vertical">
         <div class="time-picker-row-single">
           <label class="time-label"></label>
@@ -135,17 +135,17 @@
       </div>
     </div>
 
-    <div class="filter-section">
-      <label class="filter-label">標籤</label>
-      <div class="tags-grid">
+    <div class="mb-8">
+      <label class="block font-semibold text-[var(--color-black)] mb-[13px] text-[16px]">標籤</label>
+      <div class="grid gap-3 [grid-template-columns:repeat(auto-fit,_120px)]">
         <button
           v-for="([type, label], idx) in tagList"
           :key="type"
-          :class="{
-            'tag-button-active': props.selectedTag === type,
-            'tag-button': props.selectedTag !== type,
-          }"
           @click="handleTagClick(type)"
+          class="w-full justify-center text-center px-0 py-[10px] rounded-[14px] text-[14px] font-medium whitespace-nowrap cursor-pointer transition-all duration-200 border"
+          :class="props.selectedTag === type
+            ? 'bg-[var(--color-primary-orange)] text-white border-[var(--color-primary-orange)] shadow-md'
+            : 'bg-[var(--color-main-text)] text-[var(--color-black)] border-[#e0e0e0] hover:bg-[var(--color-primary-orange)] hover:text-white hover:border-[var(--color-primary-orange)]'"
         >
           {{ label }}
         </button>
@@ -391,19 +391,6 @@ const updateOpenHours = () => {
   applyFilters();
 };
 
-const toggleTag = (tag) => {
-  if (!Array.isArray(filters.value.tags)) {
-    filters.value.tags = [];
-  }
-  const index = filters.value.tags.indexOf(tag);
-  if (index > -1) {
-    filters.value.tags.splice(index, 1);
-  } else {
-    filters.value.tags.push(tag);
-  }
-  applyFilters();
-};
-
 const applyFilters = () => {
   emit("filter-changed", { ...filters.value });
 };
@@ -459,26 +446,17 @@ function handleTagClick(tag) {
 </script>
 
 <style scoped>
-.applied-filters-list-wrapper {
-  margin-bottom: 24px;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  padding: 0 5px;
-  max-width: 100%;
-  word-break: break-all;
-}
-
 .applied-filter-tag {
   display: flex;
   align-items: center;
-  background-color: #f4dad9;
-  color: black;
+  background: linear-gradient(135deg, #ffe8cc, #ffd4a8);
+  color: var(--color-balck);
+  border: 1px solid var(--color-primary-orange);
   padding: 5px 12px;
   border-radius: 20px;
   font-size: 14px;
   white-space: nowrap;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 1px 3px rgba(255, 147, 77, 0.2);
   max-width: 100%;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -537,12 +515,6 @@ function handleTagClick(tag) {
   border-bottom: 1px solid #f0f0f0;
 }
 
-.filter-title {
-  font-size: 26px;
-  font-weight: 700;
-  color: #333;
-}
-
 .close-button {
   background: none;
   border: none;
@@ -564,18 +536,6 @@ function handleTagClick(tag) {
 .close-button .close-icon {
   width: 100%;
   height: 100%;
-}
-
-.filter-section {
-  margin-bottom: 32px;
-}
-
-.filter-label {
-  display: block;
-  font-weight: 600;
-  color: #333;
-  margin-bottom: 13px;
-  font-size: 17px;
 }
 
 .filter-select {
@@ -629,7 +589,7 @@ function handleTagClick(tag) {
   -webkit-appearance: none;
   appearance: none;
   height: 8px;
-  background: #f0f0f0;
+  background: linear-gradient(90deg, #ffe8cc 0%, #ffd4a8 50%, #ffbf87 100%);
   outline: none;
   border-radius: 5px;
   margin-top: 8px;
@@ -640,7 +600,7 @@ function handleTagClick(tag) {
   appearance: none;
   width: 20px;
   height: 20px;
-  background: #f4dad9;
+  background: var(--color-primary-orange);
   border-radius: 50%;
   cursor: pointer;
   border: 2px solid #fff;
@@ -695,54 +655,6 @@ function handleTagClick(tag) {
   text-align: left;
 }
 
-.tags-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, 120px);
-  gap: 12px;
-}
-
-.tag-button,
-.tag-button-active {
-  width: 100%;
-  min-width: 0;
-  justify-content: center;
-  text-align: center;
-  padding: 10px 0;
-  border-radius: 14px;
-  cursor: pointer;
-  font-size: 14px;
-  font-weight: 500;
-  transition:
-    background-color 0.2s,
-    border-color 0.2s,
-    color 0.2s,
-    box-shadow 0.2s;
-  white-space: nowrap;
-}
-
-.tag-button {
-  background-color: #f4dad9;
-  color: #555;
-  border: 1px solid #e0e0e0;
-}
-
-.tag-button:hover {
-  background-color: #dfc2c0;
-  border-color: #ccc;
-}
-
-.tag-button-active {
-  background-color: #f4dad9;
-  color: white;
-  border-color: #f4dad9;
-  box-shadow: 0 2px 5px rgba(223, 194, 192, 0.4);
-}
-
-.tag-button-active:hover {
-  background-color: #dfc2c0;
-  border-color: #dfc2c0;
-}
-
 .filter-actions {
   display: flex;
   justify-content: flex-end;
@@ -751,27 +663,22 @@ function handleTagClick(tag) {
   border-top: 1px solid #f0f0f0;
 }
 
-.action-button {
+.action-button.reset-button {
+  background: linear-gradient(135deg, #ffe8cc, var(--color-primary-orange));
+  color: rgb(46, 43, 43);
+  border: none;
   padding: 12px 24px;
-  border-radius: 8px;
+  border-radius: 12px;
   font-size: 16px;
   font-weight: 600;
   cursor: pointer;
-  transition:
-    background-color 0.2s,
-    color 0.2s,
-    box-shadow 0.2s;
+  transition: all 0.3s ease;
 }
 
-.reset-button {
-  background-color: #f4dad9;
-  color: #555;
-  border: 1px solid #dfc2c0;
-}
-
-.reset-button:hover {
-  background-color: #dfc2c0;
-  color: #333;
+.action-button.reset-button:hover {
+  background: linear-gradient(135deg, #ffd4a8, #d28153);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(255, 147, 77, 0.4);
 }
 
 @media (max-width: 600px) {
