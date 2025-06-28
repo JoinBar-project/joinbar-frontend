@@ -1,53 +1,42 @@
 <template>
   <div class="flex justify-center items-start pt-10 min-h-[calc(100vh-6rem)]">
     <div class="relative max-w-[424px] mx-auto p-6 bg-[var(--color-black)] rounded-xl shadow-xl">
-    
-    <transition name="alert-slide">
-      <div v-if="showLoginSuccess" role="alert" class="alert alert-success alert-soft absolute -top-8 left-0 right-0 z-10">
-        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 shrink-0 stroke-current" fill="none" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-        </svg>
-        <span>登入成功！歡迎回來</span>
+      <div class="flex border-b border-[var(--color-icon-secondary)]">
+        <button
+          class="flex-1 py-2 text-center font-semibold border-b-3 border-[var(--color-secondary-green)] text-[var(--color-secondary-green)]">
+          會員登入
+        </button>
+        <router-link to="/register" class="flex-1 py-2 text-center font-semibold text-[var(--color-icon-secondary)] hover:text-[var(--color-secondary-green)] transition">
+          註冊
+        </router-link>
       </div>
-    </transition>
-    
-    <div class="flex border-b border-[var(--color-icon-secondary)]">
-      <button
-        class="flex-1 py-2 text-center font-semibold border-b-3 border-[var(--color-secondary-green)] text-[var(--color-secondary-green)]">
-        會員登入
-      </button>
-      <router-link to="/register" class="flex-1 py-2 text-center font-semibold text-[var(--color-icon-secondary)] hover:text-[var(--color-secondary-green)] transition">
-        註冊
-      </router-link>
-    </div>
 
-    <div v-if="isLogin" class="mt-6 space-y-4">
-
-    <div class="space-y-1">
-      <div 
-      :class="[
-        'flex items-center border rounded px-3 py-2 transition-colors',
-        errors.email 
-          ? 'border-[var(--color-primary-orange)] border-2 bg-white'
-          : 'border-[var(--color-icon-secondary)]'
-      ]">
-      <i class="fa-solid fa-envelope mr-2"
-        :class="errors.email ? 'text-[var(--color-black)]' : 'text-[var(--color-icon-secondary)]'">
-      </i>
-
-      <input 
-        type="email" 
-        placeholder="電子郵件" 
-        v-model="loginForm.email"
-        @input="clearError('email')"
-        :disabled="authStore.isAnyLoading"
-        :class="[
-          'w-full outline-none placeholder-opacity-70 transition-colors text-sm ml-2',
-          errors.email 
-            ? 'text-[var(--color-primary-orange)] placeholder-[var(--color-primary-orange)]' 
-            : 'text-[var(--color-secondary-green)] placeholder-[var(--color-secondary-green)]'
-        ]"/>
-      </div>
+      <div v-if="isLogin" class="mt-6 space-y-4">
+        <!-- 一般登入表單 -->
+        <div class="space-y-1">
+          <div 
+          :class="[
+            'flex items-center border rounded px-3 py-2 transition-colors',
+            errors.email 
+              ? 'border-[var(--color-primary-orange)] border-2 bg-white'
+              : 'border-[var(--color-icon-secondary)]'
+          ]">
+          <i class="mr-2 fa-solid fa-envelope"
+            :class="errors.email ? 'text-[var(--color-black)]' : 'text-[var(--color-icon-secondary)]'">
+          </i>
+          <input 
+            type="email" 
+            placeholder="電子郵件" 
+            v-model="loginForm.email"
+            @input="clearError('email')"
+            :disabled="authStore.isAnyLoading"
+            :class="[
+              'w-full outline-none placeholder-opacity-70 transition-colors text-sm ml-2',
+              errors.email 
+                ? 'text-[var(--color-primary-orange)] placeholder-[var(--color-primary-orange)]' 
+                : 'text-[var(--color-secondary-green)] placeholder-[var(--color-secondary-green)]'
+            ]"/>
+          </div>
 
           <div v-if="errors.email" class="text-[var(--color-primary-orange)] text-xs ml-1">
             {{ emailErrorMessage }}
@@ -62,7 +51,7 @@
                 ? 'border-[var(--color-primary-orange)] border-2 bg-white'
                 : 'border-[var(--color-icon-secondary)]'
             ]">
-            <i class="fa-solid fa-key mr-2" 
+            <i class="mr-2 fa-solid fa-key" 
             :class="errors.password ? 'text-[var(--color-black)]' : 'text-[var(--color-icon-secondary)]'">
             </i>
             <input 
@@ -79,7 +68,7 @@
               ]"/>
             <button
               type="button"
-              class="absolute right-3 top-1/2 -translate-y-1/2"
+              class="absolute -translate-y-1/2 right-3 top-1/2"
               :class="errors.password ? 'text-[var(--color-black)]' : 'text-[var(--color-icon-secondary)]'"
               @click="showPassword = !showPassword">
               <i :class="showPassword ? 'fa-regular fa-eye' : 'fa-regular fa-eye-slash'"></i>
@@ -95,13 +84,14 @@
       <div class="text-xs text-right mt-1 text-[var(--color-primary-orange)] cursor-pointer hover:underline underline-offset-4">
         忘記密碼？
       </div>
+
       <div class="flex items-center my-4">
         <div class="flex-grow h-px bg-gray-300"></div>
-        <span class="px-4 text-gray-300 text-sm">或</span>
+        <span class="px-4 text-sm text-gray-300">或</span>
         <div class="flex-grow h-px bg-gray-300"></div>
       </div>
 
-      <div class="flex space-x-2 justify-center mt-4">
+      <div class="flex justify-center mt-4 space-x-2">
         <button class="btn bg-white text-black border-[#e5e5e5] border-2 flex items-center px-4 py-2 rounded-lg hover:scale-105 transition">
           <img src="/google.svg" alt="Google logo" class="w-5 h-5 mr-2" />
           Login with Google
@@ -131,13 +121,23 @@
         後台管理員登入
       </div>
 
-      <div class="text-center mt-4 pt-4 border-t border-gray-300">
+      <div class="pt-4 mt-4 text-center border-t border-gray-300">
         <span class="text-sm text-gray-300">還沒有帳號？</span>
         <router-link to="/register" class="text-sm text-[var(--color-secondary-green)] hover:underline underline-offset-4">
           立即註冊
         </router-link>
       </div>
     </div>
+
+    <!-- 使用 BaseAlertModal -->
+    <BaseAlertModal
+      :visible="alertModal.visible"
+      :type="alertModal.type"
+      :title="alertModal.title"
+      :message="alertModal.message"
+      :confirmText="alertModal.confirmText"
+      @close="closeAlert"
+    />
   </div>
 </template>
 
@@ -145,14 +145,13 @@
 import { ref, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import { useAuthStore } from '@/stores/authStore'
-import Swal from 'sweetalert2';
+import BaseAlertModal from '@/components/common/BaseAlertModal.vue';
 
 const authStore = useAuthStore();
 const router = useRouter();
 
 const isLogin = ref(true);
 const showPassword = ref(false);
-const showLoginSuccess = ref(false)
 
 const loginForm = ref({
   email: '',
@@ -167,6 +166,33 @@ const errors = ref({
 
 const emailErrorMessage = ref('')
 const passwordErrorMessage = ref('')
+
+const alertModal = ref({
+  visible: false,
+  type: 'default',
+  title: '',
+  message: '',
+  confirmText: '確認'
+})
+
+const showAlert = (type, title, message, confirmText = '確認') => {
+  alertModal.value = {
+    visible: true,
+    type,
+    title,
+    message,
+    confirmText
+  }
+}
+
+const closeAlert = () => {
+  alertModal.value.visible = false
+  if (alertModal.value.type === 'success' && alertModal.value.title.includes('登入成功')) {
+    setTimeout(() => {
+      router.push('/home')
+    }, 300)
+  }
+}
 
 const clearError = (fieldName) => {
   if (errors.value[fieldName]) {
@@ -249,41 +275,21 @@ const handleEmailLogin = async () => {
     const result = await authStore.emailLogin(loginForm.value.email, loginForm.value.password);
     
     if (result.success) {
-      showLoginSuccess.value = true;
+      showAlert('success', '登入成功', '歡迎回來！', '前往首頁')
       loginForm.value = { email: '', password: '' };
-      
-      setTimeout(() => {
-        showLoginSuccess.value = false;
-        router.push('/home');
-      }, 1500);
     } else {
-      await Swal.fire({
-        title: '登入失敗',
-        text: result.error,
-        icon: 'error',
-        confirmButtonText: '確認'
-      });
+      showAlert('error', '登入失敗', result.error)
     }
   } catch (error) {
     console.error('登入過程發生錯誤:', error);
-    await Swal.fire({
-      title: '發生錯誤',
-      text: '發生未知錯誤，請稍後再試',
-      icon: 'error',
-      confirmButtonText: '確認'
-    });
+    showAlert('error', '發生錯誤', '發生未知錯誤，請稍後再試')
   }
 };
 
 const handleLineLogin = async () => {
   const result = await authStore.lineLogin()
   if (!result.success) {
-    await Swal.fire({
-      title: 'LINE 登入失敗',
-      text: result.error,
-      icon: 'error',
-      confirmButtonText: '確認'
-    });
+    showAlert('error', 'LINE 登入失敗', result.error)
   }
 }
 
@@ -293,6 +299,8 @@ const useTestAccount = () => {
 
   errors.value.email = false
   errors.value.password = false
+
+  showAlert('info', '測試帳號已填入', '已自動填入測試用的電子郵件和密碼')
 }
 
 // 組件掛載時檢查 LINE 登入狀態
@@ -313,19 +321,4 @@ onMounted(async () => {
 </script>
 
 <style scoped>
-/* 通知動畫 */
-.alert-slide-enter-active {
-  transition: all 0.4s ease-out;
-}
-.alert-slide-leave-active {
-  transition: all 0.2s ease-in;
-}
-.alert-slide-enter-from {
-  opacity: 0;
-  transform: translateY(-20px);
-}
-.alert-slide-leave-to {
-  opacity: 0;
-  transform: translateY(-20px);
-}
 </style>
