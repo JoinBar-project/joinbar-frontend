@@ -1,5 +1,5 @@
 <template>
-  <div class="flex justify-center items-start pt-10 min-h-[calc(100vh-6rem)]">
+  <div class="flex justify-center items-start pt-10 pb-10 min-h-[calc(100vh-6rem)]">
     <div class="relative w-full max-w-[424px] max-md:max-w-[90vw] mx-auto p-6 max-md:px-4 bg-[var(--color-black)] rounded-xl shadow-xl">
       <!-- 登入 / 註冊 tab -->
       <div class="flex border-b border-[var(--color-icon-secondary)]">
