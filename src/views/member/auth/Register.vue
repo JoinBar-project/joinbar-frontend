@@ -64,7 +64,6 @@ const errors = ref({
   birthday: false
 });
 
-// 錯誤訊息
 const usernameErrorMessage = ref('');
 const nicknameErrorMessage = ref('');
 const emailErrorMessage = ref('');
@@ -75,7 +74,6 @@ const clearError = (fieldName) => {
   if (errors.value[fieldName]) {
     errors.value[fieldName] = false;
     
-    // 清除對應的錯誤訊息
     if (fieldName === 'username') {
       usernameErrorMessage.value = ''
     } else if (fieldName === 'nickname') {
@@ -118,7 +116,6 @@ const validateEmail = (email) => {
   return true;
 }
 
-// 驗證密碼格式
 const validatePassword = (password) => {
   if (!password || password.trim() === '') {
     passwordErrorMessage.value = '密碼為必填欄位';
@@ -144,7 +141,6 @@ const validatePassword = (password) => {
   return true;
 }
 
-// 驗證生日格式
 const validateBirthday = (birthday) => {
   if (!birthday || birthday.trim() === '') {
     return true;
@@ -156,7 +152,6 @@ const validateBirthday = (birthday) => {
     return false;
   }
 
-  // 檢查是否為未來日期
   const birthDate = new Date(birthday);
   const today = new Date();
   today.setHours(0, 0, 0, 0);
@@ -278,11 +273,9 @@ const handleLineLogin = async () => {
   }
 }
 
-// 組件掛載時檢查 LINE 登入狀態
 onMounted(async () => {
-  // 初始化 store
+
   authStore.init()
-  // 檢查 LINE 登入回調
   const result = await authStore.checkLineCallback()
   if (result?.success) {
     router.push(result.redirect)

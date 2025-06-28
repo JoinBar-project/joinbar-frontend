@@ -7,10 +7,9 @@ import EventInfo from '@/views/events/EventInfo.vue';
 import MapView from '@/views/map/MapView.vue';
 import Member from '@/views/member/auth/Member.vue';
 import MemberDashboard from '@/views/member/MemberDashboard.vue';
-import Reviews from '@/views/reviews/Reviews.vue';
 import Subscription from '@/views/sub/Subscription.vue';
 import Cart from '@/views/cart/Cart.vue';
-import Payment from "@/views/cart/Payment.vue";
+import Payment from '@/views/cart/Payment.vue';
 import PaymentWaiting from '@/views/cart/PaymentWaiting.vue';
 import OrderSuccess from '@/views/cart/OrderSuccess.vue';
 import Login from '@/views/member/auth/Login.vue';
@@ -41,32 +40,36 @@ const routes = [
       },
       {
         path: 'profile/edit',
-        name: 'MemberProfileEdit',
+        name: 'ProfileEdit',
         component: () => import('@/views/member/profile/ProfileEdit.vue'),
       },
       {
-        path: 'event-records',
-        name: 'MemberEventRecords',
-        component: () => import('@/views/member/profile/EventRecords.vue'),
+        path: 'event-records/published',
+        name: 'PublishedEvents',
+        component: () => import('@/views/member/profile/PublishedEvents.vue'),
+      },
+      {
+        path: 'event-records/joined',
+        name: 'JoinedEvents',
+        component: () => import('@/views/member/profile/JoinedEvent.vue'),
       },
       {
         path: 'bar-favorites',
-        name: 'MemberBarFavorites',
+        name: 'BarFavorites',
         component: () => import('@/views/member/profile/BarFavorites.vue'),
       },
       {
-        path: 'membercard',
+        path: 'member-card',
         name: 'MemberCard',
         component: () => import('@/views/member/profile/MemberCard.vue'),
       },
       {
         path: 'order-records',
-        name: 'MemberOrderRecords',
+        name: 'OrderRecords',
         component: () => import('@/views/member/profile/OrderRecords.vue'),
       },
     ],
   },
-  { path: '/reviews', name: 'Reviews', component: Reviews },
   { path: '/subscription', name: 'Subscription', component: Subscription },
   { path: '/cart', name: 'Cart', component: Cart, meta: { requiresAuth: true } },
   { path: '/payment', name: 'Payment', component: Payment, meta: { requiresAuth: true } },
@@ -75,11 +78,11 @@ const routes = [
   { path: '/preferences', name: 'Preferences', component: Preferences, meta: { requiresAuth: true } },
   { path: '/verify-email', name: 'EmailVerify', component: EmailVerify, meta: { requiresGuest: true } },
   { path: '/404', name: 'NotFound', component: NotFound },
-  { 
-    path: '/:pathMatch(.*)*', 
+  {
+    path: '/:pathMatch(.*)*',
     name: 'Catch-All',
     component: NotFound,
-  }
+  },
 ];
 
 const router = createRouter({
