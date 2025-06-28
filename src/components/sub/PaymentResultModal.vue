@@ -64,9 +64,12 @@ onMounted( () => {
   
 })
 
+
+
 function handleConfirm() {
+  const user = JSON.parse(localStorage.getItem('user'))
   if (isSuccess.value) {
-    router.push('/member/card')
+    router.push(`/member/${user.id}/member-card`)
   } else {
     router.push('/subs')
   }
@@ -82,7 +85,8 @@ function handleCancel() {
     :visible="dialogVisible"
     :title="statusMessage"
     :message="detailMessage"
-    confirm-text="前往"
+    type="success"
+    confirm-text="前往優惠券"
     @confirm="handleConfirm"
     @cancel="handleCancel"
   />

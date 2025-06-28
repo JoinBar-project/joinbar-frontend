@@ -1,6 +1,7 @@
 <script setup>
 import { ref, onMounted, onUnmounted } from 'vue'
 import { useAuthStore } from '@/stores/authStore'
+import BaseAlertModal from '@/components/common/BaseAlertModal.vue'
 import { 
   getAllSubPlans, 
   createSubscriptionOrder, 
@@ -13,14 +14,24 @@ import {
 const spotlight = ref(null)
 const cardData = ref([])
 const activeSubTypes = ref([])
+const alertVisible = ref(false)
+const alertType = ref('warning')
+const alertTitle = ref('')
+const alertMessage = ref('')
+const authStore = useAuthStore()
 
-const authStore = useAuthStore()  
+const showAlert = (type, title, message) => {
+  alertType.value = type
+  alertTitle.value = title
+  alertMessage.value = message
+  alertVisible.value = true
+}
 
 const handleSubscribe = async (subscriptionType) => {
   try {
     // 1. 檢查登入
     if (!authStore.isAuthenticated) {
-      alert('請先登入才能訂閱');
+      showAlert('warning', '尚未登入', '請先登入才能訂閱');
       return;
     }
 
@@ -31,7 +42,7 @@ const handleSubscribe = async (subscriptionType) => {
     );
 
     if (alreadySubscribed) {
-      alert('您已訂閱此方案，目前仍在有效期內');
+      showAlert('warning', '您已訂閱此方案，目前仍在有效期內')
       return;
     }
 
@@ -40,7 +51,6 @@ const handleSubscribe = async (subscriptionType) => {
 
     if (pendingOrder) {
       await cancelSubscriptionOrder(pendingOrder.id);
-      console.log(`✅ 已取消未付款訂閱訂單：${pendingOrder.id}`);
     }
 
     // 4. 建立新訂單
@@ -64,7 +74,7 @@ const handleSubscribe = async (subscriptionType) => {
 
   } catch (err) {
     console.error('訂閱流程發生錯誤:', err);
-    alert(err?.message || '訂閱流程發生錯誤，請稍後再試');
+    showAlert('danger', '訂閱流程發生錯誤', err?.message || '請稍後再試');
   }
 };
 
@@ -160,6 +170,14 @@ onUnmounted(() => {
       </div>
     </div>
   </div>
+  <BaseAlertModal
+    :visible="alertVisible"
+    :type="alertType"
+    :title="alertTitle"
+    :message="alertMessage"
+    @cancel="alertVisible = false"
+    @close="alertVisible = false"
+  />
 </template>
 
 

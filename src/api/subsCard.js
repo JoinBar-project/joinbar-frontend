@@ -110,13 +110,13 @@ const getOrderHistory = async () => {
       summary: res.data.summary ?? {}
     };
   } catch (err) {
-    if (err.response?.status === 401) return null; // 未登入
+    if (err.response?.status === 401) return null;
     console.error('取得訂單歷史失敗:', err);
     throw err;
   }
 };
 
-const getSubscriptionOrderStatus = async (subscriptionType) => {
+const getSubscriptionOrderStatus = async () => {
   try {
     const result = await getOrderHistory();
 
@@ -126,12 +126,10 @@ const getSubscriptionOrderStatus = async (subscriptionType) => {
     }
 
     const orders = result.orders ?? [];
-
     const pendingOrder = orders.find(order =>
       order.status === 'pending' &&
       order.items.some(item =>
-        item.itemType === 2 && item.subscriptionType === subscriptionType
-      )
+        item.itemType === 2)
     );
 
     return pendingOrder ?? null;
