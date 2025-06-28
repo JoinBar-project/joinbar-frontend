@@ -83,6 +83,21 @@ apiClient.interceptors.response.use(
         case 401: {
           // Token 無效或過期
           const originalRequest = error.config; // 先保留剛剛發送失敗的請求，等等用新的 access token 重新發送
+          // 先檢查是否為刷新 token 的請求本身
+          if (originalRequest.url === '/auth/refresh-token') {
+            console.log('refresh-token 請求失敗');
+
+            localStorage.removeItem('access_token');
+            localStorage.removeItem('refresh_token');
+            localStorage.removeItem('user');
+
+            alert('請重新登入');
+
+            if (window.location.pathname !== '/login') {
+              window.location.href = '/login';
+            }
+            return Promise.reject(error);
+          }
 
           if (originalRequest._retry) {
             // 如果之前已經有重新發送請求，就不再重試，直接拋錯，避免進入無限重試迴圈
@@ -97,10 +112,17 @@ apiClient.interceptors.response.use(
 
             const refreshToken = localStorage.getItem('refresh_token');
             const resp = isLineUser
-              ? await apiClient.post('/auth/refresh-token')
-              : await apiClient.post('/auth/refresh-token', {
-                  refreshToken, // 用 resfresh token 換新的 access token
-                });
+              ? // 這邊改使用 axios 直接發送請求，避免當 refresh token 無效時，該請求也會收到 401 錯誤，觸發攔截器又嘗試刷新
+                await axios.post(
+                  `${API_BASE_URL}/auth/refresh-token`, {}, {
+                    withCredentials: true,
+                    headers: { 'Content-Type': 'application/json' }
+                  })
+              : await axios.post(`${API_BASE_URL}/auth/refresh-token`, {
+                    refreshToken // 用 resfresh token 換新的 access token
+                  }, {
+                    headers: { 'Content-Type': 'application/json' }
+                  });
 
             const newAccessToken = resp.data.accessToken;
 
