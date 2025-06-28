@@ -101,6 +101,59 @@ const checkSubscriptionStatus = async () => {
     return null
   }
 }
+
+const getOrderHistory = async () => {
+  try {
+    const res = await apiClient.get('/orders/history');
+    return {
+      orders: res.data.orders ?? [],
+      summary: res.data.summary ?? {}
+    };
+  } catch (err) {
+    if (err.response?.status === 401) return null; // 未登入
+    console.error('取得訂單歷史失敗:', err);
+    throw err;
+  }
+};
+
+const getSubscriptionOrderStatus = async (subscriptionType) => {
+  try {
+    const result = await getOrderHistory();
+
+    if (!result) {
+      console.warn('尚未登入或無法取得訂單紀錄');
+      return null;
+    }
+
+    const orders = result.orders ?? [];
+
+    const pendingOrder = orders.find(order =>
+      order.status === 'pending' &&
+      order.items.some(item =>
+        item.itemType === 2 && item.subscriptionType === subscriptionType
+      )
+    );
+
+    return pendingOrder ?? null;
+  } catch (err) {
+    console.error('取得訂閱訂單狀態失敗:', err);
+    return null;
+  }
+};
+
+
+const cancelSubscriptionOrder = async (orderId) => {
+  try {
+    const res = await apiClient.delete(`/orders/${orderId}`, {
+      data: { reason: 'user_cancel_pending_subscription' }
+    });
+    console.log(`訂閱訂單 ${orderId} 已取消`);
+    return res.data;
+  } catch (err) {
+    console.error('取消訂閱訂單失敗:', err);
+    throw err;
+  }
+};
   
-export { getAllSubPlans, createSubscriptionOrder, getSubOrderDetails , createLinePayment, confirmLinePayment, checkSubscriptionStatus };
+export { getAllSubPlans, createSubscriptionOrder, getSubOrderDetails, createLinePayment, confirmLinePayment, checkSubscriptionStatus, getOrderHistory, getSubscriptionOrderStatus, cancelSubscriptionOrder };
 

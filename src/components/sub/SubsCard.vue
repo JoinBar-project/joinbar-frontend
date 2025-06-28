@@ -1,54 +1,75 @@
 <script setup>
 import { ref, onMounted, onUnmounted } from 'vue'
-import { getAllSubPlans, createSubscriptionOrder, createLinePayment, checkSubscriptionStatus } from '@/api/subsCard'
+import { useAuthStore } from '@/stores/authStore'
+import { 
+  getAllSubPlans, 
+  createSubscriptionOrder, 
+  createLinePayment, 
+  checkSubscriptionStatus, 
+  getSubscriptionOrderStatus, 
+  cancelSubscriptionOrder
+ } from '@/api/subsCard'
 
 const spotlight = ref(null)
 const cardData = ref([])
 const activeSubTypes = ref([])
 
+const authStore = useAuthStore()  
+
 const handleSubscribe = async (subscriptionType) => {
   try {
-    const order = await createSubscriptionOrder(subscriptionType)
+    // 1. 檢查登入
+    if (!authStore.isAuthenticated) {
+      alert('請先登入才能訂閱');
+      return;
+    }
 
-    if (!order?.orderId) throw new Error('訂單建立失敗')
+    // 2. 是否已有有效訂閱
+    const validSubs = await checkSubscriptionStatus();
+    const alreadySubscribed = validSubs?.some(
+      (sub) => sub.subType === subscriptionType
+    );
 
-    const { paymentUrl, transactionId, expireTime } = await createLinePayment(order)
+    if (alreadySubscribed) {
+      alert('您已訂閱此方案，目前仍在有效期內');
+      return;
+    }
 
-    if (!paymentUrl) throw new Error('付款連結為空')
+    // 3. 檢查是否已有相同訂閱的 pending 訂單
+    const pendingOrder = await getSubscriptionOrderStatus(subscriptionType);
 
-    localStorage.setItem('transactionId', transactionId)
-    localStorage.setItem('expireTime', expireTime)
-    localStorage.setItem('orderId', order.orderId)
-    localStorage.setItem('subType', subscriptionType)
+    if (pendingOrder) {
+      await cancelSubscriptionOrder(pendingOrder.id);
+      console.log(`✅ 已取消未付款訂閱訂單：${pendingOrder.id}`);
+    }
 
+    // 4. 建立新訂單
+    const order = await createSubscriptionOrder(subscriptionType);
+    if (!order?.orderId) throw new Error('訂單建立失敗');
+
+    // 5. 建立 LINE Pay 付款
+    const { paymentUrl, transactionId, expireTime } = await createLinePayment(order);
+    if (!paymentUrl) throw new Error('付款連結為空');
+
+    // 6. 儲存付款資訊（導向付款頁面前）
+    localStorage.setItem('transactionId', transactionId);
+    localStorage.setItem('expireTime', expireTime);
+    localStorage.setItem('orderId', order.orderId);
+    localStorage.setItem('subType', subscriptionType);
+
+    // 7. 導向付款頁
     setTimeout(() => {
-      window.location.href = paymentUrl
-    }, 1000)
+      window.location.href = paymentUrl;
+    }, 1000);
 
   } catch (err) {
-    console.error('重複訂閱 或 未完成訂閱付款', err)
-    alert('您重複訂閱 或 未完成訂閱付款')
+    console.error('訂閱流程發生錯誤:', err);
+    alert(err?.message || '訂閱流程發生錯誤，請稍後再試');
   }
-}
-
-onMounted(async () => {
-  try {
-    const currentSubs = await checkSubscriptionStatus()
-    activeSubTypes.value = currentSubs.map(sub => sub.subType)
-  } catch (err) {
-    console.warn('訂閱狀態讀取失敗')
-  }
-})
+};
 
 const isSubscribed = (type) => {
   return activeSubTypes.value.includes(type)
-}
-
-const handleMouseMove = (e) => {
-
-  if (spotlight.value) {
-    spotlight.value.style.transform = `translate(${e.clientX - 64}px, ${e.clientY - 64}px)`
-  }
 }
 
 onMounted(async () => {
@@ -58,8 +79,25 @@ onMounted(async () => {
   } catch (err) {
     console.warn('訂閱資料載入失敗')
   }
+
+  if (authStore.isAuthenticated) {
+    try {
+      const currentSubs = await checkSubscriptionStatus()
+      activeSubTypes.value = currentSubs.map(sub => sub.subType)
+    } catch (err) {
+      console.warn('訂閱狀態讀取失敗')
+    }
+  }
+
   window.addEventListener('mousemove', handleMouseMove)
 })
+
+const handleMouseMove = (e) => {
+
+  if (spotlight.value) {
+    spotlight.value.style.transform = `translate(${e.clientX - 64}px, ${e.clientY - 64}px)`
+  }
+}
 
 onUnmounted(() => {
   window.removeEventListener('mousemove', handleMouseMove)
