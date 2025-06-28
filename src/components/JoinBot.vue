@@ -1,35 +1,76 @@
 <template>
   <div :class="[
-    'fixed bottom-8 right-8 z-50 flex flex-row-reverse items-end gap-2 transition-all duration-300',
-    isOverlappingFooter ? 'mb-24' : ''
+    'fixed z-50 flex flex-row-reverse items-end gap-2 transition-all duration-300',
+    // 桌面版
+    'md:bottom-8 md:right-8',
+    // 手機版位置調整
+    'md:bottom-8 md:right-8',
+    'max-md:bottom-4 max-md:right-4',
+    isOverlappingFooter ? 'mb-24 max-md:mb-36' : ''
   ]">
 
     <button @click="toggleChat" 
-    class="glow-button w-20 h-20 rounded-full shadow-lg hover:scale-110 transition-all duration-300 overflow-hidden p-0 border-none bg-transparent">
+    :class="[
+      'glow-button rounded-full shadow-lg hover:scale-110 transition-all duration-300 overflow-hidden p-0 border-none bg-transparent',
+      // 桌面版
+      'w-20 h-20',
+      // 手機版
+      'max-md:w-16 max-md:h-16'
+    ]">
       <img src="/JoinBot.png" alt="JoinBot Icon" class="w-full h-full object-contain" />
     </button>
 
-    <div v-if="showGreetingBubble" class="animate-pop-in chat chat-end relative bottom-8">
-      <div class="chat-bubble text-sm bg-var[(--color-icon-secondary)] text-gray-800">我可以推薦你酒吧唷！</div>
+    <div v-if="showGreetingBubble" :class="[
+      'animate-pop-in chat chat-end relative',
+      'bottom-8 max-md:bottom-6'
+    ]">
+      <div :class="[
+        'chat-bubble bg-var[(--color-icon-secondary)] text-gray-800',
+        'text-sm max-md:text-xs',
+        'max-md:max-w-32'
+      ]">我可以推薦你酒吧唷！</div>
     </div>
 
-    <div v-if="visible" class="chat-container relative w-80 mt-2 p-5 rounded-2xl backdrop-blur-sm border-2 border-transparent bg-gradient-to-br from-white/95 to-slate-50/95 shadow-[0_8px_32px_rgba(0,0,0,0.12),0_0_0_1px_rgba(255,255,255,0.5),inset_0_1px_0_rgba(255,255,255,0.8)] drop-shadow-[0_0_20px_rgba(139,255,180,0.2)]">
+    <div v-if="visible" :class="[
+      'chat-container relative mt-2 p-5 rounded-2xl backdrop-blur-sm border-2 border-transparent bg-gradient-to-br from-white/95 to-slate-50/95 shadow-[0_8px_32px_rgba(0,0,0,0.12),0_0_0_1px_rgba(255,255,255,0.5),inset_0_1px_0_rgba(255,255,255,0.8)] drop-shadow-[0_0_20px_rgba(139,255,180,0.2)]',
+      // 桌面版
+      'w-80',
+      // 手機版
+      'max-md:w-auto max-md:max-w-[90vw] max-md:p-3',
+      // 手機版避免超出螢幕
+      'max-md:fixed max-md:bottom- max-md:right-1/2 max-md:translate-x-1/2'
+    ]">
 
       <div class="flex justify-end gap-2 mb-4">
         <button
-          class="w-8 h-8 rounded-full border-none flex items-center justify-center cursor-pointer transition-all duration-300 hover:scale-110 hover:rotate-90 shadow-md hover:shadow-lg"
+          :class="[
+            'rounded-full border-none flex items-center justify-center cursor-pointer transition-all duration-300 hover:scale-110 hover:rotate-90 shadow-md hover:shadow-lg',
+            'w-8 h-8 max-md:w-7 max-md:h-7'
+          ]"
           style="background: linear-gradient(135deg, var(--color-secondary-green) 0%, #7dd3fc 100%)"
           @click="closeAndClear">
-          <i class="fa-solid fa-xmark text-white text-xl"></i>
+          <i :class="[
+            'fa-solid fa-xmark text-white',
+            'text-xl max-md:text-lg'
+          ]"></i>
         </button>
       </div>  
       
-      <h3 class="font-bold text-lg mb-4 text-center text-gray-800">
-        你的 JoinBot 智慧酒吧推薦小幫手
+      <h3 :class="[
+        'font-bold mb-4 text-center text-gray-800 leading-snug',
+        'text-lg max-md:text-base'
+      ]">
+        你的 JoinBot <br class="max-md:block hidden" />
+        智慧酒吧推薦小幫手
       </h3>
 
+      <!-- 回應區域 -->
       <div
-        class="text-sm whitespace-pre-wrap mb-4 p-3 rounded-lg leading-relaxed overflow-y-auto pr-1"
+        :class="[
+          'whitespace-pre-wrap mb-4 p-3 rounded-lg leading-relaxed overflow-y-auto pr-1',
+          'text-sm max-md:text-[13px]',
+          'max-md:max-h-40'
+        ]"
         style="max-height: 240px; background: linear-gradient(135deg, rgba(139, 255, 180, 0.1) 0%, rgba(255, 204, 153, 0.1) 100%); border: 1px solid rgba(139, 255, 180, 0.3);"
         v-if="response"
         v-html="response">
@@ -41,21 +82,31 @@
           @input="clearInputError"
           v-model="userMessage"
           type="text"
-          placeholder="你今天想去什麼類型的酒吧呀？"
-          class="chat-input w-full p-3 text-sm rounded-xl border-2 border-transparent outline-none transition-all duration-300 shadow-sm focus:shadow-lg focus:-translate-y-0.5"
+          :placeholder="isMobile ? '想去什麼酒吧？' : '你今天想去什麼類型的酒吧呀？'"
+          :class="[
+            'chat-input w-full p-3 rounded-xl border-2 border-transparent outline-none transition-all duration-300 shadow-sm focus:shadow-lg focus:-translate-y-0.5',
+            'text-sm max-md:text-xs max-md:p-2',
+            inputError ? 'placeholder-red-400' : ''
+          ]"
           style="background: linear-gradient(white, white) padding-box, linear-gradient(135deg, rgba(139, 255, 180, 0.5) 0%, rgba(255, 204, 153, 0.5) 100%) border-box;"
           :style="inputError ? 'background: linear-gradient(white, white) padding-box, linear-gradient(135deg, #ef4444 0%, #f87171 100%) border-box; color: #dc2626;' : ''"
-          :class="inputError ? 'placeholder-red-400' : ''"
         />
-        <p v-if="inputError" class="text-red-600 text-xs mt-2 mb-2 animate-pulse">{{ errorMessage }}</p>
+        <p v-if="inputError" :class="[
+          'text-red-600 mt-2 mb-2 animate-pulse',
+          'text-xs max-md:text-[10px]'
+        ]">{{ errorMessage }}</p>
       </div>
 
+      <!-- 按鈕區域 -->
       <div class="flex justify-end gap-2">
         <button 
           @click="askJoinBot" 
-          class="font-medium rounded-xl px-5 py-3 mt-2 border-none cursor-pointer transition-all duration-300 relative overflow-hidden text-gray-800 shadow-md hover:shadow-xl hover:-translate-y-0.5 hover:scale-105 active:translate-y-0 active:scale-95 before:absolute before:inset-0 before:bg-gradient-to-r before:from-transparent before:via-white/40 before:to-transparent before:-translate-x-full before:transition-transform before:duration-500 hover:before:translate-x-full"
+          :class="[
+            'font-medium rounded-xl px-5 py-3 mt-2 border-none cursor-pointer transition-all duration-300 relative overflow-hidden text-gray-800 shadow-md hover:shadow-xl hover:-translate-y-0.5 hover:scale-105 active:translate-y-0 active:scale-95 before:absolute before:inset-0 before:bg-gradient-to-r before:from-transparent before:via-white/40 before:to-transparent before:-translate-x-full before:transition-transform before:duration-500 hover:before:translate-x-full',
+            'max-md:px-3 max-md:py-2 max-md:text-xs max-md:mt-1'
+          ]"
           style="background: linear-gradient(135deg, var(--color-secondary-green) 0%, #d8dbaf 50%, var(--color-primary-orange) 100%)">
-          有推薦的酒吧嗎？
+          {{ isMobile ? '推薦酒吧？' : '有推薦的酒吧嗎？' }}
         </button>
       </div>
     </div>
@@ -63,7 +114,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, onUnmounted, nextTick } from 'vue'
+import { ref, onMounted, onUnmounted, nextTick, computed } from 'vue'
 import axios from 'axios'
 
 const visible = ref(false)
@@ -73,6 +124,14 @@ const userMessage = ref('')
 const inputError = ref(false)
 const errorMessage = ref('')
 const isOverlappingFooter = ref(false)
+
+// 檢測是否為手機版
+const isMobile = computed(() => {
+  if (typeof window !== 'undefined') {
+    return window.innerWidth < 768
+  }
+  return false
+})
 
 function toggleChat() {
   visible.value = !visible.value
@@ -101,7 +160,7 @@ function clearInputError() {
 async function askJoinBot() {
   if (!userMessage.value.trim()) {
     inputError.value = true
-    errorMessage.value = '請先輸入你想要的推薦條件唷！'
+    errorMessage.value = isMobile.value ? '請輸入條件！' : '請先輸入你想要的推薦條件唷！'
     return
   }
 
@@ -123,7 +182,7 @@ onMounted(() => {
     showGreetingBubble.value = false
 }, 3000)
 
-// ✅ 等 DOM 完整後再觀察 footer，避免干擾地圖載入
+// 等 DOM 完整後再觀察 footer，避免干擾地圖載入
   nextTick(() => {
     const footer = document.querySelector('footer')
     if (footer) {
@@ -207,7 +266,17 @@ onMounted(() => {
   font-weight: 700;
   color: #000000;
 }
+
+/* 手機版特殊樣式 */
+@media (max-width: 767px) {
+  .chat-container {
+    max-height: calc(100vh - 8rem);
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .chat-bubble {
+    white-space: normal;
+    word-wrap: break-word;
+  }
+}
 </style>
-
-
-
