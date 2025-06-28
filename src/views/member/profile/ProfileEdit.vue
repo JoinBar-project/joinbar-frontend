@@ -31,6 +31,51 @@ const initialEditMode = computed(() => {
 
 const editMode = ref('none');
 
+const isPreferencesLoaded = ref(false);
+
+const loadUserPreferences = async () => {
+  if (!userId.value || isPreferencesLoaded.value) return;
+  
+  console.log('載入偏好設定...');
+  
+  try {
+    const result = await authStore.getBarTags();
+    
+    if (result.success) {
+      console.log('成功載入偏好設定:', result.data);
+      
+      const backendPrefs = result.data;
+      const types = [];
+      const moods = [];
+      
+      // 轉換類型偏好
+      if (backendPrefs.sport) types.push('sport');
+      if (backendPrefs.music) types.push('music');
+      if (backendPrefs.student) types.push('student');
+      if (backendPrefs.bistro) types.push('bistro');
+      if (backendPrefs.drink) types.push('drink');
+      
+      // 轉換氛圍偏好
+      if (backendPrefs.joy) moods.push('joy');
+      if (backendPrefs.romantic) moods.push('romantic');
+      if (backendPrefs.oldschool) moods.push('oldschool');
+      if (backendPrefs.highlevel) moods.push('highlevel');
+      if (backendPrefs.easy) moods.push('easy');
+      
+      preferencesForm.value = { types, moods };
+      isPreferencesLoaded.value = true;
+      
+      console.log('設定偏好表單:', preferencesForm.value);
+    } else {
+      console.warn('載入偏好設定失敗:', result.error);
+      preferencesForm.value = { types: [], moods: [] };
+    }
+  } catch (error) {
+    console.error('載入偏好設定時發生錯誤:', error);
+    preferencesForm.value = { types: [], moods: [] };
+  }
+};
+
 // 表單資料
 const profileForm = ref({
   username: '',
@@ -74,67 +119,44 @@ const isDefaultAvatar = computed(() => {
   return false;
 });
 
-// 監聽用戶資料載入
-watch(
-  userId,
-  id => {
-    if (id) userProfileStore.getUserProfile(id);
-  },
-  { immediate: true }
-);
-
-// 監聽 profile 變化，同步到表單
-watch(
-  () => profile.value,
-  newProfile => {
-    if (newProfile) {
-      profileForm.value = {
-        username: newProfile.username || '',
-        nickname: newProfile.nickname || '',
-        birthday: newProfile.birthday || ''
-      };
-      preferencesForm.value = {
-        types: newProfile.preferences?.types || [],
-        moods: newProfile.preferences?.moods || []
-      };
-    }
-  },
-  { immediate: true }
-);
-
-// 根據 URL 參數自動進入編輯模式
-onMounted(() => {
-  editMode.value = initialEditMode.value;
-});
-
 // 編輯模式控制
 const startProfileEdit = () => {
+  console.log('開始個人資料編輯');
   editMode.value = 'profile';
+  
   // 重置表單資料
   profileForm.value = {
     username: profile.value.username || '',
     nickname: profile.value.nickname || '',
     birthday: profile.value.birthday || ''
   };
+  
   // 清除錯誤
   errors.value = { username: '', nickname: '', birthday: '' };
+  console.log('個人資料編輯模式設定完成');
 };
 
-const startPreferencesEdit = () => {
+const startPreferencesEdit = async () => {
+  console.log('開始偏好設定編輯');
   editMode.value = 'preferences';
-  // 重置表單資料
-  preferencesForm.value = {
-    types: [...(profile.value.preferences?.types || [])],
-    moods: [...(profile.value.preferences?.moods || [])]
-  };
+  
+  // 確保偏好設定是最新的
+  if (!isPreferencesLoaded.value) {
+    await loadUserPreferences();
+  }
+  
+  console.log('偏好設定編輯模式設定完成');
 };
 
 const cancelEdit = () => {
+  console.log('取消編輯，回到查看模式');
   editMode.value = 'none';
+  
   // 重置頭像相關狀態
   avatarFile.value = null;
   avatarPreview.value = '';
   isAvatarRemoved.value = false;
+  
   // 清除錯誤
   errors.value = { username: '', nickname: '', birthday: '' };
   
@@ -309,11 +331,59 @@ const savePreferences = async () => {
     isPreferencesSaving.value = false;
   }
 };
+
+const displayPreferences = computed(() => {
+  return preferencesForm.value;
+});
+
+// 監聽用戶資料載入
+watch(
+  userId,
+  async (id) => {
+    if (id) {
+      await userProfileStore.getUserProfile(id);
+      if (!isPreferencesLoaded.value) {
+        await loadUserPreferences();
+      }
+    }
+  },
+  { immediate: true }
+);
+
+// 監聽 profile 變化，同步到表單
+watch(
+  () => profile.value,
+  (newProfile) => {
+    if (newProfile) {
+      profileForm.value = {
+        username: newProfile.username || '',
+        nickname: newProfile.nickname || '',
+        birthday: newProfile.birthday || ''
+      };
+    }
+  },
+  { immediate: true }
+);
+
+
+// 根據 URL 參數自動進入編輯模式
+onMounted(async () => {
+  console.log('組件載入，初始編輯模式:', initialEditMode.value);
+  editMode.value = initialEditMode.value;
+  
+  // 確保偏好設定已載入
+  if (userId.value && !isPreferencesLoaded.value) {
+    await loadUserPreferences();
+  }
+  
+  console.log('onMounted 完成，當前編輯模式:', editMode.value);
+});
 </script>
 
 <template>
   <div v-if="isLoading" class="py-10 text-center">載入中...</div>
   <div v-else class="w-full max-w-4xl px-4 mx-auto mt-10">
+
     <!-- 返回按鈕 -->
     <div class="mb-6">
       <button 
@@ -333,7 +403,7 @@ const savePreferences = async () => {
           :show-name="false" 
           size="lg" />
 
-        <!-- 🆕 頭像編輯（只在個人資料編輯模式顯示）-->
+        <!-- 頭像編輯（只在個人資料編輯模式顯示）-->
         <template v-if="editMode === 'profile'">
           <label
             for="avatar"
@@ -355,9 +425,15 @@ const savePreferences = async () => {
       <!-- 右側：個人資料 + 酒吧偏好 -->
       <div class="flex flex-col items-center w-full space-y-6 md:w-2/3 md:items-start">
         
-        <!-- 🆕 個人資料區塊 -->
+        <!-- 個人資料區塊 -->
         <div class="w-full">
           <h2 class="text-xl font-semibold mb-4 text-[var(--color-primary-orange)]">個人資料</h2>
+          
+          <!-- 個人資料編輯狀態指示 -->
+          <div class="mb-2 text-xs text-gray-500">
+            編輯模式: {{ editMode === 'profile' ? '編輯中' : '查看中' }}
+          </div>
+          
           <ProfileForm
             :form="editMode === 'profile' ? profileForm : profile"
             :isEdit="editMode === 'profile'"
@@ -391,24 +467,32 @@ const savePreferences = async () => {
               </div>
             </template>
             <template v-else>
-              <!-- 查看模式：編輯按鈕（只有在偏好編輯時才禁用）-->
+              <!-- 查看模式：編輯按鈕 -->
               <button
                 @click="startProfileEdit"
                 :disabled="editMode === 'preferences'"
                 class="px-4 py-2 text-white transition-all duration-150 bg-blue-500 rounded cursor-pointer active:scale-98 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-blue-600">
                 <i class="mr-2 fa-solid fa-user"></i>
                 編輯個人資料
+                <span class="ml-1 text-xs">({{ editMode === 'preferences' ? '偏好編輯中' : '可點擊' }})</span>
               </button>
             </template>
           </div>
         </div>
         
-        <!-- 🆕 偏好設定區塊 -->
+        <!-- 偏好設定區塊 -->
         <div class="w-full">
+          <h2 class="text-xl font-semibold mb-4 text-[var(--color-primary-orange)]">酒吧偏好</h2>
+          
+          <!-- 偏好設定編輯狀態指示 -->
+          <div class="mb-2 text-xs text-gray-500">
+            編輯模式: {{ editMode === 'preferences' ? '編輯中' : '查看中' }}
+          </div>
+          
           <PreferencesForm 
-            :preferences="editMode === 'preferences' ? preferencesForm : profile.preferences"
+            :preferences="displayPreferences"
             :isEdit="editMode === 'preferences'"
-            :showTitle="true"
+            :showTitle="false"
             @update:preferences="updatePreferences"
           />
           
@@ -439,13 +523,14 @@ const savePreferences = async () => {
               </div>
             </template>
             <template v-else>
-              <!-- 查看模式：編輯按鈕（只有在個人資料編輯時才禁用）-->
+              <!-- 查看模式：編輯按鈕 -->
               <button
                 @click="startPreferencesEdit"
                 :disabled="editMode === 'profile'"
                 class="px-4 py-2 bg-[var(--color-primary-orange)] text-white rounded cursor-pointer active:scale-98 transition-all duration-150 disabled:opacity-50 disabled:cursor-not-allowed hover:brightness-110">
                 <i class="mr-2 fa-solid fa-heart"></i>
                 編輯偏好設定
+                <span class="ml-1 text-xs">({{ editMode === 'profile' ? '個人資料編輯中' : '可點擊' }})</span>
               </button>
             </template>
           </div>
