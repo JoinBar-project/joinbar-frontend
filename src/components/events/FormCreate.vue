@@ -66,6 +66,9 @@ watch(searchBarName, (val) => {
 
 const selectSuggestion = async (suggestion) => {
   suggestions.value = [];
+  barName.value = suggestion.description;
+  eventLocation.value = suggestion.description;
+
   await searchBarLocation(suggestion.description);
 };
 
@@ -86,6 +89,9 @@ const searchBarLocation = async (query) => {
       setZoom(14);
       barName.value = query;
       barAddress.value = query;
+      eventLocation.value = query;
+
+      console.log('設置的 eventLocation:', eventLocation.value);
     }
   } catch (e) {
     clearMarkers();
@@ -199,6 +205,11 @@ async function onSubmit() {
     }
     
     formData.append('tags', JSON.stringify(eventHashtags.value));
+
+    console.log('FormData 內容:');
+    for (let [key, value] of formData.entries()) {
+      console.log(key, value);
+    }
 
     const response = await axios.post('/api/event/create', formData, {
       headers: {
