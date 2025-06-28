@@ -1,13 +1,10 @@
 <template>
   <div :class="[
-    'fixed z-50 flex flex-row-reverse items-end gap-2 transition-all duration-300',
-    // 桌面版
-    'md:bottom-8 md:right-8',
-    // 手機版位置調整
-    'md:bottom-8 md:right-8',
-    'max-md:bottom-4 max-md:right-4',
-    isOverlappingFooter ? 'mb-24 max-md:mb-36' : ''
-  ]">
+  'fixed z-50 flex flex-row-reverse items-end gap-2 transition-all duration-300',
+  isOverlappingFooter
+    ? 'md:bottom-24 max-md:bottom-52 right-4'
+    : 'md:bottom-8 max-md:bottom-8 right-4'
+]">
 
     <button @click="toggleChat" 
     :class="[

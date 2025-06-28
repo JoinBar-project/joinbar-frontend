@@ -34,7 +34,10 @@
 }
 
 .footer-content {
-  @apply flex items-center justify-between gap-8 mx-auto;
+  @apply flex flex-col items-center justify-center gap-6 mx-auto text-center;
+
+  /* 桌面版橫向排列 */
+  @apply md:flex-row md:justify-between md:items-center md:text-left md:gap-8;
 }
 
 .footer-logo img {
@@ -43,7 +46,10 @@
 }
 
 .footer-links {
-  @apply flex gap-8;
+  @apply flex flex-wrap justify-center gap-6 text-base;
+
+  /* 桌面版靠左排列 */
+  @apply md:justify-start;
 }
 
 .footer-links a {
@@ -54,19 +60,10 @@
   @apply text-white;
 }
 
-.footer-socials {
-  @apply flex gap-4;
-}
-
-.footer-socials a {
-  @apply text-xl transition-all duration-300 ease-in-out p-2;
-}
-
-.footer-socials a:hover {
-  @apply text-white bg-white/20 -translate-y-0.5;
-}
-
 .copyright {
-  @apply text-center text-sm opacity-80 mx-auto max-w-[300px] pl-4;
+  @apply text-sm opacity-80 max-w-[300px];
+
+  /* 手機置中、桌面靠右 */
+  @apply text-center md:text-right;
 }
 </style>
