@@ -85,17 +85,16 @@ apiClient.interceptors.response.use(
           const originalRequest = error.config; // 先保留剛剛發送失敗的請求，等等用新的 access token 重新發送
           // 先檢查是否為刷新 token 的請求本身
           if (originalRequest.url === '/auth/refresh-token') {
-            console.log('refresh-token 請求失敗');
-
             localStorage.removeItem('access_token');
             localStorage.removeItem('refresh_token');
             localStorage.removeItem('user');
 
-            alert('請重新登入');
-
-            if (window.location.pathname !== '/login') {
+            const { useAlertModal } = await import('@/composables/useAlertModal');
+            const { showAlert } = useAlertModal();
+            showAlert('warning', '登入資訊已過期', '為了保護您的帳戶安全，請重新登入。', '確認', () => {
               window.location.href = '/login';
-            }
+            });
+
             return Promise.reject(error);
           }
 
@@ -134,12 +133,15 @@ apiClient.interceptors.response.use(
 
             return apiClient(originalRequest); // 重新發送原本失敗的請求
           } catch (refreshError) {
-            console.error('token 刷新失敗', refreshError);
             localStorage.removeItem('access_token');
             localStorage.removeItem('refresh_token');
             localStorage.removeItem('user');
 
-            alert('請重新登入');
+            const { useAlertModal } = await import('@/composables/useAlertModal');
+            const { showAlert } = useAlertModal();
+            showAlert('warning', '登入資訊已過期', '為了保護您的帳戶安全，請重新登入。', '確認', () => {
+              window.location.href = '/login';
+            });
 
             try {
               // 動態導入 store 和 router 避免循環依賴
@@ -149,9 +151,6 @@ apiClient.interceptors.response.use(
               const router = useRouter();
               // 清除前端狀態
               authStore.clearAuthState();
-              if (router.currentRoute.value.path !== '/login') {
-                router.push('/login');
-              }
             } catch (importError) {
               console.error('動態導入失敗:', importError);
               if (window.location.pathname !== '/login') {
