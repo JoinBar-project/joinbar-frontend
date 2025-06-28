@@ -42,7 +42,8 @@
       </div>
 
       <div class="customer-section section-spacing">
-        <h3>客戶資訊</h3>
+        <h3>客戶資訊 <span class="required-star">*</span></h3>
+        
         <div class="form-grid">
           <div class="form-group">
             <label for="customerName">姓名 *</label>
@@ -53,6 +54,8 @@
               class="form-input"
               :class="{ 'input-error': formErrors.name }"
               placeholder="請輸入您的姓名"
+              @blur="checkFormCompleteness"
+              @input="clearFieldError('name')"
               required />
             <span
               v-if="formErrors.name"
@@ -70,6 +73,8 @@
               class="form-input"
               :class="{ 'input-error': formErrors.phone }"
               placeholder="請輸入您的電話號碼"
+              @blur="checkFormCompleteness"
+              @input="clearFieldError('phone')"
               required />
             <span
               v-if="formErrors.phone"
@@ -87,6 +92,8 @@
               class="form-input"
               :class="{ 'input-error': formErrors.email }"
               placeholder="請輸入您的電子郵件"
+              @blur="checkFormCompleteness"
+              @input="clearFieldError('email')"
               required />
             <span
               v-if="formErrors.email"
@@ -94,6 +101,12 @@
               >{{ formErrors.email }}</span
             >
           </div>
+        </div>
+
+        <!-- 表單完整度提示 -->
+        <div v-if="!isCustomerInfoValid && hasInteracted" class="form-incomplete-warning">
+          <i class="warning-icon">⚠️</i>
+          <span>請填寫完整的客戶資訊才能進行付款</span>
         </div>
       </div>
 
@@ -114,6 +127,8 @@
             <span v-if="isSubmitting || orderLoading">處理中...</span>
             <span v-else>LINE Pay 付款</span>
           </button>
+          
+          <!-- 按鈕禁用提示 - 移除這個部分 -->
           
           <div
             v-if="paymentMethodError"
@@ -193,6 +208,7 @@ const displayItems = ref([])
 
 const errorMessage = ref('')
 const paymentMethodError = ref('')
+const hasInteracted = ref(false) // 追蹤用戶是否已經開始填寫表單
 
 const customerInfo = ref({
  name: '',
@@ -212,6 +228,18 @@ const alertModal = ref({
 
 const showAlert = (title, message, type = 'default', confirmText = '確認') => {
   alertModal.value = { visible: true, title, message, type, confirmText }
+}
+
+// 檢查表單完整度並提醒
+const checkFormCompleteness = () => {
+  hasInteracted.value = true
+}
+
+// 清除欄位錯誤
+const clearFieldError = (field) => {
+  if (formErrors.value[field]) {
+    delete formErrors.value[field]
+  }
 }
 
 onMounted(async () => {
@@ -235,6 +263,7 @@ onMounted(async () => {
         customerInfo.value.name = orderUser.name;
         customerInfo.value.email = orderUser.email;
         customerInfo.value.phone = orderUser.phone;
+        hasInteracted.value = true; // 如果有預填資料，視為已互動
       } else {
         loadUserInfo(); 
       }
@@ -306,6 +335,11 @@ function loadUserInfo() {
      const user = JSON.parse(userInfo)
      customerInfo.value.name = customerInfo.value.name || user.username || user.lineDisplayName || ''
      customerInfo.value.email = customerInfo.value.email || user.email || ''
+     
+     // 如果有預填資料，視為已互動
+     if (customerInfo.value.name || customerInfo.value.email) {
+       hasInteracted.value = true
+     }
    }
  } catch (error) {
    console.warn('⚠️ 載入用戶資訊失敗:', error)
@@ -324,7 +358,9 @@ const handleLinePayReturn = () => {
 }
 
 const submitOrder = async () => {
-  if (isSubmitting.value || !canSubmit.value) return
+  if (isSubmitting.value || !canSubmit.value) {
+    return
+  }
 
   try {
     isSubmitting.value = true
@@ -634,6 +670,35 @@ const goBack = () => {
   background: linear-gradient(135deg, #20b012 0%, #1a9e0f 100%);
   box-shadow: 0 8px 25px rgba(37, 201, 22, 0.4);
  }
+
+ /* 新增的樣式 */
+ .required-star {
+  color: var(--color-text-warn, #eb96a4);
+  font-weight: bold;
+ }
+
+ /* 移除不需要的樣式 */
+
+ .form-incomplete-warning {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 16px;
+  padding: 12px 16px;
+  background-color: rgba(220, 53, 69, 0.1);
+  border: 2px solid #dc3545;
+  border-radius: 8px;
+  color: #dc3545;
+  font-size: 14px;
+  font-weight: 600;
+ }
+
+ .warning-icon {
+  font-size: 16px;
+  color: #dc3545;
+ }
+
+ /* 移除不需要的樣式 */
  
  .error-message {
   background-color: rgba(235, 150, 164, 0.1);
