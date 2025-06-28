@@ -5,6 +5,7 @@ import { storeToRefs } from 'pinia';
 import { useAuthStore } from '@/stores/authStore';
 import { useUserProfileStore } from '@/stores/userProfileStore';
 import ProfileForm from '@/components/member/ProfileForm.vue';
+import PreferencesForm from '@/components/member/PreferencesForm.vue';
 import UserAvatar from '@/components/UserAvatar.vue';
 
 const authStore = useAuthStore();
@@ -20,22 +21,6 @@ const profileFields = [
   { model: 'username', label: '姓名*', placeholder: '請輸入姓名', icon: 'fa-solid fa-user', type: 'text' },
   { model: 'nickname', label: '暱稱', placeholder: '請輸入暱稱', icon: 'fa-solid fa-tag', type: 'text' },
   { model: 'birthday', label: '生日', placeholder: '請輸入生日', icon: 'fa-solid fa-cake-candles', type: 'date' },
-];
-
-const barTypes = [
-  { key: 'sport', label: '運動酒吧', icon: 'fa-solid fa-football' },
-  { key: 'music', label: '音樂酒吧', icon: 'fa-solid fa-music' },
-  { key: 'student', label: '學生酒吧', icon: 'fa-solid fa-graduation-cap' },
-  { key: 'bistro', label: '餐酒館', icon: 'fa-solid fa-utensils' },
-  { key: 'drink', label: '暢飲店', icon: 'fa-solid fa-beer' }
-];
-
-const barMoods = [
-  { key: 'joy', label: '熱鬧歡樂', icon: 'fa-solid fa-champagne-glasses' },
-  { key: 'romantic', label: '浪漫私密', icon: 'fa-solid fa-heart' },
-  { key: 'oldschool', label: '復古懷舊', icon: 'fa-solid fa-record-vinyl' },
-  { key: 'highlevel', label: '高級精緻', icon: 'fa-solid fa-crown' },
-  { key: 'easy', label: '輕鬆悠閒', icon: 'fa-solid fa-leaf' }
 ];
 
 watch(
@@ -68,14 +53,21 @@ const goToEdit = () => {
 
       <!-- 右側：個人資料 + 酒吧偏好 + 修改按鈕 -->
       <div class="flex flex-col items-center w-full space-y-6 md:w-2/3 md:items-start">
+        <!-- 個人資料部分 -->
         <ProfileForm
           :form="profile"
           :isEdit="false"
           :profileFields="profileFields"
-          :barTypes="barTypes"
-          :barMoods="barMoods"
-          :toggleSelection="() => {}"
           :errors="{ username: '', nickname: '', birthday: '' }" />
+        
+        <!-- 偏好設定部分 -->
+        <PreferencesForm 
+          :preferences="profile.preferences"
+          :isEdit="false"
+          :showTitle="true"
+          :showSaveButton="false"
+        />
+        
         <div class="text-center md:text-left">
           <button type="button" 
           class="px-4 py-2 bg-[var(--color-black)] text-white rounded cursor-pointer active:scale-98 transition-all duration-150"
