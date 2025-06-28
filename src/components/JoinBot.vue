@@ -1,7 +1,8 @@
-
-
 <template>
-  <div class="fixed bottom-8 right-8 z-50 flex flex-row-reverse items-end gap-2">
+  <div :class="[
+    'fixed bottom-8 right-8 z-50 flex flex-row-reverse items-end gap-2 transition-all duration-300',
+    isOverlappingFooter ? 'mb-24' : ''
+  ]">
 
     <button @click="toggleChat" 
     class="glow-button w-20 h-20 rounded-full shadow-lg hover:scale-110 transition-all duration-300 overflow-hidden p-0 border-none bg-transparent">
@@ -49,7 +50,6 @@
         <p v-if="inputError" class="text-red-600 text-xs mt-2 mb-2 animate-pulse">{{ errorMessage }}</p>
       </div>
 
-      <!-- 按鈕區域 - 使用 Tailwind 漸層和動畫 -->
       <div class="flex justify-end gap-2">
         <button 
           @click="askJoinBot" 
@@ -63,7 +63,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, onUnmounted, nextTick } from 'vue'
 import axios from 'axios'
 
 const visible = ref(false)
@@ -72,6 +72,7 @@ const showGreetingBubble = ref(true)
 const userMessage = ref('')
 const inputError = ref(false)
 const errorMessage = ref('')
+const isOverlappingFooter = ref(false)
 
 function toggleChat() {
   visible.value = !visible.value
@@ -120,7 +121,28 @@ async function askJoinBot() {
 onMounted(() => {
   setTimeout(() => {
     showGreetingBubble.value = false
-  }, 3000)
+}, 3000)
+
+// ✅ 等 DOM 完整後再觀察 footer，避免干擾地圖載入
+  nextTick(() => {
+    const footer = document.querySelector('footer')
+    if (footer) {
+      const observer = new IntersectionObserver(
+        ([entry]) => {
+          isOverlappingFooter.value = entry.isIntersecting
+        },
+        {
+          root: null,
+          threshold: 0.1
+        }
+      )
+      observer.observe(footer)
+
+      onUnmounted(() => {
+        observer.disconnect()
+      })
+    }
+  })
 })
 </script>
 
