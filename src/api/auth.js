@@ -32,3 +32,6 @@ export const saveBarTags = (userId, preferencesData) => apiClient.post(`/barTags
 
 // 取得用戶酒吧偏好設定
 export const getBarTags = (userId) => apiClient.get(`/barTags/user/${userId}`);
+
+// 更新酒吧偏好設定
+export const updateBarTags = (userId, preferencesData) => apiClient.put(`/barTags/user/${userId}`, preferencesData);

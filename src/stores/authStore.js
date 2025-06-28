@@ -10,7 +10,9 @@ import { verifyAuth,
           lineLogout as lineLogoutAPI, 
           verifyEmail as verifyEmailAPI, 
           getAccountDeletionWarning as getAccountDeletionWarningAPI, 
-          deleteAccount as deleteAccountAPI } from '../api/auth';
+          deleteAccount as deleteAccountAPI,
+          getBarTags as getBarTagsAPI,
+          updateBarTags as updateBarTagsAPI } from '../api/auth';
 
 export const useAuthStore = defineStore('auth', () => {
   const user = ref(null);
@@ -647,7 +649,47 @@ export const useAuthStore = defineStore('auth', () => {
 
       return { success: false, error: err.response?.data?.message || '儲存失敗，請稍後再試' };
     }
-  }  
+  }
+
+  async function getBarTags() {
+  clearError();
+  
+  try {
+    // 檢查用戶是否存在
+    if (!user.value?.id) {
+      throw new Error('用戶資訊不存在');
+    }
+
+    const resp = await getBarTagsAPI(user.value.id);
+    
+    return { success: true, data: resp.data };
+    
+  } catch(err) {
+    console.error('取得偏好設定失敗:', err);
+
+    return { success: false, error: err.response?.data?.error || '取得失敗，請稍後再試' };
+  }
+}  
+
+  async function updateBarTags(preferences) {
+  clearError();
+  
+  try {
+    // 檢查用戶是否存在
+    if (!user.value?.id) {
+      throw new Error('用戶資訊不存在');
+    }
+
+    const resp = await updateBarTagsAPI(user.value.id, preferences);
+    
+    return { success: true, data: resp.data };
+    
+  } catch(err) {
+    console.error('更新偏好設定失敗:', err);
+
+    return { success: false, error: err.response?.data?.error || '更新失敗，請稍後再試' };
+  }
+}
 
   // 區分登入方式
   const loginMethod = computed(() => {
@@ -685,6 +727,8 @@ export const useAuthStore = defineStore('auth', () => {
     checkAuthStatus,
     handleResendVerification,
     saveBarTags,
+    getBarTags,
+    updateBarTags,
     lineLogout,
     logout,
     verifyEmail,
