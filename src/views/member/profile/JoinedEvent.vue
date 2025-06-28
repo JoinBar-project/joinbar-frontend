@@ -1,0 +1,1 @@
+<template>JoinedEvent.vue</template>

@@ -1,14 +1,11 @@
 <template>
   <transition name="modal-fade">
     <div class="bar-detail-modal-overlay" @click.self="closeModal">
-      <div class="bar-detail-modal-content">
-        <button class="close-button" @click="closeModal">
-          <img
-            src="@/assets/icons/mapicons/close-button.svg"
-            alt="關閉"
-            class="icon close-icon"
-          />
-        </button>
+      <div class="bar-detail-modal-content relative">
+        <button class="absolute top-4 right-4 z-10 bg-white/90 backdrop-blur-sm border-0 rounded-full w-10 h-10 flex items-center justify-center cursor-pointer transition-all hover:bg-white hover:scale-110"
+      @click="closeModal">
+          <i class="fa-solid fa-xmark text-gray-600 text-xl"></i>
+    </button>
 
         <div class="content-flex-wrapper">
           <div class="image-gallery-container">
@@ -19,13 +16,13 @@
               @error="handleImageError"
             />
             <div v-if="bar.images && bar.images.length > 1" class="image-nav">
-              <button class="nav-button prev-button" @click="prevImage">
-                &lt;
-              </button>
-              <button class="nav-button next-button" @click="nextImage">
-                &gt;
-              </button>
-            </div>
+  <button class="nav-button prev-button" @click="prevImage">
+    <i class="fas fa-chevron-left"></i>
+  </button>
+  <button class="nav-button next-button" @click="nextImage">
+    <i class="fas fa-chevron-right"></i>
+  </button>
+</div>
             <div class="image-dots">
               <span
                 v-for="(img, index) in bar.images"
@@ -194,23 +191,23 @@
   <div
     v-if="shareModalVisible"
     class="fixed inset-0 flex items-center justify-center w-screen h-screen share-modal-overlay z-2000"
-    @click.self="closeShareModal"
-  >
-    <div class="overflow-hidden bg-white shadow-xl rounded-2xl w-80">
+    @click.self="closeShareModal">
+    <div class="relative overflow-hidden bg-white shadow-xl rounded-2xl w-80">
       <div
         class="flex items-center justify-between px-6 py-5 text-black border-b border-gray-100"
       >
-        <h3 text-lg font-bold text-gray-800>分享</h3>
-        <button
-          class="flex items-center justify-center text-black transition-colors rounded-full w-7 h-7 hover:bg-gray-100 hover:text-gray-600"
-          @click="closeShareModal"
-        >
-          ×
-        </button>
+        <h3 class="text-lg font-bold text-gray-800">分享</h3>
+        
       </div>
+      <button
+        class="absolute top-4 right-4 z-10 bg-white/90 backdrop-blur-sm border-0 rounded-full w-10 h-10 flex items-center justify-center cursor-pointer transition-all hover:bg-white hover:scale-110"
+        @click="closeShareModal"
+      >
+        <i class="fa-solid fa-xmark text-gray-600 text-xl"></i>
+      </button>
+
 
       <div class="flex justify-center gap-5 px-6 py-5">
-        <!-- Line -->
         <button
           class="flex flex-col items-center gap-2 p-4 transition-colors rounded-xl hover:bg-gray-50 min-w-20"
           @click="shareToLine"
@@ -237,7 +234,6 @@
         </button>
       </div>
 
-      <!-- 網址預覽 -->
       <div
         class="flex items-center gap-2 px-6 py-4 border-t border-gray-100 bg-gray-50"
       >
@@ -292,7 +288,6 @@ const currentImage = computed(() => {
   return props.bar.imageUrl || defaultImage;
 });
 
-// 修改營業狀態判斷邏輯，直接使用 is_open
 const currentOpenStatus = computed(() => {
   if (props.bar.is_open === true) {
     return '<span style="color: green;">正在營業中</span>';
@@ -362,7 +357,6 @@ const getTagLabel = (tag) => {
   return placeTypeMap?.[tag] || tag;
 };
 
-// 分享
 const shareModalVisible = ref(false);
 const urlInput = ref(null);
 
