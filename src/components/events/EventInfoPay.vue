@@ -3,11 +3,12 @@ import { useEvent } from '@/composables/useEvent.js';
 import { useCartStore } from '@/stores/cartStore';
 import { useRouter } from 'vue-router';
 import { useAuthStore } from '@/stores/authStore';
-import { ref, computed, onMounted } from 'vue';
+import { ref, computed, onMounted, watch } from 'vue';
 import axios from 'axios';
 import EventHoster from './EventHoster.vue';
 import MessageBoard from './MessageBoard.vue';
 import ModalEdit from '@/components/events/ModalEdit.vue';
+import { useGoogleMaps } from '@/composables/useGoogleMaps/userIndex.js';
 
 const props = defineProps({
   event: Object,
@@ -40,6 +41,23 @@ const {
   handleConfirmCancel
 } = useEvent(eventRef);
 
+const mapContainer = ref(null);
+const {
+  map,
+  isReady,
+  loadGoogleMapsAPI,
+  initMap,
+  getGeocode,
+  addMarker,
+  clearMarkers,
+  panTo,
+  setZoom,
+} = useGoogleMaps(mapContainer, {
+  googleMapsApiKey: import.meta.env.VITE_GOOGLE_MAPS_API_KEY,
+  onError: (msg) => console.error('Google Maps 錯誤:', msg),
+  scrollwheel: false,
+});
+
 const reloadEventData = async () => {
   try {
     const token = localStorage.getItem('access_token');
@@ -49,6 +67,9 @@ const reloadEventData = async () => {
 
     if (res.data?.event) {
       eventRef.value = { ...res.data.event };
+      if (eventRef.value.location && isReady.value) {
+        displayEventLocation(eventRef.value.location);
+      }
     }
 
     if (res.data?.tags) {
@@ -97,8 +118,48 @@ const buyNow = async () => {
   }
 };
 
-onMounted(() => {
-  reloadEventData();
+// 顯示活動位置的函數
+const displayEventLocation = async (location) => {
+  if (!location || !isReady.value) return;
+  try {
+    const coordinates = await getGeocode(location);
+    if (coordinates) {
+      clearMarkers();
+      addMarker({
+        location: coordinates,
+        title: eventRef.value?.barName || '活動地點',
+        infoContent: `<div style="font-size: 14px;"><strong>${eventRef.value?.barName || '活動地點'}</strong><br><span style="color: #666;">${location}</span></div>`,
+        isBarLike: true,
+      });
+      panTo(coordinates, 16);
+      setZoom(16);
+    } else {
+      const defaultLocation = { lat: 25.0330, lng: 121.5654 };
+      panTo(defaultLocation, 12);
+      setZoom(12);
+    }
+  } catch (error) {
+    const defaultLocation = { lat: 25.0330, lng: 121.5654 };
+    panTo(defaultLocation, 12);
+    setZoom(12);
+  }
+};
+
+onMounted(async () => {
+  await loadGoogleMapsAPI();
+  if (mapContainer.value) {
+    await initMap();
+  }
+  // 強制用 eventId 取得最新資料
+  if (eventRef.value?.id) {
+    await reloadEventData();
+  }
+});
+
+watch(() => eventRef.value.location, (newLoc) => {
+  if (newLoc && isReady.value) {
+    displayEventLocation(newLoc);
+  }
 });
 </script>
 
@@ -126,11 +187,7 @@ onMounted(() => {
 
       <div class="event-content-box">
         <div class="event-map">
-          <iframe 
-            v-if="eventRef.location"
-            :src="`https://www.google.com/maps?q=${encodeURIComponent(eventRef.location)}&output=embed`"
-            class="w-full h-full rounded-lg border-0">
-          </iframe>
+          <div ref="mapContainer" class="w-full h-full rounded-lg border-0" style="min-height: 300px; background: #2d2d2d;"></div>
         </div>
 
         <div class="event-content">

@@ -42,6 +42,7 @@ const {
   panTo,
   setZoom,
   getPlacePredictions,
+  getPlaceDetails,
 } = useGoogleMaps(mapContainer, {
   googleMapsApiKey: import.meta.env.VITE_GOOGLE_MAPS_API_KEY,
   onError: (msg) => alert(msg),
@@ -66,10 +67,30 @@ watch(searchBarName, (val) => {
 
 const selectSuggestion = async (suggestion) => {
   suggestions.value = [];
-  barName.value = suggestion.description;
-  eventLocation.value = suggestion.description;
-
-  await searchBarLocation(suggestion.description);
+  if (suggestion.place_id) {
+    const detail = await getPlaceDetails(suggestion.place_id);
+    if (detail && detail.geometry && detail.geometry.location) {
+      barName.value = detail.name;
+      eventLocation.value = detail.formatted_address || '';
+      barAddress.value = detail.formatted_address || '';
+      searchBarName.value = detail.name;
+      const location = {
+        lat: detail.geometry.location.lat(),
+        lng: detail.geometry.location.lng(),
+      };
+      clearMarkers();
+      addMarker({
+        location,
+        title: detail.name,
+        infoContent: `<div style='font-size:14px;'><strong>${detail.name}</strong><br><span style='color:#666;'>${detail.formatted_address || ''}</span></div>`,
+        isBarLike: true,
+      });
+      panTo(location, 14);
+      setZoom(14);
+    }
+  } else {
+    await searchBarLocation(suggestion.description);
+  }
 };
 
 const searchBarLocation = async (query) => {
@@ -90,12 +111,11 @@ const searchBarLocation = async (query) => {
       barName.value = query;
       barAddress.value = query;
       eventLocation.value = query;
-
-      console.log('設置的 eventLocation:', eventLocation.value);
     }
   } catch (e) {
     clearMarkers();
     barAddress.value = '';
+    eventLocation.value = '';
   }
 };
 
@@ -205,11 +225,6 @@ async function onSubmit() {
     }
     
     formData.append('tags', JSON.stringify(eventHashtags.value));
-
-    console.log('FormData 內容:');
-    for (let [key, value] of formData.entries()) {
-      console.log(key, value);
-    }
 
     const response = await axios.post('/api/event/create', formData, {
       headers: {

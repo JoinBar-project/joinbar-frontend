@@ -50,6 +50,7 @@ const {
 } = useGoogleMaps(mapContainer, {
   googleMapsApiKey: import.meta.env.VITE_GOOGLE_MAPS_API_KEY,
   onError: (msg) => console.error('Google Maps 錯誤:', msg),
+  scrollwheel: false,
 });
 
 const { isJoin, joinedNum, toggleJoin, isOver24hr, showModal, formattedEventTime, openCancelModal, closeModal, handleConfirmCancel } =
@@ -90,7 +91,7 @@ const displayEventLocation = async (location) => {
       // 清除現有標記
       clearMarkers();
       
-      // 添加新標記
+      // 添加新標記，強制 isBarLike: true
       addMarker({
         location: coordinates,
         title: currentEvent.value?.barName || '活動地點',
@@ -113,6 +114,7 @@ const displayEventLocation = async (location) => {
       // 如果 geocoding 失敗，設置一個預設位置（台北市中心）
       const defaultLocation = { lat: 25.0330, lng: 121.5654 };
       panTo(defaultLocation, 12);
+      setZoom(12);
       console.log('使用預設位置:', defaultLocation);
     }
   } catch (error) {
@@ -121,6 +123,7 @@ const displayEventLocation = async (location) => {
     try {
       const defaultLocation = { lat: 25.0330, lng: 121.5654 };
       panTo(defaultLocation, 12);
+      setZoom(12);
       console.log('錯誤後使用預設位置:', defaultLocation);
     } catch (fallbackError) {
       console.error('連預設位置都無法設置:', fallbackError);
