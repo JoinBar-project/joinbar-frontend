@@ -103,7 +103,6 @@
           </div>
         </div>
 
-        <!-- 表單完整度提示 -->
         <div v-if="!isCustomerInfoValid && hasInteracted" class="form-incomplete-warning">
           <i class="warning-icon">⚠️</i>
           <span>請填寫完整的客戶資訊才能進行付款</span>
@@ -127,8 +126,6 @@
             <span v-if="isSubmitting || orderLoading">處理中...</span>
             <span v-else>LINE Pay 付款</span>
           </button>
-          
-          <!-- 按鈕禁用提示 - 移除這個部分 -->
           
           <div
             v-if="paymentMethodError"
@@ -208,7 +205,7 @@ const displayItems = ref([])
 
 const errorMessage = ref('')
 const paymentMethodError = ref('')
-const hasInteracted = ref(false) // 追蹤用戶是否已經開始填寫表單
+const hasInteracted = ref(false) 
 
 const customerInfo = ref({
  name: '',
@@ -230,12 +227,10 @@ const showAlert = (title, message, type = 'default', confirmText = '確認') => 
   alertModal.value = { visible: true, title, message, type, confirmText }
 }
 
-// 檢查表單完整度並提醒
 const checkFormCompleteness = () => {
   hasInteracted.value = true
 }
 
-// 清除欄位錯誤
 const clearFieldError = (field) => {
   if (formErrors.value[field]) {
     delete formErrors.value[field]
@@ -263,7 +258,7 @@ onMounted(async () => {
         customerInfo.value.name = orderUser.name;
         customerInfo.value.email = orderUser.email;
         customerInfo.value.phone = orderUser.phone;
-        hasInteracted.value = true; // 如果有預填資料，視為已互動
+        hasInteracted.value = true; 
       } else {
         loadUserInfo(); 
       }
@@ -336,7 +331,6 @@ function loadUserInfo() {
      customerInfo.value.name = customerInfo.value.name || user.username || user.lineDisplayName || ''
      customerInfo.value.email = customerInfo.value.email || user.email || ''
      
-     // 如果有預填資料，視為已互動
      if (customerInfo.value.name || customerInfo.value.email) {
        hasInteracted.value = true
      }
@@ -671,13 +665,10 @@ const goBack = () => {
   box-shadow: 0 8px 25px rgba(37, 201, 22, 0.4);
  }
 
- /* 新增的樣式 */
  .required-star {
   color: var(--color-text-warn, #eb96a4);
   font-weight: bold;
  }
-
- /* 移除不需要的樣式 */
 
  .form-incomplete-warning {
   display: flex;

@@ -1,7 +1,7 @@
 <script setup>
 import { useRouter } from 'vue-router';
 import { useAuthStore } from '@/stores/authStore';
-import { useCartStore } from '@/stores/cartStore'; // 新增這行
+import { useCartStore } from '@/stores/cartStore'; 
 import { storeToRefs } from 'pinia';
 import { computed } from 'vue';
 import UserAvatar from '@/components/UserAvatar.vue';
@@ -9,10 +9,9 @@ import Swal from 'sweetalert2';
 
 const router = useRouter();
 const authStore = useAuthStore();
-const cartStore = useCartStore(); // 新增這行
+const cartStore = useCartStore(); 
 const { user, isAuthenticated } = storeToRefs(authStore);
 
-// 新增：計算購物車數量
 const cartItemCount = computed(() => {
   const items = cartStore.items;
   
@@ -122,7 +121,6 @@ const avatarUrl = computed(() => {
         </div>
       </li>
       <li>
-        <!-- 修改這部分：添加購物車徽章 -->
         <RouterLink to="/cart" class="cart-link-wrapper">
           <img class="cart-icon" src="/cart.png" alt="Cart Icon" />
           <span v-if="cartItemCount > 0" class="cart-badge">
@@ -166,7 +164,6 @@ const avatarUrl = computed(() => {
   @apply hover:text-gray-300 transition-colors duration-200;
 }
 
-/* 新增：購物車徽章樣式 */
 .cart-link-wrapper {
   @apply relative;
 }
