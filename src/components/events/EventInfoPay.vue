@@ -43,7 +43,8 @@ const {
   showModal,
   formattedEventTime,
   closeModal,
-  handleConfirmCancel
+  handleConfirmCancel,
+  updateParticipationStatus
 } = useEvent(eventRef);
 
 const checkUserParticipation = async () => {
@@ -87,7 +88,19 @@ const reloadEventData = async () => {
 
     if (res.data?.event) {
       eventRef.value = { ...res.data.event };
-      console.log('✅ 活動資料已更新');
+      
+      if (res.data.event.currentParticipants !== undefined) {
+        updateParticipationStatus(
+          res.data.event.isUserParticipated || false,
+          res.data.event.currentParticipants
+        );
+      }
+      
+      console.log('✅ 活動資料已更新:', {
+        eventId: eventRef.value.id,
+        currentParticipants: res.data.event.currentParticipants,
+        isUserParticipated: res.data.event.isUserParticipated
+      });
     }
     if (res.data?.tags) {
       tagList.value = [...res.data.tags];
