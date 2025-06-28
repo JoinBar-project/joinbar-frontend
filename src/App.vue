@@ -3,6 +3,7 @@ import NavBar from '@/components/NavBar.vue'
 import Footer from '@/components/Footer.vue'
 import { onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
+import JoinBot from '@/components/JoinBot.vue'
 
 const router = useRouter()
 const route = useRoute()
@@ -50,6 +51,7 @@ router.afterEach((to) => {
     <NavBar />
     <router-view />
     <Footer />
+    <JoinBot />
   </div>
 </template>
 

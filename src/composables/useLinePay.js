@@ -18,21 +18,33 @@ export function useLinePay() {
 
       console.log('🔄 創建 LINE Pay 付款...', orderId)
 
-      const token = localStorage.getItem('access_token')
-      if (!token) {
-        throw new Error('請先登入')
-      }
+     const token = localStorage.getItem('access_token')
+     
+     const authMethod = token ? 'bearer' : 'cookie';
+     console.log('🔑 金流認證方式:', {
+       method: authMethod,
+       hasToken: !!token,
+       tokenLength: token?.length || 0
+     });
+
+     const config = {
+       headers: {
+         'Content-Type': 'application/json'
+       },
+       timeout: 15000,
+       withCredentials: true 
+     };
+
+     if (token) {
+       config.headers['Authorization'] = `Bearer ${token}`;
+     } else {
+       console.log('🍪 使用 Cookie 認證模式，確保 withCredentials: true');
+     }
 
       const response = await axios.post(
         `${API_BASE_URL}/linepay/create`, 
         { orderId: String(orderId) }, 
-        {
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json'
-          },
-          timeout: 15000
-        }
+        config
       )
 
       if (response.data.success) {
