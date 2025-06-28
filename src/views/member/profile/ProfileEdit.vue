@@ -184,17 +184,17 @@ const cancel = () => {
 <template>
   <transition name="alert-slide">
     <div v-if="showAlert" class="alert alert-success alert-soft absolute top-[5.5rem] left-[16rem] right-0 mx-auto max-w-md z-30">
-      <svg class="h-6 w-6 shrink-0 stroke-current" fill="none" viewBox="0 0 24 24">
+      <svg class="w-6 h-6 stroke-current shrink-0" fill="none" viewBox="0 0 24 24">
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
       </svg>
       <span>資料更新成功！</span>
     </div>
   </transition>
 
-  <div v-if="isLoading" class="text-center py-10">載入中...</div>
+  <div v-if="isLoading" class="py-10 text-center">載入中...</div>
 
-  <div v-else class="w-full max-w-4xl mx-auto mt-10 px-4">
-    <form @submit.prevent="handleSubmit" class="flex flex-col md:flex-row items-center md:items-start gap-10">
+  <div v-else class="w-full max-w-4xl px-4 mx-auto mt-10">
+    <form @submit.prevent="handleSubmit" class="flex flex-col items-center gap-10 md:flex-row md:items-start">
       <!-- 左側：頭像 + 上傳 & 移除按鈕 -->
       <div class="flex flex-col items-center md:w-1/3">
         <UserAvatar 
@@ -204,20 +204,20 @@ const cancel = () => {
         <label
           for="avatar"
           class="mt-4 px-4 py-2 bg-[var(--color-black)] text-[var(--color-secondary-pink)] rounded cursor-pointer hover:bg-opacity-80 active:scale-98 transition-all duration-150">
-          <i class="fa-solid fa-arrow-up-from-bracket mr-1"></i> 上傳頭像
+          <i class="mr-1 fa-solid fa-arrow-up-from-bracket"></i> 上傳頭像
         </label>
         <input type="file" hidden id="avatar" @change="handleAvatarChange" />
         <button
           type="button"
           v-if="!isDefaultAvatar"
           @click="handleRemoveAvatar"
-          class="mt-2 px-4 py-2 bg-gray-400 text-white rounded cursor-pointer active:scale-98 transition-all duration-150">
+          class="px-4 py-2 mt-2 text-white transition-all duration-150 bg-gray-400 rounded cursor-pointer active:scale-98">
           <i class="fa-solid fa-user-minus"></i> 移除頭像
         </button>
       </div>
 
       <!-- 右側：表單 + 按鈕 -->
-      <div class="w-full md:w-2/3 space-y-6 flex flex-col items-center md:items-start">
+      <div class="flex flex-col items-center w-full space-y-6 md:w-2/3 md:items-start">
         <ProfileForm
           :form="form"
           :isEdit="true"
@@ -226,11 +226,11 @@ const cancel = () => {
           :barMoods="barMoods"
           :toggleSelection="toggleSelection"
           :errors="errors" />
-        <div class="mt-4 flex gap-2">
+        <div class="flex gap-2 mt-4">
           <button
             type="button"
             @click="cancel"
-            class="px-4 py-2 bg-gray-400 text-white rounded cursor-pointer active:scale-98 transition-all duration-150">
+            class="px-4 py-2 text-white transition-all duration-150 bg-gray-400 rounded cursor-pointer active:scale-98">
             取消
           </button>
           <button
