@@ -135,6 +135,15 @@
         </button>
       </div>
     </div>
+
+    <BaseAlertModal
+      :visible="alertModal.visible"
+      :title="alertModal.title"
+      :message="alertModal.message"
+      :type="alertModal.type"
+      :confirm-text="alertModal.confirmText"
+      @close="alertModal.visible = false"
+    />
   </div>
  </template>
  
@@ -149,6 +158,7 @@ import utc from 'dayjs/plugin/utc'
 import timezone from 'dayjs/plugin/timezone'
 
 import IconLine from '@/components/icons/IconLine.vue'
+import BaseAlertModal from '@/components/common/BaseAlertModal.vue'
 
 dayjs.extend(utc)
 dayjs.extend(timezone)
@@ -192,6 +202,18 @@ const customerInfo = ref({
 
 const formErrors = ref({})
 
+const alertModal = ref({
+  visible: false,
+  title: '',
+  message: '',
+  type: 'default',
+  confirmText: '確認'
+})
+
+const showAlert = (title, message, type = 'default', confirmText = '確認') => {
+  alertModal.value = { visible: true, title, message, type, confirmText }
+}
+
 onMounted(async () => {
   isLoading.value = true;
   retryOrderId.value = route.query.retryOrderId;
@@ -223,8 +245,8 @@ onMounted(async () => {
         await cart.loadCart();
       }
       if (cart.items.length === 0) {
-        alert('購物車是空的，即將返回購物車頁面');
-        router.push('/cart');
+        showAlert('無法載入', '購物車是空的，即將返回購物車頁面', 'warning');
+        setTimeout(() => router.push('/cart'), 2000);
         return;
       }
       displayItems.value = cart.items;
@@ -235,7 +257,7 @@ onMounted(async () => {
 
   } catch (error) {
     console.error('❌ 載入付款頁面時發生錯誤:', error);
-    errorMessage.value = `載入資料失敗: ${error.message}`;
+    showAlert('載入失敗', `載入資料失敗: ${error.message}`, 'error');
   } finally {
     isLoading.value = false;
   }
@@ -366,6 +388,7 @@ const submitOrder = async () => {
     console.error('❌ 訂單提交失敗:', error)
     handleSubmitError(error)
   } finally {
+    isSubmitting.value = false
   }
 }
 
@@ -387,7 +410,7 @@ function validateForm() {
  }
  
  if (Object.keys(formErrors.value).length > 0) {
-   setError('請修正表單錯誤')
+   showAlert('表單錯誤', '請修正表單錯誤', 'error')
    return false
  }
 
@@ -401,24 +424,24 @@ function handleSubmitError(error) {
    errorMsg = '登入已過期，請重新登入'
    localStorage.removeItem('access_token')
    localStorage.removeItem('user')
+   showAlert('登入已過期', errorMsg, 'error')
    setTimeout(() => router.push('/login'), 1500)
  } else if (error.message.includes('已滿員')) {
    errorMsg = error.message + '，請重新選擇活動'
+   showAlert('報名失敗', errorMsg, 'warning')
  } else if (error.message.includes('已結束') || error.message.includes('過期')) {
    errorMsg = error.message + '，請移除過期活動'
+   showAlert('活動過期', errorMsg, 'warning')
  } else if (error.message.includes('重複')) {
-   errorMsg = error.message
+   showAlert('重複報名', error.message, 'warning')
  } else if (error.message.includes('網路') || error.message.includes('請求失敗')) {
    errorMsg = '網路連線有問題，請檢查網路後重試'
+   showAlert('網路錯誤', errorMsg, 'error')
  } else if (error.message) {
-   errorMsg = error.message
+   showAlert('提交失敗', error.message, 'error')
+ } else {
+   showAlert('提交失敗', errorMsg, 'error')
  }
- 
- setError(errorMsg)
-}
-
-function setError(message) {
- errorMessage.value = message
 }
 
 function clearAllErrors() {
