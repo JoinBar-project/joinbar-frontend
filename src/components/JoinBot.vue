@@ -192,16 +192,20 @@ onMounted(() => {
   animation: pop-in 0.4s ease-out forwards;
 }
 
-a {
-  color: #2563eb;
+:deep(a) {
+  color: #2d956b;
   text-decoration: underline;
   font-weight: 500;
   transition: color 0.2s ease;
 }
-
-a:hover {
-  color: #1d4ed8;
+:deep(a:hover) {
+  color: #2d956b;
   text-decoration: none;
+}
+
+:deep(strong) {
+  font-weight: 700;
+  color: #000000;
 }
 </style>
 
