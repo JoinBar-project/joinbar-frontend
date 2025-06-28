@@ -1,71 +1,76 @@
 <template>
   <div class="flex justify-center items-start pt-10 min-h-[calc(100vh-6rem)]">
-    <div class="relative max-w-[424px] mx-auto p-6 bg-[var(--color-black)] rounded-xl shadow-xl">
+    <div class="relative w-full max-w-[424px] max-md:max-w-[90vw] mx-auto p-6 max-md:px-4 bg-[var(--color-black)] rounded-xl shadow-xl">
+      <!-- 登入 / 註冊 tab -->
       <div class="flex border-b border-[var(--color-icon-secondary)]">
         <button
           class="flex-1 py-2 text-center font-semibold border-b-3 border-[var(--color-secondary-green)] text-[var(--color-secondary-green)]">
           會員登入
         </button>
-        <router-link to="/register" class="flex-1 py-2 text-center font-semibold text-[var(--color-icon-secondary)] hover:text-[var(--color-secondary-green)] transition">
+        <router-link
+          to="/register"
+          class="flex-1 py-2 text-center font-semibold text-[var(--color-icon-secondary)] hover:text-[var(--color-secondary-green)] transition">
           註冊
         </router-link>
       </div>
 
       <div v-if="isLogin" class="mt-6 space-y-4">
-        <!-- 一般登入表單 -->
+        <!-- Email 輸入 -->
         <div class="space-y-1">
-          <div 
-          :class="[
-            'flex items-center border rounded px-3 py-2 transition-colors',
-            errors.email 
-              ? 'border-[var(--color-primary-orange)] border-2 bg-white'
-              : 'border-[var(--color-icon-secondary)]'
-          ]">
-          <i class="mr-2 fa-solid fa-envelope"
-            :class="errors.email ? 'text-[var(--color-black)]' : 'text-[var(--color-icon-secondary)]'">
-          </i>
-          <input 
-            type="email" 
-            placeholder="電子郵件" 
-            v-model="loginForm.email"
-            @input="clearError('email')"
-            :disabled="authStore.isAnyLoading"
+          <div
             :class="[
-              'w-full outline-none placeholder-opacity-70 transition-colors text-sm ml-2',
-              errors.email 
-                ? 'text-[var(--color-primary-orange)] placeholder-[var(--color-primary-orange)]' 
-                : 'text-[var(--color-secondary-green)] placeholder-[var(--color-secondary-green)]'
-            ]"/>
+              'flex items-center border rounded px-3 py-2 transition-colors',
+              errors.email
+                ? 'border-[var(--color-primary-orange)] border-2 bg-white'
+                : 'border-[var(--color-icon-secondary)]'
+            ]">
+            <i
+              class="mr-2 fa-solid fa-envelope"
+              :class="errors.email ? 'text-[var(--color-black)]' : 'text-[var(--color-icon-secondary)]'">
+            </i>
+            <input
+              type="email"
+              placeholder="電子郵件"
+              v-model="loginForm.email"
+              @input="clearError('email')"
+              :disabled="authStore.isAnyLoading"
+              :class="[
+                'w-full outline-none placeholder-opacity-70 transition-colors text-sm ml-2',
+                errors.email
+                  ? 'text-[var(--color-primary-orange)] placeholder-[var(--color-primary-orange)]'
+                  : 'text-[var(--color-secondary-green)] placeholder-[var(--color-secondary-green)]'
+              ]" />
           </div>
-
           <div v-if="errors.email" class="text-[var(--color-primary-orange)] text-xs ml-1">
             {{ emailErrorMessage }}
           </div>
         </div>
 
+        <!-- 密碼 -->
         <div class="space-y-1">
-          <div 
+          <div
             :class="[
               'relative flex items-center border rounded px-3 py-2 transition-colors',
-              errors.password 
+              errors.password
                 ? 'border-[var(--color-primary-orange)] border-2 bg-white'
                 : 'border-[var(--color-icon-secondary)]'
             ]">
-            <i class="mr-2 fa-solid fa-key" 
-            :class="errors.password ? 'text-[var(--color-black)]' : 'text-[var(--color-icon-secondary)]'">
+            <i
+              class="mr-2 fa-solid fa-key"
+              :class="errors.password ? 'text-[var(--color-black)]' : 'text-[var(--color-icon-secondary)]'">
             </i>
-            <input 
-              :type="showPassword ? 'text' : 'password'" 
-              placeholder="密碼" 
+            <input
+              :type="showPassword ? 'text' : 'password'"
+              placeholder="密碼"
               v-model="loginForm.password"
               @input="clearError('password')"
               :disabled="authStore.isAnyLoading"
               :class="[
                 'w-full outline-none placeholder-opacity-70 transition-colors text-sm ml-2',
-                errors.password 
-                  ? 'text-[var(--color-primary-orange)] placeholder-[var(--color-primary-orange)]' 
+                errors.password
+                  ? 'text-[var(--color-primary-orange)] placeholder-[var(--color-primary-orange)]'
                   : 'text-[var(--color-secondary-green)] placeholder-[var(--color-secondary-green)]'
-              ]"/>
+              ]" />
             <button
               type="button"
               class="absolute -translate-y-1/2 right-3 top-1/2"
@@ -74,38 +79,41 @@
               <i :class="showPassword ? 'fa-regular fa-eye' : 'fa-regular fa-eye-slash'"></i>
             </button>
           </div>
-
-          <div v-if="errors.password" class="text-[var(--color-primary-orange)] text-xs  ml-1">
+          <div v-if="errors.password" class="text-[var(--color-primary-orange)] text-xs ml-1">
             {{ passwordErrorMessage }}
           </div>
         </div>
       </div>
-      
+
       <div class="text-xs text-right mt-1 text-[var(--color-primary-orange)] cursor-pointer hover:underline underline-offset-4">
         忘記密碼？
       </div>
 
+      <!-- 分隔線 -->
       <div class="flex items-center my-4">
         <div class="flex-grow h-px bg-gray-300"></div>
         <span class="px-4 text-sm text-gray-300">或</span>
         <div class="flex-grow h-px bg-gray-300"></div>
       </div>
 
-      <div class="flex justify-center mt-4 space-x-2">
-        <button class="btn bg-white text-black border-[#e5e5e5] border-2 flex items-center px-4 py-2 rounded-lg hover:scale-105 transition">
+      <!-- 社群登入 -->
+      <div class="flex flex-col sm:flex-row justify-center items-center mt-4 gap-3 sm:space-x-2">
+        <button
+          class="btn bg-white text-black border-[#e5e5e5] border-2 flex items-center justify-center px-4 py-2 rounded-lg hover:scale-105 transition text-sm w-full sm:w-auto">
           <img src="/google.svg" alt="Google logo" class="w-5 h-5 mr-2" />
           Login with Google
         </button>
 
-        <button 
+        <button
           @click="handleLineLogin"
-        class="btn bg-[var(--color-line-green)] text-white border-[var(--color-line-green-dark)] border-2 flex items-center px-4 py-2 rounded-lg hover:scale-105 transition">
+          class="btn bg-[var(--color-line-green)] text-white border-[var(--color-line-green-dark)] border-2 flex items-center justify-center px-4 py-2 rounded-lg hover:scale-105 transition text-sm w-full sm:w-auto">
           <img src="/line.svg" alt="Line logo" class="w-5 h-5 mr-2" />
           <span v-if="authStore.isLineLoading">載入中...</span>
           <span v-else>Login with LINE</span>
         </button>
       </div>
 
+      <!-- 登入按鈕 -->
       <div class="flex justify-center">
         <button
           @click="handleEmailLogin"
@@ -116,20 +124,25 @@
         </button>
       </div>
 
-      <div class="text-center mt-2 text-sm text-[var(--color-primary-orange)] underline underline-offset-4 cursor-pointer hover:text-[var(--color-secondary-green)] transition"
-            @click="useTestAccount">
+      <!-- 測試帳號 -->
+      <div
+        class="text-center mt-2 text-sm text-[var(--color-primary-orange)] underline underline-offset-4 cursor-pointer hover:text-[var(--color-secondary-green)] transition"
+        @click="useTestAccount">
         後台管理員登入
       </div>
 
+      <!-- 註冊區 -->
       <div class="pt-4 mt-4 text-center border-t border-gray-300">
         <span class="text-sm text-gray-300">還沒有帳號？</span>
-        <router-link to="/register" class="text-sm text-[var(--color-secondary-green)] hover:underline underline-offset-4">
+        <router-link
+          to="/register"
+          class="text-sm text-[var(--color-secondary-green)] hover:underline underline-offset-4">
           立即註冊
         </router-link>
       </div>
     </div>
 
-    <!-- 使用 BaseAlertModal -->
+    <!-- BaseAlertModal -->
     <BaseAlertModal
       :visible="alertModal.visible"
       :type="alertModal.type"
@@ -140,6 +153,7 @@
     />
   </div>
 </template>
+
 
 <script setup>
 import { ref, onMounted } from 'vue';

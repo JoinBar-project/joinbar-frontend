@@ -285,7 +285,7 @@ onMounted(async () => {
 
 <template>
   <div class="flex items-start justify-center min-h-screen px-4 pt-10">
-    <div class="max-w-[424px] mx-auto p-6 bg-[var(--color-black)] rounded-xl shadow-xl  relative">
+    <div class="relative w-full max-w-[424px] max-md:max-w-[90vw] mx-auto p-6 max-md:px-4 bg-[var(--color-black)] rounded-xl shadow-xl">
       <div class="flex border-b border-[var(--color-icon-secondary)]">
         <router-link to="/login" class="flex-1 py-2 text-center font-semibold text-[var(--color-icon-secondary)] hover:text-[var(--color-secondary-green)] transition">
           會員登入
@@ -298,7 +298,7 @@ onMounted(async () => {
       </div>
 
       <transition name="slide-fade" mode="out-in">
-        <div :key="step" class="w-[380px]">
+        <div :key="step" class="w-full max-w-[360px] mx-auto">
           <!-- Step 1: 註冊表單 -->
           <div v-if="step === 1" class="mt-6 space-y-4">
             <h2 class="mb-4 text-lg font-semibold" style="color: var(--color-primary-orange);">建立帳號</h2>
@@ -358,7 +358,7 @@ onMounted(async () => {
               <span class="mx-2 text-gray-300">或</span>
               <div class="flex-grow h-px bg-gray-300"></div>
             </div>
-            <div class="flex justify-center space-x-2">
+            <div class="flex flex-col sm:flex-row justify-center items-center gap-3 sm:space-x-2">
               <button class="btn bg-white text-black border-[#e5e5e5] border-2 flex items-center px-4 py-2 rounded-lg hover:shadow-md transition">
                 <img src="/google.svg" alt="Google" class="w-5 h-5 mr-2" /> register for Google 
               </button>
