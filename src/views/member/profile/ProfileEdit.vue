@@ -8,7 +8,7 @@ import ProfileForm from '@/components/member/ProfileForm.vue';
 import PreferencesForm from '@/components/member/PreferencesForm.vue';
 import UserAvatar from '@/components/UserAvatar.vue';
 import { validateUserProfile } from '@/utils/validators.js';
-import Swal from 'sweetalert2';
+import BaseAlertModal from '@/components/common/BaseAlertModal.vue';
 
 const authStore = useAuthStore();
 const userProfileStore = useUserProfileStore();
@@ -75,6 +75,28 @@ const loadUserPreferences = async () => {
     preferencesForm.value = { types: [], moods: [] };
   }
 };
+
+const alertModal = ref({
+  visible: false,
+  type: 'default',
+  title: '',
+  message: '',
+  confirmText: '確認'
+})
+
+const showAlert = (type, title, message, confirmText = '確認') => {
+  alertModal.value = {
+    visible: true,
+    type,
+    title,
+    message,
+    confirmText
+  }
+}
+
+const closeAlert = () => {
+  alertModal.value.visible = false
+}
 
 // 表單資料
 const profileForm = ref({
@@ -236,26 +258,16 @@ const saveProfile = async () => {
       avatarUrl: updatedAvatarUrl,
     });
 
-    await Swal.fire({
-      title: '個人資料已儲存！',
-      text: '您的個人資料已成功更新',
-      icon: 'success',
-      confirmButtonText: '確認',
-      timer: 2000,
-      timerProgressBar: true
-    });
+    showAlert('success', '個人資料已儲存！', '您的個人資料已成功更新！')
 
     // 保存後返回查看頁面
-    goBack();
+    setTimeout(() => {
+      goBack();
+    }, 1500);
 
   } catch (err) {
     console.error('個人資料更新失敗', err);
-    await Swal.fire({
-      title: '儲存失敗',
-      text: '個人資料更新失敗，請稍後再試',
-      icon: 'error',
-      confirmButtonText: '確認'
-    });
+    showAlert('error', '儲存失敗！', '個人資料更新失敗，請稍後再試！')
   } finally {
     isProfileSaving.value = false;
   }
@@ -301,32 +313,17 @@ const savePreferences = async () => {
       
       await userProfileStore.updateUserProfile(userId.value, updatedProfileData);
 
-      await Swal.fire({
-        title: '偏好設定已儲存！',
-        text: '您的酒吧偏好已成功更新',
-        icon: 'success',
-        confirmButtonText: '確認',
-        timer: 2000,
-        timerProgressBar: true
-      });
+      showAlert('success', '偏好設定已儲存！', '您的酒吧偏好已成功更新！')
 
+      setTimeout(() => {
       goBack();
+    }, 1500); 
     } else {
-      await Swal.fire({
-        title: '儲存失敗',
-        text: result.error || '偏好設定儲存失敗，請稍後再試',
-        icon: 'error',
-        confirmButtonText: '確認'
-      });
+      showAlert('error', '儲存失敗！', result.error || '偏好設定儲存失敗，請稍後再試')
     }
 
   } catch (err) {
-    await Swal.fire({
-      title: '發生錯誤',
-      text: `錯誤詳情: ${err.message}`,
-      icon: 'error',
-      confirmButtonText: '確認'
-    });
+    showAlert('error', '發生錯誤！', `錯誤詳情: ${err.message}`)
   } finally {
     isPreferencesSaving.value = false;
   }
@@ -537,22 +534,20 @@ onMounted(async () => {
         </div>
       </div>
     </div>
+
+    <!-- 使用 BaseAlertModal -->
+    <BaseAlertModal
+      :visible="alertModal.visible"
+      :type="alertModal.type"
+      :title="alertModal.title"
+      :message="alertModal.message"
+      :confirmText="alertModal.confirmText"
+      @close="closeAlert"
+      style="z-index: 9999;"
+    />
   </div>
 </template>
 
 <style scoped>
-.alert-slide-enter-active {
-  transition: all 0.4s ease-out;
-}
-.alert-slide-leave-active {
-  transition: all 0.2s ease-in;
-}
-.alert-slide-enter-from {
-  opacity: 0;
-  transform: translateY(-20px);
-}
-.alert-slide-leave-to {
-  opacity: 0;
-  transform: translateY(-20px);
-}
+
 </style>
