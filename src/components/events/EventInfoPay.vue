@@ -4,7 +4,6 @@ import { useCartStore } from '@/stores/cartStore';
 import { useRouter } from 'vue-router';
 import { useAuthStore } from '@/stores/authStore';
 import { ref, computed, onMounted, watch } from 'vue';
-import { getEventById } from '@/api/event';
 import { useOrder } from '@/composables/useOrder';
 import { useLinePay } from '@/composables/useLinePay';
 import EventHoster from './EventHoster.vue';
