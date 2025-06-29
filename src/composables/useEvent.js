@@ -1,4 +1,4 @@
-import { ref, computed } from 'vue';
+import { ref, computed, watch } from 'vue';
 import dayjs from 'dayjs';
 import utc from 'dayjs/plugin/utc';
 import timezone from 'dayjs/plugin/timezone';
@@ -9,13 +9,27 @@ dayjs.extend(timezone)
 dayjs.locale('zh-tw')
 
 const tz = 'Asia/Taipei'
-const joinedNum = ref(0)
 
 export function useEvent(event){
   
   const isJoin = ref(false)
+  const joinedNum = ref(0)
   const showModal = ref(false)
   const now = ref(dayjs())
+
+  watch(event, (newEvent) => {
+    if (newEvent) {
+      joinedNum.value = newEvent.currentParticipants || 0;
+      
+      isJoin.value = newEvent.isUserParticipated || false;
+      
+      console.log('✅ useEvent 數據同步:', {
+        eventId: newEvent.id,
+        joinedNum: joinedNum.value,
+        isJoin: isJoin.value
+      });
+    }
+  }, { immediate: true, deep: true });
 
   const isOver24hr = computed(() => {
     if( !event.value?.startDate ) return null
@@ -35,6 +49,8 @@ export function useEvent(event){
   })
 
   function toggleJoin(){
+    console.log('🔄 toggleJoin 被調用，當前狀態:', isJoin.value);
+    
     isJoin.value = !isJoin.value
 
     if( isJoin.value == true){
@@ -42,6 +58,11 @@ export function useEvent(event){
     }else{
       joinedNum.value--
     }
+    
+    console.log('✅ toggleJoin 完成，新狀態:', {
+      isJoin: isJoin.value,
+      joinedNum: joinedNum.value
+    });
   }
 
   function openCancelModal(){
@@ -57,6 +78,16 @@ export function useEvent(event){
     showModal.value = false
   }
 
+  function updateParticipationStatus(participated, count) {
+    isJoin.value = participated;
+    joinedNum.value = count;
+    
+    console.log('✅ 手動更新參與狀態:', {
+      isJoin: isJoin.value,
+      joinedNum: joinedNum.value
+    });
+  }
+
   return{
     isJoin,
     joinedNum,
@@ -66,7 +97,7 @@ export function useEvent(event){
     showModal,
     openCancelModal,
     closeModal,
-    handleConfirmCancel
-
+    handleConfirmCancel,
+    updateParticipationStatus 
   }
 }
