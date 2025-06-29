@@ -84,6 +84,26 @@
     <div v-if="successMessage" class="success-toast">
       {{ successMessage }}
     </div>
+
+    <BaseAlertModal
+      :visible="alertModal.visible"
+      :title="alertModal.title"
+      :message="alertModal.message"
+      :type="alertModal.type"
+      :confirm-text="alertModal.confirmText"
+      @close="alertModal.visible = false"
+    />
+    
+    <BaseConfirmModal
+      :visible="confirmModal.visible"
+      :title="confirmModal.title"
+      :message="confirmModal.message"
+      :type="confirmModal.type"
+      :confirm-text="confirmModal.confirmText"
+      :cancel-text="confirmModal.cancelText"
+      @confirm="confirmModal.onConfirm"
+      @cancel="confirmModal.onCancel"
+    />
   </div>
 </template>
 
@@ -91,12 +111,58 @@
 import { useCartStore } from '@/stores/cartStore'
 import { computed, ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
+import BaseAlertModal from '@/components/common/BaseAlertModal.vue'
+import BaseConfirmModal from '@/components/common/BaseConfirmModal.vue'
 
 const cart = useCartStore()
 const router = useRouter()
 const isLoading = ref(true)
 const retrying = ref(false)
 const successMessage = ref('')
+
+const alertModal = ref({
+  visible: false,
+  title: '',
+  message: '',
+  type: 'default',
+  confirmText: '確認'
+})
+
+const confirmModal = ref({
+  visible: false,
+  title: '',
+  message: '',
+  type: null,
+  confirmText: '確認',
+  cancelText: '取消',
+  onConfirm: null,
+  onCancel: null
+})
+
+const showAlert = (title, message, type = 'default', confirmText = '確認') => {
+  alertModal.value = { visible: true, title, message, type, confirmText }
+}
+
+const showConfirm = (title, message, type = null, confirmText = '確認', cancelText = '取消') => {
+  return new Promise((resolve) => {
+    confirmModal.value = {
+      visible: true,
+      title,
+      message,
+      type,
+      confirmText,
+      cancelText,
+      onConfirm: () => {
+        confirmModal.value.visible = false
+        resolve(true)
+      },
+      onCancel: () => {
+        confirmModal.value.visible = false
+        resolve(false)
+      }
+    }
+  })
+}
 
 onMounted(async () => {
   await loadCartData()
@@ -111,7 +177,13 @@ const loadCartData = async () => {
     console.error('❌ 購物車載入失敗:', error)
     
     if (error.message.includes('請先登入') || error.message.includes('登入已過期')) {
-      const shouldLogin = confirm('您需要登入才能使用購物車同步功能。\n\n點擊「確定」前往登入頁面\n點擊「取消」使用本地購物車')
+      const shouldLogin = await showConfirm(
+        '需要登入',
+        '您需要登入才能使用購物車同步功能。\n\n點擊「確定」前往登入頁面\n點擊「取消」使用本地購物車',
+        'question',
+        '確定',
+        '取消'
+      )
       if (shouldLogin) {
         router.push('/login')
         return
@@ -154,6 +226,16 @@ const totalPrice = computed(() => {
 const calcSubtotal = (item) => (item.price * item.quantity).toLocaleString()
 
 const handleRemoveItem = async (item) => {
+  const confirmed = await showConfirm(
+    '確認移除',
+    `確定要移除「${item.name}」嗎？`,
+    'warning',
+    '移除',
+    '取消'
+  )
+  
+  if (!confirmed) return
+  
   try {
     const itemId = item.eventId || item.id
     const result = await cart.removeItem(itemId)
@@ -162,7 +244,7 @@ const handleRemoveItem = async (item) => {
       showSuccessMessage(result.message)
     }
   } catch (error) {
-    alert('移除失敗：' + error.message)
+    showAlert('移除失敗', error.message, 'error')
   }
 }
 
@@ -191,7 +273,7 @@ const showSuccessMessage = (message) => {
 
 const goToPayment = () => {
   if (cartItems.value.length === 0) {
-    alert('購物車是空的')
+    showAlert('無法結帳', '購物車是空的', 'warning')
     return
   }
   router.push('/payment')

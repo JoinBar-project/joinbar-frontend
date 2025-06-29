@@ -216,7 +216,6 @@ const getTagLabel = (tag) => {
 .wishlist-icon {
   width: 24px;
   height: 24px;
-  fill: white;
   transition: fill 0.2s ease;
 }
 

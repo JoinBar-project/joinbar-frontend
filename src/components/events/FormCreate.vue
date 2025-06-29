@@ -1,10 +1,12 @@
 <script setup>
-import { ref, computed } from 'vue';
+import { ref, computed, watch, onMounted } from 'vue';
 import axios from 'axios';
 import { useEventForm } from '@/composables/useEventForm';
 import { useAuthStore } from '@/stores/authStore';
 import { useTagStore } from '@/stores/tag';
 import Hashtag from './Hashtag.vue';
+import { useGoogleMaps } from '@/composables/useGoogleMaps/userIndex.js';
+import debounce from 'lodash/debounce';
 
 const emit = defineEmits(['submit']);
 
@@ -27,6 +29,99 @@ const {
 const imageFile = ref(null);
 const imagePreview = ref(null);
 const fileInput = ref(null);
+
+const mapContainer = ref(null);
+const {
+  map,
+  isReady,
+  loadGoogleMapsAPI,
+  initMap,
+  getGeocode,
+  addMarker,
+  clearMarkers,
+  panTo,
+  setZoom,
+  getPlacePredictions,
+} = useGoogleMaps(mapContainer, {
+  googleMapsApiKey: import.meta.env.VITE_GOOGLE_MAPS_API_KEY,
+  onError: (msg) => alert(msg),
+});
+
+const searchBarName = ref('');
+const suggestions = ref([]);
+const barAddress = ref('');
+
+const getSuggestions = debounce(async (input) => {
+  if (!input) {
+    suggestions.value = [];
+    return;
+  }
+  if (!isReady.value) return;
+  suggestions.value = await getPlacePredictions(input);
+}, 300);
+
+watch(searchBarName, (val) => {
+  getSuggestions(val);
+});
+
+const selectSuggestion = async (suggestion) => {
+  suggestions.value = [];
+  await searchBarLocation(suggestion.description);
+};
+
+const searchBarLocation = async (query) => {
+  if (!query) return;
+  if (!isReady.value) return;
+  try {
+    const location = await getGeocode(query);
+    if (location) {
+      clearMarkers();
+      addMarker({
+        location,
+        title: query,
+        infoContent: query,
+        isBarLike: true,
+      });
+      panTo(location, 14);
+      setZoom(14);
+      barName.value = query;
+      barAddress.value = query;
+    }
+  } catch (e) {
+    clearMarkers();
+    barAddress.value = '';
+  }
+};
+
+onMounted(async () => {
+  await loadGoogleMapsAPI();
+  if (mapContainer.value) {
+    await initMap();
+  }
+});
+
+watch(barName, async (newName) => {
+  if (!newName) {
+    clearMarkers();
+    return;
+  }
+  if (!isReady.value) return;
+  try {
+    const location = await getGeocode(newName);
+    if (location) {
+      clearMarkers();
+      addMarker({
+        location,
+        title: newName,
+        infoContent: newName,
+        isBarLike: true,
+      });
+      panTo(location, 16);
+    }
+  } catch (e) {
+    clearMarkers();
+  }
+});
 
 function handleImageSelect(event) {
   const file = event.target.files[0];
@@ -72,12 +167,7 @@ async function onSubmit() {
   }
 
   try {
-    const token = localStorage.getItem('access_token') || authStore.accessToken;
-    
-    if (!token) {
-      alert('登入已過期，請重新登入');
-      return;
-    }
+    const formData = new FormData();
     
     const isValidTagFormat = Array.isArray(eventHashtags.value) && 
       eventHashtags.value.every(tag => typeof tag === 'number');
@@ -86,8 +176,6 @@ async function onSubmit() {
       console.error('標籤格式錯誤，期望數字陣列，實際:', eventHashtags.value);
     }
 
-    const formData = new FormData();
-    
     formData.append('name', eventName.value);
     formData.append('barName', barName.value);
     formData.append('location', eventLocation.value);
@@ -105,9 +193,8 @@ async function onSubmit() {
     
     formData.append('tags', JSON.stringify(eventHashtags.value));
 
-    const response = await axios.post('/api/event/create', formData, {
+    const response = await apiClient.post('/event/create', formData, {
       headers: {
-        'Authorization': `Bearer ${token}`,
         'Content-Type': 'multipart/form-data',
       },
     });
@@ -184,10 +271,10 @@ async function onSubmit() {
           <img
             :src="imagePreview"
             alt="活動圖片預覽"
-            class="w-full h-full object-cover"
+            class="object-cover w-full h-full"
           />
-          <div class="absolute inset-0 opacity-0 hover:opacity-100 transition-opacity rounded-t-xl flex items-center justify-center backdrop-blur-sm">
-            <span class="text-white text-lg font-medium">點擊重新選擇</span>
+          <div class="absolute inset-0 flex items-center justify-center transition-opacity opacity-0 hover:opacity-100 rounded-t-xl backdrop-blur-sm">
+            <span class="text-lg font-medium text-white">點擊重新選擇</span>
           </div>
         </div>
       </div>
@@ -204,14 +291,29 @@ async function onSubmit() {
           </div>
           <div class="form-row">
             <label for="bar-name">酒吧名稱</label>
-            <input
-              type="text"
-              id="bar-name"
-              v-model="barName"
-              placeholder="請輸入酒吧名稱" />
+            <div style="position: relative; width: 100%;">
+              <input
+                type="text"
+                id="bar-name"
+                v-model="searchBarName"
+                placeholder="請輸入酒吧名稱"
+                autocomplete="off"
+                style="width: 100%;"
+              />
+              <ul v-if="suggestions.length" class="suggestions-list" style="position: absolute; top: 40px; left: 0; right: 0; z-index: 20; background: white; border: 1px solid #ddd; border-radius: 8px; max-height: 200px; overflow-y: auto; box-shadow: 0 4px 10px rgba(0,0,0,0.1);">
+                <li
+                  v-for="(suggestion, idx) in suggestions"
+                  :key="idx"
+                  @click="selectSuggestion(suggestion)"
+                  style="padding: 10px 12px; cursor: pointer; border-bottom: 1px solid #f0f0f0; display: flex; align-items: center; gap: 6px;"
+                >
+                  <span style="font-size: 18px;">🔍</span> {{ suggestion.description }}
+                </li>
+              </ul>
+            </div>
           </div>
           <div class="event-location">
-            {{ eventLocation }}
+            {{ barAddress }}
           </div>
           <div class="form-row">
             <label for="event-start-date">開始日期</label>
@@ -248,11 +350,7 @@ async function onSubmit() {
           <Hashtag v-model="eventHashtags" />
         </div>
         <div class="form-right">
-          <iframe 
-            v-if="eventLocation"
-            :src="`https://www.google.com/maps?q=${encodeURIComponent(eventLocation)}&output=embed`"
-            class="w-full h-full rounded-lg border-0">
-          </iframe>
+          <div ref="mapContainer" class="w-full h-full rounded-lg border-0" style="min-height: 300px; background: #2d2d2d;"></div>
         </div>
       </div>
       

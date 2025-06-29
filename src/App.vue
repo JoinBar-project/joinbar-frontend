@@ -3,6 +3,7 @@ import NavBar from '@/components/NavBar.vue'
 import Footer from '@/components/Footer.vue'
 import { onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
+import JoinBot from '@/components/JoinBot.vue'
 
 const router = useRouter()
 const route = useRoute()
@@ -46,23 +47,37 @@ router.afterEach((to) => {
 </script>
 
 <template>
-  <div>
+  <div class="app-layout">
     <NavBar />
-    <router-view />
+    <main class="main-content">
+      <router-view />
+    </main>
     <Footer />
+    <JoinBot />
   </div>
 </template>
+
 
 <style>
 body {
   margin: 0;
   font-family: Arial, sans-serif;
   overflow-x: hidden; /* 防止水平滾動條 */
-  padding-bottom: 200px;
 }
 
 .home {
   padding: 2rem;
   text-align: center;
+}
+
+.app-layout {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+.main-content {
+  /*主內容填滿空間，footer 推到底 */
+    flex: 1; 
 }
 </style>

@@ -1,15 +1,30 @@
 <script setup>
 import { useRouter } from 'vue-router';
 import { useAuthStore } from '@/stores/authStore';
+import { useCartStore } from '@/stores/cartStore'; 
 import { storeToRefs } from 'pinia';
 import { computed } from 'vue';
 import UserAvatar from '@/components/UserAvatar.vue';
 import Swal from 'sweetalert2';
 
-
 const router = useRouter();
 const authStore = useAuthStore();
+const cartStore = useCartStore(); 
 const { user, isAuthenticated } = storeToRefs(authStore);
+
+const cartItemCount = computed(() => {
+  const items = cartStore.items;
+  
+  if (items && typeof items === 'object' && 'items' in items) {
+    return Array.isArray(items.items) ? items.items.length : 0;
+  }
+  
+  if (Array.isArray(items)) {
+    return items.length;
+  }
+  
+  return 0;
+});
 
 const goToMember = () => {
   router.push({
@@ -70,8 +85,8 @@ const handleLogout = async () => {
   }
 };
 
-const avatarURL = computed(() => {
-  return user.value?.avatar || '/default-user-avatar.png';
+const avatarUrl = computed(() => {
+  return user.value?.avatarUrl || '/default-user-avatar.png';
 });
 </script>
 
@@ -79,48 +94,39 @@ const avatarURL = computed(() => {
   <nav class="navbar">
     <div class="logo">
       <RouterLink to="/home">
-        <img
-          src="/joinbar-logo.png"
-          alt="JoinBar Logo" />
+        <img src="/joinbar-logo.png" alt="JoinBar Logo" />
       </RouterLink>
     </div>
     <ul class="nav-links">
       <li><RouterLink to="/map">酒吧地圖</RouterLink></li>
-      <!-- <li><RouterLink to="/reviews">酒吧評論</RouterLink></li> -->
       <li><RouterLink to="/event">酒吧活動</RouterLink></li>
       <li><RouterLink to="/subscription">訂閱優惠</RouterLink></li>
       <li>
-        <div
-          v-if="isAuthenticated"
-          class="cursor-pointer flex flex-col items-center gap-1">
-          <UserAvatar
-            :avatar-url="avatarURL"
-            :display-name="user.username"
-            size="sm"
-            :on-avatar-click="goToMember" />
+        <div v-if="isAuthenticated" class="flex flex-col items-center gap-1 cursor-pointer">
+          <UserAvatar 
+          :avatar-url="avatarUrl"
+          :display-name="user.username"
+          size="sm"
+          :on-avatar-click="goToMember" />
           <span class="text-sm">嗨！{{ user.username }}</span>
         </div>
-        <RouterLink
-          v-else
-          to="/login"
-          >登入/註冊</RouterLink
-        >
+        <RouterLink v-else to="/login">登入 / 註冊</RouterLink>
       </li>
       <li>
         <div
           @click="handleLogout"
           v-if="isAuthenticated"
-          class="cursor-pointer flex flex-col items-center gap-1 logout-button">
+          class="flex flex-col items-center gap-1 cursor-pointer logout-button">
           <span>登出</span>
         </div>
       </li>
       <li>
-        <RouterLink to="/cart"
-          ><img
-            class="cart-icon"
-            src="/cart.png"
-            alt="Cart Icon"
-        /></RouterLink>
+        <RouterLink to="/cart" class="cart-link-wrapper">
+          <img class="cart-icon" src="/cart.png" alt="Cart Icon" />
+          <span v-if="cartItemCount > 0" class="cart-badge">
+            {{ cartItemCount > 99 ? '99+' : cartItemCount }}
+          </span>
+        </RouterLink>
       </li>
     </ul>
   </nav>
@@ -156,5 +162,28 @@ const avatarURL = computed(() => {
 
 .logout-button {
   @apply hover:text-gray-300 transition-colors duration-200;
+}
+
+.cart-link-wrapper {
+  @apply relative;
+}
+
+.cart-badge {
+  position: absolute;
+  top: 15px;
+  right: 2px;
+  background-color: #ef4444;
+  color: white;
+  font-size: 10px;
+  font-weight: bold;
+  border-radius: 50%;
+  min-width: 16px;
+  height: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid white;
+  line-height: 1;
+  z-index: 10;
 }
 </style>
