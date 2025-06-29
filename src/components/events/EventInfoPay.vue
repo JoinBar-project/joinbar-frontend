@@ -3,14 +3,10 @@ import { useEvent } from '@/composables/useEvent.js';
 import { useCartStore } from '@/stores/cartStore';
 import { useRouter } from 'vue-router';
 import { useAuthStore } from '@/stores/authStore';
-<<<<<<< HEAD
-import { ref, computed, onMounted } from 'vue';
+import { ref, computed, onMounted, watch } from 'vue';
 import { getEventById } from '@/api/event';
-=======
 import { useOrder } from '@/composables/useOrder';
 import { useLinePay } from '@/composables/useLinePay';
-import { ref, computed, onMounted, watch } from 'vue';
->>>>>>> dev
 import EventHoster from './EventHoster.vue';
 import MessageBoard from './MessageBoard.vue';
 import ModalEdit from '@/components/events/ModalEdit.vue';
@@ -50,10 +46,7 @@ const isAuthenticated = computed(() => {
 const {
   isJoin,
   joinedNum,
-<<<<<<< HEAD
   isOver24hr,
-=======
->>>>>>> dev
   showModal,
   formattedEventTime,
   closeModal,
@@ -68,12 +61,6 @@ const checkUserParticipation = async () => {
   }
 
   try {
-<<<<<<< HEAD
-    const { event, tags } = await getEventById(eventRef.value.id);
-    if (event) eventRef.value = { ...event };
-    if (tags) tagList.value = [...tags];
-    emit('update', { event: eventRef.value, tags: tagList.value });
-=======
     console.log('🔍 檢查用戶參與狀態...');
     
     const response = await apiClient.get('/orders/history');
@@ -94,7 +81,6 @@ const checkUserParticipation = async () => {
       console.log('🔍 用戶參與狀態 (isJoin 補充):', hasParticipated.value);
     }
 
->>>>>>> dev
   } catch (error) {
     console.warn('檢查參與狀態失敗:', error);
     hasParticipated.value = isJoin.value || false;
