@@ -75,7 +75,7 @@ const routes = [
   { path: '/cart', name: 'Cart', component: Cart, meta: { requiresAuth: true } },
   { path: '/payment', name: 'Payment', component: Payment, meta: { requiresAuth: true } },
   { path: '/payment-waiting', name: 'PaymentWaiting', component: PaymentWaiting },
-  { path: '/order-success/:orderNumber', name: 'OrderSuccess', component: OrderSuccess, props: true, meta: { requiresAuth: true } },
+  { path: '/order-success/:orderNumber', name: 'OrderSuccess', component: OrderSuccess, props: true },
   { path: '/preferences', name: 'Preferences', component: Preferences, meta: { requiresAuth: true } },
   { path: '/verify-email', name: 'EmailVerify', component: EmailVerify, meta: { requiresGuest: true } },
   { path: '/404', name: 'NotFound', component: NotFound },
@@ -84,6 +84,12 @@ const routes = [
     path: '/:pathMatch(.*)*', 
     name: 'Catch-All',
     component: NotFound,
+  },
+  { 
+    path: '/payment-result', 
+    name: 'PaymentResult', 
+    component: () => import('@/components/sub/PaymentResultModal.vue'),
+    meta: { requiresAuth: true }
   },
 ];
 
