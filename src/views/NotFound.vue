@@ -6,7 +6,11 @@
       </div>
       
       <h2 class="text-3xl mb-4 font-semibold gradient-text-secondary">頁面未找到</h2>
-      <p class="text-[var(--color-black)] font-bold mb-10 leading-7 text-lg">抱歉，您造訪的頁面好像不存在耶！</p>
+      
+      <p class="text-[var(--color-black)] font-bold mb-10 leading-7 text-lg text-center">
+        抱歉，您造訪的頁面<br class="max-md:block hidden" />
+        好像不存在耶！
+      </p>
       
       <div class="flex flex-col md:flex-row justify-center gap-4">
         <router-link to="/" class="bg-gradient-to-br from-[#f8ecd6] to-[#e1ac67] rounded-xl shadow-md hover:shadow-lg hover:-translate-y-0.5 transform transition-all">

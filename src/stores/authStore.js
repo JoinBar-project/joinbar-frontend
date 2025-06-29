@@ -1,7 +1,16 @@
 import { defineStore } from 'pinia';
 import { ref, computed } from 'vue';
 import Swal from 'sweetalert2';
-import { verifyAuth, resendVerification, emaillogin as emailLoginAPI, lineLogin as lineLoginAPI, emailSignup as emailSignupAPI, saveBarTags as saveBarTagsAPI, lineLogout as lineLogoutAPI, verifyEmail as verifyEmailAPI } from '../api/auth';
+import { verifyAuth, 
+          resendVerification, 
+          emaillogin as emailLoginAPI, 
+          lineLogin as lineLoginAPI, 
+          emailSignup as emailSignupAPI, 
+          saveBarTags as saveBarTagsAPI, 
+          lineLogout as lineLogoutAPI, 
+          verifyEmail as verifyEmailAPI, 
+          getAccountDeletionWarning as getAccountDeletionWarningAPI, 
+          deleteAccount as deleteAccountAPI } from '../api/auth';
 
 export const useAuthStore = defineStore('auth', () => {
   const user = ref(null);
@@ -44,6 +53,7 @@ export const useAuthStore = defineStore('auth', () => {
     localStorage.removeItem('access_token');
     localStorage.removeItem('refresh_token');
     localStorage.removeItem('user');
+    document.cookie = 'user_info=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; sameSite=lax';
     clearError();
     console.log('認證狀態已清除');
   }
@@ -239,7 +249,7 @@ export const useAuthStore = defineStore('auth', () => {
       refreshToken.value = storedRefreshToken;
       try {
         user.value = JSON.parse(storedUser);
-        console.log('從 localStorage 恢復登入狀態 (Email 登入)');
+        console.log('從 localStorage 恢復登入狀態 (Email 登入):', user.value);
       } catch (err) {
         console.error('解析用戶資料失敗:', err);
         localStorage.removeItem('user');
@@ -266,13 +276,17 @@ export const useAuthStore = defineStore('auth', () => {
 
       if (userInfoCookie) {
         const userData = JSON.parse(decodeURIComponent(userInfoCookie));
+        console.log('從 cookie 讀取到用戶資訊:', userData);
 
         // 如果 cookie 中的用戶與當前用戶不同 更新狀態
         if (!user.value || user.value.id !== userData.id) {
           user.value = userData;
           localStorage.setItem('user', JSON.stringify(userData));
-          console.log('從 cookie 更新用戶資訊 (LINE 登入)');
+          console.log('從 cookie 更新用戶資訊 (LINE 登入):', userData);
         }
+      } else if (user.value && !storedAccessToken) {
+        // 如果有 localStorage 中的用戶但沒有 cookie，可能是 LINE 登入狀態已失效
+        console.log('檢查 LINE 登入狀態...');
       }
     } catch (err) {
       console.error('從 cookie 讀取用戶資訊失敗:', err);
@@ -286,6 +300,8 @@ export const useAuthStore = defineStore('auth', () => {
       localStorage.removeItem('refresh_token');
       localStorage.removeItem('user');
       console.log('清理無效的登入狀態');
+    } else {
+      console.log('AuthStore 初始化完成，用戶:', user.value.username || user.value.lineDisplayName);
     }
   }
 
@@ -574,6 +590,46 @@ export const useAuthStore = defineStore('auth', () => {
     }
   }
 
+  // 取得帳戶註銷警告資訊
+  async function getAccountDeletionWarning() {
+    clearError();
+    try {
+      const response = await getAccountDeletionWarningAPI();
+      return { success: true, data: response.data.data };
+    } catch (err) {
+      console.error('取得註銷警告資訊失敗:', err);
+      const error = err.response?.data?.error || '載入失敗，請稍後再試';
+      errorMessage.value = error;
+      return { success: false, error };
+    }
+  }
+
+  // 執行帳戶註銷
+  async function deleteAccount(deleteData) {
+    clearError();
+
+    try {
+      const response = await deleteAccountAPI(deleteData);
+      clearAuthState();
+
+      return { 
+        success: true, 
+        data: response.data.data,
+        message: response.data.message 
+      };
+    } catch (err) {
+      console.error('帳戶註銷失敗:', err);
+
+      const errorResponse = err.response?.data;
+      errorMessage.value = errorResponse?.error || '註銷失敗，請稍後再試';
+      return { 
+        success: false, 
+        error: errorResponse?.error || '註銷失敗，請稍後再試',
+        details: errorResponse?.details 
+      };
+    }
+  }
+
   async function saveBarTags(preferences) {
     clearError();
     
@@ -632,6 +688,8 @@ export const useAuthStore = defineStore('auth', () => {
     saveBarTags,
     lineLogout,
     logout,
-    verifyEmail
+    verifyEmail,
+    getAccountDeletionWarning,
+    deleteAccount
   };
 });
