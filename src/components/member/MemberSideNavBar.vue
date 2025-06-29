@@ -14,17 +14,19 @@ const userId = computed(() => user.value?.id);
 const profileLink = computed(() => ({ name: 'MemberProfile', params: { id: userId.value } }));
 const barLink = computed(() => ({ name: 'BarFavorites', params: { id: userId.value } }));
 const memberCardLink = computed(() => ({ name: 'MemberCard', params: { id: userId.value } }));
-const ordersLink = computed(() => ({ name: 'OrderRecords', params: { id: userId.value } }));
+const ordersLink = computed(() => ({ name: 'MemberOrderRecords', params: { id: userId.value } }));
 
 const selectedItem = ref('profile');
 const expandedEventRecords = ref(null);
+
+const showMobileDropdown = ref(false);
 
 const menuItems = [
   { name: 'profile', label: '會員資料', icon: 'fa-user', to: profileLink },
   {
     name: 'event-records',
     label: '揪團活動紀錄',
-    icon: 'fa-calendar',
+    icon: 'fa-briefcase',
     children: [
       { name: 'published', label: '我發布的活動', icon: 'fa-bullhorn', to: { name: 'PublishedEvents', params: { id: userId.value } } },
       { name: 'joined', label: '我參加的活動', icon: 'fa-calendar-check', to: { name: 'JoinedEvents', params: { id: userId.value } } }
@@ -44,6 +46,18 @@ const handleMainMenuClick = (item) => {
   }
 };
 
+const handleMobileMenuClick = (item) => {
+  selectedItem.value = item.name;
+  router.push(item.to.value);
+  closeAllMobileDropdowns();
+};
+
+const handleMobileChildMenuClick = (child) => {
+  selectedItem.value = child.name;
+  router.push(child.to);
+  closeAllMobileDropdowns();
+};
+
 const toggleEventRecords = (name) => {
   if (expandedEventRecords.value === name) {
     expandedEventRecords.value = null;
@@ -51,6 +65,11 @@ const toggleEventRecords = (name) => {
     expandedEventRecords.value = name;
   }
 };
+
+const closeAllMobileDropdowns = () => {
+  showMobileDropdown.value = false;
+};
+
 const handleLogout = async () => {
   if (authStore.loginMethod === 'line') {
     try {
@@ -101,6 +120,7 @@ const handleLogout = async () => {
       });
     }
   }
+  closeAllMobileDropdowns();
 };
 
 const handleAccountDeletion = async () => {
@@ -249,7 +269,6 @@ const handleAccountDeletion = async () => {
         const confirmText = document.getElementById('swal-confirm-text').value;
         const finalConfirm = document.getElementById('swal-final-confirm').checked;
 
-        // 驗證表單
         const needsPassword = warningInfo.accountInfo.providerType === 'email';
         
         if (needsPassword && !password.trim()) {
@@ -279,7 +298,6 @@ const handleAccountDeletion = async () => {
       return;
     }
 
-    // 執行註銷
     Swal.fire({
       title: '處理中...',
       text: '正在註銷您的帳戶，請稍候',
@@ -304,7 +322,6 @@ const handleAccountDeletion = async () => {
       throw new Error(result.error || '註銷失敗');
     }
 
-    // 註銷成功
     await Swal.fire({
       title: '帳戶註銷成功',
       html: `
@@ -327,7 +344,6 @@ const handleAccountDeletion = async () => {
       width: '400px'
     });
 
-    // 清除登入狀態並導向首頁
     authStore.clearAuthState();
     router.push('/home');
   } catch(err) {
@@ -365,14 +381,14 @@ const handleAccountDeletion = async () => {
       confirmButtonColor: '#dc2626'
     });
   }
+  closeAllMobileDropdowns();
 }
 </script>
 
 <template>
-  <nav class="flex justify-center w-56 min-h-screen p-6 bg-gray-100">
+  <nav class="hidden md:flex justify-center w-56 min-h-screen p-6 bg-gray-100">
     <ul class="w-full space-y-1">
       <li v-for="item in menuItems" :key="item.name">
-        <!-- 左側選單 -->
         <div
           @click="handleMainMenuClick(item)"
           :class="[
@@ -392,7 +408,6 @@ const handleAccountDeletion = async () => {
             : '']" />
         </div>
 
-        <!-- 揪團活動紀錄的子選單 -->
         <div v-if="item.children && expandedEventRecords === item.name" class="px-2 py-2 mt-1 bg-[#e1ac6747] rounded-lg shadow-inner">
           <ul class="space-y-1">
             <li v-for="child in item.children" :key="child.name">
@@ -417,11 +432,134 @@ const handleAccountDeletion = async () => {
         <button @click="handleAccountDeletion"  class="flex items-center w-full gap-2 p-2 text-black transition rounded cursor-pointer hover:bg-gray-200">
           <i class="w-4 fa-solid fa-user-slash" />會員註銷</button>
       </li>
-      <!-- 登出 -->
       <li>
         <button @click="handleLogout" class="flex items-center w-full gap-2 p-2 text-black transition rounded cursor-pointer hover:bg-gray-200">
           <i class="w-4 fa-solid fa-arrow-right-from-bracket" />登出</button>
       </li>
     </ul>
   </nav>
+
+  
+  <nav class="md:hidden bg-white border-b border-gray-200">
+    <div class="px-3 py-2">
+      <div class="flex items-center justify-between space-x-2">
+        <div class="flex space-x-1 overflow-x-auto flex-shrink-0">
+          <button
+            @click="handleMobileMenuClick(menuItems[0])"
+            :class="[
+              'flex flex-col items-center px-2 py-1 rounded-lg transition flex-shrink-0',
+              selectedItem === 'profile'
+                ? 'bg-blue-50 text-blue-600 scale-95'
+                : 'text-gray-600 hover:bg-gray-50'
+            ]">
+            <i class="fa-solid fa-user text-sm mb-1" />
+            <span class="text-xs whitespace-nowrap leading-tight">資料</span>
+          </button>
+
+          <button
+            @click="handleMobileChildMenuClick({ name: 'published', to: { name: 'PublishedEvents', params: { id: userId.value } } })"
+            :class="[
+              'flex flex-col items-center px-2 py-1 rounded-lg transition flex-shrink-0',
+              selectedItem === 'published'
+                ? 'bg-blue-50 text-blue-600 scale-95'
+                : 'text-gray-600 hover:bg-gray-50'
+            ]">
+            <i class="fa-solid fa-bullhorn text-sm mb-1" />
+            <span class="text-xs whitespace-nowrap leading-tight">發布</span>
+          </button>
+
+          <button
+            @click="handleMobileChildMenuClick({ name: 'joined', to: { name: 'JoinedEvents', params: { id: userId.value } } })"
+            :class="[
+              'flex flex-col items-center px-2 py-1 rounded-lg transition flex-shrink-0',
+              selectedItem === 'joined'
+                ? 'bg-blue-50 text-blue-600 scale-95'
+                : 'text-gray-600 hover:bg-gray-50'
+            ]">
+            <i class="fa-solid fa-calendar-check text-sm mb-1" />
+            <span class="text-xs whitespace-nowrap leading-tight">參加</span>
+          </button>
+
+          <button
+            @click="handleMobileMenuClick(menuItems[2])"
+            :class="[
+              'flex flex-col items-center px-2 py-1 rounded-lg transition flex-shrink-0',
+              selectedItem === 'bar'
+                ? 'bg-blue-50 text-blue-600 scale-95'
+                : 'text-gray-600 hover:bg-gray-50'
+            ]">
+            <i class="fa-solid fa-beer-mug-empty text-sm mb-1" />
+            <span class="text-xs whitespace-nowrap leading-tight">收藏</span>
+          </button>
+
+          <button
+            @click="handleMobileMenuClick(menuItems[3])"
+            :class="[
+              'flex flex-col items-center px-2 py-1 rounded-lg transition flex-shrink-0',
+              selectedItem === 'card'
+                ? 'bg-blue-50 text-blue-600 scale-95'
+                : 'text-gray-600 hover:bg-gray-50'
+            ]">
+            <i class="fa-solid fa-id-card text-sm mb-1" />
+            <span class="text-xs whitespace-nowrap leading-tight">酒友卡</span>
+          </button>
+
+          <button
+            @click="handleMobileMenuClick(menuItems[4])"
+            :class="[
+              'flex flex-col items-center px-2 py-1 rounded-lg transition flex-shrink-0',
+              selectedItem === 'orders'
+                ? 'bg-blue-50 text-blue-600 scale-95'
+                : 'text-gray-600 hover:bg-gray-50'
+            ]">
+            <i class="fa-solid fa-receipt text-sm mb-1" />
+            <span class="text-xs whitespace-nowrap leading-tight">訂單</span>
+          </button>
+        </div>
+
+        <div class="flex space-x-1 flex-shrink-0">
+          <button
+            @click="handleAccountDeletion"
+            class="flex flex-col items-center px-2 py-1 rounded-lg transition flex-shrink-0 text-red-600 hover:bg-red-50">
+            <i class="fa-solid fa-user-slash text-sm mb-1" />
+            <span class="text-xs whitespace-nowrap leading-tight">註銷</span>
+          </button>
+
+          <button
+            @click="handleLogout"
+            class="flex flex-col items-center px-2 py-1 rounded-lg transition flex-shrink-0 text-gray-600 hover:bg-gray-50">
+            <i class="fa-solid fa-arrow-right-from-bracket text-sm mb-1" />
+            <span class="text-xs whitespace-nowrap leading-tight">登出</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </nav>
+
+  <div 
+    v-if="showMobileDropdown" 
+    @click="closeAllMobileDropdowns"
+    class="fixed inset-0 z-40 md:hidden">
+  </div>
 </template>
+
+<style scoped>
+@media (max-width: 767px) {
+  .overflow-x-auto::-webkit-scrollbar {
+    height: 3px;
+  }
+
+  .overflow-x-auto::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  .overflow-x-auto::-webkit-scrollbar-thumb {
+    background: #d1d5db;
+    border-radius: 2px;
+  }
+
+  .overflow-x-auto::-webkit-scrollbar-thumb:hover {
+    background: #9ca3af;
+  }
+}
+</style>
