@@ -1,6 +1,6 @@
 <script setup>
 import { ref, computed, watch, onMounted } from 'vue';
-import axios from 'axios';
+import apiClient from '@/api/axios';
 import { useEventForm } from '@/composables/useEventForm';
 import { useAuthStore } from '@/stores/authStore';
 import { useTagStore } from '@/stores/tag';
@@ -32,7 +32,6 @@ const fileInput = ref(null);
 
 const mapContainer = ref(null);
 const {
-  map,
   isReady,
   loadGoogleMapsAPI,
   initMap,
@@ -51,6 +50,7 @@ const {
 const searchBarName = ref('');
 const suggestions = ref([]);
 const barAddress = ref('');
+const suppressSuggestions = ref(false);
 
 const getSuggestions = debounce(async (input) => {
   if (!input) {
@@ -62,10 +62,12 @@ const getSuggestions = debounce(async (input) => {
 }, 300);
 
 watch(searchBarName, (val) => {
+  if (suppressSuggestions.value) return;
   getSuggestions(val);
 });
 
 const selectSuggestion = async (suggestion) => {
+  suppressSuggestions.value = true;
   suggestions.value = [];
   if (suggestion.place_id) {
     const detail = await getPlaceDetails(suggestion.place_id);
@@ -91,6 +93,7 @@ const selectSuggestion = async (suggestion) => {
   } else {
     await searchBarLocation(suggestion.description);
   }
+  setTimeout(() => { suppressSuggestions.value = false; }, 0);
 };
 
 const searchBarLocation = async (query) => {
@@ -193,12 +196,7 @@ async function onSubmit() {
   }
 
   try {
-    const token = localStorage.getItem('access_token') || authStore.accessToken;
-    
-    if (!token) {
-      alert('登入已過期，請重新登入');
-      return;
-    }
+    const formData = new FormData();
     
     const isValidTagFormat = Array.isArray(eventHashtags.value) && 
       eventHashtags.value.every(tag => typeof tag === 'number');
@@ -207,8 +205,6 @@ async function onSubmit() {
       console.error('標籤格式錯誤，期望數字陣列，實際:', eventHashtags.value);
     }
 
-    const formData = new FormData();
-    
     formData.append('name', eventName.value);
     formData.append('barName', barName.value);
     formData.append('location', eventLocation.value);
@@ -226,9 +222,8 @@ async function onSubmit() {
     
     formData.append('tags', JSON.stringify(eventHashtags.value));
 
-    const response = await axios.post('/api/event/create', formData, {
+    const response = await apiClient.post('/event/create', formData, {
       headers: {
-        'Authorization': `Bearer ${token}`,
         'Content-Type': 'multipart/form-data',
       },
     });
@@ -305,10 +300,10 @@ async function onSubmit() {
           <img
             :src="imagePreview"
             alt="活動圖片預覽"
-            class="w-full h-full object-cover"
+            class="object-cover w-full h-full"
           />
-          <div class="absolute inset-0 opacity-0 hover:opacity-100 transition-opacity rounded-t-xl flex items-center justify-center backdrop-blur-sm">
-            <span class="text-white text-lg font-medium">點擊重新選擇</span>
+          <div class="absolute inset-0 flex items-center justify-center transition-opacity opacity-0 hover:opacity-100 rounded-t-xl backdrop-blur-sm">
+            <span class="text-lg font-medium text-white">點擊重新選擇</span>
           </div>
         </div>
       </div>

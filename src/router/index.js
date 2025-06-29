@@ -8,6 +8,7 @@ import MapView from '@/views/map/MapView.vue';
 import Member from '@/views/member/auth/Member.vue';
 import MemberDashboard from '@/views/member/MemberDashboard.vue';
 import Subscription from '@/views/sub/Subscription.vue';
+import AboutUs from '@/views/sub/AboutUs.vue';
 import Cart from '@/views/cart/Cart.vue';
 import Payment from '@/views/cart/Payment.vue';
 import PaymentWaiting from '@/views/cart/PaymentWaiting.vue';
@@ -65,7 +66,7 @@ const routes = [
       },
       {
         path: 'order-records',
-        name: 'OrderRecords',
+        name: 'MemberOrderRecords',
         component: () => import('@/views/member/profile/OrderRecords.vue'),
       },
     ],
@@ -74,14 +75,21 @@ const routes = [
   { path: '/cart', name: 'Cart', component: Cart, meta: { requiresAuth: true } },
   { path: '/payment', name: 'Payment', component: Payment, meta: { requiresAuth: true } },
   { path: '/payment-waiting', name: 'PaymentWaiting', component: PaymentWaiting },
-  { path: '/order-success/:orderNumber', name: 'OrderSuccess', component: OrderSuccess, props: true, meta: { requiresAuth: true } },
+  { path: '/order-success/:orderNumber', name: 'OrderSuccess', component: OrderSuccess, props: true },
   { path: '/preferences', name: 'Preferences', component: Preferences, meta: { requiresAuth: true } },
   { path: '/verify-email', name: 'EmailVerify', component: EmailVerify, meta: { requiresGuest: true } },
   { path: '/404', name: 'NotFound', component: NotFound },
-  {
-    path: '/:pathMatch(.*)*',
+  { path: '/aboutUs', name: 'AboutUs', component: AboutUs },
+  { 
+    path: '/:pathMatch(.*)*', 
     name: 'Catch-All',
     component: NotFound,
+  },
+  { 
+    path: '/payment-result', 
+    name: 'PaymentResult', 
+    component: () => import('@/components/sub/PaymentResultModal.vue'),
+    meta: { requiresAuth: true }
   },
 ];
 

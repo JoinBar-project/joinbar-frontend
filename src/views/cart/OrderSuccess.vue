@@ -40,7 +40,7 @@
         </div>
         <div v-if="orderInfo.paymentMethod" class="row">
           <span>付款方式</span>
-          <span>{{ getPaymentText(orderInfo.paymentMethod) }}</span>
+          <span>LINE Pay</span>
         </div>
       </div>
 
@@ -76,7 +76,7 @@ import { useOrder } from '@/composables/useOrder'
 
 const route = useRoute()
 const router = useRouter()
-const { getOrderDetails, getStatusText, getPaymentMethodText, formatAmount } = useOrder()
+const { getOrderDetails, getStatusText, formatAmount } = useOrder()
 
 const orderInfo = ref(null)
 const isLoading = ref(true)
@@ -203,10 +203,6 @@ const goToOrders = () => {
   } catch {
     router.push('/login')
   }
-}
-
-const getPaymentText = (method) => {
-  return method === 'linepay' ? 'LINE Pay' : '信用卡'
 }
 </script>
 

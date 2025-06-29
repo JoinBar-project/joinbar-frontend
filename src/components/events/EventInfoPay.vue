@@ -3,8 +3,9 @@ import { useEvent } from '@/composables/useEvent.js';
 import { useCartStore } from '@/stores/cartStore';
 import { useRouter } from 'vue-router';
 import { useAuthStore } from '@/stores/authStore';
+import { useOrder } from '@/composables/useOrder';
+import { useLinePay } from '@/composables/useLinePay';
 import { ref, computed, onMounted, watch } from 'vue';
-import axios from 'axios';
 import EventHoster from './EventHoster.vue';
 import MessageBoard from './MessageBoard.vue';
 import ModalEdit from '@/components/events/ModalEdit.vue';
@@ -18,32 +19,37 @@ const props = defineProps({
 const emit = defineEmits(['update']);
 const router = useRouter();
 const cart = useCartStore();
+const authStore = useAuthStore();
+
+const { createOrder, apiClient } = useOrder();
+const { createLinePayment, redirectToLinePay } = useLinePay(); // 此處 redirectToLinePay 似乎未使用，可考慮移除
 
 const eventRef = ref({ ...props.event });
 const tagList = ref([...props.tags]);
+const isProcessing = ref(false);
+const hasParticipated = ref(false);
 
 const isInCart = computed(() => cart.isInCart(eventRef.value.id));
-
-const authStore = useAuthStore();
-const isOwner = computed(() => {
-  return authStore.currentUser?.id === eventRef.value.hostUser;
+const isOwner = computed(() => authStore.currentUser?.id === eventRef.value.hostUser);
+const isAuthenticated = computed(() => {
+  return authStore.isAuthenticated ||
+           !!authStore.user ||
+           !!localStorage.getItem('access_token') ||
+           document.cookie.includes('access_token=');
 });
 
 const {
   isJoin,
   joinedNum,
-  toggleJoin,
-  isOver24hr,
   showModal,
   formattedEventTime,
-  openCancelModal,
   closeModal,
-  handleConfirmCancel
+  handleConfirmCancel,
+  updateParticipationStatus
 } = useEvent(eventRef);
 
 const mapContainer = ref(null);
 const {
-  map,
   isReady,
   loadGoogleMapsAPI,
   initMap,
@@ -53,40 +59,130 @@ const {
   panTo,
   setZoom,
 } = useGoogleMaps(mapContainer, {
-  googleMapsApiKey: import.meta.env.VITE_GOOGLE_MAPS_API_KEY,
+  googleMapsApiKey: import.meta.env.VITE_Maps_API_KEY,
   onError: (msg) => console.error('Google Maps 錯誤:', msg),
   scrollwheel: false,
 });
 
-const reloadEventData = async () => {
+// 顯示活動位置的函數
+const displayEventLocation = async (location) => {
+  if (!location || !isReady.value) return;
   try {
-    const token = localStorage.getItem('access_token');
-    const res = await axios.get(`/api/event/${eventRef.value.id}`, {
-      headers: token ? { Authorization: `Bearer ${token}` } : {},
-    });
-
-    if (res.data?.event) {
-      eventRef.value = { ...res.data.event };
-      if (eventRef.value.location && isReady.value) {
-        displayEventLocation(eventRef.value.location);
-      }
+    const coordinates = await getGeocode(location);
+    if (coordinates) {
+      clearMarkers();
+      addMarker({
+        location: coordinates,
+        title: eventRef.value?.barName || '活動地點',
+        infoContent: `<div style="font-size: 14px;"><strong>${eventRef.value?.barName || '活動地點'}</strong><br><span style="color: #666;">${location}</span></div>`,
+        isBarLike: true,
+      });
+      panTo(coordinates, 16);
+      setZoom(16);
+    } else {
+      // 若無法獲取座標，設置一個預設地點
+      const defaultLocation = { lat: 25.0330, lng: 121.5654 }; // 台北市中心座標
+      panTo(defaultLocation, 12);
+      setZoom(12);
     }
-
-    if (res.data?.tags) {
-      tagList.value = [...res.data.tags];
-    }
-
-    emit('update', { event: eventRef.value, tags: tagList.value });
   } catch (error) {
-    console.error('活動資料更新失敗', error);
+    console.error('地圖定位失敗:', error);
+    // 發生錯誤時，設置一個預設地點
+    const defaultLocation = { lat: 25.0330, lng: 121.5654 }; // 台北市中心座標
+    panTo(defaultLocation, 12);
+    setZoom(12);
   }
 };
 
-const handleEventUpdate = () => {
-  reloadEventData();
+
+const checkUserParticipation = async () => {
+  if (!isAuthenticated.value || !eventRef.value.id) {
+    hasParticipated.value = false;
+    return;
+  }
+
+  try {
+    console.log('🔍 檢查用戶參與狀態...');
+
+    const response = await apiClient.get('/orders/history');
+    const orders = response.data.orders || [];
+
+    const hasParticipatedInEvent = orders.some(order =>
+      order.status === 'confirmed' &&
+      order.items && order.items.some(item =>
+        String(item.eventId) === String(eventRef.value.id) && item.itemType === 1
+      )
+    );
+
+    hasParticipated.value = hasParticipatedInEvent;
+    console.log('🔍 用戶參與狀態 (訂單歷史):', hasParticipated.value);
+
+    // 這裡移除了重複的 eventRef.value 更新邏輯，因為 reloadEventData 會處理這部分
+    // 同時移除了 `if (!hasParticipated.value && isJoin.value)` 區塊，
+    // 因為 watch(isJoin) 會處理 `isJoin` 狀態的同步
+
+  } catch (error) {
+    console.warn('檢查參與狀態失敗:', error);
+    // 如果檢查失敗，確保狀態不會是錯誤的已參與
+    hasParticipated.value = false;
+  }
+};
+
+
+const reloadEventData = async () => {
+  try {
+    console.log('🔄 重新載入活動資料...');
+
+    const res = await apiClient.get(`/event/${eventRef.value.id}`);
+
+    if (res.data?.event) {
+      eventRef.value = { ...res.data.event };
+
+      // 更新活動參與狀態和人數
+      if (res.data.event.currentParticipants !== undefined) {
+        updateParticipationStatus(
+          res.data.event.isUserParticipated || false,
+          res.data.event.currentParticipants
+        );
+      }
+
+      // 如果有新的地點資訊，且地圖已準備好，則顯示地點
+      if (eventRef.value.location && isReady.value) {
+        displayEventLocation(eventRef.value.location);
+      }
+
+      console.log('✅ 活動資料已更新:', {
+        eventId: eventRef.value.id,
+        currentParticipants: res.data.event.currentParticipants,
+        isUserParticipated: res.data.event.isUserParticipated
+      });
+    }
+    if (res.data?.tags) {
+      tagList.value = [...res.data.tags];
+      console.log('✅ 標籤資料已更新');
+    }
+
+    // 在活動資料更新後檢查用戶參與狀態
+    await checkUserParticipation();
+
+    // 發出更新事件
+    emit('update', { event: eventRef.value, tags: tagList.value });
+  } catch (error) {
+    console.error('❌ 活動資料更新失敗:', error);
+
+    // 如果活動資料更新失敗，但用戶已登入，仍嘗試檢查參與狀態
+    if (isAuthenticated.value) {
+      await checkUserParticipation();
+    }
+  }
 };
 
 const addToCart = async () => {
+  if (hasParticipated.value) {
+    alert('您已經報名過此活動了！');
+    return;
+  }
+
   try {
     const e = eventRef.value;
     const result = await cart.addItem({
@@ -108,57 +204,155 @@ const addToCart = async () => {
 };
 
 const buyNow = async () => {
+  console.log('🔍 認證狀態檢查:', {
+    'authStore.isAuthenticated': authStore.isAuthenticated,
+    'authStore.user': !!authStore.user,
+    'authStore.accessToken': !!authStore.accessToken,
+    'localStorage.access_token': !!localStorage.getItem('access_token'),
+    'cookie.access_token': document.cookie.includes('access_token='),
+    'computed.isAuthenticated': isAuthenticated.value
+  });
+
+  if (hasParticipated.value) {
+    alert('您已經報名過此活動了！');
+    return;
+  }
+
+  if (!isAuthenticated.value) {
+    console.warn('❌ 認證檢查失敗，用戶未登入');
+    const shouldLogin = confirm('請先登入後再進行購買\n\n點擊「確定」前往登入頁面');
+    if (shouldLogin) router.push('/login');
+    return;
+  }
+
+  console.log('✅ 認證檢查通過，開始購買流程');
+
   try {
-    if (!isInCart.value) {
-      await addToCart();
+    isProcessing.value = true;
+    console.log('🔄 開始立即購買流程...');
+
+    const orderData = {
+      items: [{
+        itemType: 1, // 假設 1 代表活動
+        eventId: String(eventRef.value.id),
+        quantity: 1
+      }],
+      paymentMethod: 'linepay'
+    };
+
+    console.log('🔄 創建訂單:', orderData);
+
+    const orderResponse = await createOrder(orderData);
+    const orderId = orderResponse.order.id || orderResponse.order.orderId;
+
+    if (!orderId) {
+      throw new Error('訂單創建失敗，無法獲取訂單 ID');
     }
-    router.push('/payment');
+
+    console.log('✅ 訂單創建成功:', {
+      orderId,
+      orderNumber: orderResponse.order.orderNumber
+    });
+
+    console.log('🔄 創建 LINE Pay 付款...');
+
+    const paymentResponse = await apiClient.post('/linepay/create', {
+      orderId: String(orderId)
+    });
+
+    if (!paymentResponse.data.success) {
+      throw new Error(paymentResponse.data.message || 'LINE Pay 創建失敗');
+    }
+
+    const paymentResult = paymentResponse.data.data;
+
+    sessionStorage.setItem('pendingOrder', JSON.stringify({
+      orderId: orderId,
+      orderNumber: orderResponse.order.orderNumber,
+      transactionId: paymentResult.transactionId,
+      eventId: eventRef.value.id,
+      returnToEvent: true
+    }));
+
+    console.log('✅ LINE Pay 付款準備完成，跳轉中...');
+
+    window.location.href = paymentResult.paymentUrl;
+
   } catch (error) {
-    alert(error.message);
+    console.error('❌ 立即購買失敗:', error);
+
+    if (error.response) {
+      console.error('❌ API 錯誤詳情:', {
+        status: error.response.status,
+        data: error.response.data,
+        url: error.response.config?.url
+      });
+    }
+
+    let errorMessage = '購買失敗，請重試';
+    if (error.message.includes('登入已過期') || error.response?.status === 401) {
+      errorMessage = '登入已過期，請重新登入';
+      localStorage.removeItem('access_token');
+      localStorage.removeItem('user');
+      // 使用 router.push 而不是 setTimeout，確保路由導航立即執行
+      router.push('/login');
+    } else if (error.message.includes('已滿員')) {
+      errorMessage = '很抱歉，活動名額已滿！';
+    } else if (error.message.includes('已結束') || error.message.includes('過期')) {
+      errorMessage = '活動已結束，無法報名';
+    } else if (error.message.includes('重複') || error.message.includes('已參加過')) {
+      errorMessage = '您已經報名過此活動了';
+      hasParticipated.value = true; // 更新為已參與狀態
+    } else if (error.response?.data?.message) {
+      errorMessage = error.response.data.message;
+    } else if (error.message) {
+      errorMessage = error.message;
+    }
+
+    alert(errorMessage);
+  } finally {
+    isProcessing.value = false;
   }
 };
 
-// 顯示活動位置的函數
-const displayEventLocation = async (location) => {
-  if (!location || !isReady.value) return;
-  try {
-    const coordinates = await getGeocode(location);
-    if (coordinates) {
-      clearMarkers();
-      addMarker({
-        location: coordinates,
-        title: eventRef.value?.barName || '活動地點',
-        infoContent: `<div style="font-size: 14px;"><strong>${eventRef.value?.barName || '活動地點'}</strong><br><span style="color: #666;">${location}</span></div>`,
-        isBarLike: true,
-      });
-      panTo(coordinates, 16);
-      setZoom(16);
-    } else {
-      const defaultLocation = { lat: 25.0330, lng: 121.5654 };
-      panTo(defaultLocation, 12);
-      setZoom(12);
-    }
-  } catch (error) {
-    const defaultLocation = { lat: 25.0330, lng: 121.5654 };
-    panTo(defaultLocation, 12);
-    setZoom(12);
-  }
+const handleEventUpdate = () => {
+  reloadEventData();
 };
+
+watch(isJoin, (newValue) => {
+  // 如果 isJoin 變為 true 且 hasParticipated 仍為 false，則更新 hasParticipated
+  if (newValue && !hasParticipated.value) {
+    hasParticipated.value = newValue;
+    console.log('🔄 從 isJoin 更新參與狀態:', hasParticipated.value);
+  }
+});
+
+// 監聽活動地點變化，並在地圖準備好時顯示
+watch(() => eventRef.value.location, (newLoc) => {
+  if (newLoc && isReady.value) {
+    displayEventLocation(newLoc);
+  }
+}, { immediate: true }); // immediate: true 會在偵聽器建立時立即執行一次
 
 onMounted(async () => {
+  console.log('🔄 組件掛載，開始載入資料...');
   await loadGoogleMapsAPI();
   if (mapContainer.value) {
     await initMap();
   }
-  // 強制用 eventId 取得最新資料
+  // 強制用 eventId 取得最新資料並檢查參與狀態
   if (eventRef.value?.id) {
     await reloadEventData();
   }
-});
 
-watch(() => eventRef.value.location, (newLoc) => {
-  if (newLoc && isReady.value) {
-    displayEventLocation(newLoc);
+  const urlParams = new URLSearchParams(window.location.search);
+  // 檢查 URL 中是否有付款成功或訂單相關的參數
+  if (urlParams.get('paymentSuccess') || urlParams.get('orderId') || urlParams.get('transactionId')) {
+    console.log('🔄 從付款頁面返回，延遲重新檢查參與狀態...');
+    // 延遲一段時間，確保後端訂單狀態已更新
+    setTimeout(async () => {
+      await checkUserParticipation();
+    }, 2000); // 2 秒延遲
   }
 });
 </script>
@@ -182,7 +376,7 @@ watch(() => eventRef.value.location, (newLoc) => {
   <div class="event-information-section">
     <div class="event-information-card">
       <div class="event-img">
-        <img :src="eventRef.imageUrl" alt="活動圖片" />
+        <img :src="eventRef.imageUrl" :alt="eventRef.name + ' 活動圖片'" />
       </div>
 
       <div class="event-content-box">
@@ -228,18 +422,35 @@ watch(() => eventRef.value.location, (newLoc) => {
           </div>
 
           <div class="edit-btn-container">
-            <button
-              @click="addToCart"
-              type="button"
-              class="event-btn event-btn-cart"
-              :disabled="isInCart"
-              :class="{ 'opacity-50 cursor-not-allowed': isInCart }"
-            >
-              {{ isInCart ? '✓ 已在購物車' : '加入購物車' }}
-            </button>
-            <button @click="buyNow" type="button" class="event-btn event-btn-pay">
-              立即報名
-            </button>
+            <div v-if="hasParticipated" class="participation-status">
+              <div class="participation-badge">
+                <i class="fa-solid fa-check-circle"></i>
+                <span>已報名此活動</span>
+              </div>
+            </div>
+
+            <template v-else>
+              <button
+                @click="addToCart"
+                type="button"
+                class="event-btn event-btn-cart"
+                :disabled="isInCart || isProcessing"
+                :class="{ 'opacity-50 cursor-not-allowed': isInCart || isProcessing }"
+              >
+                {{ isProcessing ? '處理中...' : (isInCart ? '✓ 已在購物車' : '加入購物車') }}
+              </button>
+
+              <button
+                @click="buyNow"
+                type="button"
+                class="event-btn event-btn-pay"
+                :disabled="isProcessing"
+                :class="{ 'opacity-50 cursor-not-allowed': isProcessing }"
+              >
+                {{ isProcessing ? '處理中...' : '立即報名' }}
+              </button>
+            </template>
+
             <ModalEdit
               v-if="isOwner && eventRef.id"
               :event-id="eventRef.id"
@@ -251,7 +462,7 @@ watch(() => eventRef.value.location, (newLoc) => {
     </div>
   </div>
   <EventHoster />
-  <MessageBoard v-if="isJoin" />
+  <MessageBoard v-if="hasParticipated" />
 </template>
 
 <style scoped>
@@ -259,6 +470,40 @@ watch(() => eventRef.value.location, (newLoc) => {
 
 .edit-btn-container {
   @apply flex;
+}
+
+.participation-badge {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background-color: white;
+  color: #333;
+  padding: 8px 28px 10px 28px;
+  border-radius: 20px;
+  font-size: 24px;
+  font-weight: 600;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+  margin-top: 30px;
+  margin-right: 30px;
+  border: 0;
+  text-align: center;
+  cursor: default;
+}
+
+.participation-badge i {
+  font-size: 20px;
+  color: #10b981;
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .event-information-section {
@@ -365,6 +610,7 @@ watch(() => eventRef.value.location, (newLoc) => {
   text-align: center;
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
   cursor: pointer;
+  transition: all 0.3s ease;
 }
 
 .event-btn-pay {
@@ -374,7 +620,7 @@ watch(() => eventRef.value.location, (newLoc) => {
   transition: background-color 0.3s ease, color 0.3s ease;
 }
 
-.event-btn-pay:hover {
+.event-btn-pay:hover:not(:disabled) {
   background-color: #d4624e;
 }
 
@@ -382,19 +628,47 @@ watch(() => eventRef.value.location, (newLoc) => {
   background-color: white;
   padding: 8px 28px 10px 28px;
   cursor: pointer;
-  transition: background-color 0.3s ease, color 0.3s ease;
 }
 
-.event-btn-cart:hover {
+.event-btn-cart:hover:not(:disabled) {
   background-color: #bbb;
   color: white;
-  padding: 8px 28px 10px 28px;
-  cursor: pointer;
+}
+
+.event-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 }
 
 button:disabled.event-btn-cart:hover {
   background-color: white;
   color: inherit;
   cursor: not-allowed;
+}
+
+@media (max-width: 768px) {
+  .participation-badge {
+    padding: 12px 24px;
+    font-size: 16px;
+    margin-top: 20px;
+  }
+
+  .event-information-card {
+    min-width: auto;
+  }
+
+  .event-content {
+    padding: 20px;
+  }
+
+  .event-map {
+    position: relative;
+    left: 0;
+    bottom: 0;
+    width: 100%;
+    max-width: 100%;
+    height: 300px;
+    margin-bottom: 20px;
+  }
 }
 </style>

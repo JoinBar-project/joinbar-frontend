@@ -273,11 +273,7 @@ const handleCancelConfirm = async () => {
         </div>
         <div class="event-content-box">
           <div class="event-map">
-            <iframe 
-              v-if="currentEvent.location"
-              :src="`https://www.google.com/maps?q=${encodeURIComponent(currentEvent.location)}&output=embed`"
-              class="w-full h-full rounded-lg border-0">
-            </iframe>
+            <div ref="mapContainer" class="w-full h-full rounded-lg border-0" style="min-height: 300px; background: #2d2d2d;"></div>
           </div>
           <div class="event-content">
             <div class="event-tags">
