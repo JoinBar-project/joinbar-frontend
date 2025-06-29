@@ -1,10 +1,14 @@
 <script setup>
-import { ref, watch, onMounted } from 'vue';
+import { ref, watch, onMounted, onUnmounted, nextTick } from 'vue';
 import axios from 'axios';
 import { useEventForm } from '@/composables/useEventForm';
 import { useEventStore } from '@/stores/event';
 import Hashtag from './Hashtag.vue';
 import { useRouter } from 'vue-router';
+
+import flatpickr from 'flatpickr';
+import 'flatpickr/dist/flatpickr.css';
+import { Mandarin } from 'flatpickr/dist/l10n/zh.js';
 
 const emit = defineEmits(['update', 'delete', 'cancel']);
 const props = defineProps({ eventId: String });
@@ -32,6 +36,85 @@ const loading = ref(false);
 const imagePreview = ref(null);
 const fileInput = ref(null);
 
+const startDateInput = ref(null);
+const endDateInput = ref(null);
+const startDatePicker = ref(null);
+const endDatePicker = ref(null);
+
+const initFlatpickr = async () => {
+  await nextTick();
+  
+  // 開始日期
+  if (startDateInput.value && !startDatePicker.value) {
+    startDatePicker.value = flatpickr(startDateInput.value, {
+      locale: Mandarin,
+      dateFormat: 'Y-m-d H:i',
+      enableTime: true,
+      time_24hr: true,
+      allowInput: false,
+      clickOpens: true,
+      minuteIncrement: 30,
+      
+      onChange: function(selectedDates, dateStr) {
+        eventStartDate.value = dateStr;
+        
+        // 選定開始日期時 設定最小時間
+        if (endDatePicker.value && selectedDates[0]) {
+          endDatePicker.value.set('minDate', selectedDates[0]);
+          
+          // 結束日期早於開始日期 清掉結束日期
+          if (eventEndDate.value && new Date(eventEndDate.value) <= selectedDates[0]) {
+            endDatePicker.value.clear();
+            eventEndDate.value = '';
+          }
+        }
+      }
+    });
+  }
+  
+  // 結束日期
+  if (endDateInput.value && !endDatePicker.value) {
+    endDatePicker.value = flatpickr(endDateInput.value, {
+      locale: Mandarin,
+      dateFormat: 'Y-m-d H:i',
+      enableTime: true,
+      time_24hr: true,
+      allowInput: false,
+      clickOpens: true,
+      minuteIncrement: 30,
+      
+      onChange: function(selectedDates, dateStr) {
+        eventEndDate.value = dateStr;
+      }
+    });
+  }
+}
+
+const destroyFlatpickr = () => {
+  if (startDatePicker.value) {
+    startDatePicker.value.destroy();
+    startDatePicker.value = null;
+  }
+  if (endDatePicker.value) {
+    endDatePicker.value.destroy();
+    endDatePicker.value = null;
+  }
+}
+
+// 更新 flatpickr 的值
+const updateFlatpickrValues = () => {
+  if (startDatePicker.value && eventStartDate.value) {
+    startDatePicker.value.setDate(eventStartDate.value);
+  }
+  if (endDatePicker.value && eventEndDate.value) {
+    endDatePicker.value.setDate(eventEndDate.value);
+    // 結束日期的最小值為開始日期
+    if (eventStartDate.value) {
+      endDatePicker.value.set('minDate', eventStartDate.value);
+    }
+  }
+}
+
 onMounted(async () => {
   if (props.eventId) {
     await loadEvent(props.eventId);
@@ -39,6 +122,10 @@ onMounted(async () => {
       imagePreview.value = eventImageUrl.value;
     }
   }
+  await initFlatpickr();
+  // 初始化完成後更新
+  await nextTick();
+  updateFlatpickrValues();
 });
 
 watch(
@@ -49,10 +136,18 @@ watch(
       if (!imageFile.value && eventImageUrl.value) {
         imagePreview.value = eventImageUrl.value;
       }
+      // 更新時間
+      await nextTick();
+      updateFlatpickrValues();
     }
   },
   { immediate: true }
 );
+
+// 監聽日期變化
+watch([eventStartDate, eventEndDate], () => {
+  updateFlatpickrValues();
+});
 
 async function onUpdate() {
   if (loading.value) return;
@@ -142,6 +237,10 @@ function handleImageSelect(event) {
 function triggerFileInput() {
   fileInput.value?.click();
 }
+
+onUnmounted(() => {
+  destroyFlatpickr();
+})
 </script>
 
 <template>
@@ -165,10 +264,10 @@ function triggerFileInput() {
           <img
             :src="imagePreview"
             alt="活動圖片預覽"
-            class="w-full h-full object-cover"
+            class="object-cover w-full h-full"
           />
-          <div class="absolute inset-0 opacity-0 hover:opacity-100 transition-opacity rounded-t-xl flex items-center justify-center backdrop-blur-sm">
-            <span class="text-white text-lg font-medium">點擊重新選擇</span>
+          <div class="absolute inset-0 flex items-center justify-center transition-opacity opacity-0 hover:opacity-100 rounded-t-xl backdrop-blur-sm">
+            <span class="text-lg font-medium text-white">點擊重新選擇</span>
           </div>
         </div>
       </div>
@@ -197,16 +296,24 @@ function triggerFileInput() {
           <div class="form-row">
             <label for="event-start-date">開始日期</label>
             <input
-              type="datetime-local"
+              ref="startDateInput"
+              type="text"
               id="event-start-date"
-              v-model="eventStartDate" />
+              :value="eventStartDate"
+              placeholder="請選擇開始日期時間"
+              readonly
+              class="cursor-pointer" />
           </div>
           <div class="form-row">
             <label for="event-end-date">結束日期</label>
             <input
-              type="datetime-local"
+              ref="endDateInput"
+              type="text"
               id="event-end-date"
-              v-model="eventEndDate" />
+              :value="eventEndDate"
+              placeholder="請選擇結束日期時間"
+              readonly
+              class="cursor-pointer" />
           </div>
           <div class="form-row" v-if="isAdmin">
             <label for="event-price">價格</label>
@@ -232,7 +339,7 @@ function triggerFileInput() {
           <iframe 
             v-if="eventLocation"
             :src="`https://www.google.com/maps?q=${encodeURIComponent(eventLocation)}&output=embed`"
-            class="w-full h-full rounded-lg border-0">
+            class="w-full h-full border-0 rounded-lg">
           </iframe>
         </div>
       </div>
@@ -353,5 +460,28 @@ function triggerFileInput() {
 
 .btn-confirm:hover {
   background-color: var(--color-primary-red);
+}
+
+:deep(.flatpickr-calendar) {
+  border-radius: 12px !important;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15) !important;
+  border: 1px solid #e5e7eb !important;
+  font-family: inherit !important;
+}
+
+:deep(.flatpickr-day.selected) {
+  background: #dc2626 !important;
+  border-color: #dc2626 !important;
+  color: white !important;
+}
+
+:deep(.flatpickr-day:hover:not(.selected)) {
+  background: #ff8800 !important;
+  border-color: #ff8800 !important;
+  color: white !important;
+}
+
+:deep(.flatpickr-time input) {
+  border-radius: 6px !important;
 }
 </style>

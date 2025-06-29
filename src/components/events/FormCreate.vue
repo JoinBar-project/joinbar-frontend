@@ -56,11 +56,11 @@ const initFlatpickr = async () => {
       onChange: function(selectedDates, dateStr) {
         eventStartDate.value = dateStr;
         
-        // 當開始日期改變時，更新結束日期的最小值
+        // 選定開始日期時 設定最小時間
         if (endDatePicker.value && selectedDates[0]) {
           endDatePicker.value.set('minDate', selectedDates[0]);
           
-          // 如果結束日期早於開始日期，清空結束日期
+          // 結束日期早於開始日期 清掉結束日期
           if (eventEndDate.value && new Date(eventEndDate.value) <= selectedDates[0]) {
             endDatePicker.value.clear();
             eventEndDate.value = '';
@@ -89,7 +89,6 @@ const initFlatpickr = async () => {
   }
 }
 
-// 銷毀 flatpickr
 const destroyFlatpickr = () => {
   if (startDatePicker.value) {
     startDatePicker.value.destroy();
@@ -187,7 +186,7 @@ async function onSubmit() {
     eventPeople.value = '';
     eventHashtags.value = [];
     
-    // 清空日期選擇器
+    // 清空日期
     if (startDatePicker.value) startDatePicker.value.clear();
     if (endDatePicker.value) endDatePicker.value.clear();
     
@@ -421,7 +420,6 @@ onUnmounted(() => {
   background-color: var(--color-primary-orange);
 }
 
-/* Flatpickr 自定義樣式 */
 :deep(.flatpickr-calendar) {
   border-radius: 12px !important;
   box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15) !important;
