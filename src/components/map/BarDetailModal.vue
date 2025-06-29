@@ -356,16 +356,7 @@ const toggleFavorite = async () => {
       // 確保有正確的識別碼
       place_id: props.bar.place_id || props.bar.googlePlaceId,
       googlePlaceId: props.bar.googlePlaceId || props.bar.place_id,
-      // 確保有完整資訊（從 Google Maps 來的資料可能格式不同）
-      name: props.bar.name,
-      address: props.bar.address || props.bar.formatted_address,
-      rating: props.bar.rating,
-      reviews: props.bar.reviews || props.bar.user_ratings_total,
-      imageUrl: props.bar.imageUrl || props.bar.images?.[0],
-      phone: props.bar.phone || props.bar.international_phone_number,
-      website: props.bar.website,
-      opening_hours: props.bar.opening_hours,
-      tags: props.bar.tags || props.bar.types || [],
+      id: props.bar.id || props.bar.barId,
       // 如果有位置資訊，確保格式正確
       location:
         props.bar.location ||
@@ -382,7 +373,6 @@ const toggleFavorite = async () => {
             }
           : null),
     };
-
     await favoritesStore.toggleFavorite(barData);
 
     // 通知父組件

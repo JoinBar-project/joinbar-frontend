@@ -9,35 +9,38 @@ export const favoritesAPI = {
     try {
       const params = userId ? { userId } : {};
       const response = await axios.get(`${API_BASE_URL}/favorites`, { params });
-      return response.data.favorites;
+      return response.data.favorites || [];
     } catch (error) {
       console.error("Error fetching favorites:", error);
       throw error;
     }
   },
 
-  // 新增收藏
-  async addFavorite(data) {
+  // 切換收藏狀態（新增或移除）
+  async toggleFavorite(barId, data) {
     try {
-      const response = await axios.post(`${API_BASE_URL}/favorites`, data);
+      const response = await axios.put(
+        `${API_BASE_URL}/favorites/${barId}`,
+        data
+      );
       return response.data;
     } catch (error) {
-      console.error("Error adding favorite:", error);
+      console.error("Error toggling favorite:", error);
       throw error;
     }
   },
 
-  // 移除收藏
-  async removeFavorite(barId, googlePlaceId = null) {
+  // 檢查收藏狀態
+  async checkFavoriteStatus(barId, googlePlaceId = null) {
     try {
       const params = googlePlaceId ? { googlePlaceId } : {};
-      const response = await axios.delete(
-        `${API_BASE_URL}/favorites/${barId}`,
+      const response = await axios.get(
+        `${API_BASE_URL}/favorites/${barId}/status`,
         { params }
       );
       return response.data;
     } catch (error) {
-      console.error("Error removing favorite:", error);
+      console.error("Error checking favorite status:", error);
       throw error;
     }
   },
