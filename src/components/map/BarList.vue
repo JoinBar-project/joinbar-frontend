@@ -119,14 +119,18 @@ const selectBar = (bar) => {
 
 // 更新收藏切換功能
 const emitToggleWishlist = async (bar) => {
-  if (!bar.place_id && !bar.googlePlaceId && !bar.id) {
+  const identifier = bar.place_id || bar.googlePlaceId || bar.id;
+  if (!identifier) {
     console.warn("無法收藏/取消收藏，因為缺少識別碼");
     return;
   }
 
   try {
+    // 使用 store 的 toggle 功能
     const newStatus = await favoritesStore.toggleFavorite(bar);
-    emit("toggle-wishlist", bar.place_id || bar.googlePlaceId || bar.id);
+    
+    // 通知父組件更新
+    emit("toggle-wishlist", identifier);
   } catch (error) {
     alert("操作失敗，請稍後再試");
   }
