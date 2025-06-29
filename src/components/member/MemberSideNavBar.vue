@@ -20,6 +20,7 @@ const selectedItem = ref('profile');
 const expandedEventRecords = ref(null);
 
 const showMobileDropdown = ref(false);
+const showSideMenu = ref(false);
 
 const menuItems = [
   { name: 'profile', label: '會員資料', icon: 'fa-user', to: profileLink },
@@ -68,6 +69,7 @@ const toggleEventRecords = (name) => {
 
 const closeAllMobileDropdowns = () => {
   showMobileDropdown.value = false;
+  showSideMenu.value = false;
 };
 
 const handleLogout = async () => {
@@ -439,22 +441,21 @@ const handleAccountDeletion = async () => {
     </ul>
   </nav>
 
-  
   <nav class="md:hidden bg-white border-b border-gray-200">
-  <div class="px-3 py-2">
-    <div class="flex items-center justify-between space-x-4">
-      <div class="flex space-x-1 overflow-x-auto flex-shrink-0 pl-8">
-        <button
-          @click="handleMobileMenuClick(menuItems[0])"
-          :class="[
-            'flex flex-col items-center px-2 py-1 rounded-lg transition flex-shrink-0',
-            selectedItem === 'profile'
-              ? 'bg-blue-50 text-blue-600 scale-95'
-              : 'text-gray-600 hover:bg-gray-50'
-          ]">
-          <i class="fa-solid fa-user text-sm mb-1" />
-          <span class="text-xs whitespace-nowrap leading-tight">會員資料</span>
-        </button>
+    <div class="px-3 py-2">
+      <div class="flex items-center justify-center space-x-2">
+        <div class="flex space-x-1 overflow-x-auto flex-shrink-0">
+          <button
+            @click="handleMobileMenuClick(menuItems[0])"
+            :class="[
+              'flex flex-col items-center px-2 py-1 rounded-lg transition flex-shrink-0',
+              selectedItem === 'profile'
+                ? 'bg-blue-50 text-blue-600 scale-95'
+                : 'text-gray-600 hover:bg-gray-50'
+            ]">
+            <i class="fa-solid fa-user text-sm mb-1" />
+            <span class="text-xs whitespace-nowrap leading-tight">資料</span>
+          </button>
 
           <button
             @click="handleMobileChildMenuClick({ name: 'published', to: { name: 'PublishedEvents', params: { id: userId.value } } })"
@@ -465,7 +466,7 @@ const handleAccountDeletion = async () => {
                 : 'text-gray-600 hover:bg-gray-50'
             ]">
             <i class="fa-solid fa-bullhorn text-sm mb-1" />
-            <span class="text-xs whitespace-nowrap leading-tight">發布紀錄</span>
+            <span class="text-xs whitespace-nowrap leading-tight">發布</span>
           </button>
 
           <button
@@ -477,7 +478,7 @@ const handleAccountDeletion = async () => {
                 : 'text-gray-600 hover:bg-gray-50'
             ]">
             <i class="fa-solid fa-calendar-check text-sm mb-1" />
-            <span class="text-xs whitespace-nowrap leading-tight">參加紀錄</span>
+            <span class="text-xs whitespace-nowrap leading-tight">參加</span>
           </button>
 
           <button
@@ -489,7 +490,7 @@ const handleAccountDeletion = async () => {
                 : 'text-gray-600 hover:bg-gray-50'
             ]">
             <i class="fa-solid fa-beer-mug-empty text-sm mb-1" />
-            <span class="text-xs whitespace-nowrap leading-tight">酒吧收藏</span>
+            <span class="text-xs whitespace-nowrap leading-tight">收藏</span>
           </button>
 
           <button
@@ -513,28 +514,29 @@ const handleAccountDeletion = async () => {
                 : 'text-gray-600 hover:bg-gray-50'
             ]">
             <i class="fa-solid fa-receipt text-sm mb-1" />
-            <span class="text-xs whitespace-nowrap leading-tight">訂單紀錄</span>
+            <span class="text-xs whitespace-nowrap leading-tight">訂單</span>
+          </button>
+
+
+        <div class="flex space-x-1 flex-shrink-0 pr-4">
+          <button
+            @click="handleAccountDeletion"
+            class="flex flex-col items-center px-2 py-1 rounded-lg transition flex-shrink-0 text-red-600 hover:bg-red-50">
+            <i class="fa-solid fa-user-slash text-sm mb-1" />
+            <span class="text-xs whitespace-nowrap leading-tight">註銷</span>
+          </button>
+
+          <button
+            @click="handleLogout"
+            class="flex flex-col items-center px-2 py-1 rounded-lg transition flex-shrink-0 text-gray-600 hover:bg-gray-50">
+            <i class="fa-solid fa-arrow-right-from-bracket text-sm mb-1" />
+            <span class="text-xs whitespace-nowrap leading-tight">登出</span>
           </button>
         </div>
-
-        <div class="flex space-x-1 flex-shrink-0 pr-8">
-        <button
-          @click="handleAccountDeletion"
-          class="flex flex-col items-center px-2 py-1 rounded-lg transition flex-shrink-0 text-red-600 hover:bg-red-50">
-          <i class="fa-solid fa-user-slash text-sm mb-1" />
-          <span class="text-xs whitespace-nowrap leading-tight">會員註銷</span>
-        </button>
-
-        <button
-          @click="handleLogout"
-          class="flex flex-col items-center px-2 py-1 rounded-lg transition flex-shrink-0 text-gray-600 hover:bg-gray-50">
-          <i class="fa-solid fa-arrow-right-from-bracket text-sm mb-1" />
-          <span class="text-xs whitespace-nowrap leading-tight">登出</span>
-        </button>
+        </div>
       </div>
     </div>
-  </div>
-</nav>
+  </nav>
 
   <div 
     v-if="showMobileDropdown" 

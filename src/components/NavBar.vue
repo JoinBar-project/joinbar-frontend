@@ -144,6 +144,8 @@ const handleNavClick = (path) => {
     </div>
 
     <div class="mobile-menu" :class="{ 'open': isMobileMenuOpen }">
+      <button @click="closeMobileMenu" class="close-btn">×</button>
+      
       <div v-if="isAuthenticated" class="mobile-user-section">
         <div class="mobile-user-info" @click="goToMember">
           <UserAvatar 
@@ -271,6 +273,10 @@ const handleNavClick = (path) => {
   @apply translate-x-0;
 }
 
+.close-btn {
+  @apply absolute top-4 right-4 w-8 h-8 bg-transparent border-none cursor-pointer text-2xl text-gray-600 hover:text-gray-800 z-10;
+}
+
 .mobile-user-section {
   @apply p-6 bg-gray-50 border-b border-gray-200;
 }
@@ -333,7 +339,7 @@ const handleNavClick = (path) => {
   @apply text-red-600;
 }
 
-@media (max-width: 768px) {
+@media (max-width: 767px) {
   .navbar {
     @apply px-4;
   }
