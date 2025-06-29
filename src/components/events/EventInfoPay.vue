@@ -3,9 +3,9 @@ import { useEvent } from '@/composables/useEvent.js';
 import { useCartStore } from '@/stores/cartStore';
 import { useRouter } from 'vue-router';
 import { useAuthStore } from '@/stores/authStore';
+import { ref, computed, onMounted, watch } from 'vue';
 import { useOrder } from '@/composables/useOrder';
 import { useLinePay } from '@/composables/useLinePay';
-import { ref, computed, onMounted, watch } from 'vue';
 import EventHoster from './EventHoster.vue';
 import MessageBoard from './MessageBoard.vue';
 import ModalEdit from '@/components/events/ModalEdit.vue';
@@ -13,6 +13,11 @@ import ModalEdit from '@/components/events/ModalEdit.vue';
 const props = defineProps({
   event: Object,
   tags: Array,
+  eventId: String,
+  user: {
+    type: Object,
+    required: true,
+  }
 });
 
 const emit = defineEmits(['update']);
@@ -40,6 +45,7 @@ const isAuthenticated = computed(() => {
 const {
   isJoin,
   joinedNum,
+  isOver24hr,
   showModal,
   formattedEventTime,
   closeModal,
@@ -134,8 +140,8 @@ const addToCart = async () => {
       imageUrl: e.imageUrl,
       barName: e.barName,
       location: e.location,
-      startDate: e.startDate,
-      endDate: e.endDate,
+      starAt: e.startAt,
+      endAt: e.endAt,
       maxPeople: e.maxPeople,
       hostUser: e.hostUser,
     });
@@ -389,8 +395,8 @@ onMounted(async () => {
       </div>
     </div>
   </div>
-  <EventHoster />
-  <MessageBoard v-if="hasParticipated" />
+  <EventHoster :user="eventRef.hostUser" />
+  <MessageBoard v-if="isJoin" />
 </template>
 
 <style scoped>
