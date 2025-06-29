@@ -246,6 +246,7 @@ import { useRouter } from 'vue-router'
 import { useFavoritesStore } from '@/stores/favorites'
 import { storeToRefs } from 'pinia'
 import placeTypeMap from '@/composables/placeTypeMap'
+import { useGooglePlaceDetails } from '@/composables/useGooglePlaceDetails';
 
 const props = defineProps({ bar: Object })
 const emit = defineEmits(['close', 'toggle-wishlist'])
@@ -374,10 +375,41 @@ const getTagLabel = (tag) => {
 };
 
 // 載入時確保收藏狀態是最新的
-onMounted(() => {
-  // 如果 store 還沒載入收藏列表，先載入
+const { getPlaceDetails } = useGooglePlaceDetails();
+
+onMounted(async () => {
   if (favoritesStore.favoriteBars.length === 0) {
-    favoritesStore.fetchFavorites();
+    await favoritesStore.fetchFavorites();
+  }
+  // 取得正確的 placeId
+  const placeId = props.bar?.googlePlaceId || props.bar?.place_id;
+  console.log('[收藏卡片] 嘗試查詢 Google 詳細資料 placeId:', placeId);
+  if (placeId && typeof placeId === 'string' && placeId.length > 10) {
+    try {
+      const detail = await getPlaceDetails(placeId);
+      console.log('[收藏卡片] Google API 回傳:', detail);
+      if (detail) {
+        props.bar.imageUrl = detail.photos?.[0]?.getUrl({ maxWidth: 400 }) || '';
+        props.bar.images = detail.photos?.map(p => p.getUrl({ maxWidth: 800 })) || [];
+        props.bar.rating = detail.rating;
+        props.bar.reviews = detail.user_ratings_total;
+        props.bar.openingHours = detail.opening_hours;
+        props.bar.openingHoursText = detail.opening_hours?.weekday_text?.join('\n') || '';
+        props.bar.website = detail.website;
+        props.bar.googleReviews = detail.reviews || [];
+        // fallback 預設圖片
+        if (!props.bar.imageUrl) props.bar.imageUrl = 'https://placehold.co/800x600/decdd5/860914?text=No+Image';
+        if (!props.bar.images || props.bar.images.length === 0) props.bar.images = [props.bar.imageUrl];
+      }
+    } catch (e) {
+      console.warn('取得 Google 詳細資料失敗', e);
+      props.bar.imageUrl = 'https://placehold.co/800x600/decdd5/860914?text=No+Image';
+      props.bar.images = [props.bar.imageUrl];
+    }
+  } else {
+    console.warn('[收藏卡片] 無效的 Google Place ID，無法查詢詳細資料', placeId);
+    props.bar.imageUrl = 'https://placehold.co/800x600/decdd5/860914?text=No+Image';
+    props.bar.images = [props.bar.imageUrl];
   }
 });
 </script>

@@ -57,56 +57,40 @@ export const useFavoritesStore = defineStore("favorites", () => {
     try {
       // 取得識別碼
       const googlePlaceId = bar.place_id || bar.googlePlaceId;
+      // barId 若為 Google Place 資料，直接用 'google'，否則用資料庫 id
       const barId = bar.id || bar.barId || 'google';
-      
       if (!googlePlaceId && !barId) {
         throw new Error('缺少酒吧識別碼');
       }
-      
       // 檢查當前收藏狀態
       const isCurrentlyFavorited = isFavorited(googlePlaceId || barId);
-      
       // 準備請求資料
       const requestData = {
         isFavorite: !isCurrentlyFavorited,
-        userId: null, // 如果有使用者系統，這裡要傳入實際的 userId
-        folderId: folderId
+        folderId: folderId,
       };
-
       // 如果是從 Google Maps 新增收藏，需要額外資料
       if (!isCurrentlyFavorited && googlePlaceId) {
         requestData.googlePlaceId = googlePlaceId;
+        // barData 組裝防呆
         requestData.barData = {
           name: bar.name,
-          address: bar.formatted_address || bar.address || bar.vicinity,
-          latitude: bar.geometry?.location ? 
-            (typeof bar.geometry.location.lat === 'function' ? 
-              bar.geometry.location.lat() : bar.geometry.location.lat) :
-            bar.location?.lat,
-          longitude: bar.geometry?.location ? 
-            (typeof bar.geometry.location.lng === 'function' ? 
-              bar.geometry.location.lng() : bar.geometry.location.lng) :
-            bar.location?.lng,
-          imageUrl: bar.photos?.[0] ? 
-            (bar.photos[0].getUrl ? 
-              bar.photos[0].getUrl({ maxWidth: 400 }) : 
-              bar.photos[0]) :
-            (bar.imageUrl || bar.images?.[0]),
-          rating: bar.rating || 0,
-          reviews: bar.user_ratings_total || bar.reviews || 0,
-          website: bar.website,
-          openingHoursText: bar.opening_hours?.weekday_text ? 
-            bar.opening_hours.weekday_text.join('\n') : 
-            bar.openingHoursText,
-          tags: bar.types || bar.tags || [],
-          phone: bar.international_phone_number || bar.phone,
-          priceLevel: bar.price_level,
-          url: bar.url
+          address: bar.formatted_address || bar.address || bar.vicinity || '',
+          latitude: bar.geometry?.location
+            ? (typeof bar.geometry.location.lat === 'function'
+                ? bar.geometry.location.lat()
+                : bar.geometry.location.lat)
+            : bar.location?.lat || bar.latitude,
+          longitude: bar.geometry?.location
+            ? (typeof bar.geometry.location.lng === 'function'
+                ? bar.geometry.location.lng()
+                : bar.geometry.location.lng)
+            : bar.location?.lng || bar.longitude,
         };
       } else if (googlePlaceId) {
         requestData.googlePlaceId = googlePlaceId;
       }
-
+      console.log('toggleFavorite', barId, requestData);
       // 呼叫 API
       const response = await favoritesAPI.toggleFavorite(barId, requestData);
       

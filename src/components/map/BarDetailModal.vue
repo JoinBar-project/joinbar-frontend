@@ -349,36 +349,25 @@ const closeModal = () => {
 // 修改：更新收藏切換功能
 const toggleFavorite = async () => {
   try {
-    // 準備完整的酒吧資料
+    // 準備最小且正確的 barData 給 store
     const barData = {
-      ...props.bar,
-      // 確保有正確的識別碼
+      name: props.bar.name,
       place_id: props.bar.place_id || props.bar.googlePlaceId,
       googlePlaceId: props.bar.googlePlaceId || props.bar.place_id,
       id: props.bar.id || props.bar.barId,
-      // 如果有位置資訊，確保格式正確
-      location:
-        props.bar.location ||
-        (props.bar.geometry?.location
-          ? {
-              lat:
-                typeof props.bar.geometry.location.lat === "function"
-                  ? props.bar.geometry.location.lat()
-                  : props.bar.geometry.location.lat,
-              lng:
-                typeof props.bar.geometry.location.lng === "function"
-                  ? props.bar.geometry.location.lng()
-                  : props.bar.geometry.location.lng,
-            }
-          : null),
-      // 確保有完整的圖片資料
-      images: props.bar.images || (props.bar.imageUrl ? [props.bar.imageUrl] : []),
-      // 確保有評論資料
-      googleReviews: props.bar.googleReviews || []
+      address: props.bar.formatted_address || props.bar.address || props.bar.vicinity || '',
+      latitude: props.bar.geometry?.location
+        ? (typeof props.bar.geometry.location.lat === 'function'
+            ? props.bar.geometry.location.lat()
+            : props.bar.geometry.location.lat)
+        : props.bar.location?.lat || props.bar.latitude,
+      longitude: props.bar.geometry?.location
+        ? (typeof props.bar.geometry.location.lng === 'function'
+            ? props.bar.geometry.location.lng()
+            : props.bar.geometry.location.lng)
+        : props.bar.location?.lng || props.bar.longitude,
     };
-    
     await favoritesStore.toggleFavorite(barData);
-
     // 通知父組件
     emit(
       "toggle-wishlist",

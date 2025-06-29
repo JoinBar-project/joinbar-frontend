@@ -127,22 +127,26 @@ const emitToggleWishlist = async (bar) => {
   }
 
   try {
-    // 準備完整的酒吧資料
+    // 準備最小且正確的 barData 給 store
     const barData = {
-      ...bar,
-      // 確保有正確的識別碼
+      name: bar.name,
       place_id: bar.place_id || bar.googlePlaceId,
       googlePlaceId: bar.googlePlaceId || bar.place_id,
       id: bar.id || bar.barId,
-      // 確保有完整的圖片資料
-      images: bar.images || (bar.imageUrl ? [bar.imageUrl] : []),
-      // 確保有評論資料
-      googleReviews: bar.googleReviews || []
+      address: bar.formatted_address || bar.address || bar.vicinity || '',
+      latitude: bar.geometry?.location
+        ? (typeof bar.geometry.location.lat === 'function'
+            ? bar.geometry.location.lat()
+            : bar.geometry.location.lat)
+        : bar.location?.lat || bar.latitude,
+      longitude: bar.geometry?.location
+        ? (typeof bar.geometry.location.lng === 'function'
+            ? bar.geometry.location.lng()
+            : bar.geometry.location.lng)
+        : bar.location?.lng || bar.longitude,
     };
-    
     // 使用 store 的 toggle 功能
     const newStatus = await favoritesStore.toggleFavorite(barData);
-    
     // 通知父組件更新
     emit("toggle-wishlist", identifier);
   } catch (error) {
