@@ -47,13 +47,16 @@ router.afterEach((to) => {
 </script>
 
 <template>
-  <div>
+  <div class="app-layout">
     <NavBar />
-    <router-view />
+    <main class="main-content">
+      <router-view />
+    </main>
     <Footer />
     <JoinBot />
   </div>
 </template>
+
 
 <style>
 body {
@@ -65,5 +68,16 @@ body {
 .home {
   padding: 2rem;
   text-align: center;
+}
+
+.app-layout {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+.main-content {
+  /*主內容填滿空間，footer 推到底 */
+    flex: 1; 
 }
 </style>

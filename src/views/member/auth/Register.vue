@@ -1,178 +1,11 @@
-<template>
-  <div class="flex justify-center items-start pt-10 px-4 min-h-screen">
-    <div class="max-w-[424px] mx-auto p-6 bg-[var(--color-black)] rounded-xl shadow-xl  relative">
-    
-    <transition name="alert-slide">
-      <div v-if="showRegisterSuccess" role="alert" class="alert alert-success alert-soft absolute -top-8 left-0 right-0 z-10">
-        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 shrink-0 stroke-current" fill="none" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-        </svg>
-        <span>註冊成功！請前往 Email 驗證帳號</span>
-      </div>
-    </transition>
-
-    <div class="flex border-b border-[var(--color-icon-secondary)]">
-      <router-link to="/login" class="flex-1 py-2 text-center font-semibold text-[var(--color-icon-secondary)] hover:text-[var(--color-secondary-green)] transition">
-        會員登入
-      </router-link>
-      <button
-        class="flex-1 py-2 text-center font-semibold border-b-3 border-[var(--color-text-salmon-pink)]"
-        style="color: var(--color-secondary-green);">
-        註冊
-      </button>
-    </div>
-
-    <transition name="slide-fade" mode="out-in">
-      <div :key="step" class="w-[380px]">
-
-        <div v-if="step === 1" class="space-y-4 mt-6">
-          <h2 class="text-lg font-semibold mb-4" style="color: var(--color-primary-orange);">建立帳號</h2>
-          
-          <div v-for="(field, index) in registerFields" :key="index" class="space-y-1">
-            <div 
-              :class="[
-                'flex items-center border rounded px-3 py-2 transition-colors',
-                errors[field.model] 
-                  ? 'border-[var(--color-primary-orange)] border-2 bg-white' 
-                  : 'border-[var(--color-icon-secondary)]',
-                field.type === 'password' ? 'relative' : ''
-              ]">
-              <i :class="[ field.icon,'mr-2',
-                  errors[field.model] ? 'text-[var(--color-black)]' : 'text-[var(--color-icon-secondary)]'
-                ]"
-              />
-              <input 
-                :type="field.type === 'password' ? (showPassword ? 'text' : 'password') : field.type" 
-                :placeholder="field.placeholder" 
-                v-model="registrationForm[field.model]"
-                :disabled="authStore.isAnyLoading"
-                @input="clearError(field.model)"
-                :class="[
-                  'w-full outline-none placeholder-opacity-70 transition-colors text-sm',
-                  errors[field.model] 
-                    ? 'text-[var(--color-primary-orange)] placeholder-[var(--color-primary-orange)]' 
-                    : 'text-[var(--color-secondary-green)] placeholder-[var(--color-secondary-green)]'
-                ]"
-                :style="!errors[field.model] ? 'text-[var(--color-primary-orange)]' : ''"
-              />
-
-              <button
-                v-if="field.type === 'password'" type="button"
-                :class="[
-                  'absolute right-3 top-1/2 -translate-y-1/2',
-                  errors[field.model] ? 'text-[var(--color-black)]' : 'text-[var(--color-icon-secondary)]'
-                ]"
-                @click="showPassword = !showPassword">
-                <i :class="showPassword ? 'fa-regular fa-eye' : 'fa-regular fa-eye-slash'"></i>
-              </button>
-            </div>
-
-            <div v-if="errors[field.model]" class="text-[var(--color-primary-orange)] text-xs ml-1">
-              <span v-if="field.model === 'username'">{{ usernameErrorMessage }}</span>
-              <span v-else-if="field.model === 'nickname'">{{ nicknameErrorMessage }}</span>
-              <span v-else-if="field.model === 'email'">{{ emailErrorMessage }}</span>
-              <span v-else-if="field.model === 'password'">{{ passwordErrorMessage }}</span>
-              <span v-else-if="field.model === 'birthday'">{{ birthdayErrorMessage }}</span>
-              <span v-else>{{ field.placeholder }}為必填欄位</span>
-            </div>
-          </div>
-
-          <div class="text-center text-sm text-gray-300 my-4 flex items-center">
-            <div class="flex-grow h-px bg-gray-300"></div>
-            <span class="mx-2 text-gray-300">或</span>
-            <div class="flex-grow h-px bg-gray-300"></div>
-          </div>
-          <div class="flex space-x-2 justify-center">
-            <button class="btn bg-white text-black border-[#e5e5e5] border-2 flex items-center px-4 py-2 rounded-lg hover:shadow-md transition">
-              <img src="/google.svg" alt="Google" class="w-5 h-5 mr-2" /> register for Google 
-            </button>
-            <button @click="handleLineLogin" 
-                    :disabled="authStore.isLineLoading" 
-                    class="btn bg-[var(--color-line-green)] text-white border-[var(--color-line-green-dark)] border-2 flex items-center px-4 py-2 rounded-lg hover:shadow-md transition">
-                    <img src="/line.svg" alt="LINE" class="w-5 h-5 mr-2" />
-                    <span v-if="authStore.isLineLoading">載入中...</span>
-                    <span v-else>Register for LINE</span>
-            </button>
-          </div>
-
-        <button
-          @click="goToPreferences"
-          class="block mx-auto mt-6 px-6 py-2 bg-gradient-to-r from-[var(--color-secondary-green)] via-[#d8dbaf] to-[var(--color-primary-orange)] text-[var(--color-black)] rounded-lg font-semibold text-sm mt-4 shadow-md transition duration-300 transform hover:scale-105 hover:brightness-110 hover:shadow-lg">
-          下一步
-        </button>
-
-          <div class="text-center mt-4 pt-4 border-t border-gray-300">
-            <span class="text-sm text-gray-300">已有帳號？</span>
-            <router-link
-              to="/login"
-              class="text-sm hover:underline underline-offset-4 ml-1 text-[var(--color-secondary-green)]">
-              立即登入
-            </router-link>
-          </div>
-        </div>
-
-        <div v-else class="space-y-4 mt-6">
-          <h2 class="text-lg font-semibold mb-4 text-[var(--color-primary-orange)]">選擇你的酒吧偏好</h2>
-
-          <div>
-            <h3 class="text-base font-medium mb-2 text-[var(--color-secondary-green)]">酒吧類型</h3>
-            <div class="grid grid-cols-3 gap-3 ">
-              <button v-for="type in barTypes" :key="type" 
-                @click="toggleSelection(registrationForm.preferences.types, type)"
-                :class="['min-w-[80px] text-sm py-2 rounded-full border transition duration-200 cursor-pointer']"
-                :style="registrationForm.preferences.types.includes(type)
-                  ? 'background-color: var(--color-primary-orange); color: white; border-color: var(--color-primary-orange);'
-                  : 'background-color: var(--color-icon-secondary); color: var(--color-black); border-color: var(--color-black);'">
-                {{ type }}
-              </button>
-            </div>
-          </div>
-
-          <div>
-            <h3 class="text-base font-medium mb-2 text-[var(--color-secondary-green)]">酒吧氛圍</h3>
-            <div class="grid grid-cols-3 gap-2">
-              <button v-for="mood in barMoods" :key="mood"
-                @click="toggleSelection(registrationForm.preferences.moods, mood)"
-                :class="['min-w-[80px] text-sm py-2 rounded-full border transition duration-200 cursor-pointer']"
-                :style="registrationForm.preferences.moods.includes(mood)
-                  ? 'background-color: var(--color-primary-orange); color: white; border-color: var(--color-primary-orange);'
-                  : 'background-color: var(--color-icon-secondary); color: var(--color-black); border-color: var(--color-black);'">
-                {{ mood }}
-              </button>
-            </div>
-          </div>
-
-          <div class="flex justify-between mt-6">
-            <button
-              @click="step = 1"
-              class="text-sm text-[var(--color-primary-orange)] hover:text-[var(--color-secondary-green)] active:text-[var(--color-text-warn)] transition-colors duration-200">
-              <i class="fa-solid fa-arrow-left mr-1"></i> 返回
-            </button>
-            <button
-              @click="handleEmailRegistration"
-              :disabled="authStore.isEmailLoading"
-              class="px-4 py-2 bg-gradient-to-r from-[var(--color-secondary-green)] via-[#d8dbaf] to-[var(--color-primary-orange)] text-[var(--color-black)] rounded-lg font-medium shadow-md transition duration-300 transform hover:scale-105 hover:brightness-110 hover:shadow-lg">
-              <span v-if="authStore.isEmailLoading">註冊中...</span>
-              <span v-else>完成註冊</span>
-            </button>
-          </div>
-        </div>
-      </div>
-    </transition>
-  </div>
-  </div>
-  
-</template>
-
 <script setup>
 import { ref, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import { useAuthStore } from '@/stores/authStore';
-import Swal from 'sweetalert2';
+import BaseAlertModal from '@/components/common/BaseAlertModal.vue';
 
 const step = ref(1);
 const showPassword = ref(false);
-const showRegisterSuccess = ref(false);
 
 const authStore = useAuthStore();
 const router = useRouter();
@@ -200,6 +33,29 @@ const registerFields = [
 const barTypes = ['運動酒吧', '音樂酒吧', '學生酒吧', '餐酒館', '暢飲店'];
 const barMoods = ['熱鬧歡樂', '浪漫私密', '復古懷舊', '高級精緻', '輕鬆悠閒'];
 
+const alertModal = ref({
+  visible: false,
+  type: 'default',
+  title: '',
+  message: '',
+  confirmText: '確認'
+})
+
+const showAlert = (type, title, message, confirmText = '確認') => {
+  alertModal.value = {
+    visible: true,
+    type,
+    title,
+    message,
+    confirmText
+  }
+}
+
+const closeAlert = () => {
+  alertModal.value.visible = false
+}
+
+// 紀錄每個欄位是否有錯誤
 const errors = ref({
   username: false,
   nickname: false,
@@ -383,8 +239,6 @@ const handleEmailRegistration = async () => {
     const result = await authStore.emailSignup(userData);
 
     if (result.success) {
-      showRegisterSuccess.value = true
-
       registrationForm.value = {
         username: '',
         nickname: '',
@@ -400,26 +254,14 @@ const handleEmailRegistration = async () => {
       step.value = 1;
 
       setTimeout(() => {
-        showRegisterSuccess.value = false;
-        router.push('/login')
-      }, 3000)
+        router.push('/login');
+      }, 4000);
     } else {
-      await Swal.fire({
-        title: '註冊失敗',
-        text: result.error,
-        icon: 'error',
-        confirmButtonText: '確認'
-      });
+      showAlert('error', '註冊失敗!', result.error)
     }
   } catch(err) {
-    console.error('註冊失敗:', err);
-    showRegisterSuccess.value = false;
-    await Swal.fire({
-      title: '發生錯誤',
-      text: '發生未知錯誤，請稍後再試',
-      icon: 'error',
-      confirmButtonText: '確認'
-    });
+    const errorMessage = err?.message || err?.response?.data?.error || '發生未知錯誤，請稍後再試';
+    showAlert('error', '發生錯誤！', errorMessage);
   }
 }
 
@@ -427,12 +269,7 @@ const handleLineLogin = async () => {
   const result = await authStore.lineLogin();
 
   if (!result.success) {
-    await Swal.fire({
-      title: 'LINE 登入失敗',
-      text: result.error,
-      icon: 'error',
-      confirmButtonText: '確認'
-    });
+    showAlert('error', 'LINE 登入失敗!', result.error)
   }
 }
 
@@ -446,6 +283,179 @@ onMounted(async () => {
 })
 </script>
 
+<template>
+  <div class="flex items-start justify-center min-h-screen px-4 pt-10 pb-10">
+    <div class="relative w-full max-w-[424px] max-md:max-w-[90vw] mx-auto p-6 max-md:px-4 bg-[var(--color-black)] rounded-xl shadow-xl">
+      <div class="flex border-b border-[var(--color-icon-secondary)]">
+        <router-link to="/login" class="flex-1 py-2 text-center font-semibold text-[var(--color-icon-secondary)] hover:text-[var(--color-secondary-green)] transition">
+          會員登入
+        </router-link>
+        <button
+          class="flex-1 py-2 text-center font-semibold border-b-3 border-[var(--color-text-salmon-pink)]"
+          style="color: var(--color-secondary-green);">
+          註冊
+        </button>
+      </div>
+
+      <transition name="slide-fade" mode="out-in">
+        <div :key="step" class="w-full max-w-[360px] mx-auto">
+          <!-- Step 1: 註冊表單 -->
+          <div v-if="step === 1" class="mt-6 space-y-4">
+            <h2 class="mb-4 text-lg font-semibold" style="color: var(--color-primary-orange);">建立帳號</h2>
+            
+            <div v-for="(field, index) in registerFields" :key="index" class="space-y-1">
+              <div 
+                :class="[
+                  'flex items-center border rounded px-3 py-2 transition-colors',
+                  errors[field.model] 
+                    ? 'border-[var(--color-primary-orange)] border-2 bg-white' 
+                    : 'border-[var(--color-icon-secondary)]',
+                  field.type === 'password' ? 'relative' : ''
+                ]">
+                <i :class="[ field.icon,'mr-2',
+                    errors[field.model] ? 'text-[var(--color-black)]' : 'text-[var(--color-icon-secondary)]'
+                  ]"
+                />
+                <input 
+                  :type="field.type === 'password' ? (showPassword ? 'text' : 'password') : field.type" 
+                  :placeholder="field.placeholder" 
+                  v-model="registrationForm[field.model]"
+                  :disabled="authStore.isAnyLoading"
+                  @input="clearError(field.model)"
+                  :class="[
+                    'w-full outline-none placeholder-opacity-70 transition-colors text-sm',
+                    errors[field.model] 
+                      ? 'text-[var(--color-primary-orange)] placeholder-[var(--color-primary-orange)]' 
+                      : 'text-[var(--color-secondary-green)] placeholder-[var(--color-secondary-green)]'
+                  ]"
+                  :style="!errors[field.model] ? 'text-[var(--color-primary-orange)]' : ''"
+                />
+
+                <button
+                  v-if="field.type === 'password'" type="button"
+                  :class="[
+                    'absolute right-3 top-1/2 -translate-y-1/2',
+                    errors[field.model] ? 'text-[var(--color-black)]' : 'text-[var(--color-icon-secondary)]'
+                  ]"
+                  @click="showPassword = !showPassword">
+                  <i :class="showPassword ? 'fa-regular fa-eye' : 'fa-regular fa-eye-slash'"></i>
+                </button>
+              </div>
+
+              <!-- 顯示具體的錯誤訊息 -->
+              <div v-if="errors[field.model]" class="text-[var(--color-primary-orange)] text-xs ml-1">
+                <span v-if="field.model === 'username'">{{ usernameErrorMessage }}</span>
+                <span v-else-if="field.model === 'nickname'">{{ nicknameErrorMessage }}</span>
+                <span v-else-if="field.model === 'email'">{{ emailErrorMessage }}</span>
+                <span v-else-if="field.model === 'password'">{{ passwordErrorMessage }}</span>
+                <span v-else-if="field.model === 'birthday'">{{ birthdayErrorMessage }}</span>
+                <span v-else>{{ field.placeholder }}為必填欄位</span>
+              </div>
+            </div>
+
+            <div class="flex items-center my-4 text-sm text-center text-gray-300">
+              <div class="flex-grow h-px bg-gray-300"></div>
+              <span class="mx-2 text-gray-300">或</span>
+              <div class="flex-grow h-px bg-gray-300"></div>
+            </div>
+            <div class="flex flex-col sm:flex-row justify-center items-center mt-4 gap-3 sm:space-x-2 w-full">
+            
+              <button
+              class="btn flex-1 min-w-[180px] bg-white text-black border-[#e5e5e5] border-2 flex items-center justify-center px-4 py-2 rounded-lg hover:scale-105 transition text-sm w-full sm:w-auto">
+              <img src="/google.svg" alt="Google logo" class="w-5 h-5 mr-2" />
+              Register with Google
+            </button>
+
+            <button
+              @click="handleLineLogin"
+              class="btn flex-1 min-w-[180px] bg-[var(--color-line-green)] text-white border-[var(--color-line-green-dark)] border-2 flex items-center justify-center px-4 py-2 rounded-lg hover:scale-105 transition text-sm w-full sm:w-auto">
+              <img src="/line.svg" alt="Line logo" class="w-5 h-5 mr-2" />
+              <span v-if="authStore.isLineLoading">載入中...</span>
+              <span v-else>Register with LINE</span>
+            </button>
+          </div>
+
+            <button
+              @click="goToPreferences"
+              class="block mx-auto mt-6 px-6 py-2 bg-gradient-to-r from-[var(--color-secondary-green)] via-[#d8dbaf] to-[var(--color-primary-orange)] text-[var(--color-black)] rounded-lg font-semibold text-sm mt-4 shadow-md transition duration-300 transform hover:scale-105 hover:brightness-110 hover:shadow-lg">
+              下一步
+            </button>
+
+            <!-- 登入提示 -->
+            <div class="pt-4 mt-4 text-center border-t border-gray-300">
+              <span class="text-sm text-gray-300">已有帳號？</span>
+              <router-link
+                to="/login"
+                class="text-sm hover:underline underline-offset-4 ml-1 text-[var(--color-secondary-green)]">
+                立即登入
+              </router-link>
+            </div>
+          </div>
+
+          <!-- Step 2: 偏好選擇 -->
+          <div v-else class="mt-6 space-y-4">
+            <h2 class="text-lg font-semibold mb-4 text-[var(--color-primary-orange)]">選擇你的酒吧偏好</h2>
+
+            <div>
+              <h3 class="text-base font-medium mb-2 text-[var(--color-secondary-green)]">酒吧類型</h3>
+              <div class="grid grid-cols-3 gap-3 ">
+                <button v-for="type in barTypes" :key="type" 
+                  @click="toggleSelection(registrationForm.preferences.types, type)"
+                  :class="['min-w-[80px] text-sm py-2 rounded-full border transition duration-200 cursor-pointer']"
+                  :style="registrationForm.preferences.types.includes(type)
+                    ? 'background-color: var(--color-primary-orange); color: white; border-color: var(--color-primary-orange);'
+                    : 'background-color: var(--color-icon-secondary); color: var(--color-black); border-color: var(--color-black);'">
+                  {{ type }}
+                </button>
+              </div>
+            </div>
+
+            <div>
+              <h3 class="text-base font-medium mb-2 text-[var(--color-secondary-green)]">酒吧氛圍</h3>
+              <div class="grid grid-cols-3 gap-2">
+                <button v-for="mood in barMoods" :key="mood"
+                  @click="toggleSelection(registrationForm.preferences.moods, mood)"
+                  :class="['min-w-[80px] text-sm py-2 rounded-full border transition duration-200 cursor-pointer']"
+                  :style="registrationForm.preferences.moods.includes(mood)
+                    ? 'background-color: var(--color-primary-orange); color: white; border-color: var(--color-primary-orange);'
+                    : 'background-color: var(--color-icon-secondary); color: var(--color-black); border-color: var(--color-black);'">
+                  {{ mood }}
+                </button>
+              </div>
+            </div>
+
+            <div class="flex justify-between mt-6">
+              <button
+                @click="step = 1"
+                class="text-sm text-[var(--color-primary-orange)] hover:text-[var(--color-secondary-green)] active:text-[var(--color-text-warn)] transition-colors duration-200">
+                <i class="mr-1 fa-solid fa-arrow-left"></i> 返回
+              </button>
+              <button
+                @click="handleEmailRegistration"
+                :disabled="authStore.isEmailLoading"
+                class="px-4 py-2 bg-gradient-to-r from-[var(--color-secondary-green)] via-[#d8dbaf] to-[var(--color-primary-orange)] text-[var(--color-black)] rounded-lg font-medium shadow-md transition duration-300 transform hover:scale-105 hover:brightness-110 hover:shadow-lg">
+                <span v-if="authStore.isEmailLoading">註冊中...</span>
+                <span v-else>完成註冊</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      </transition>
+    </div>
+
+    <!-- 使用 BaseAlertModal -->
+    <BaseAlertModal
+      :visible="alertModal.visible"
+      :type="alertModal.type"
+      :title="alertModal.title"
+      :message="alertModal.message"
+      :confirmText="alertModal.confirmText"
+      @close="closeAlert"
+    />
+
+  </div>
+</template>
+
 <style scoped>
 .slide-fade-enter-active,
 .slide-fade-leave-active {
@@ -458,21 +468,5 @@ onMounted(async () => {
 .slide-fade-leave-to {
   opacity: 0;
   transform: translateX(-100px);
-}
-
-/* 通知動畫 */
-.alert-slide-enter-active {
-  transition: all 0.4s ease-out;
-}
-.alert-slide-leave-active {
-  transition: all 0.2s ease-in;
-}
-.alert-slide-enter-from {
-  opacity: 0;
-  transform: translateY(-20px);
-}
-.alert-slide-leave-to {
-  opacity: 0;
-  transform: translateY(-20px);
 }
 </style>
