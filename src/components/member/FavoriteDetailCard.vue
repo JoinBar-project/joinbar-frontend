@@ -87,7 +87,7 @@
               <div class="mb-5">
                 <h3 class="text-base font-semibold text-gray-900 mb-2 mt-5">營業時間</h3>
                 <p class="text-gray-600 text-sm">
-                  {{ bar.openingHours?.weekday_text?.[0] || '未提供營業時間' }}
+                  {{ bar.openingHours?.weekday_text?.[0] || bar.openingHoursText || '未提供營業時間' }}
                 </p>
               </div>
 
@@ -100,7 +100,7 @@
                     v-for="(tag, index) in bar.tags"
                     :key="index"
                     class="bg-gray-200 text-gray-800 px-3 py-1 rounded-2xl text-xs font-medium"
-                    >{{ tag }}</span
+                    >{{ getTagLabel(tag) }}</span
                   >
                 </div>
               </div>
@@ -115,39 +115,39 @@
               <div>
                 <h3 class="text-base font-semibold text-gray-900 mb-2 mt-5">熱門評論</h3>
                 <div class="max-h-48 overflow-y-auto">
-                  <div
-                    v-for="(review, index) in mockReviews"
-                    :key="index"
-                    class="bg-white rounded-xl p-4 mb-3 border border-gray-200"
-                  >
-                    <div class="flex items-center mb-2">
-                      <!-- user的頭像 -->
-                      <img
-                        :src="review.avatar"
-                        alt="User Avatar"
-                        class="w-8 h-8 rounded-full mr-2"
-                      />
-                      <div class="flex flex-col">
-                        <span class="font-semibold text-gray-900 text-sm">
-                          {{ review.name }}
+                  <template v-if="bar.googleReviews && bar.googleReviews.length">
+                    <div
+                      v-for="(review, index) in bar.googleReviews.slice(0, 3)"
+                      :key="index"
+                      class="bg-white rounded-xl p-4 mb-3 border border-gray-200"
+                    >
+                      <div class="flex items-center mb-2">
+                        <img
+                          :src="review.profile_photo_url || 'https://via.placeholder.com/40'"
+                          alt="User Avatar"
+                          class="w-8 h-8 rounded-full mr-2"
+                        />
+                        <div class="flex flex-col">
+                          <span class="font-semibold text-gray-900 text-sm">
+                            {{ review.author_name || '匿名用戶' }}
+                          </span>
+                          <span class="text-gray-400 text-xs">{{ formatReviewDate(review.time) }}</span>
+                        </div>
+                      </div>
+                      <p class="text-gray-700 text-sm leading-relaxed mb-2">
+                        {{ review.text }}
+                      </p>
+                      <div class="flex gap-4">
+                        <span class="text-gray-600 text-xs">
+                          👍 有用 ({{ review.rating || 0 }})
                         </span>
-                        <span class="text-gray-400 text-xs">{{ review.date }}</span>
+                        <span class="text-gray-600 text-xs">
+                          👎 不喜歡 ({{ review.rating || 0 }})
+                        </span>
                       </div>
                     </div>
-                    <p class="text-gray-700 text-sm leading-relaxed mb-2">
-                      {{ review.text }}
-                    </p>
-                    <div class="flex gap-4">
-                      <span
-                        class="text-gray-600 text-xs cursor-pointer hover:text-blue-500"
-                        >👍 有用 ({{ review.up }})</span
-                      >
-                      <span
-                        class="text-gray-600 text-xs cursor-pointer hover:text-blue-500"
-                        >👎 不喜歡 ({{ review.down }})</span
-                      >
-                    </div>
-                  </div>
+                  </template>
+                  <div v-else class="text-gray-500 text-sm">暫無 Google 評論</div>
                 </div>
               </div>
             </div>
@@ -201,7 +201,8 @@
                     ? 'bg-red-50 border-red-200'
                     : 'border-gray-200 bg-white hover:bg-gray-50 hover:border-gray-300',
                 ]"
-                @click.stop="toggleFavorite">
+                @click.stop="toggleFavorite"
+                :disabled="favoriteLoading">
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
                   width="20"
@@ -240,12 +241,19 @@
 </template>
 
 <script setup>
-import { ref, watch, computed } from 'vue'
+import { ref, watch, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
+import { useFavoritesStore } from '@/stores/favorites'
+import { storeToRefs } from 'pinia'
+import placeTypeMap from '@/composables/placeTypeMap'
 
 const props = defineProps({ bar: Object })
 const emit = defineEmits(['close', 'toggle-wishlist'])
 const router = useRouter()
+
+// 使用收藏 store
+const favoritesStore = useFavoritesStore()
+const { loading: favoriteLoading } = storeToRefs(favoritesStore)
 
 // 圖片切換邏輯
 const currentImageIndex = ref(0)
@@ -270,7 +278,6 @@ const handleImageError = (e) => {
   e.target.src = defaultImage
 }
 
-
 // 導航到酒吧位置
 const navigateToBar = (lat, lng) => {
   if (!lat || !lng) {
@@ -284,22 +291,54 @@ const navigateToBar = (lat, lng) => {
 
 // 收藏愛心狀態（local，變動 emit 出去）
 const localIsWishlisted = ref(false)
+
+// 計算收藏狀態
+const isWishlisted = computed(() => {
+  const identifier = props.bar.place_id || props.bar.googlePlaceId || props.bar.id;
+  return favoritesStore.isFavorited(identifier);
+});
+
 watch(
   () => props.bar,
   () => {
     currentImageIndex.value = 0
-    localIsWishlisted.value = props.bar.isWishlisted || false
+    localIsWishlisted.value = isWishlisted.value
   },
   { immediate: true }
 )
 
-const toggleFavorite = () => {
-  localIsWishlisted.value = !localIsWishlisted.value
+// 更新收藏切換功能
+const toggleFavorite = async () => {
+  try {
+    // 準備完整的酒吧資料
+    const barData = {
+      ...props.bar,
+      // 確保有正確的識別碼
+      place_id: props.bar.place_id || props.bar.googlePlaceId,
+      googlePlaceId: props.bar.googlePlaceId || props.bar.place_id,
+      id: props.bar.id || props.bar.barId,
+      // 確保有完整的圖片資料
+      images: props.bar.images || (props.bar.imageUrl ? [props.bar.imageUrl] : []),
+      // 確保有評論資料
+      googleReviews: props.bar.googleReviews || []
+    };
+    
+    await favoritesStore.toggleFavorite(barData);
+    
+    // 更新本地狀態
+    localIsWishlisted.value = !localIsWishlisted.value;
+    
+    // 通知父組件
+    emit('toggle-wishlist', props.bar);
+  } catch (error) {
+    console.error("Failed to toggle favorite:", error);
+    alert("操作失敗，請稍後再試");
+  }
 }
 
 // 關閉 modal（若收藏狀態改變 → emit toggle）
 const handleClose = () => {
-  if (localIsWishlisted.value !== props.bar.isWishlisted) {
+  if (localIsWishlisted.value !== isWishlisted.value) {
     emit('toggle-wishlist', props.bar)
   }
   emit('close')
@@ -322,25 +361,25 @@ const goToBarActivities = () => {
   router.push('/event')
 }
 
-// 模擬評論
-const mockReviews = [
-  {
-    name: '新用戶',
-    date: '2024年05月20日',
-    avatar: 'https://via.placeholder.com/40',
-    text: '這家酒吧氛圍超好，調酒師也很專業，推薦他們的招牌特調！會再來！',
-    up: 10,
-    down: 0
-  },
-  {
-    name: '常造訪用戶',
-    date: '2024年05月15日',
-    avatar: 'https://via.placeholder.com/40',
-    text: '信義區的夜景真的無敵，這裡的視野很棒。調酒有創意，但價格偏高一些。',
-    up: 7,
-    down: 1
+// 格式化評論日期
+function formatReviewDate(unixTime) {
+  if (!unixTime) return "";
+  const date = new Date(unixTime * 1000);
+  return `${date.getFullYear()}年${date.getMonth() + 1}月${date.getDate()}日`;
+}
+
+// 獲取標籤標籤
+const getTagLabel = (tag) => {
+  return placeTypeMap?.[tag] || tag;
+};
+
+// 載入時確保收藏狀態是最新的
+onMounted(() => {
+  // 如果 store 還沒載入收藏列表，先載入
+  if (favoritesStore.favoriteBars.length === 0) {
+    favoritesStore.fetchFavorites();
   }
-]
+});
 </script>
 
 <style scoped>

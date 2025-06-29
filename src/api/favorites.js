@@ -44,4 +44,33 @@ export const favoritesAPI = {
       throw error;
     }
   },
+
+  // 批量檢查收藏狀態
+  async checkMultipleFavoriteStatus(identifiers) {
+    try {
+      const response = await axios.post(
+        `${API_BASE_URL}/favorites/check-multiple`,
+        { identifiers }
+      );
+      return response.data;
+    } catch (error) {
+      console.error("Error checking multiple favorite status:", error);
+      throw error;
+    }
+  },
+
+  // 移除收藏
+  async removeFavorite(barId, googlePlaceId = null) {
+    try {
+      const params = googlePlaceId ? { googlePlaceId } : {};
+      const response = await axios.delete(
+        `${API_BASE_URL}/favorites/${barId}`,
+        { params }
+      );
+      return response.data;
+    } catch (error) {
+      console.error("Error removing favorite:", error);
+      throw error;
+    }
+  },
 };

@@ -87,12 +87,13 @@ onMounted(async () => {
 
 // 計算每個酒吧的收藏狀態
 const barsWithFavoriteStatus = computed(() => {
-  return props.bars.map((bar) => ({
-    ...bar,
-    isWishlisted: favoritesStore.isFavorited(
-      bar.place_id || bar.googlePlaceId || bar.id
-    ),
-  }));
+  return props.bars.map((bar) => {
+    const identifier = bar.place_id || bar.googlePlaceId || bar.id;
+    return {
+      ...bar,
+      isWishlisted: favoritesStore.isFavorited(identifier),
+    };
+  });
 });
 
 const defaultPlaceholderImage =
@@ -126,12 +127,26 @@ const emitToggleWishlist = async (bar) => {
   }
 
   try {
+    // 準備完整的酒吧資料
+    const barData = {
+      ...bar,
+      // 確保有正確的識別碼
+      place_id: bar.place_id || bar.googlePlaceId,
+      googlePlaceId: bar.googlePlaceId || bar.place_id,
+      id: bar.id || bar.barId,
+      // 確保有完整的圖片資料
+      images: bar.images || (bar.imageUrl ? [bar.imageUrl] : []),
+      // 確保有評論資料
+      googleReviews: bar.googleReviews || []
+    };
+    
     // 使用 store 的 toggle 功能
-    const newStatus = await favoritesStore.toggleFavorite(bar);
+    const newStatus = await favoritesStore.toggleFavorite(barData);
     
     // 通知父組件更新
     emit("toggle-wishlist", identifier);
   } catch (error) {
+    console.error("Failed to toggle favorite:", error);
     alert("操作失敗，請稍後再試");
   }
 };

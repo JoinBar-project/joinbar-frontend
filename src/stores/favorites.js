@@ -25,7 +25,22 @@ export const useFavoritesStore = defineStore("favorites", () => {
 
   // 檢查是否已收藏
   function isFavorited(identifier) {
+    if (!identifier) return false;
+    
     return favoriteBars.value.some(
+      (bar) =>
+        bar.barId === identifier ||
+        bar.googlePlaceId === identifier ||
+        bar.place_id === identifier ||
+        bar.id === identifier
+    );
+  }
+
+  // 獲取收藏的酒吧資料
+  function getFavoriteBar(identifier) {
+    if (!identifier) return null;
+    
+    return favoriteBars.value.find(
       (bar) =>
         bar.barId === identifier ||
         bar.googlePlaceId === identifier ||
@@ -42,20 +57,24 @@ export const useFavoritesStore = defineStore("favorites", () => {
     try {
       // 取得識別碼
       const googlePlaceId = bar.place_id || bar.googlePlaceId;
-      const barId = bar.id || bar.barId || 'google'; // 如果沒有 barId，使用 'google'
+      const barId = bar.id || bar.barId || 'google';
+      
+      if (!googlePlaceId && !barId) {
+        throw new Error('缺少酒吧識別碼');
+      }
       
       // 檢查當前收藏狀態
       const isCurrentlyFavorited = isFavorited(googlePlaceId || barId);
       
       // 準備請求資料
       const requestData = {
-        isFavorite: !isCurrentlyFavorited, // 切換狀態
+        isFavorite: !isCurrentlyFavorited,
         userId: null, // 如果有使用者系統，這裡要傳入實際的 userId
         folderId: folderId
       };
 
       // 如果是從 Google Maps 新增收藏，需要額外資料
-      if (!isCurrentlyFavorited && googlePlaceId && (!bar.id || bar.id === 'google')) {
+      if (!isCurrentlyFavorited && googlePlaceId) {
         requestData.googlePlaceId = googlePlaceId;
         requestData.barData = {
           name: bar.name,
@@ -79,7 +98,10 @@ export const useFavoritesStore = defineStore("favorites", () => {
           openingHoursText: bar.opening_hours?.weekday_text ? 
             bar.opening_hours.weekday_text.join('\n') : 
             bar.openingHoursText,
-          tags: bar.types || bar.tags || []
+          tags: bar.types || bar.tags || [],
+          phone: bar.international_phone_number || bar.phone,
+          priceLevel: bar.price_level,
+          url: bar.url
         };
       } else if (googlePlaceId) {
         requestData.googlePlaceId = googlePlaceId;
@@ -97,6 +119,7 @@ export const useFavoritesStore = defineStore("favorites", () => {
           name: bar.name,
           address: bar.formatted_address || bar.address || bar.vicinity,
           imageUrl: requestData.barData?.imageUrl || bar.imageUrl || bar.images?.[0],
+          images: bar.images || [],
           rating: bar.rating,
           reviews: bar.user_ratings_total || bar.reviews || 0,
           latitude: requestData.barData?.latitude || bar.latitude || bar.location?.lat,
@@ -105,12 +128,16 @@ export const useFavoritesStore = defineStore("favorites", () => {
           opening_hours: bar.opening_hours,
           openingHoursText: requestData.barData?.openingHoursText || bar.openingHoursText,
           website: bar.website,
-          googlePlaceId: googlePlaceId
+          phone: bar.international_phone_number || bar.phone,
+          priceLevel: bar.price_level,
+          url: bar.url,
+          googlePlaceId: googlePlaceId,
+          googleReviews: bar.googleReviews || []
         };
         
         // 檢查是否已存在，避免重複
         const existingIndex = favoriteBars.value.findIndex(
-          f => f.barId === favoriteBar.barId
+          f => f.barId === favoriteBar.barId || f.googlePlaceId === googlePlaceId
         );
         
         if (existingIndex === -1) {
@@ -136,6 +163,29 @@ export const useFavoritesStore = defineStore("favorites", () => {
     }
   }
 
+  // 批量更新收藏狀態
+  async function updateMultipleFavoriteStatus(bars) {
+    try {
+      const identifiers = bars.map(bar => 
+        bar.place_id || bar.googlePlaceId || bar.id
+      ).filter(Boolean);
+      
+      if (identifiers.length === 0) return;
+      
+      const statuses = await favoritesAPI.checkMultipleFavoriteStatus(identifiers);
+      
+      // 更新每個酒吧的收藏狀態
+      bars.forEach(bar => {
+        const identifier = bar.place_id || bar.googlePlaceId || bar.id;
+        if (identifier && statuses[identifier] !== undefined) {
+          bar.isWishlisted = statuses[identifier];
+        }
+      });
+    } catch (err) {
+      console.error("Failed to update multiple favorite status:", err);
+    }
+  }
+
   // 清除錯誤
   function clearError() {
     error.value = null;
@@ -147,7 +197,9 @@ export const useFavoritesStore = defineStore("favorites", () => {
     error,
     fetchFavorites,
     isFavorited,
+    getFavoriteBar,
     toggleFavorite,
+    updateMultipleFavoriteStatus,
     clearError,
   };
 });

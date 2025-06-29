@@ -295,9 +295,8 @@ const currentImage = computed(() => {
 
 // 修改：計算收藏狀態
 const isWishlisted = computed(() => {
-  return favoritesStore.isFavorited(
-    props.bar.place_id || props.bar.googlePlaceId || props.bar.id
-  );
+  const identifier = props.bar.place_id || props.bar.googlePlaceId || props.bar.id;
+  return favoritesStore.isFavorited(identifier);
 });
 
 const currentOpenStatus = computed(() => {
@@ -372,7 +371,12 @@ const toggleFavorite = async () => {
                   : props.bar.geometry.location.lng,
             }
           : null),
+      // 確保有完整的圖片資料
+      images: props.bar.images || (props.bar.imageUrl ? [props.bar.imageUrl] : []),
+      // 確保有評論資料
+      googleReviews: props.bar.googleReviews || []
     };
+    
     await favoritesStore.toggleFavorite(barData);
 
     // 通知父組件
