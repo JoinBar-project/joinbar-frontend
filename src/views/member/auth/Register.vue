@@ -215,13 +215,21 @@ const initFlatpickr = async () => {
       },
       
       onReady: function(selectedDates, dateStr, instance) {
-        // 確保 z-index 正確
-        instance.calendarContainer.style.zIndex = '9999';
+        // 安全檢查 calendarContainer 是否存在
+        if (instance && instance.calendarContainer) {
+          instance.calendarContainer.style.zIndex = '9999';
+        }
+      },
+      
+      // 額外的安全措施：在打開時也設置 z-index
+      onOpen: function(selectedDates, dateStr, instance) {
+        if (instance && instance.calendarContainer) {
+          instance.calendarContainer.style.zIndex = '9999';
+        }
       }
     });
   }
 }
-
 
 const destroyFlatpickr = () => {
   if (birthdayPicker.value) {
