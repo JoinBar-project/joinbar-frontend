@@ -95,7 +95,7 @@ const avatarUrl = computed(() => {
           :on-avatar-click="goToMember" />
           <span class="text-sm">嗨！{{ user.username }}</span>
         </div>
-        <RouterLink v-else to="/login">登入/註冊</RouterLink>
+        <RouterLink v-else to="/login">登入 / 註冊</RouterLink>
       </li>
       <li>
         <div

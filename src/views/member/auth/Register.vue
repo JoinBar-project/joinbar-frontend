@@ -364,8 +364,8 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <div class="flex items-start justify-center min-h-screen px-4 pt-10">
-    <div class="max-w-[424px] mx-auto p-6 bg-[var(--color-black)] rounded-xl shadow-xl  relative">
+  <div class="flex items-start justify-center min-h-screen px-4 pt-10 pb-10">
+    <div class="relative w-full max-w-[424px] max-md:max-w-[90vw] mx-auto p-6 max-md:px-4 bg-[var(--color-black)] rounded-xl shadow-xl">
       <div class="flex border-b border-[var(--color-icon-secondary)]">
         <router-link to="/login" class="flex-1 py-2 text-center font-semibold text-[var(--color-icon-secondary)] hover:text-[var(--color-secondary-green)] transition">
           會員登入
@@ -378,7 +378,7 @@ onUnmounted(() => {
       </div>
 
       <transition name="slide-fade" mode="out-in">
-        <div :key="step" class="w-[380px]">
+        <div :key="step" class="w-full max-w-[360px] mx-auto">
           <!-- Step 1: 註冊表單 -->
           <div v-if="step === 1" class="mt-6 space-y-4">
             <h2 class="mb-4 text-lg font-semibold" style="color: var(--color-primary-orange);">建立帳號</h2>
@@ -476,18 +476,22 @@ onUnmounted(() => {
               <span class="mx-2 text-gray-300">或</span>
               <div class="flex-grow h-px bg-gray-300"></div>
             </div>
-            <div class="flex justify-center space-x-2">
-              <button class="btn bg-white text-black border-[#e5e5e5] border-2 flex items-center px-4 py-2 rounded-lg hover:shadow-md transition">
-                <img src="/google.svg" alt="Google" class="w-5 h-5 mr-2" /> register for Google 
-              </button>
-              <button @click="handleLineLogin" 
-                      :disabled="authStore.isLineLoading" 
-                      class="btn bg-[var(--color-line-green)] text-white border-[var(--color-line-green-dark)] border-2 flex items-center px-4 py-2 rounded-lg hover:shadow-md transition">
-                      <img src="/line.svg" alt="LINE" class="w-5 h-5 mr-2" />
-                      <span v-if="authStore.isLineLoading">載入中...</span>
-                      <span v-else>Register for LINE</span>
-              </button>
-            </div>
+            <div class="flex flex-col sm:flex-row justify-center items-center mt-4 gap-3 sm:space-x-2 w-full">
+            
+              <button
+              class="btn flex-1 min-w-[180px] bg-white text-black border-[#e5e5e5] border-2 flex items-center justify-center px-4 py-2 rounded-lg hover:scale-105 transition text-sm w-full sm:w-auto">
+              <img src="/google.svg" alt="Google logo" class="w-5 h-5 mr-2" />
+              Register with Google
+            </button>
+
+            <button
+              @click="handleLineLogin"
+              class="btn flex-1 min-w-[180px] bg-[var(--color-line-green)] text-white border-[var(--color-line-green-dark)] border-2 flex items-center justify-center px-4 py-2 rounded-lg hover:scale-105 transition text-sm w-full sm:w-auto">
+              <img src="/line.svg" alt="Line logo" class="w-5 h-5 mr-2" />
+              <span v-if="authStore.isLineLoading">載入中...</span>
+              <span v-else>Register with LINE</span>
+            </button>
+          </div>
 
             <button
               @click="goToPreferences"
