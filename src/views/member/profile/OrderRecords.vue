@@ -54,7 +54,7 @@
             <div class="order-info">
               <span>總金額：<strong>${{ formatAmount(order.totalAmount) }}</strong></span>
               <span v-if="order.paymentMethod">
-                付款：{{ getPaymentText(order.paymentMethod) }}
+                付款：LINE Pay
               </span>
             </div>
 
@@ -84,7 +84,7 @@
             
             <button 
               v-if="order.status === 'pending'" 
-              @click="cancelOrder(order.id)"
+              @click="handleCancelOrder(order.id)"
               class="btn-danger"
               :disabled="isLoading"
             >
@@ -103,9 +103,25 @@
       </div>
     </div>
 
-    <div v-if="toast.show" class="toast" :class="toast.type">
-      {{ toast.message }}
-    </div>
+    <BaseAlertModal
+      :visible="alertModal.visible"
+      :title="alertModal.title"
+      :message="alertModal.message"
+      :type="alertModal.type"
+      :confirm-text="alertModal.confirmText"
+      @close="alertModal.visible = false"
+    />
+    
+    <BaseConfirmModal
+      :visible="confirmModal.visible"
+      :title="confirmModal.title"
+      :message="confirmModal.message"
+      :type="confirmModal.type"
+      :confirm-text="confirmModal.confirmText"
+      :cancel-text="confirmModal.cancelText"
+      @confirm="confirmModal.onConfirm"
+      @cancel="confirmModal.onCancel"
+    />
   </div>
 </template>
 
@@ -114,6 +130,8 @@ import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useOrder } from '@/composables/useOrder'
 import dayjs from 'dayjs'
+import BaseAlertModal from '@/components/common/BaseAlertModal.vue'
+import BaseConfirmModal from '@/components/common/BaseConfirmModal.vue'
 
 const router = useRouter()
 
@@ -127,11 +145,49 @@ const {
 const orders = ref([])
 const statusFilter = ref('')
 
-const toast = ref({
-  show: false,
+const alertModal = ref({
+  visible: false,
+  title: '',
   message: '',
-  type: 'success'
+  type: 'default',
+  confirmText: '確認'
 })
+
+const confirmModal = ref({
+  visible: false,
+  title: '',
+  message: '',
+  type: null,
+  confirmText: '確認',
+  cancelText: '取消',
+  onConfirm: null,
+  onCancel: null
+})
+
+const showAlert = (title, message, type = 'default', confirmText = '確認') => {
+  alertModal.value = { visible: true, title, message, type, confirmText }
+}
+
+const showConfirm = (title, message, type = null, confirmText = '確認', cancelText = '取消') => {
+  return new Promise((resolve) => {
+    confirmModal.value = {
+      visible: true,
+      title,
+      message,
+      type,
+      confirmText,
+      cancelText,
+      onConfirm: () => {
+        confirmModal.value.visible = false
+        resolve(true)
+      },
+      onCancel: () => {
+        confirmModal.value.visible = false
+        resolve(false)
+      }
+    }
+  })
+}
 
 const filteredOrders = computed(() => {
   let filtered = orders.value
@@ -146,18 +202,27 @@ const loadOrders = async () => {
     const response = await getUserOrderHistory()
     orders.value = response.orders || []
   } catch (err) {
-    showToast('載入失敗，請重試', 'error')
+    showAlert('載入失敗', '載入失敗，請重試', 'error')
   }
 }
 
-const cancelOrder = async (orderId) => {
-  if (!confirm('確定取消訂單？')) return
+const handleCancelOrder = async (orderId) => {
+  const confirmed = await showConfirm(
+    '確認取消訂單',
+    '確定取消訂單？此操作無法復原。',
+    'danger',
+    '取消訂單',
+    '保留訂單'
+  )
+  
+  if (!confirmed) return
+  
   try {
     await cancelOrderAPI(orderId)
-    showToast('訂單已取消', 'success')
+    showAlert('取消成功', '訂單已取消', 'success')
     await loadOrders()
   } catch (err) {
-    showToast('取消失敗，請重試', 'error')
+    showAlert('取消失敗', '取消失敗，請重試', 'error')
   }
 }
 
@@ -180,10 +245,6 @@ const getStatusText = (status) => {
 }
 
 const getStatusClass = (status) => `order-status-label-${status}`
-
-const getPaymentText = (method) => {
-  return method === 'linepay' ? 'LINE Pay' : '信用卡'
-}
 
 const getItemDisplayName = (item) => {
   if (item.itemType === 2) {
@@ -213,7 +274,7 @@ const getSubscriptionName = (subType) => {
 const viewOrder = (orderId) => {
   const order = orders.value.find(o => o.id === orderId)
   if (!order) {
-    showToast('找不到訂單', 'error')
+    showAlert('錯誤', '找不到訂單', 'error')
     return
   }
   
@@ -250,11 +311,6 @@ const retryPayment = (orderId) => {
 
 const goToEvents = () => {
   router.push('/event')
-}
-
-const showToast = (message, type = 'success') => {
-  toast.value = { show: true, message, type }
-  setTimeout(() => toast.value.show = false, 3000)
 }
 
 onMounted(loadOrders)
@@ -433,23 +489,6 @@ onMounted(loadOrders)
 .btn-primary:disabled {
   opacity: 0.6;
   cursor: not-allowed;
-}
-.toast {
-  position: fixed;
-  bottom: 20px;
-  right: 20px;
-  padding: 15px 20px;
-  border-radius: 8px;
-  color: white;
-  font-weight: 500;
-  z-index: 1000;
-  animation: slideIn 0.3s ease-out;
-}
-.toast.success { background: #28a745; }
-.toast.error { background: #dc3545; }
-@keyframes slideIn {
-  from { opacity: 0; transform: translateX(100%); }
-  to { opacity: 1; transform: translateX(0); }
 }
 @media (max-width: 768px) {
   .orders-container {

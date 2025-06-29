@@ -1,15 +1,30 @@
 <script setup>
 import { useRouter } from 'vue-router';
 import { useAuthStore } from '@/stores/authStore';
+import { useCartStore } from '@/stores/cartStore'; 
 import { storeToRefs } from 'pinia';
 import { computed } from 'vue';
 import UserAvatar from '@/components/UserAvatar.vue';
 import Swal from 'sweetalert2';
 
-
 const router = useRouter();
 const authStore = useAuthStore();
+const cartStore = useCartStore(); 
 const { user, isAuthenticated } = storeToRefs(authStore);
+
+const cartItemCount = computed(() => {
+  const items = cartStore.items;
+  
+  if (items && typeof items === 'object' && 'items' in items) {
+    return Array.isArray(items.items) ? items.items.length : 0;
+  }
+  
+  if (Array.isArray(items)) {
+    return items.length;
+  }
+  
+  return 0;
+});
 
 const goToMember = () => {
   router.push({
@@ -106,7 +121,12 @@ const avatarUrl = computed(() => {
         </div>
       </li>
       <li>
-        <RouterLink to="/cart"><img class="cart-icon" src="/cart.png" alt="Cart Icon" /></RouterLink>
+        <RouterLink to="/cart" class="cart-link-wrapper">
+          <img class="cart-icon" src="/cart.png" alt="Cart Icon" />
+          <span v-if="cartItemCount > 0" class="cart-badge">
+            {{ cartItemCount > 99 ? '99+' : cartItemCount }}
+          </span>
+        </RouterLink>
       </li>
     </ul>
   </nav>
@@ -142,5 +162,28 @@ const avatarUrl = computed(() => {
 
 .logout-button {
   @apply hover:text-gray-300 transition-colors duration-200;
+}
+
+.cart-link-wrapper {
+  @apply relative;
+}
+
+.cart-badge {
+  position: absolute;
+  top: 15px;
+  right: 2px;
+  background-color: #ef4444;
+  color: white;
+  font-size: 10px;
+  font-weight: bold;
+  border-radius: 50%;
+  min-width: 16px;
+  height: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid white;
+  line-height: 1;
+  z-index: 10;
 }
 </style>

@@ -42,7 +42,8 @@
       </div>
 
       <div class="customer-section section-spacing">
-        <h3>客戶資訊</h3>
+        <h3>客戶資訊 <span class="required-star">*</span></h3>
+        
         <div class="form-grid">
           <div class="form-group">
             <label for="customerName">姓名 *</label>
@@ -53,6 +54,8 @@
               class="form-input"
               :class="{ 'input-error': formErrors.name }"
               placeholder="請輸入您的姓名"
+              @blur="checkFormCompleteness"
+              @input="clearFieldError('name')"
               required />
             <span
               v-if="formErrors.name"
@@ -70,6 +73,8 @@
               class="form-input"
               :class="{ 'input-error': formErrors.phone }"
               placeholder="請輸入您的電話號碼"
+              @blur="checkFormCompleteness"
+              @input="clearFieldError('phone')"
               required />
             <span
               v-if="formErrors.phone"
@@ -87,6 +92,8 @@
               class="form-input"
               :class="{ 'input-error': formErrors.email }"
               placeholder="請輸入您的電子郵件"
+              @blur="checkFormCompleteness"
+              @input="clearFieldError('email')"
               required />
             <span
               v-if="formErrors.email"
@@ -95,51 +102,36 @@
             >
           </div>
         </div>
+
+        <div v-if="!isCustomerInfoValid && hasInteracted" class="form-incomplete-warning">
+          <i class="warning-icon">⚠️</i>
+          <span>請填寫完整的客戶資訊才能進行付款</span>
+        </div>
       </div>
 
       <div class="payment-method section-spacing">
-        <h3>選擇付款方式</h3>
-
-        <div class="payment-options">
-          <button 
-            class="payment-btn linepay-btn"
-            :class="{ 'selected': paymentMethod === 'linepay' }"
-            @click="paymentMethod = 'linepay'"
-          >
-            <IconLine />
-            LINE Pay
-          </button>
- 
-          <button 
-            class="payment-btn creditcard-btn"
-            :class="{ 'selected': paymentMethod === 'creditcard' }"
-            @click="paymentMethod = 'creditcard'"
-          >
-            <IconCreditCard />  
-            信用卡
-          </button>
-        </div>
-
-        <div
-          v-if="paymentMethodError"
-          class="payment-error">
-          {{ paymentMethodError }}
-        </div>
-
-        <div class="total-bar section-spacing">
+        <div class="total-bar">
           <p class="total-label">
             總金額：<strong>${{ totalPrice }}</strong>
           </p>
+        </div>
+
+        <div class="payment-section">
           <button 
-            class="checkout-btn"
-            :class="{ 'btn-disabled': !canSubmit || isSubmitting || orderLoading }"
+            class="payment-btn linepay-btn"
             :disabled="!canSubmit || isSubmitting || orderLoading"
-            @click="submitOrder">
-            <span
-              v-if="isSubmitting || orderLoading"
-              class="loading loading-spinner loading-sm"></span>
-            {{ getSubmitButtonText() }}
+            @click="submitOrder"
+          >
+            <IconLine />
+            <span v-if="isSubmitting || orderLoading">處理中...</span>
+            <span v-else>LINE Pay 付款</span>
           </button>
+          
+          <div
+            v-if="paymentMethodError"
+            class="payment-error">
+            {{ paymentMethodError }}
+          </div>
         </div>
       </div>
  
@@ -155,6 +147,15 @@
         </button>
       </div>
     </div>
+
+    <BaseAlertModal
+      :visible="alertModal.visible"
+      :title="alertModal.title"
+      :message="alertModal.message"
+      :type="alertModal.type"
+      :confirm-text="alertModal.confirmText"
+      @close="alertModal.visible = false"
+    />
   </div>
  </template>
  
@@ -169,7 +170,7 @@ import utc from 'dayjs/plugin/utc'
 import timezone from 'dayjs/plugin/timezone'
 
 import IconLine from '@/components/icons/IconLine.vue'
-import IconCreditCard from '@/components/icons/IconCreditCard.vue'
+import BaseAlertModal from '@/components/common/BaseAlertModal.vue'
 
 dayjs.extend(utc)
 dayjs.extend(timezone)
@@ -180,8 +181,6 @@ const route = useRoute()
 
 const { 
  createOrder, 
- confirmPayment, 
- simulatePayment,
  getOrderDetails, 
  isLoading: orderLoading,
  error: orderError,
@@ -196,7 +195,7 @@ const {
  clearState: clearLinePayState
 } = useLinePay()
 
-const paymentMethod = ref('')
+const paymentMethod = ref('linepay') 
 const isLoading = ref(true)
 const isSubmitting = ref(false)
 
@@ -206,6 +205,7 @@ const displayItems = ref([])
 
 const errorMessage = ref('')
 const paymentMethodError = ref('')
+const hasInteracted = ref(false) 
 
 const customerInfo = ref({
  name: '',
@@ -214,6 +214,28 @@ const customerInfo = ref({
 })
 
 const formErrors = ref({})
+
+const alertModal = ref({
+  visible: false,
+  title: '',
+  message: '',
+  type: 'default',
+  confirmText: '確認'
+})
+
+const showAlert = (title, message, type = 'default', confirmText = '確認') => {
+  alertModal.value = { visible: true, title, message, type, confirmText }
+}
+
+const checkFormCompleteness = () => {
+  hasInteracted.value = true
+}
+
+const clearFieldError = (field) => {
+  if (formErrors.value[field]) {
+    delete formErrors.value[field]
+  }
+}
 
 onMounted(async () => {
   isLoading.value = true;
@@ -236,6 +258,7 @@ onMounted(async () => {
         customerInfo.value.name = orderUser.name;
         customerInfo.value.email = orderUser.email;
         customerInfo.value.phone = orderUser.phone;
+        hasInteracted.value = true; 
       } else {
         loadUserInfo(); 
       }
@@ -246,8 +269,8 @@ onMounted(async () => {
         await cart.loadCart();
       }
       if (cart.items.length === 0) {
-        alert('購物車是空的，即將返回購物車頁面');
-        router.push('/cart');
+        showAlert('無法載入', '購物車是空的，即將返回購物車頁面', 'warning');
+        setTimeout(() => router.push('/cart'), 2000);
         return;
       }
       displayItems.value = cart.items;
@@ -258,7 +281,7 @@ onMounted(async () => {
 
   } catch (error) {
     console.error('❌ 載入付款頁面時發生錯誤:', error);
-    errorMessage.value = `載入資料失敗: ${error.message}`;
+    showAlert('載入失敗', `載入資料失敗: ${error.message}`, 'error');
   } finally {
     isLoading.value = false;
   }
@@ -271,8 +294,7 @@ const totalPrice = computed(() =>
 )
 
 const canSubmit = computed(() => {
- return paymentMethod.value && 
-        !isSubmitting.value && 
+ return !isSubmitting.value && 
         !orderLoading.value &&
         !linePayLoading.value &&
         isCustomerInfoValid.value &&
@@ -289,13 +311,6 @@ const isCustomerInfoValid = computed(() => {
         emailRegex.test(email)
 })
 
-const getSubmitButtonText = () => {
- if (isSubmitting.value || orderLoading.value || linePayLoading.value) return '處理中...'
- if (!paymentMethod.value) return '請選擇付款方式'
- if (!isCustomerInfoValid.value) return '請完成客戶資訊'
- return '確認付款'
-}
-
 watch(() => customerInfo.value.name, () => {
  if (formErrors.value.name) delete formErrors.value.name
 })
@@ -308,10 +323,6 @@ watch(() => customerInfo.value.email, () => {
  if (formErrors.value.email) delete formErrors.value.email
 })
 
-watch(() => paymentMethod.value, () => {
- paymentMethodError.value = ''
-})
-
 function loadUserInfo() {
  try {
    const userInfo = localStorage.getItem('user')
@@ -319,6 +330,10 @@ function loadUserInfo() {
      const user = JSON.parse(userInfo)
      customerInfo.value.name = customerInfo.value.name || user.username || user.lineDisplayName || ''
      customerInfo.value.email = customerInfo.value.email || user.email || ''
+     
+     if (customerInfo.value.name || customerInfo.value.email) {
+       hasInteracted.value = true
+     }
    }
  } catch (error) {
    console.warn('⚠️ 載入用戶資訊失敗:', error)
@@ -337,7 +352,9 @@ const handleLinePayReturn = () => {
 }
 
 const submitOrder = async () => {
-  if (isSubmitting.value || !canSubmit.value) return
+  if (isSubmitting.value || !canSubmit.value) {
+    return
+  }
 
   try {
     isSubmitting.value = true
@@ -365,7 +382,7 @@ const submitOrder = async () => {
           eventId: String(item.id || item.eventId),
           quantity: 1
         })),
-        paymentMethod: paymentMethod.value
+        paymentMethod: 'linepay' 
       }
       
       console.log('🔍 準備發送的訂單數據:', JSON.stringify(orderData, null, 2));
@@ -379,52 +396,29 @@ const submitOrder = async () => {
       }
     }
 
-    if (paymentMethod.value === 'linepay') {
-      console.log(`🔄 處理訂單 ${orderIdToPay} 的 LINE Pay 付款...`)
-      
-      const paymentResult = await createLinePayment(orderIdToPay)
-      
-      sessionStorage.setItem('pendingOrder', JSON.stringify({
-        orderId: orderIdToPay,
-        orderNumber: orderToPay.orderNumber,
-        transactionId: paymentResult.transactionId
-      }))
-      
-      console.log('✅ 訂單準備完成，跳轉到 LINE Pay...')
-      
-      if (!isRetryMode.value) {
-        cart.clearCart()
-      }
-      
-      redirectToLinePay(paymentResult.paymentUrl)
-      
-    } else {
-      console.log(`🔄 處理訂單 ${orderIdToPay} 的模擬付款...`);
-      const paymentData = { paymentMethod: paymentMethod.value, orderData: orderToPay }
-      const paymentResult = await simulatePayment(paymentData);
-      
-      await confirmPayment(orderIdToPay, paymentResult);
-      
-      showPaymentSuccessMessage(orderToPay, paymentResult);
-      
-      if (!isRetryMode.value) {
-        cart.clearCart(); 
-      }
-      
-      router.push({
-        name: 'OrderSuccess',
-        params: { orderNumber: orderToPay.orderNumber },
-        query: { orderId: orderIdToPay }
-      });
+    console.log(`🔄 處理訂單 ${orderIdToPay} 的 LINE Pay 付款...`)
+    
+    const paymentResult = await createLinePayment(orderIdToPay)
+    
+    sessionStorage.setItem('pendingOrder', JSON.stringify({
+      orderId: orderIdToPay,
+      orderNumber: orderToPay.orderNumber,
+      transactionId: paymentResult.transactionId
+    }))
+    
+    console.log('✅ 訂單準備完成，跳轉到 LINE Pay...')
+    
+    if (!isRetryMode.value) {
+      cart.clearCart()
     }
+    
+    redirectToLinePay(paymentResult.paymentUrl)
 
   } catch (error) {
     console.error('❌ 訂單提交失敗:', error)
     handleSubmitError(error)
   } finally {
-    if (paymentMethod.value !== 'linepay') {
-      isSubmitting.value = false
-    }
+    isSubmitting.value = false
   }
 }
 
@@ -445,28 +439,12 @@ function validateForm() {
    formErrors.value.email = '電子郵件格式不正確'
  }
  
- if (!paymentMethod.value) {
-   paymentMethodError.value = '請選擇付款方式'
-   return false
- }
- 
  if (Object.keys(formErrors.value).length > 0) {
-   setError('請修正表單錯誤')
+   showAlert('表單錯誤', '請修正表單錯誤', 'error')
    return false
  }
 
  return true
-}
-
-function showPaymentSuccessMessage(order, paymentResult) {
- const paymentMethodName = paymentMethod.value === 'linepay' ? 'LINE Pay' : '信用卡'
- const amount = totalPrice.value
- 
- if (paymentMethod.value === 'linepay') {
-   alert(`🟢 ${paymentMethodName} 模擬付款成功！\n\n訂單編號：${order.orderNumber}\n金額：${amount}\n付款ID：${paymentResult.paymentId}\n\n點擊確定前往訂單詳情`)
- } else if (paymentMethod.value === 'creditcard') {
-   alert(`💳 ${paymentMethodName} 模擬付款成功！\n\n訂單編號：${order.orderNumber}\n金額：${amount}\n付款ID：${paymentResult.paymentId}\n\n點擊確定前往訂單詳情`)
- }
 }
 
 function handleSubmitError(error) {
@@ -476,24 +454,24 @@ function handleSubmitError(error) {
    errorMsg = '登入已過期，請重新登入'
    localStorage.removeItem('access_token')
    localStorage.removeItem('user')
+   showAlert('登入已過期', errorMsg, 'error')
    setTimeout(() => router.push('/login'), 1500)
  } else if (error.message.includes('已滿員')) {
    errorMsg = error.message + '，請重新選擇活動'
+   showAlert('報名失敗', errorMsg, 'warning')
  } else if (error.message.includes('已結束') || error.message.includes('過期')) {
    errorMsg = error.message + '，請移除過期活動'
+   showAlert('活動過期', errorMsg, 'warning')
  } else if (error.message.includes('重複')) {
-   errorMsg = error.message
+   showAlert('重複報名', error.message, 'warning')
  } else if (error.message.includes('網路') || error.message.includes('請求失敗')) {
    errorMsg = '網路連線有問題，請檢查網路後重試'
+   showAlert('網路錯誤', errorMsg, 'error')
  } else if (error.message) {
-   errorMsg = error.message
+   showAlert('提交失敗', error.message, 'error')
+ } else {
+   showAlert('提交失敗', errorMsg, 'error')
  }
- 
- setError(errorMsg)
-}
-
-function setError(message) {
- errorMessage.value = message
 }
 
 function clearAllErrors() {
@@ -621,120 +599,97 @@ const goBack = () => {
   display: flex;
   justify-content: flex-end;
   align-items: center;
-  margin-top: 32px;
+  margin-bottom: 24px;
   gap: 16px;
 }
 
 .total-label {
   font-size: 19px;
   color: var(--color-text-selected, #f5d1c0);
- }
+  margin: 0;
+}
  
  .payment-method {
   font-size: 15px;
   margin-top: 16px;
 }
 
-.payment-options {
-  display: flex;
-  gap: 16px;
-  margin-top: 16px;
+.payment-section {
+  text-align: center;
 }
 
 .payment-btn {
-  padding: 12px 20px;
-  font-size: 16px;
-  font-weight: 500;
+  padding: 16px 32px;
+  font-size: 18px;
+  font-weight: 600;
   height: auto;
-  min-height: 60px;
-  width: 200px;
+  min-height: 80px;
+  width: 100%;
+  max-width: 400px;
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 8px;
-  border-radius: 6px;
-  border: 2px solid;
+  gap: 12px;
+  border-radius: 12px;
+  border: none;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: all 0.3s ease;
   position: relative;
+  margin: 0 auto;
  }
 
- .payment-btn:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+ .payment-btn:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
  }
 
- .linepay-btn {
-  background-color: var(--color-line-green, #25c916);
-  color: white;
-  border-color: var(--color-line-green, #25c916);
- }
-
- .linepay-btn:hover {
-  background-color: var(--color-line-green-dark, #20b012);
-  border-color: var(--color-line-green-dark, #20b012);
- }
-
- .linepay-btn.selected {
-  box-shadow: 0 0 0 2px var(--color-line-green, #25c916), 
-              0 0 0 4px rgba(37, 201, 22, 0.2);
- }
-
- .creditcard-btn {
-  background-color: var(--color-creditcard, #ffd4d4);
-  color: var(--color-creditcard-text, #333);
-  border-color: var(--color-creditcard, #ffd4d4);
- }
-
- .creditcard-btn:hover {
-  background-color: #ffcaca;
-  border-color: #ffcaca;
- }
-
- .creditcard-btn.selected {
-  box-shadow: 0 0 0 2px var(--color-creditcard, #ffd4d4), 
-              0 0 0 4px rgba(255, 212, 212, 0.3);
- }
- 
- .checkout-btn {
-  background-color: var(--color-select, #d17361);
-  color: white;
-  border: 2px solid var(--color-select, #d17361);
-  font-size: 16px;
-  font-weight: 500;
-  padding: 12px 24px;
-  border-radius: 6px;
-  cursor: pointer;
-  transition: all 0.2s ease-in-out;
-  min-height: 48px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  white-space: nowrap;
- }
- 
- .checkout-btn:hover:not(.btn-disabled) {
-  background-color: var(--color-select-dark, #b85d4a);
-  border-color: var(--color-select-dark, #b85d4a);
-  transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(209, 115, 97, 0.3);
- }
- 
- .checkout-btn:active:not(.btn-disabled) {
+ .payment-btn:active:not(:disabled) {
   transform: translateY(0);
-  box-shadow: 0 2px 8px rgba(209, 115, 97, 0.25);
  }
- 
- .checkout-btn.btn-disabled {
-  background-color: var(--color-icon-secondary, #bcaea4);
-  border-color: var(--color-icon-secondary, #bcaea4);
-  color: var(--color-text-unselected, #937e7e);
+
+ .payment-btn:disabled {
+  opacity: 0.6;
   cursor: not-allowed;
-  opacity: 0.7;
   transform: none;
   box-shadow: none;
  }
+
+ .linepay-btn {
+  background: linear-gradient(135deg, #25c916 0%, #20b012 100%);
+  color: white;
+  box-shadow: 0 4px 15px rgba(37, 201, 22, 0.3);
+ }
+
+ .linepay-btn:hover:not(:disabled) {
+  background: linear-gradient(135deg, #20b012 0%, #1a9e0f 100%);
+  box-shadow: 0 8px 25px rgba(37, 201, 22, 0.4);
+ }
+
+ .required-star {
+  color: var(--color-text-warn, #eb96a4);
+  font-weight: bold;
+ }
+
+ .form-incomplete-warning {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 16px;
+  padding: 12px 16px;
+  background-color: rgba(220, 53, 69, 0.1);
+  border: 2px solid #dc3545;
+  border-radius: 8px;
+  color: #dc3545;
+  font-size: 14px;
+  font-weight: 600;
+ }
+
+ .warning-icon {
+  font-size: 16px;
+  color: #dc3545;
+ }
+
+ /* 移除不需要的樣式 */
  
  .error-message {
   background-color: rgba(235, 150, 164, 0.1);
@@ -778,13 +733,6 @@ const goBack = () => {
   margin-bottom: 16px;
   color: var(--color-text-selected, #f5d1c0);
  }
-
- .payment-method h3 {
-  font-size: 18px;
-  font-weight: 600;
-  margin-bottom: 16px;
-  color: var(--color-text-selected, #f5d1c0);
- }
  
  .form-grid {
   display: grid;
@@ -815,6 +763,13 @@ const goBack = () => {
   color: var(--color-text-selected, #f5d1c0);
  }
 
+ .cart-container .form-input,
+ .cart-container .customer-section .form-input,
+ .cart-container .customer-section .form-group .form-input {
+  background-color: rgba(245, 209, 192, 0.05);
+  color: var(--color-text-selected, #f5d1c0);
+ }
+
  .form-input::placeholder {
   color: var(--color-text-unselected, #937e7e);
  }
@@ -823,6 +778,30 @@ const goBack = () => {
   outline: none;
   border-color: var(--color-select, #d17361);
   box-shadow: 0 0 0 2px rgba(209, 115, 97, 0.2);
+ }
+
+ .cart-container .form-input:focus,
+ .cart-container .customer-section .form-input:focus,
+ .cart-container .customer-section .form-group .form-input:focus {
+  background-color: rgba(245, 209, 192, 0.05);
+ }
+
+ .cart-container .customer-section .form-group .form-input:-webkit-autofill,
+ .cart-container .customer-section .form-group .form-input:-webkit-autofill:hover,
+ .cart-container .customer-section .form-group .form-input:-webkit-autofill:focus,
+ .cart-container .customer-section .form-group .form-input:-webkit-autofill:active {
+  -webkit-box-shadow: 0 0 0 1000px rgba(245, 209, 192, 0.05) inset;
+  -webkit-text-fill-color: var(--color-text-selected, #f5d1c0);
+  border: 1px solid var(--color-icon-secondary, #bcaea4);
+  transition: background-color 99999s ease-in-out 0s;
+ }
+
+ .cart-container .customer-section .form-group .form-input[data-autocompleted],
+ .cart-container .customer-section .form-group .form-input:-internal-autofill-selected,
+ .cart-container .customer-section .form-group .form-input:-internal-autofill-previewed {
+  background-color: rgba(245, 209, 192, 0.05);
+  color: var(--color-text-selected, #f5d1c0);
+  border: 1px solid var(--color-icon-secondary, #bcaea4);
  }
  
  .form-input.input-error {
