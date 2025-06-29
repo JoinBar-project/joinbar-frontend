@@ -173,7 +173,7 @@ const validateBirthday = (birthday) => {
   let age = today.getFullYear() - birthDate.getFullYear();
   const monthDiff = today.getMonth() - birthDate.getMonth();
   
-  // 如果還沒到生日那一天，年齡要減1
+  // 未週歲 要減1
   if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
     age--;
   }
@@ -190,38 +190,38 @@ const initFlatpickr = async () => {
   await nextTick();
   
   if (birthdayInput.value && !birthdayPicker.value) {
-    // 計算100年前的日期作為最小日期
+    // 100年前作為最小日期
     const hundredYearsAgo = new Date();
     hundredYearsAgo.setFullYear(hundredYearsAgo.getFullYear() - 100);
 
     birthdayPicker.value = flatpickr(birthdayInput.value, {
       locale: Mandarin,
       dateFormat: 'Y-m-d',
-      maxDate: 'today', // 最大日期為今天，不能選未來日期
+      maxDate: 'today', // 不能選未來日期
       minDate: hundredYearsAgo, // 最小日期為100年前
       allowInput: false,
       clickOpens: true,
       closeOnSelect: true,
       
-      // 預設開啟到25年前（合理的預設年齡）
-      defaultDate: new Date(new Date().setFullYear(new Date().getFullYear() - 25)),
+      // 預設開啟到18年前
+      defaultDate: new Date(new Date().setFullYear(new Date().getFullYear() - 18)),
       
       onChange: function(selectedDates, dateStr) {
         registrationForm.value.birthday = dateStr;
-        // 選擇日期時清除錯誤狀態（如果有的話）
+        // 如果有錯誤 清除錯誤狀態
         if (dateStr) {
           clearError('birthday');
         }
       },
       
       onReady: function(selectedDates, dateStr, instance) {
-        // 安全檢查 calendarContainer 是否存在
+        // 安全檢查是否存在
         if (instance && instance.calendarContainer) {
           instance.calendarContainer.style.zIndex = '9999';
         }
       },
       
-      // 額外的安全措施：在打開時也設置 z-index
+      // 在打開時設置 z-index
       onOpen: function(selectedDates, dateStr, instance) {
         if (instance && instance.calendarContainer) {
           instance.calendarContainer.style.zIndex = '9999';
