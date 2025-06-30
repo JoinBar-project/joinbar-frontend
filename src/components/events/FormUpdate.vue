@@ -537,16 +537,7 @@ onUnmounted(() => {
   <section class="event-form" id="edit-event">
     <div class="form-header">編輯中</div>
     <div class="form-container">
-      <!-- 除錯信息 (開發時使用，正式版本請移除) -->
-      <div v-if="false" style="background: yellow; padding: 10px; margin: 10px; font-size: 12px;">
-        <h4>除錯信息：</h4>
-        <p>活動 ID: {{ props.eventId }}</p>
-        <p>Loading: {{ loading }}</p>
-        <p>是否管理員: {{ isAdmin }}</p>
-        <p>Token: {{ localStorage.getItem('access_token') ? 'exists' : 'missing' }}</p>
-      </div>
-      
-      <div class="form-image-upload" @click="triggerFileInput">
+      <div class="cursor-pointer form-image-upload rounded-3xl bg-gradient-to-br from-gray-100 to-gray-300 water-drop-upload hover:opacity-80 active:opacity-50" @click="triggerFileInput">
         <input
           ref="fileInput"
           type="file"
@@ -556,6 +547,7 @@ onUnmounted(() => {
         />
         
         <div v-if="!imagePreview" class="event-image-placeholder">
+          <i class="fa-solid fa-upload"></i>
           點擊更換活動圖
         </div>
         
@@ -693,8 +685,7 @@ onUnmounted(() => {
 }
 
 .form-image-upload {
-  @apply flex justify-center items-center w-full h-72 text-xl text-gray-400 bg-gray-200 cursor-pointer
-         hover:bg-gray-300 transition-colors duration-200;
+  @apply flex justify-center items-center w-full h-72 text-xl text-gray-400;
 }
 
 .form-layout {
