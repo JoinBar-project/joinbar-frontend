@@ -6,6 +6,7 @@ import { useAuthStore } from '@/stores/authStore';
 import { useTagStore } from '@/stores/tag';
 import Hashtag from './Hashtag.vue';
 import apiClient from '@/api/axios';
+import BaseAlertModal from '@/components/common/BaseAlertModal.vue';
 
 import flatpickr from 'flatpickr';
 import 'flatpickr/dist/flatpickr.css';
@@ -37,6 +38,28 @@ const startDateInput = ref(null);
 const endDateInput = ref(null);
 const startDatePicker = ref(null);
 const endDatePicker = ref(null);
+
+// Modal 狀態管理
+const alertModal = ref({
+  visible: false,
+  title: '',
+  message: '',
+  type: 'default'
+});
+
+// Modal 控制函數
+const showAlert = (title, message, type = 'default') => {
+  alertModal.value = {
+    visible: true,
+    title,
+    message,
+    type
+  };
+};
+
+const closeAlert = () => {
+  alertModal.value.visible = false;
+};
 
 const initFlatpickr = async () => {
   await nextTick();
@@ -104,12 +127,12 @@ function handleImageSelect(event) {
   const file = event.target.files[0];
   if (file) {
     if (!file.type.startsWith('image/')) {
-      alert('請選擇圖片檔案');
+      showAlert('檔案類型錯誤', '請選擇圖片檔案', 'error');
       return;
     }
     
     if (file.size > 1 * 1024 * 1024) {
-      alert('圖片檔案大小不能超過 1MB');
+      showAlert('檔案過大', '圖片檔案大小不能超過 1MB', 'warning');
       return;
     }
     
@@ -128,18 +151,44 @@ function triggerFileInput() {
 }
 
 async function onSubmit() {
+  // 檢查登入狀態
   if (!authStore.isAuthenticated) {
-    alert('請先登入後再建立活動');
+    showAlert('需要登入', '請先登入後再建立活動', 'warning');
     return;
   }
 
-  if (!eventName.value || !barName.value || !eventStartDate.value || !eventEndDate.value || !eventPeople.value) {
-    alert('請完整填寫所有欄位！');
+  // 檢查必填欄位
+  const missingFields = [];
+  if (!eventName.value) missingFields.push('活動名稱');
+  if (!barName.value) missingFields.push('酒吧名稱');
+  if (!eventStartDate.value) missingFields.push('開始日期');
+  if (!eventEndDate.value) missingFields.push('結束日期');
+  if (!eventPeople.value) missingFields.push('參加人數');
+
+  if (missingFields.length > 0) {
+    showAlert('欄位未完整', `請完整填寫以下欄位：${missingFields.join('、')}`, 'warning');
     return;
   }
 
+  // 檢查管理員價格
   if (isAdmin.value && (!eventPrice.value || isNaN(eventPrice.value))) {
-    alert('請輸入有效的價格！');
+    showAlert('價格錯誤', '請輸入有效的價格！', 'warning');
+    return;
+  }
+
+  // 檢查日期邏輯
+  const startDate = new Date(eventStartDate.value);
+  const endDate = new Date(eventEndDate.value);
+  
+  if (startDate >= endDate) {
+    showAlert('日期錯誤', '結束日期必須晚於開始日期', 'warning');
+    return;
+  }
+
+  // 檢查人數限制
+  const peopleCount = parseInt(eventPeople.value);
+  if (peopleCount < 1 || peopleCount > 30) {
+    showAlert('人數限制', '參加人數必須在 1 到 30 人之間', 'warning');
     return;
   }
 
@@ -193,7 +242,7 @@ async function onSubmit() {
     if (imageFile.value) imageFile.value = null;
     if (imagePreview.value) imagePreview.value = null;
     
-    alert('活動建立成功！');
+    showAlert('建立成功', '活動建立成功！', 'success');
     
     emit('submit', {
       success: true,
@@ -205,6 +254,7 @@ async function onSubmit() {
     console.error('完整錯誤:', error);
     
     let errorMessage = '發生未知錯誤';
+    let alertType = 'error';
     
     if (error.response) {
       console.error('伺服器錯誤詳情:', {
@@ -212,17 +262,50 @@ async function onSubmit() {
         data: error.response.data,
         headers: error.response.headers
       });
-      errorMessage = error.response.data?.message || '伺服器錯誤';
-      alert(`建立失敗: ${errorMessage}`);
+      
+      const status = error.response.status;
+      const responseData = error.response.data;
+      
+      switch (status) {
+        case 400:
+          errorMessage = responseData?.message || '請求資料格式錯誤，請檢查所有欄位';
+          alertType = 'warning';
+          break;
+        case 401:
+          errorMessage = '登入已過期，請重新登入';
+          alertType = 'warning';
+          break;
+        case 403:
+          errorMessage = '權限不足，無法建立活動';
+          alertType = 'warning';
+          break;
+        case 413:
+          errorMessage = '上傳的圖片檔案過大，請選擇較小的圖片';
+          alertType = 'warning';
+          break;
+        case 422:
+          errorMessage = responseData?.message || '資料驗證失敗，請檢查輸入內容';
+          alertType = 'warning';
+          break;
+        case 500:
+          errorMessage = '伺服器內部錯誤，請稍後再試';
+          alertType = 'error';
+          break;
+        default:
+          errorMessage = responseData?.message || `伺服器錯誤 (${status})`;
+          alertType = 'error';
+      }
     } else if (error.request) {
       console.error('網路錯誤:', error.request);
       errorMessage = '網路連線錯誤，請檢查網路狀態';
-      alert(errorMessage);
+      alertType = 'error';
     } else {
       console.error('其他錯誤:', error.message);
       errorMessage = error.message;
-      alert(`發生錯誤: ${errorMessage}`);
+      alertType = 'error';
     }
+    
+    showAlert('建立失敗', errorMessage, alertType);
     
     emit('submit', {
       success: false,
@@ -241,6 +324,15 @@ onUnmounted(() => {
 </script>
 
 <template>
+  <!-- Alert Modal -->
+  <BaseAlertModal
+    :visible="alertModal.visible"
+    :title="alertModal.title"
+    :message="alertModal.message"
+    :type="alertModal.type"
+    @close="closeAlert"
+  />
+
   <section class="event-form" id="new-event">
     <div class="form-header">建立新活動</div>
     <div class="form-container">

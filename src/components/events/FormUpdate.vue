@@ -5,6 +5,8 @@ import { useEventStore } from '@/stores/event';
 import Hashtag from './Hashtag.vue';
 import { useRouter } from 'vue-router';
 import apiClient from '@/api/axios';
+import BaseAlertModal from '@/components/common/BaseAlertModal.vue';
+import BaseConfirmModal from '@/components/common/BaseConfirmModal.vue';
 
 import flatpickr from 'flatpickr';
 import 'flatpickr/dist/flatpickr.css';
@@ -40,6 +42,62 @@ const startDateInput = ref(null);
 const endDateInput = ref(null);
 const startDatePicker = ref(null);
 const endDatePicker = ref(null);
+
+// Modal 狀態管理
+const alertModal = ref({
+  visible: false,
+  title: '',
+  message: '',
+  type: 'default'
+});
+
+const confirmModal = ref({
+  visible: false,
+  title: '',
+  message: '',
+  type: null,
+  confirmAction: null
+});
+
+// Modal 控制函數
+const showAlert = (title, message, type = 'default') => {
+  alertModal.value = {
+    visible: true,
+    title,
+    message,
+    type
+  };
+};
+
+const showConfirm = (title, message, type = null) => {
+  return new Promise((resolve) => {
+    confirmModal.value = {
+      visible: true,
+      title,
+      message,
+      type,
+      confirmAction: resolve
+    };
+  });
+};
+
+const closeAlert = () => {
+  alertModal.value.visible = false;
+};
+
+const closeConfirm = () => {
+  confirmModal.value.visible = false;
+  if (confirmModal.value.confirmAction) {
+    confirmModal.value.confirmAction(false);
+  }
+};
+
+const handleConfirm = () => {
+  confirmModal.value.visible = false;
+  if (confirmModal.value.confirmAction) {
+    confirmModal.value.confirmAction(true);
+  }
+};
 
 const initFlatpickr = async () => {
   await nextTick();
@@ -153,31 +211,37 @@ async function onUpdate() {
   if (loading.value) return;
 
   // 基本驗證
-  if (!eventName.value?.trim()) {
-    alert('請填寫活動名稱！');
+  const missingFields = [];
+  if (!eventName.value?.trim()) missingFields.push('活動名稱');
+  if (!barName.value?.trim()) missingFields.push('酒吧名稱');
+  if (!eventStartDate.value) missingFields.push('開始日期');
+  if (!eventEndDate.value) missingFields.push('結束日期');
+  if (!eventPeople.value) missingFields.push('參加人數');
+
+  if (missingFields.length > 0) {
+    showAlert('欄位未完整', `請完整填寫以下欄位：${missingFields.join('、')}`, 'warning');
     return;
   }
-  if (!barName.value?.trim()) {
-    alert('請填寫酒吧名稱！');
+
+  // 檢查日期邏輯
+  const startDate = new Date(eventStartDate.value);
+  const endDate = new Date(eventEndDate.value);
+  
+  if (startDate >= endDate) {
+    showAlert('日期錯誤', '結束日期必須晚於開始日期', 'warning');
     return;
   }
-  if (!eventStartDate.value) {
-    alert('請選擇開始日期！');
-    return;
-  }
-  if (!eventEndDate.value) {
-    alert('請選擇結束日期！');
-    return;
-  }
-  if (!eventPeople.value) {
-    alert('請填寫參加人數！');
+
+  // 檢查人數限制
+  const peopleCount = parseInt(eventPeople.value);
+  if (peopleCount < 1 || peopleCount > 30) {
+    showAlert('人數限制', '參加人數必須在 1 到 30 人之間', 'warning');
     return;
   }
 
   loading.value = true;
   
   try {
-    
     const formData = new FormData();
     
     // 基本資料
@@ -239,57 +303,75 @@ async function onUpdate() {
         'Content-Type': 'multipart/form-data'
       };
     } else {
-      alert('登入已過期，請重新登入');
+      showAlert('認證失敗', '登入已過期，請重新登入', 'warning');
       return;
     }
     
     // 發送請求 
     const res = await apiClient.put(`/event/update/${props.eventId}`, formData, requestConfig);
 
-
     if (res.status >= 200 && res.status < 300) {
-      alert('活動更新成功！');
+      showAlert('更新成功', '活動更新成功！', 'success');
       emit('update');
     } else {
       const errorMessage = res.data?.message || res.data?.error || `HTTP ${res.status} 錯誤`;
-      alert(`更新失敗：${errorMessage}`);
+      showAlert('更新失敗', errorMessage, 'error');
     }
 
   } catch (error) {
-
     let errorMessage = '網路或系統錯誤，請稍後再試';
+    let alertType = 'error';
     
     if (error.response) {
-
+      const status = error.response.status;
+      const responseData = error.response.data;
       
-      if (error.response.status === 401) {
-        errorMessage = '登入已過期，請重新登入';
-        // 對於 LINE 用戶，清除狀態但不刪除 token（因為他們沒有 token）
-        if (user?.providerType === 'line') {
-          localStorage.removeItem('user');
-          document.cookie = 'user_info=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; sameSite=lax';
-        } else {
-          localStorage.removeItem('access_token');
-          localStorage.removeItem('user');
-        }
-      } else if (error.response.status === 403) {
-        errorMessage = '權限不足，無法編輯此活動';
-      } else if (error.response.status === 404) {
-        errorMessage = '活動不存在或已被刪除';
-      } else if (error.response.status === 413) {
-        errorMessage = '檔案太大，請選擇較小的圖片';
-      } else {
-        errorMessage = error.response.data?.message || 
-                      error.response.data?.error || 
-                      `伺服器錯誤 (${error.response.status})`;
+      switch (status) {
+        case 400:
+          errorMessage = responseData?.message || '請求資料格式錯誤，請檢查所有欄位';
+          alertType = 'warning';
+          break;
+        case 401:
+          errorMessage = '登入已過期，請重新登入';
+          alertType = 'warning';
+          // 對於 LINE 用戶，清除狀態但不刪除 token（因為他們沒有 token）
+          if (user?.providerType === 'line') {
+            localStorage.removeItem('user');
+            document.cookie = 'user_info=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; sameSite=lax';
+          } else {
+            localStorage.removeItem('access_token');
+            localStorage.removeItem('user');
+          }
+          break;
+        case 403:
+          errorMessage = '權限不足，無法編輯此活動';
+          alertType = 'warning';
+          break;
+        case 404:
+          errorMessage = '活動不存在或已被刪除';
+          alertType = 'warning';
+          break;
+        case 413:
+          errorMessage = '檔案太大，請選擇較小的圖片';
+          alertType = 'warning';
+          break;
+        case 422:
+          errorMessage = responseData?.message || '資料驗證失敗，請檢查輸入內容';
+          alertType = 'warning';
+          break;
+        default:
+          errorMessage = responseData?.message || responseData?.error || `伺服器錯誤 (${status})`;
+          alertType = 'error';
       }
     } else if (error.request) {
       errorMessage = '網路連線失敗，請檢查網路狀態';
+      alertType = 'error';
     } else {
       errorMessage = `請求錯誤: ${error.message}`;
+      alertType = 'error';
     }
     
-    alert(`更新失敗: ${errorMessage}`);
+    showAlert('更新失敗', errorMessage, alertType);
   } finally {
     loading.value = false;
   }
@@ -298,7 +380,16 @@ async function onUpdate() {
 const router = useRouter();
 
 async function onDelete() {
-  if (loading.value || !confirm('確定要刪除這個活動嗎？')) return;
+  if (loading.value) return;
+
+  // 使用自定義確認 modal
+  const confirmed = await showConfirm(
+    '確認刪除活動', 
+    '您確定要刪除這個活動嗎？\n\n此操作無法復原，已報名的用戶也會受到影響。',
+    'danger'
+  );
+
+  if (!confirmed) return;
 
   loading.value = true;
   
@@ -309,69 +400,80 @@ async function onDelete() {
 
     // 檢查是否有有效的認證
     if (!token && user?.providerType !== 'line') {
-      alert('登入已過期，請重新登入');
+      showAlert('認證失敗', '登入已過期，請重新登入', 'warning');
       return;
     }
 
     if (user?.providerType === 'line' && !user?.id) {
-      alert('登入狀態異常，請重新登入');
+      showAlert('認證失敗', '登入狀態異常，請重新登入', 'warning');
       return;
     }
 
-    
     const response = await apiClient.delete(`/event/delete/${props.eventId}`);
     
     if (response.status >= 200 && response.status < 300) {
-      alert('活動刪除成功！');
+      showAlert('刪除成功', '活動已成功刪除！', 'success');
       
-      // 導航回活動列表頁面
-      router.push({
-        path: '/event',
-        state: { message: '活動已成功刪除！' }
-      });
+      // 延遲導航，讓用戶看到成功訊息
+      setTimeout(() => {
+        router.push({
+          path: '/event',
+          state: { message: '活動已成功刪除！' }
+        });
+      }, 1500);
     } else {
       throw new Error(response.data?.message || '刪除失敗');
     }
     
   } catch (error) {
-    
     let errorMessage = '刪除失敗，請稍後再試';
+    let alertType = 'error';
     
     if (error.response) {
-      if (error.response.status === 401) {
-        errorMessage = '登入已過期，請重新登入';
-        
-        // 清除認證狀態
-        const user = JSON.parse(localStorage.getItem('user') || '{}');
-        if (user?.providerType === 'line') {
-          localStorage.removeItem('user');
-          document.cookie = 'user_info=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; sameSite=lax';
-        } else {
-          localStorage.removeItem('access_token');
-          localStorage.removeItem('user');
-        }
-        
-        // 導向登入頁面
-        setTimeout(() => {
-          router.push('/login');
-        }, 2000);
-        
-      } else if (error.response.status === 403) {
-        errorMessage = '權限不足，無法刪除此活動';
-      } else if (error.response.status === 404) {
-        errorMessage = '活動不存在或已被刪除';
-      } else {
-        errorMessage = error.response.data?.message || 
-                      error.response.data?.error || 
-                      `伺服器錯誤 (${error.response.status})`;
+      const status = error.response.status;
+      const responseData = error.response.data;
+      
+      switch (status) {
+        case 401:
+          errorMessage = '登入已過期，請重新登入';
+          alertType = 'warning';
+          
+          // 清除認證狀態
+          const user = JSON.parse(localStorage.getItem('user') || '{}');
+          if (user?.providerType === 'line') {
+            localStorage.removeItem('user');
+            document.cookie = 'user_info=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; sameSite=lax';
+          } else {
+            localStorage.removeItem('access_token');
+            localStorage.removeItem('user');
+          }
+          
+          // 導向登入頁面
+          setTimeout(() => {
+            router.push('/login');
+          }, 2000);
+          break;
+        case 403:
+          errorMessage = '權限不足，無法刪除此活動';
+          alertType = 'warning';
+          break;
+        case 404:
+          errorMessage = '活動不存在或已被刪除';
+          alertType = 'warning';
+          break;
+        default:
+          errorMessage = responseData?.message || responseData?.error || `伺服器錯誤 (${status})`;
+          alertType = 'error';
       }
     } else if (error.request) {
       errorMessage = '網路連線失敗，請檢查網路狀態';
+      alertType = 'error';
     } else {
       errorMessage = error.message || '刪除操作失敗';
+      alertType = 'error';
     }
     
-    alert(`刪除失敗: ${errorMessage}`);
+    showAlert('刪除失敗', errorMessage, alertType);
     
   } finally {
     loading.value = false;
@@ -385,12 +487,12 @@ function handleImageSelect(event) {
   if (!file) return;
   
   if (!file.type.startsWith('image/')) {
-    alert('請選擇圖片檔案');
+    showAlert('檔案類型錯誤', '請選擇圖片檔案', 'error');
     return;
   }
   
   if (file.size > 5 * 1024 * 1024) {
-    alert('圖片檔案大小不能超過 5MB');
+    showAlert('檔案過大', '圖片檔案大小不能超過 5MB', 'warning');
     return;
   }
   
@@ -413,6 +515,25 @@ onUnmounted(() => {
 </script>
 
 <template>
+  <!-- Alert Modal -->
+  <BaseAlertModal
+    :visible="alertModal.visible"
+    :title="alertModal.title"
+    :message="alertModal.message"
+    :type="alertModal.type"
+    @close="closeAlert"
+  />
+
+  <!-- Confirm Modal -->
+  <BaseConfirmModal
+    :visible="confirmModal.visible"
+    :title="confirmModal.title"
+    :message="confirmModal.message"
+    :type="confirmModal.type"
+    @confirm="handleConfirm"
+    @cancel="closeConfirm"
+  />
+
   <section class="event-form" id="edit-event">
     <div class="form-header">編輯中</div>
     <div class="form-container">

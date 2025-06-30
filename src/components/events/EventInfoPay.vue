@@ -9,6 +9,8 @@ import { ref, computed, onMounted, watch } from 'vue';
 import EventHoster from './EventHoster.vue';
 import MessageBoard from './MessageBoard.vue';
 import ModalEdit from '@/components/events/ModalEdit.vue';
+import BaseAlertModal from '@/components/common/BaseAlertModal.vue';
+import BaseConfirmModal from '@/components/common/BaseConfirmModal.vue';
 
 const props = defineProps({
   event: Object,
@@ -27,6 +29,60 @@ const eventRef = ref({ ...props.event });
 const tagList = ref([...props.tags]);
 const isProcessing = ref(false);
 const hasParticipated = ref(false); 
+
+const alertModal = ref({
+  visible: false,
+  title: '',
+  message: '',
+  type: 'default'
+});
+
+const confirmModal = ref({
+  visible: false,
+  title: '',
+  message: '',
+  type: null,
+  confirmAction: null
+});
+
+const showAlert = (title, message, type = 'default') => {
+  alertModal.value = {
+    visible: true,
+    title,
+    message,
+    type
+  };
+};
+
+const showConfirm = (title, message, type = null) => {
+  return new Promise((resolve) => {
+    confirmModal.value = {
+      visible: true,
+      title,
+      message,
+      type,
+      confirmAction: resolve
+    };
+  });
+};
+
+const closeAlert = () => {
+  alertModal.value.visible = false;
+};
+
+const closeConfirm = () => {
+  confirmModal.value.visible = false;
+  if (confirmModal.value.confirmAction) {
+    confirmModal.value.confirmAction(false);
+  }
+};
+
+const handleConfirm = () => {
+  confirmModal.value.visible = false;
+  if (confirmModal.value.confirmAction) {
+    confirmModal.value.confirmAction(true);
+  }
+};
 
 const isOwner = computed(() => {
   const currentUserId = authStore.currentUser?.id || authStore.user?.id;
@@ -127,7 +183,7 @@ const reloadEventData = async () => {
 
 const addToCart = async () => {
   if (hasParticipated.value) {
-    alert('您已經報名過此活動了！');
+    showAlert('提醒', '您已經報名過此活動了！', 'warning');
     return;
   }
 
@@ -145,9 +201,9 @@ const addToCart = async () => {
       maxPeople: e.maxPeople,
       hostUser: e.hostUser,
     });
-    alert(result.message || '已加入購物車！');
+    showAlert('成功', result.message || '已加入購物車！', 'success');
   } catch (error) {
-    alert(error.message);
+    showAlert('錯誤', error.message, 'error');
   }
 };
 
@@ -162,13 +218,17 @@ const buyNow = async () => {
   });
 
   if (hasParticipated.value) {
-    alert('您已經報名過此活動了！');
+    showAlert('提醒', '您已經報名過此活動了！', 'warning');
     return;
   }
 
   if (!isAuthenticated.value) {
     console.warn('❌ 認證檢查失敗，用戶未登入');
-    const shouldLogin = confirm('請先登入後再進行購買\n\n點擊「確定」前往登入頁面');
+    const shouldLogin = await showConfirm(
+      '需要登入',
+      '請先登入後再進行購買\n\n點擊「確定」前往登入頁面',
+      'question'
+    );
     if (shouldLogin) router.push('/login');
     return;
   }
@@ -238,17 +298,23 @@ const buyNow = async () => {
     }
     
     let errorMessage = '購買失敗，請重試';
+    let alertType = 'error';
+    
     if (error.message.includes('登入已過期') || error.response?.status === 401) {
       errorMessage = '登入已過期，請重新登入';
+      alertType = 'warning';
       localStorage.removeItem('access_token');
       localStorage.removeItem('user');
       setTimeout(() => router.push('/login'), 2000);
     } else if (error.message.includes('已滿員')) {
       errorMessage = '很抱歉，活動名額已滿！';
+      alertType = 'warning';
     } else if (error.message.includes('已結束') || error.message.includes('過期')) {
       errorMessage = '活動已結束，無法報名';
+      alertType = 'warning';
     } else if (error.message.includes('重複') || error.message.includes('已參加過')) {
       errorMessage = '您已經報名過此活動了';
+      alertType = 'warning';
       hasParticipated.value = true;
     } else if (error.response?.data?.message) {
       errorMessage = error.response.data.message;
@@ -256,7 +322,7 @@ const buyNow = async () => {
       errorMessage = error.message;
     }
     
-    alert(errorMessage);
+    showAlert('購買失敗', errorMessage, alertType);
   } finally {
     isProcessing.value = false;
   }
@@ -288,6 +354,25 @@ onMounted(async () => {
 </script>
 
 <template>
+  <!-- Alert Modal -->
+  <BaseAlertModal
+    :visible="alertModal.visible"
+    :title="alertModal.title"
+    :message="alertModal.message"
+    :type="alertModal.type"
+    @close="closeAlert"
+  />
+
+  <!-- Confirm Modal -->
+  <BaseConfirmModal
+    :visible="confirmModal.visible"
+    :title="confirmModal.title"
+    :message="confirmModal.message"
+    :type="confirmModal.type"
+    @confirm="handleConfirm"
+    @cancel="closeConfirm"
+  />
+
   <div :class="['modal', { 'modal-open': showModal }]">
     <div class="modal-box">
       <h3 class="text-lg font-bold">確認取消報名</h3>

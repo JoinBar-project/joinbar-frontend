@@ -6,6 +6,7 @@ import EventHoster from './EventHoster.vue';
 import MessageBoard from './MessageBoard.vue';
 import ModalEdit from '@/components/events/ModalEdit.vue'
 import { useAuthStore } from '@/stores/authStore'; 
+import BaseAlertModal from '@/components/common/BaseAlertModal.vue';
 
 const emit = defineEmits(['update']);
 
@@ -16,6 +17,28 @@ const props = defineProps({
 });
 
 const authStore = useAuthStore(); 
+
+// Modal 狀態管理
+const alertModal = ref({
+  visible: false,
+  title: '',
+  message: '',
+  type: 'default'
+});
+
+// Modal 控制函數
+const showAlert = (title, message, type = 'default') => {
+  alertModal.value = {
+    visible: true,
+    title,
+    message,
+    type
+  };
+};
+
+const closeAlert = () => {
+  alertModal.value.visible = false;
+};
 
 const currentUserId = computed(() => {
   return authStore.user?.id || authStore.currentUser?.id || (() => {
@@ -59,6 +82,7 @@ watch(() => props.tags, (newTags) => {
 async function reloadEventData() {
   if (!props.eventId && !localEvent.value?.id) {
     console.error('無法重新載入：缺少活動 ID');
+    showAlert('錯誤', '無法重新載入：缺少活動 ID', 'error');
     return;
   }
 
@@ -94,6 +118,9 @@ async function reloadEventData() {
     
     if (error.response?.status === 401) {
       console.warn('認證失敗，可能需要重新登入');
+      showAlert('認證失敗', '登入已過期，可能需要重新登入', 'warning');
+    } else {
+      showAlert('載入失敗', '重新載入活動資料失敗，請稍後再試', 'error');
     }
   } finally {
     isUpdating.value = false;
@@ -117,6 +144,29 @@ const handleJoinToggle = async () => {
     await reloadEventData();
   } catch (error) {
     console.error('報名操作失敗:', error);
+    
+    let errorMessage = '報名操作失敗，請重試';
+    let alertType = 'error';
+    
+    if (error.message.includes('登入已過期') || error.response?.status === 401) {
+      errorMessage = '登入已過期，請重新登入';
+      alertType = 'warning';
+    } else if (error.message.includes('已滿員')) {
+      errorMessage = '很抱歉，活動名額已滿！';
+      alertType = 'warning';
+    } else if (error.message.includes('已結束') || error.message.includes('過期')) {
+      errorMessage = '活動已結束，無法報名';
+      alertType = 'warning';
+    } else if (error.message.includes('重複') || error.message.includes('已報名')) {
+      errorMessage = '您已經報名過此活動了';
+      alertType = 'info';
+    } else if (error.response?.data?.message) {
+      errorMessage = error.response.data.message;
+    } else if (error.message) {
+      errorMessage = error.message;
+    }
+    
+    showAlert('報名失敗', errorMessage, alertType);
   }
 };
 
@@ -124,13 +174,40 @@ const handleCancelConfirm = async () => {
   try {
     await handleConfirmCancel();
     await reloadEventData();
+    showAlert('成功', '已成功取消報名', 'success');
   } catch (error) {
     console.error('取消報名失敗:', error);
+    
+    let errorMessage = '取消報名失敗，請重試';
+    let alertType = 'error';
+    
+    if (error.message.includes('登入已過期') || error.response?.status === 401) {
+      errorMessage = '登入已過期，請重新登入';
+      alertType = 'warning';
+    } else if (error.message.includes('24小時')) {
+      errorMessage = '活動開始前24小時內無法取消報名';
+      alertType = 'warning';
+    } else if (error.response?.data?.message) {
+      errorMessage = error.response.data.message;
+    } else if (error.message) {
+      errorMessage = error.message;
+    }
+    
+    showAlert('取消失敗', errorMessage, alertType);
   }
 };
 </script>
 
 <template>
+  <!-- Alert Modal -->
+  <BaseAlertModal
+    :visible="alertModal.visible"
+    :title="alertModal.title"
+    :message="alertModal.message"
+    :type="alertModal.type"
+    @close="closeAlert"
+  />
+
   <div>
     <div v-if="isUpdating" class="loading-overlay">
       <div class="loading-message">
