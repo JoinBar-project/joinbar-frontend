@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "vite build",
+    "build": "npx vite build && npx cpx \"public/_redirects\" dist/",
     "preview": "vite preview",
     "lint": "eslint . --fix",
     "format": "prettier --write src/"
