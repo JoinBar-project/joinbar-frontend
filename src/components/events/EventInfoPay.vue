@@ -27,7 +27,7 @@ const cart = useCartStore();
 const authStore = useAuthStore();
 
 const { createOrder, apiClient } = useOrder();
-const { createLinePayment, redirectToLinePay } = useLinePay(); // 此處 redirectToLinePay 似乎未使用，可考慮移除
+const { createLinePayment, redirectToLinePay } = useLinePay();
 
 const eventRef = ref({ ...props.event });
 const tagList = ref([...props.tags]);
@@ -86,15 +86,13 @@ const displayEventLocation = async (location) => {
       panTo(coordinates, 16);
       setZoom(16);
     } else {
-      // 若無法獲取座標，設置一個預設地點
-      const defaultLocation = { lat: 25.0330, lng: 121.5654 }; // 台北市中心座標
+      const defaultLocation = { lat: 25.0330, lng: 121.5654 };
       panTo(defaultLocation, 12);
       setZoom(12);
     }
   } catch (error) {
     console.error('地圖定位失敗:', error);
-    // 發生錯誤時，設置一個預設地點
-    const defaultLocation = { lat: 25.0330, lng: 121.5654 }; // 台北市中心座標
+    const defaultLocation = { lat: 25.0330, lng: 121.5654 };
     panTo(defaultLocation, 12);
     setZoom(12);
   }
@@ -123,13 +121,8 @@ const checkUserParticipation = async () => {
     hasParticipated.value = hasParticipatedInEvent;
     console.log('🔍 用戶參與狀態 (訂單歷史):', hasParticipated.value);
 
-    // 這裡移除了重複的 eventRef.value 更新邏輯，因為 reloadEventData 會處理這部分
-    // 同時移除了 `if (!hasParticipated.value && isJoin.value)` 區塊，
-    // 因為 watch(isJoin) 會處理 `isJoin` 狀態的同步
-
   } catch (error) {
     console.warn('檢查參與狀態失敗:', error);
-    // 如果檢查失敗，確保狀態不會是錯誤的已參與
     hasParticipated.value = false;
   }
 };
@@ -300,7 +293,6 @@ const buyNow = async () => {
       errorMessage = '登入已過期，請重新登入';
       localStorage.removeItem('access_token');
       localStorage.removeItem('user');
-      // 使用 router.push 而不是 setTimeout，確保路由導航立即執行
       router.push('/login');
     } else if (error.message.includes('已滿員')) {
       errorMessage = '很抱歉，活動名額已滿！';
@@ -326,19 +318,17 @@ const handleEventUpdate = () => {
 };
 
 watch(isJoin, (newValue) => {
-  // 如果 isJoin 變為 true 且 hasParticipated 仍為 false，則更新 hasParticipated
   if (newValue && !hasParticipated.value) {
     hasParticipated.value = newValue;
     console.log('🔄 從 isJoin 更新參與狀態:', hasParticipated.value);
   }
 });
 
-// 監聽活動地點變化，並在地圖準備好時顯示
 watch(() => eventRef.value.location, (newLoc) => {
   if (newLoc && isReady.value) {
     displayEventLocation(newLoc);
   }
-}, { immediate: true }); // immediate: true 會在偵聽器建立時立即執行一次
+}, { immediate: true });
 
 onMounted(async () => {
   console.log('🔄 組件掛載，開始載入資料...');
@@ -346,7 +336,7 @@ onMounted(async () => {
   if (mapContainer.value) {
     await initMap();
   }
-  // 強制用 eventId 取得最新資料並檢查參與狀態
+  // 用 eventId 取得最新資料並檢查參與狀態
   if (eventRef.value?.id) {
     await reloadEventData();
   }
@@ -355,10 +345,9 @@ onMounted(async () => {
   // 檢查 URL 中是否有付款成功或訂單相關的參數
   if (urlParams.get('paymentSuccess') || urlParams.get('orderId') || urlParams.get('transactionId')) {
     console.log('🔄 從付款頁面返回，延遲重新檢查參與狀態...');
-    // 延遲一段時間，確保後端訂單狀態已更新
     setTimeout(async () => {
       await checkUserParticipation();
-    }, 2000); // 2 秒延遲
+    }, 2000);
   }
 });
 </script>
