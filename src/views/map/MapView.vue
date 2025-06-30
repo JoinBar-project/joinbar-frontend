@@ -1,6 +1,8 @@
 <template>
   <div class="relative flex w-screen h-screen overflow-hidden">
-    <div class="mobile-top-controls md:hidden absolute top-0 left-0 right-0 z-[100] bg-white shadow-md">
+    <div
+      class="mobile-top-controls md:hidden absolute top-0 left-0 right-0 z-[100] bg-white shadow-md"
+    >
       <div class="flex items-center justify-between p-3">
         <button
           class="filter-toggle-button mobile-control-button"
@@ -8,7 +10,7 @@
         >
           <i class="fas fa-filter"></i>
         </button>
-        
+
         <div class="flex-1 mx-3">
           <div class="search-panel-mobile" ref="searchInputRef">
             <div class="input-group-mobile">
@@ -39,7 +41,7 @@
             </ul>
           </div>
         </div>
-        
+
         <button
           @click="handleGetCurrentLocation"
           class="location-button-mobile mobile-control-button"
@@ -49,7 +51,9 @@
       </div>
     </div>
 
-    <div class="desktop-top-controls hidden md:flex absolute top-5 left-[400px] z-[100] flex-row flex-wrap items-center gap-[10px] p-[15px] bg-white/90 rounded-lg shadow-[0_4px_12px_rgba(0,0,0,0.2)] transition-[left] duration-300 ease-in-out">
+    <div
+      class="desktop-top-controls hidden md:flex absolute top-5 left-[400px] z-[100] flex-row flex-wrap items-center gap-[10px] p-[15px] bg-white/90 rounded-lg shadow-[0_4px_12px_rgba(0,0,0,0.2)] transition-[left] duration-300 ease-in-out"
+    >
       <button
         class="filter-toggle-button map-control-button"
         @click="toggleFilterPanel"
@@ -94,7 +98,12 @@
       </button>
     </div>
 
-    <aside :class="['bar-list-sidebar', { 'sidebar-mobile-hidden': !showSidebarOnMobile }]">
+    <aside
+      :class="[
+        'bar-list-sidebar',
+        { 'sidebar-mobile-hidden': !showSidebarOnMobile },
+      ]"
+    >
       <div class="mobile-sidebar-header md:hidden">
         <div class="flex items-center justify-between p-4 bg-white border-b">
           <h3 class="text-lg font-bold">酒吧列表</h3>
@@ -106,7 +115,7 @@
           </button>
         </div>
       </div>
-      
+
       <div class="flex-grow p-4 overflow-y-auto">
         <BarList
           :bars="filteredBars"
@@ -116,7 +125,9 @@
       </div>
     </aside>
 
-    <div class="mobile-bottom-toggle md:hidden absolute bottom-4 left-4 z-[100]">
+    <div
+      class="mobile-bottom-toggle md:hidden absolute bottom-4 left-4 z-[100]"
+    >
       <button
         @click="toggleMobileSidebar"
         class="p-3 bg-white border rounded-full shadow-lg"
@@ -131,7 +142,10 @@
       </button>
     </div>
 
-    <div ref="mapContainer" :class="['map-container', { 'map-fullscreen': !showSidebarOnMobile }]"></div>
+    <div
+      ref="mapContainer"
+      :class="['map-container', { 'map-fullscreen': !showSidebarOnMobile }]"
+    ></div>
 
     <FilterPanel
       v-if="isFilterPanelOpen"
@@ -319,7 +333,9 @@ const filteredBars = computed(() => {
       return periodsToday.some((period) => {
         const periodOpenHour = Math.floor(period.open.time / 100);
         const periodOpenMinute = period.open.time % 100;
-        const periodOpen = dayjs().hour(periodOpenHour).minute(periodOpenMinute);
+        const periodOpen = dayjs()
+          .hour(periodOpenHour)
+          .minute(periodOpenMinute);
 
         let periodClose = null;
         if (period.close) {
@@ -683,7 +699,7 @@ async function handleBarSelected(bar) {
     const infoContent = formatBarInfoWindowContent(bar);
     showInfoWindow(tempMarker, infoContent);
   }
-    // 手機版自動隱藏側邊欄
+  // 手機版自動隱藏側邊欄
   if (isMobile.value) {
     showSidebarOnMobile.value = false;
   }
@@ -775,7 +791,7 @@ const checkUrlForBarDetail = async () => {
       };
       selectedBarForDetail.value = barFromUrl;
       isBarDetailModalOpen.value = true;
-            try {
+      try {
         const fullData = await getPlaceDetails(barId);
         if (
           fullData &&
@@ -842,11 +858,15 @@ const checkUrlForBarDetail = async () => {
 watch(
   mapContainer,
   (newVal) => {
-    if (newVal && typeof googleMapsInstance === "function" && googleMapsInstance()) {
+    if (
+      newVal &&
+      typeof googleMapsInstance === "function" &&
+      googleMapsInstance()
+    ) {
       // 確保地圖容器有正確的尺寸
       setTimeout(() => {
         if (map.value && window.google && window.google.maps) {
-          window.google.maps.event.trigger(map.value, 'resize');
+          window.google.maps.event.trigger(map.value, "resize");
         }
       }, 100);
     }
@@ -866,7 +886,12 @@ watch(
 );
 
 watch(isReady, (ready) => {
-  if (ready && map && typeof googleMapsInstance === "function" && googleMapsInstance()) {
+  if (
+    ready &&
+    map &&
+    typeof googleMapsInstance === "function" &&
+    googleMapsInstance()
+  ) {
     const onMapIdleHandler = async () => {
       if (!isFetching.value && !isLoading.value) {
         const barsInBounds = await searchBarsInMapBounds(false);
@@ -884,7 +909,11 @@ watch(isReady, (ready) => {
 watch(
   filteredBars,
   (newBars) => {
-    if (map && typeof googleMapsInstance === "function" && googleMapsInstance()) {
+    if (
+      map &&
+      typeof googleMapsInstance === "function" &&
+      googleMapsInstance()
+    ) {
       displayBarsOnMap(newBars, formatBarInfoWindowContent);
     }
   },
@@ -901,16 +930,16 @@ watch(selectedBar, (newVal) => {
 watch([isMobile, showSidebarOnMobile], () => {
   if (map.value && window.google && window.google.maps) {
     setTimeout(() => {
-      window.google.maps.event.trigger(map.value, 'resize');
+      window.google.maps.event.trigger(map.value, "resize");
     }, 300); // 給予一些時間讓 CSS 變更生效
   }
 });
 
 onMounted(() => {
   checkDeviceType();
-  window.addEventListener('resize', checkDeviceType);
+  window.addEventListener("resize", checkDeviceType);
   document.addEventListener("click", handleClickOutside);
-  
+
   // 初始化地圖，並在初始化完成後檢查 URL 參數
   loadGoogleMapsAPI().then(() => {
     initMap().then(() => {
@@ -920,10 +949,9 @@ onMounted(() => {
 });
 
 onUnmounted(() => {
-  window.removeEventListener('resize', checkDeviceType);
+  window.removeEventListener("resize", checkDeviceType);
   document.removeEventListener("click", handleClickOutside);
 });
-
 </script>
 
 <style scoped>
@@ -986,7 +1014,7 @@ onUnmounted(() => {
   right: 0;
   background: white;
   border-radius: 8px;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
   max-height: 200px;
   overflow-y: auto;
   z-index: 1000;
@@ -1020,28 +1048,45 @@ onUnmounted(() => {
 }
 
 @media (max-width: 767px) {
+  html,
+  body,
+  .relative.w-screen.h-screen.overflow-hidden {
+    overflow-x: hidden !important;
+    width: 100vw !important;
+    max-width: 100vw !important;
+    position: relative;
+  }
   .bar-list-sidebar {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    z-index: 200;
-    transform: translateX(0);
-    padding-top: env(safe-area-inset-top);
+    position: absolute !important;
+    top: 60px !important; /* 頂部控制欄高度，可依實際調整 */
+    left: 0 !important;
+    width: 80vw !important;
+    max-width: 350px !important;
+    height: auto !important;
+    border-radius: 12px;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+    z-index: 300 !important;
+    background: #fff;
+    transition: none;
+    padding: 0;
   }
-  
   .sidebar-mobile-hidden {
-    transform: translateX(-100%);
+    display: none !important;
   }
-  
+  .mobile-sidebar-header {
+    border-radius: 12px 12px 0 0;
+  }
+  .flex-grow.p-4.overflow-y-auto {
+    max-height: 60vh;
+    overflow-y: auto;
+  }
   .map-container {
     width: 100%;
     height: calc(100vh - 60px); /* 減去頂部控制欄高度 */
     margin-top: 60px; /* 為頂部控制欄留空間 */
     padding-bottom: env(safe-area-inset-bottom);
   }
-  
+
   .map-fullscreen {
     padding-top: 60px;
   }
@@ -1079,7 +1124,9 @@ onUnmounted(() => {
   cursor: pointer;
   white-space: nowrap;
   font-weight: 200;
-  transition: background-color 0.2s, transform 0.2s;
+  transition:
+    background-color 0.2s,
+    transform 0.2s;
   box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
   outline: none;
 }
@@ -1146,7 +1193,9 @@ onUnmounted(() => {
   order: 3;
   box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
   outline: none;
-  transition: background-color 0.2s, transform 0.2s;
+  transition:
+    background-color 0.2s,
+    transform 0.2s;
 }
 
 .suggestions-list {
@@ -1205,8 +1254,13 @@ onUnmounted(() => {
   border-radius: 50%;
   padding: 1px;
   background: conic-gradient(#0000 10%, #afb18c) content-box;
-  -webkit-mask: repeating-conic-gradient(#0000 0deg, #000 1deg 20deg, #0000 21deg 36deg),
-    radial-gradient(farthest-side, #0000 calc(100% - var(--b) - 1px), #000 calc(100% - var(--b)));
+  -webkit-mask:
+    repeating-conic-gradient(#0000 0deg, #000 1deg 20deg, #0000 21deg 36deg),
+    radial-gradient(
+      farthest-side,
+      #0000 calc(100% - var(--b) - 1px),
+      #000 calc(100% - var(--b))
+    );
   -webkit-mask-composite: destination-in;
   mask-composite: intersect;
   animation: l4 1s infinite;
@@ -1223,13 +1277,13 @@ onUnmounted(() => {
   .mobile-top-controls .flex {
     padding: 8px;
   }
-  
+
   .mobile-control-button {
     min-width: 36px;
     height: 36px;
     font-size: 14px;
   }
-  
+
   .search-input-mobile {
     font-size: 16px; /* 防止iOS縮放 */
   }
@@ -1240,11 +1294,11 @@ onUnmounted(() => {
   .mobile-bottom-toggle {
     display: none !important;
   }
-  
+
   .map-container {
     padding-top: 0;
   }
-  
+
   .bar-list-sidebar {
     position: relative;
     transform: none;
