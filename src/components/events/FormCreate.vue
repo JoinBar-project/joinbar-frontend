@@ -1,6 +1,6 @@
 <script setup>
 import { ref, computed, watch, onMounted } from 'vue';
-import axios from 'axios';
+import apiClient from '@/api/axios'
 import { useEventForm } from '@/composables/useEventForm';
 import { useAuthStore } from '@/stores/authStore';
 import { useTagStore } from '@/stores/tag';
