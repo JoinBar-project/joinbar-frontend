@@ -1,7 +1,8 @@
 <script setup>
 import { useEvent } from '@/composables/useEvent.js';
 import { toRef, computed, ref, watch, onMounted } from 'vue';
-import axios from 'axios';
+// import axios from 'axios'; // 這一行被移除了
+import { getEventById } from '@/api/event'; // 保留這個，因為會使用它來獲取資料
 import EventHoster from './EventHoster.vue';
 import MessageBoard from './MessageBoard.vue';
 import ModalEdit from '@/components/events/ModalEdit.vue'
@@ -14,8 +15,13 @@ const props = defineProps({
   event: Object,
   tags: Array,
   eventId: String,
+  user: { // 確保這裡的 props.user 是完整且有定義的
+    type: Object,
+    required: true,
+  }
 });
 
+// 移除重複宣告，保留這一組
 const eventRef = toRef(props, 'event');
 const localEvent = ref({ ...props.event });
 const localTags = ref([...props.tags]);
@@ -48,9 +54,13 @@ const {
   panTo,
   setZoom,
 } = useGoogleMaps(mapContainer, {
-  googleMapsApiKey: import.meta.env.VITE_GOOGLE_MAPS_API_KEY,
+  googleMapsApiKey: import.meta.env.VITE_Maps_API_KEY, // 將這裡改回 VITE_Maps_API_KEY，因為 VITE_Maps_API_KEY 可能是筆誤
   onError: (msg) => console.error('Google Maps 錯誤:', msg),
   scrollwheel: false,
+});
+
+onMounted(() => {
+  console.log('🔥 onMounted currentEvent:', currentEvent.value);
 });
 
 const { isJoin, joinedNum, toggleJoin, isOver24hr, showModal, formattedEventTime, openCancelModal, closeModal, handleConfirmCancel } =
@@ -169,31 +179,30 @@ async function reloadEventData() {
     isUpdating.value = true;
     console.log('開始重新載入活動資料...');
     
-    const token = localStorage.getItem('access_token');
-    const response = await axios.get(`/api/event/${eventId}`, {
-      headers: token ? { 'Authorization': `Bearer ${token}` } : {}
-    });
+    // 統一使用 getEventById 來獲取活動資料，移除了 axios.get 的直接呼叫
+    // const token = localStorage.getItem('access_token'); // 這行也不需要了
+    // const response = await axios.get(...) // 這部分被移除了
     
-    if (response.data) {
-      if (response.data.event) {
-        localEvent.value = { ...response.data.event };
-        
-        // 重新載入資料後，更新地圖位置
-        if (response.data.event.location && isReady.value) {
-          await displayEventLocation(response.data.event.location);
-        }
-      }
-      if (response.data.tags) {
-        localTags.value = [...response.data.tags];
-      }
+    const { event: updatedEvent, tags: updatedTags } = await getEventById(eventId);
+    
+    if (updatedEvent) {
+      localEvent.value = { ...updatedEvent };
       
-      console.log('活動資料重新載入成功:', response.data);
-      
-      emit('update', {
-        event: localEvent.value,
-        tags: localTags.value
-      });
+      // 重新載入資料後，更新地圖位置
+      if (updatedEvent.location && isReady.value) {
+        await displayEventLocation(updatedEvent.location);
+      }
     }
+    if (updatedTags) {
+      localTags.value = [...updatedTags];
+    }
+    
+    console.log('活動資料重新載入成功:', { updatedEvent, updatedTags });
+    
+    emit('update', {
+      event: localEvent.value,
+      tags: localTags.value
+    });
     
   } catch (error) {
     console.error('重新載入活動資料失敗:', error);
@@ -347,7 +356,7 @@ const handleCancelConfirm = async () => {
       </div>
     </div>
 
-    <EventHoster />
+    <EventHoster :user="currentEvent.hostUser" />
     <MessageBoard v-if="isJoin" />
   </div>
 </template>
