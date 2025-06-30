@@ -59,7 +59,7 @@ const props = defineProps({
   type: {
     type: String,
     default: null,
-    validator: (value) => !value || ['warning', 'danger', 'question'].includes(value)
+    validator: (value) => !value || ['warning', 'danger', 'question','success'].includes(value)
   },
   confirmText: {
     type: String,
@@ -84,7 +84,8 @@ const iconBackgroundClass = computed(() => {
   const classes = {
     warning: 'bg-yellow-500',
     danger: 'bg-red-500',
-    question: 'bg-blue-500'
+    question: 'bg-blue-500',
+    success: 'bg-green-500'
   }
   return classes[props.type] || 'bg-gray-500'
 })
@@ -93,7 +94,8 @@ const confirmButtonClass = computed(() => {
   const classes = {
     warning: 'bg-gradient-to-r from-yellow-500 to-yellow-600',
     danger: 'bg-gradient-to-r from-[#df5b5b] to-[#b82f11]',
-    question: 'bg-gradient-to-r from-blue-500 to-blue-600'
+    question: 'bg-gradient-to-r from-blue-500 to-blue-600',
+    success: 'text-[var(--color-black)] bg-gradient-to-r from-[#a9ebd4] to-[#02bc7d]'
   }
   return classes[props.type] || 'bg-gradient-to-r from-[#df5b5b] to-[#b82f11]'
 })
