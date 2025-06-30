@@ -1,18 +1,21 @@
 <template>
   <div class="relative flex w-screen h-screen overflow-hidden">
-    <div
-      class="mobile-top-controls md:hidden absolute top-0 left-0 right-0 z-[100] bg-white shadow-md"
-    >
-      <div class="flex items-center justify-between p-3">
-        <button
-          class="filter-toggle-button mobile-control-button"
-          @click="toggleFilterPanel"
-        >
-          <i class="fas fa-filter"></i>
-        </button>
-
-        <div class="flex-1 mx-3">
-          <div class="search-panel-mobile" ref="searchInputRef">
+    <div class="mobile-top-controls md:hidden absolute top-0 left-0 right-0 z-[100] bg-white shadow-md w-full overflow-x-hidden">
+      <div class="flex items-center justify-between p-3 gap-2 flex-wrap">
+        <div class="mobile-bottom-toggle flex-shrink-0">
+          <button
+            @click="toggleMobileSidebar"
+            class="px-4 py-2 bg-white border rounded-full shadow flex items-center gap-2"
+          >
+            <i class="fas fa-list"></i>
+            <span class="text-sm font-medium">酒吧列表</span>
+            <span class="px-2 py-1 text-xs text-white bg-blue-500 rounded-full">
+              {{ filteredBars.length }}
+            </span>
+          </button>
+        </div>
+        <div class="flex-1 flex items-center gap-2 min-w-0">
+          <div class="search-panel-mobile w-32 sm:w-40 flex-shrink" ref="searchInputRef">
             <div class="input-group-mobile">
               <input
                 type="text"
@@ -40,14 +43,16 @@
               </li>
             </ul>
           </div>
+          <button
+            @click="handleGetCurrentLocation"
+            class="location-button-mobile mobile-control-button ml-1"
+          >
+            <i class="fas fa-location-arrow"></i>
+          </button>
+          <button class="filter-toggle-button mobile-control-button ml-1" @click="toggleFilterPanel">
+            <i class="fas fa-filter"></i>
+          </button>
         </div>
-
-        <button
-          @click="handleGetCurrentLocation"
-          class="location-button-mobile mobile-control-button"
-        >
-          <i class="fas fa-location-arrow"></i>
-        </button>
       </div>
     </div>
 
@@ -124,23 +129,6 @@
         />
       </div>
     </aside>
-
-    <div
-      class="mobile-bottom-toggle md:hidden absolute bottom-4 left-4 z-[100]"
-    >
-      <button
-        @click="toggleMobileSidebar"
-        class="p-3 bg-white border rounded-full shadow-lg"
-      >
-        <div class="flex items-center gap-2">
-          <i class="fas fa-list"></i>
-          <span class="text-sm font-medium">酒吧列表</span>
-          <span class="px-2 py-1 text-xs text-white bg-blue-500 rounded-full">
-            {{ filteredBars.length }}
-          </span>
-        </div>
-      </button>
-    </div>
 
     <div
       ref="mapContainer"
@@ -1303,5 +1291,9 @@ onUnmounted(() => {
     position: relative;
     transform: none;
   }
+
+  html, body {
+  overflow-x: hidden !important;
+}
 }
 </style>
