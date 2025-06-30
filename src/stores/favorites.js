@@ -69,23 +69,27 @@ export const useFavoritesStore = defineStore("favorites", () => {
         isFavorite: !isCurrentlyFavorited,
         folderId: folderId,
       };
-      // 如果是從 Google Maps 新增收藏，需要額外資料
+      // 新增收藏時，強制組裝正確 barData
       if (!isCurrentlyFavorited && googlePlaceId) {
         requestData.googlePlaceId = googlePlaceId;
-        // barData 組裝防呆
+        // 強制 barData 欄位完整
         requestData.barData = {
-          name: bar.name,
+          name: bar.name || '',
           address: bar.formatted_address || bar.address || bar.vicinity || '',
-          latitude: bar.geometry?.location
-            ? (typeof bar.geometry.location.lat === 'function'
-                ? bar.geometry.location.lat()
-                : bar.geometry.location.lat)
-            : bar.location?.lat || bar.latitude,
-          longitude: bar.geometry?.location
-            ? (typeof bar.geometry.location.lng === 'function'
-                ? bar.geometry.location.lng()
-                : bar.geometry.location.lng)
-            : bar.location?.lng || bar.longitude,
+          latitude: (
+            bar.geometry?.location
+              ? (typeof bar.geometry.location.lat === 'function'
+                  ? bar.geometry.location.lat()
+                  : bar.geometry.location.lat)
+              : bar.location?.lat || bar.latitude
+          ) || 0,
+          longitude: (
+            bar.geometry?.location
+              ? (typeof bar.geometry.location.lng === 'function'
+                  ? bar.geometry.location.lng()
+                  : bar.geometry.location.lng)
+              : bar.location?.lng || bar.longitude
+          ) || 0,
         };
       } else if (googlePlaceId) {
         requestData.googlePlaceId = googlePlaceId;

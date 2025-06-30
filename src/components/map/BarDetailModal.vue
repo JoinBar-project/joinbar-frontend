@@ -349,29 +349,36 @@ const closeModal = () => {
 // 修改：更新收藏切換功能
 const toggleFavorite = async () => {
   try {
-    // 準備最小且正確的 barData 給 store
+    // 強制組裝正確 barData
     const barData = {
       name: props.bar.name,
-      place_id: props.bar.place_id || props.bar.googlePlaceId,
-      googlePlaceId: props.bar.googlePlaceId || props.bar.place_id,
-      id: props.bar.id || props.bar.barId,
       address: props.bar.formatted_address || props.bar.address || props.bar.vicinity || '',
-      latitude: props.bar.geometry?.location
-        ? (typeof props.bar.geometry.location.lat === 'function'
-            ? props.bar.geometry.location.lat()
-            : props.bar.geometry.location.lat)
-        : props.bar.location?.lat || props.bar.latitude,
-      longitude: props.bar.geometry?.location
-        ? (typeof props.bar.geometry.location.lng === 'function'
-            ? props.bar.geometry.location.lng()
-            : props.bar.geometry.location.lng)
-        : props.bar.location?.lng || props.bar.longitude,
+      latitude: (
+        props.bar.geometry?.location
+          ? (typeof props.bar.geometry.location.lat === 'function'
+              ? props.bar.geometry.location.lat()
+              : props.bar.geometry.location.lat)
+          : props.bar.location?.lat || props.bar.latitude
+      ) || 0,
+      longitude: (
+        props.bar.geometry?.location
+          ? (typeof props.bar.geometry.location.lng === 'function'
+              ? props.bar.geometry.location.lng()
+              : props.bar.geometry.location.lng)
+          : props.bar.location?.lng || props.bar.longitude
+      ) || 0,
     };
-    await favoritesStore.toggleFavorite(barData);
-    // 通知父組件
+    const barId = props.bar.id || props.bar.barId || 'google';
+    const googlePlaceId = props.bar.place_id || props.bar.googlePlaceId;
+    await favoritesStore.toggleFavorite({
+      ...props.bar,
+      id: barId,
+      googlePlaceId,
+      barData,
+    });
     emit(
       "toggle-wishlist",
-      props.bar.place_id || props.bar.googlePlaceId || props.bar.id
+      googlePlaceId || barId
     );
   } catch (error) {
     console.error("Failed to toggle favorite:", error);

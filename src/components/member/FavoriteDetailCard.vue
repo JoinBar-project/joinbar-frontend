@@ -1,239 +1,105 @@
 <template>
   <transition name="modal-fade">
-    <div
-      class="fixed inset-0 bg-black/60 flex justify-center items-center z-50 p-5"
-      @click.self="handleClose">
-      <div
-        class="modal-content bg-white rounded-2xl max-w-4xl w-full max-h-[90vh] overflow-hidden relative flex flex-col shadow-2xl">
-        <!-- 關閉按鈕 -->
-        <button
-          class="absolute top-4 right-4 z-10 bg-white/90 backdrop-blur-sm border-0 rounded-full w-10 h-10 flex items-center justify-center cursor-pointer transition-all hover:bg-white hover:scale-110"
+    <div class="bar-detail-modal-overlay" @click.self="handleClose">
+      <div class="bar-detail-modal-content relative">
+        <button class="absolute top-4 right-4 z-10 bg-white/90 backdrop-blur-sm border-0 rounded-full w-10 h-10 flex items-center justify-center cursor-pointer transition-all hover:bg-white hover:scale-110"
           @click="handleClose">
           <i class="fa-solid fa-xmark text-gray-600 text-xl"></i>
         </button>
-
-        <div class="flex flex-1 overflow-hidden">
-          <!-- 圖片區域 -->
-          <div class="flex-1 relative min-h-96">
+        <div class="content-flex-wrapper">
+          <div class="image-gallery-container">
             <img
               :src="currentImage"
-              alt="Bar Image"
-              class="w-full h-full object-cover"
-              @error="handleImageError"/>
-            <div
-              v-if="bar.images?.length > 1"
-              class="absolute top-1/2 -translate-y-1/2 w-full flex justify-between px-4">
-              <button
-                class="bg-white/80 border-0 rounded-full w-10 h-10 cursor-pointer text-lg font-bold text-gray-800 transition-all hover:bg-white hover:scale-110"
-                @click="prevImage">
-                &lt;
+              alt="未提供圖片"
+              class="main-image"
+              @error="handleImageError"
+            />
+            <div v-if="props.bar.images && props.bar.images.length > 1" class="image-nav">
+              <button class="nav-button prev-button" @click="prevImage">
+                <i class="fas fa-chevron-left"></i>
               </button>
-              <button
-                class="bg-white/80 border-0 rounded-full w-10 h-10 cursor-pointer text-lg font-bold text-gray-800 transition-all hover:bg-white hover:scale-110"
-                @click="nextImage">
-                &gt;
+              <button class="nav-button next-button" @click="nextImage">
+                <i class="fas fa-chevron-right"></i>
               </button>
             </div>
-            <div
-              v-if="bar.images?.length > 1"
-              class="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2"
-            >
+            <div class="image-dots">
               <span
-                v-for="(img, index) in bar.images"
+                v-for="(img, index) in props.bar.images"
                 :key="index"
-                :class="[
-                  'w-2 h-2 rounded-full cursor-pointer transition-all',
-                  index === currentImageIndex ? 'bg-white scale-125' : 'bg-white/50',
-                ]"
+                :class="{ dot: true, active: index === currentImageIndex }"
                 @click="setCurrentImage(index)"
               ></span>
             </div>
           </div>
-
-          <!-- 詳細資訊區域 -->
-          <div class="flex-1 overflow-y-auto bg-slate-50">
-            <div class="p-6 h-full">
-              <h2 class="text-2xl font-bold text-gray-900 mb-3">{{ bar.name }}</h2>
-
-              <div class="flex justify-between items-center mb-5 pb-3 border-b border-gray-200">
-                <span class="rating">⭐️ {{ bar.rating || 'N/A' }} ({{ bar.reviews || 0 }} 評論)</span>
-                <span
-                  class="text-[var(--color-primary-orange)] font-bold text-lg"
-                  >NT$ {{ bar.priceRange || '???' }}</span>
+          <div class="detail-info-section">
+            <div class="header-main">
+              <h2 class="bar-detail-name">{{ props.bar.name }}</h2>
+            </div>
+            <div class="rating-info">
+              <span class="rating-text">⭐️ {{ props.bar.rating || 'N/A' }} ({{ props.bar.reviews || 0 }} 評論)</span>
+            </div>
+            <div class="contact-info">
+              <p v-if="props.bar.address">📍 {{ props.bar.address }}</p>
+              <p v-if="props.bar.phone">📞 {{ props.bar.phone }}</p>
+              <p v-if="props.bar.website">
+                🌐
+                <a :href="props.bar.website" target="_blank" rel="noopener noreferrer">{{ props.bar.website }}</a>
+              </p>
+            </div>
+            <div class="opening-hours-detail">
+              <h3>營業時間</h3>
+              <p>{{ props.bar.openingHoursText || '未提供營業時間' }}</p>
+            </div>
+            <div v-if="props.bar.tags && props.bar.tags.length" class="bar-tags-detail">
+              <h3>特色標籤</h3>
+              <div class="tags-wrapper">
+                <span v-for="(tag, index) in props.bar.tags" :key="index" class="detail-tag">{{ getTagLabel(tag) }}</span>
               </div>
-              <div class="contact-info">
-                <p
-                  v-if="bar.address"
-                  class="flex items-center mb-2 text-gray-700 text-sm"
-                >
-                  <span class="icon">📍</span>
-                  {{ bar.address }}
-                </p>
-                <p v-if="bar.phone" class="flex items-center mb-2 text-gray-700 text-sm">
-                  <span class="icon">📞</span>
-                  {{ bar.phone }}
-                </p>
-                <p v-if="bar.website" class="flex items-center mb-2 text-gray-700 text-sm">
-                  <span class="icon">🌐</span>
-                  <a
-                    :href="bar.website"
-                    target="_blank"
-                    class="text-blue-500 hover:underline"
-                    >{{ bar.website }}</a
-                  >
-                </p>
-              </div>
-
-              <div class="mb-5">
-                <h3 class="text-base font-semibold text-gray-900 mb-2 mt-5">營業時間</h3>
-                <p class="text-gray-600 text-sm">
-                  {{ bar.openingHours?.weekday_text?.[0] || bar.openingHoursText || '未提供營業時間' }}
-                </p>
-              </div>
-
-              <div v-if="bar.tags?.length" class="mb-5">
-                <h3 class="text-base font-semibold text-gray-900 mb-2 mt-5">
-                  特色標籤
-                </h3>
-                <div class="flex flex-wrap gap-2 mb-1">
-                  <span
-                    v-for="(tag, index) in bar.tags"
-                    :key="index"
-                    class="bg-gray-200 text-gray-800 px-3 py-1 rounded-2xl text-xs font-medium"
-                    >{{ getTagLabel(tag) }}</span
-                  >
-                </div>
-              </div>
-
-              <div class="mb-5">
-                <h3 class="text-base font-semibold text-gray-900 mb-2 mt-5">酒吧介紹</h3>
-                <p class="text-gray-600 text-sm leading-relaxed">
-                  {{ bar.description || '暫無詳細介紹。' }}
-                </p>
-              </div>
-
-              <div>
-                <h3 class="text-base font-semibold text-gray-900 mb-2 mt-5">熱門評論</h3>
-                <div class="max-h-48 overflow-y-auto">
-                  <template v-if="bar.googleReviews && bar.googleReviews.length">
-                    <div
-                      v-for="(review, index) in bar.googleReviews.slice(0, 3)"
-                      :key="index"
-                      class="bg-white rounded-xl p-4 mb-3 border border-gray-200"
-                    >
-                      <div class="flex items-center mb-2">
-                        <img
-                          :src="review.profile_photo_url || 'https://via.placeholder.com/40'"
-                          alt="User Avatar"
-                          class="w-8 h-8 rounded-full mr-2"
-                        />
-                        <div class="flex flex-col">
-                          <span class="font-semibold text-gray-900 text-sm">
-                            {{ review.author_name || '匿名用戶' }}
-                          </span>
-                          <span class="text-gray-400 text-xs">{{ formatReviewDate(review.time) }}</span>
-                        </div>
-                      </div>
-                      <p class="text-gray-700 text-sm leading-relaxed mb-2">
-                        {{ review.text }}
-                      </p>
-                      <div class="flex gap-4">
-                        <span class="text-gray-600 text-xs">
-                          👍 有用 ({{ review.rating || 0 }})
-                        </span>
-                        <span class="text-gray-600 text-xs">
-                          👎 不喜歡 ({{ review.rating || 0 }})
-                        </span>
-                      </div>
+            </div>
+            <div class="description-section">
+              <h3>酒吧介紹</h3>
+              <p>{{ props.bar.description || '暫無詳細介紹。' }}</p>
+            </div>
+            <div class="google-review-section">
+              <h3>熱門評論</h3>
+              <template v-if="props.bar.googleReviews && props.bar.googleReviews.length">
+                <div class="review-card" v-for="(review, idx) in props.bar.googleReviews.slice(0, 5)" :key="idx">
+                  <div class="review-header">
+                    <img :src="review.profile_photo_url || 'https://via.placeholder.com/40'" alt="User Avatar" class="user-avatar" />
+                    <div class="user-info">
+                      <span class="user-name">{{ review.author_name || '匿名用戶' }}</span>
+                      <span class="review-date">{{ formatReviewDate(review.time) }}</span>
                     </div>
-                  </template>
-                  <div v-else class="text-gray-500 text-sm">暫無 Google 評論</div>
+                  </div>
+                  <p class="review-text">{{ review.text }}</p>
+                  <div class="review-actions">
+                    <span>👍 有用 ({{ review.rating || 0 }})</span>
+                    <span>👎 不喜歡 ({{ review.rating || 0 }})</span>
+                  </div>
                 </div>
-              </div>
+              </template>
+              <p v-else>暫無 Google 評論</p>
             </div>
           </div>
         </div>
-
-        <!-- 底部操作區域 -->
-        <div
-          class="flex justify-between items-center p-4 bg-white border-t border-gray-200">
-          <div class="flex gap-3">
-            <!-- 新增照片 -->
-            <div class="tooltip" data-tip="新增照片">
-              <button
-                class="w-11 h-11 rounded-xl border border-gray-200 bg-white flex items-center justify-center cursor-pointer transition-all hover:bg-gray-50 hover:border-gray-300 hover:-translate-y-0.5"
-              @click="triggerFileUpload">
-                <i class="fa-regular fa-image text-lg text-gray-600"></i>
-              </button>
-            </div>
-            <input
-              type="file"
-              ref="fileInput"
-              class="hidden"
-              accept="image/*"
-              @change="handleFileUpload"/>
-
-            <!-- 分享 -->
-            <div class="tooltip" data-tip="分享">
-              <button
-                class="w-11 h-11 rounded-xl border border-gray-200 bg-white flex items-center justify-center cursor-pointer transition-all hover:bg-gray-50 hover:border-gray-300 hover:-translate-y-0.5">
-                <i class="fa-solid fa-share-nodes text-lg text-gray-600"></i>
-              </button>
-            </div>
-
-            <!-- 導航 -->
-            <div class="tooltip" data-tip="導航">
-              <button
-                class="w-11 h-11 rounded-xl border border-gray-200 bg-white flex items-center justify-center cursor-pointer transition-all hover:bg-gray-50 hover:border-gray-300 hover:-translate-y-0.5"
-                @click="navigateToBar(bar.latitude, bar.longitude)">
-                <i class="fa-regular fa-paper-plane text-lg text-gray-600"></i>
-              </button>
-            </div>
-
-            <!-- 收藏 -->
-            <div
-              class="tooltip"
-              :data-tip="localIsWishlisted ? '取消收藏' : '加入收藏'">
-              <button
-                :class="[
-                  'w-11 h-11 rounded-xl border flex items-center justify-center cursor-pointer transition-all hover:-translate-y-0.5',
-                  localIsWishlisted
-                    ? 'bg-red-50 border-red-200'
-                    : 'border-gray-200 bg-white hover:bg-gray-50 hover:border-gray-300',
-                ]"
-                @click.stop="toggleFavorite"
-                :disabled="favoriteLoading">
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  width="20"
-                  height="20"
-                  viewBox="0 0 24 24"
-                  :fill="localIsWishlisted ? '#ef4444' : 'none'"
-                  stroke="currentColor"
-                  stroke-width="2"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  :class="localIsWishlisted ? 'text-red-500' : 'text-gray-600'">
-                  <path
-                    d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5
-                      2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09
-                      C13.09 3.81 14.76 3 16.5 3
-                      19.58 3 22 5.42 22 8.5
-                      c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
-                </svg>
-              </button>
-            </div>
-          </div>
-
-          <!-- 發起活動 -->
-          <div class="lg:tooltip" data-tip="發起活動">
-            <button
-              class="bg-gradient-to-r from-[var(--color-secondary-green)] via-[#d8dbaf] to-[var(--color-primary-orange)] text-[var(--color-black)] border-0 rounded-xl px-6 py-3 font-semibold cursor-pointer flex items-center gap-2 transition-all hover:scale-105 hover:brightness-110 hover:shadow-lg"
-              @click="goToBarActivities">
-              <span>發起活動</span>
-              <i class="fa-solid fa-plus text-sm"></i>
+        <div class="footer-actions">
+          <div class="action-buttons-group">
+            <button class="action-button icon-button share-button" data-tooltip="分享">
+              <i class="fa-solid fa-share-nodes text-lg text-gray-600"></i>
+            </button>
+            <button class="action-button icon-button navigate-button" data-tooltip="導航" @click="navigateToBar(props.bar.latitude, props.bar.longitude)">
+              <i class="fa-regular fa-paper-plane text-lg text-gray-600"></i>
+            </button>
+            <button class="action-button icon-button wishlist-detail-button" @click.stop="toggleFavorite" :aria-label="localIsWishlisted ? '取消收藏' : '加入收藏'" :data-tooltip="localIsWishlisted ? '取消收藏' : '加入收藏'" :disabled="favoriteLoading">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" :fill="localIsWishlisted ? 'red' : 'none'" :stroke="localIsWishlisted ? 'red' : '#7f7f7f'" stroke-width="1.5" class="heart-icon">
+                <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" />
+              </svg>
             </button>
           </div>
+          <button class="start-event-button" @click="goToBarActivities">
+            發起活動
+            <i class="fa-solid fa-plus text-sm"></i>
+          </button>
         </div>
       </div>
     </div>
@@ -311,25 +177,39 @@ watch(
 // 更新收藏切換功能
 const toggleFavorite = async () => {
   try {
-    // 準備完整的酒吧資料
+    // 強制組裝正確 barData
     const barData = {
-      ...props.bar,
-      // 確保有正確的識別碼
-      place_id: props.bar.place_id || props.bar.googlePlaceId,
-      googlePlaceId: props.bar.googlePlaceId || props.bar.place_id,
+      name: props.bar.name,
+      address: props.bar.formatted_address || props.bar.address || props.bar.vicinity || '',
+      latitude: (
+        props.bar.geometry?.location
+          ? (typeof props.bar.geometry.location.lat === 'function'
+              ? props.bar.geometry.location.lat()
+              : props.bar.geometry.location.lat)
+          : props.bar.location?.lat || props.bar.latitude
+      ) || 0,
+      longitude: (
+        props.bar.geometry?.location
+          ? (typeof props.bar.geometry.location.lng === 'function'
+              ? props.bar.geometry.location.lng()
+              : props.bar.geometry.location.lng)
+          : props.bar.location?.lng || props.bar.longitude
+      ) || 0,
       id: props.bar.id || props.bar.barId,
-      // 確保有完整的圖片資料
-      images: props.bar.images || (props.bar.imageUrl ? [props.bar.imageUrl] : []),
-      // 確保有評論資料
-      googleReviews: props.bar.googleReviews || []
+      googlePlaceId: props.bar.googlePlaceId || props.bar.place_id,
     };
-    
+
+    if (
+      !barData.name ||
+      !barData.address ||
+      barData.latitude === undefined ||
+      barData.longitude === undefined
+    ) {
+      return res.status(400).json({ message: '缺少 barData 必要欄位' });
+    }
+
     await favoritesStore.toggleFavorite(barData);
-    
-    // 更新本地狀態
     localIsWishlisted.value = !localIsWishlisted.value;
-    
-    // 通知父組件
     emit('toggle-wishlist', props.bar);
   } catch (error) {
     console.error("Failed to toggle favorite:", error);
@@ -415,22 +295,433 @@ onMounted(async () => {
 </script>
 
 <style scoped>
+@import url('https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css');
+.bar-detail-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background-color: rgba(0, 0, 0, 0.6);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+.bar-detail-modal-content {
+  background-color: #fff;
+  border-radius: 12px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  width: 90%;
+  max-width: 900px;
+  height: 85vh;
+  position: relative;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.3);
+}
+.content-flex-wrapper {
+  display: flex;
+  flex-grow: 1;
+  overflow: hidden;
+}
+.image-gallery-container {
+  width: 50%;
+  height: 100%;
+  overflow: hidden;
+  position: relative;
+  background-color: #000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #666;
+  font-size: 1.2rem;
+  min-height: 200px;
+}
+.main-image {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+  display: block;
+}
+.image-nav {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  padding: 0 10px;
+}
+.nav-button {
+  background-color: rgba(0, 0, 0, 0.5);
+  color: white;
+  border: none;
+  border-radius: 50%;
+  width: 32px;
+  height: 32px;
+  font-size: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+.nav-button:hover {
+  background-color: rgba(0, 0, 0, 0.7);
+  transform: scale(1);
+}
+.image-dots {
+  position: absolute;
+  bottom: 10px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 8px;
+}
+.dot {
+  width: 8px;
+  height: 8px;
+  background-color: rgba(255, 255, 255, 0.6);
+  border-radius: 50%;
+  cursor: pointer;
+  transition:
+    background-color 0.2s,
+    transform 0.2s;
+}
+.dot.active {
+  background-color: #fff;
+  transform: scale(1.2);
+}
+.detail-info-section {
+  width: 50%;
+  padding: 80px 25px 20px 25px;
+  overflow-y: auto;
+  flex-grow: 1;
+  display: flex;
+  flex-direction: column;
+  padding-bottom: 20px;
+  background-color: #f8fafc;
+}
+.header-main {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  margin-bottom: 10px;
+  padding-top: 0;
+}
+.bar-detail-name {
+  font-size: 28px;
+  font-weight: bold;
+  color: #333;
+  margin: 0;
+  line-height: 1.2;
+}
+.rating-info {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  margin-bottom: 15px;
+  font-size: 16px;
+  color: #555;
+  padding-bottom: 10px;
+  border-bottom: 1px solid #f0f0f0;
+}
+.rating-text {
+  font-weight: 500;
+}
+.contact-info p {
+  margin-bottom: 8px;
+  font-size: 15px;
+  color: #666;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.contact-info a {
+  color: #007bff;
+  text-decoration: none;
+}
+.contact-info a:hover {
+  text-decoration: underline;
+}
+.opening-hours-detail,
+.bar-tags-detail,
+.description-section,
+.google-review-section {
+  margin-top: 20px;
+  border-top: 1px solid #eee;
+  padding-top: 15px;
+}
+.opening-hours-detail h3,
+.bar-tags-detail h3,
+.description-section h3,
+.google-review-section h3 {
+  font-size: 18px;
+  font-weight: bold;
+  color: #333;
+  margin-bottom: 10px;
+}
+.opening-hours-detail p,
+.description-section p {
+  font-size: 15px;
+  line-height: 1.6;
+  color: #444;
+}
+.opening-hours-detail ul {
+  list-style: none;
+  padding: 0;
+  margin: 5px 0 0 0;
+}
+.opening-hours-detail li {
+  font-size: 15px;
+  color: #444;
+  margin-bottom: 3px;
+}
+.bar-tags-detail .tags-wrapper {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+.detail-tag {
+  background-color: #e6f7ff;
+  color: #1890ff;
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-size: 14px;
+  white-space: nowrap;
+  border: 1px solid #91d5ff;
+}
+.google-review-section {
+  padding-bottom: 15px;
+}
+.review-card {
+  background-color: #f9f9f9;
+  border-radius: 8px;
+  padding: 15px;
+  margin-top: 15px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  border: none;
+}
+.review-header {
+  display: flex;
+  align-items: center;
+  margin-bottom: 10px;
+}
+.user-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  object-fit: cover;
+  margin-right: 10px;
+  border: 1px solid #ddd;
+}
+.user-info {
+  display: flex;
+  flex-direction: column;
+}
+.user-name {
+  font-weight: bold;
+  color: #333;
+  font-size: 16px;
+}
+.review-date {
+  font-size: 13px;
+  color: #777;
+}
+.review-text {
+  font-size: 15px;
+  line-height: 1.6;
+  color: #444;
+  margin-bottom: 10px;
+}
+.review-actions {
+  display: flex;
+  gap: 15px;
+  font-size: 14px;
+  color: #888;
+}
+.footer-actions {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 15px 25px;
+  background-color: #fff;
+  border-top: 1px solid #f0f0f0;
+  box-shadow: 0 -4px 10px rgba(0, 0, 0, 0.05);
+  z-index: 5;
+  box-sizing: border-box;
+}
+.action-buttons-group {
+  display: flex;
+  gap: 15px;
+}
+.action-button {
+  background: none;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  width: 44px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  padding: 0;
+  background-color: #fff;
+}
+.action-button:hover {
+  background-color: #f7fafc;
+  border-color: #cbd5e0;
+  transform: translateY(-2px);
+}
+.action-button .icon {
+  width: 24px;
+  height: 24px;
+  filter: brightness(0.5);
+}
+.wishlist-detail-button .heart-icon {
+  width: 20px;
+  height: 20px;
+  transition:
+    fill 0.3s ease,
+    stroke 0.3s ease;
+}
+.wishlist-detail-button:not([fill="red"]):hover .heart-icon {
+  fill: #ffebeb;
+  stroke: red;
+}
+.start-event-button {
+  background-image: linear-gradient(to right, #a8d87b, #d8dbaf, #daa258);
+  color: #333;
+  border: none;
+  border-radius: 25px;
+  padding: 10px 20px;
+  font-size: 16px;
+  font-weight: bold;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  transition: all 0.2s ease;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+.start-event-button:hover {
+  transform: scale(1.05);
+  filter: brightness(1.1);
+  box-shadow: 0 6px 10px rgba(0, 0, 0, 0.15);
+}
+.icon-plus {
+  width: 20px;
+  height: 20px;
+}
+.icon-plus {
+  margin-left: -4px;
+}
 .modal-fade-enter-active,
 .modal-fade-leave-active {
   transition: opacity 0.3s ease;
 }
-
 .modal-fade-enter-from,
 .modal-fade-leave-to {
   opacity: 0;
 }
-
-.modal-content {
-  transition: transform 0.3s ease;
+.action-button[data-tooltip] {
+  position: relative;
 }
-
-.modal-fade-enter-from .modal-content,
-.modal-fade-leave-to .modal-content {
-  transform: scale(0.9);
+.action-button[data-tooltip]:hover::after {
+  content: attr(data-tooltip);
+  position: absolute;
+  bottom: 110%;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #333;
+  color: #fff;
+  padding: 5px 12px;
+  border-radius: 6px;
+  font-size: 13px;
+  white-space: nowrap;
+  z-index: 20;
+  opacity: 1;
+  pointer-events: none;
+  transition: opacity 0.2s;
+}
+.action-button[data-tooltip]::after {
+  opacity: 0;
+  pointer-events: none;
+}
+@media (max-width: 768px) {
+  .bar-detail-modal-content {
+    flex-direction: column;
+    width: 95%;
+    max-width: 95%;
+    height: 95vh;
+    border-radius: 8px;
+  }
+  .content-flex-wrapper {
+    flex-direction: column;
+  }
+  .image-gallery-container {
+    width: 100%;
+    height: 250px;
+  }
+  .detail-info-section {
+    width: 100%;
+    padding: 20px 15px;
+    padding-bottom: calc(20px + 60px + 10px);
+  }
+  .bar-detail-name {
+    font-size: 24px;
+  }
+  .rating-info {
+    font-size: 14px;
+  }
+  .close-button {
+    top: 10px;
+    right: 10px;
+    width: 32px;
+    height: 32px;
+  }
+  .close-button .close-icon {
+    width: 18px;
+    height: 18px;
+  }
+  .wishlist-detail-button .heart-icon {
+    width: 20px;
+    height: 20px;
+  }
+  .footer-actions {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    padding: 10px 15px;
+    box-shadow: 0 -2px 5px rgba(0, 0, 0, 0.1);
+    border-top: none;
+  }
+  .action-buttons-group {
+    gap: 10px;
+  }
+  .action-button {
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
+  }
+  .action-button .icon {
+    width: 20px;
+    height: 20px;
+  }
+  .start-event-button {
+    padding: 8px 15px;
+    font-size: 15px;
+  }
+  .icon-plus {
+    width: 18px;
+    height: 18px;
+  }
 }
 </style>
