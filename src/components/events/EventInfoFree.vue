@@ -165,7 +165,7 @@ const handleCancelConfirm = async () => {
             <iframe 
               v-if="currentEvent.location"
               :src="`https://www.google.com/maps?q=${encodeURIComponent(currentEvent.location)}&output=embed`"
-              class="w-full h-full rounded-lg border-0">
+              class="w-full h-full border-0 rounded-lg">
             </iframe>
           </div>
           <div class="event-content">
@@ -229,8 +229,9 @@ const handleCancelConfirm = async () => {
               </button>
               
               <ModalEdit
-                v-if="currentEvent.id && isHostUser"
+                v-if="currentEvent.id"
                 :event-id="currentEvent.id"
+                :event="currentEvent"
                 @update="handleEventUpdate"
               />
 

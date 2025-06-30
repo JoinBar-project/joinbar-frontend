@@ -308,7 +308,7 @@ onMounted(async () => {
           <iframe 
             v-if="eventRef.location"
             :src="`https://www.google.com/maps?q=${encodeURIComponent(eventRef.location)}&output=embed`"
-            class="w-full h-full rounded-lg border-0">
+            class="w-full h-full border-0 rounded-lg">
           </iframe>
         </div>
 
@@ -380,8 +380,9 @@ onMounted(async () => {
             </template>
 
             <ModalEdit
-              v-if="isOwner && eventRef.id"
+              v-if="eventRef.id"
               :event-id="eventRef.id"
+              :event="eventRef"
               @update="handleEventUpdate"
             />
           </div>
