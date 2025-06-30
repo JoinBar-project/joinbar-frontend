@@ -163,7 +163,7 @@ async function askJoinBot() {
 
   response.value = '我來想想唷...'
   try {
-    const res = await axios.post(`${import.meta.env.VITE_API_BASE_URL}/api/barAi/recommendAI`, {
+    const res = await axios.post(`${import.meta.env.VITE_API_BASE_URL}/barAi/recommendAI`, {
       message: userMessage.value
     })
     response.value = res.data.result
