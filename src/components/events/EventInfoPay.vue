@@ -348,13 +348,13 @@ onMounted(async () => {
   </div> -->
 
   <div class="flex justify-center items-center pt-[2%] max-w-full">
-    <div class="relative w-full max-w-[1200px] min-w-[1000px] bg-[#f1f1f1] rounded-[20px] overflow-hidden pb-[30px]">
+    <div class="relative w-full max-w-[1200px] min-w-[1170px] bg-[#f1f1f1] rounded-[20px] overflow-hidden pb-[30px]">
       <div>
         <img :src="eventRef.imageUrl" class="w-full aspect-[3.5/1] object-cover" alt="活動圖片" />
       </div>
 
       <div class="flex">
-        <div class="absolute bottom-[70px] left-[80px] z-[2] bg-gray-500 rounded-[10px] max-w-[325px] w-[325px] h-[550px] mx-auto shadow-md cursor-pointer">
+        <div class="absolute bottom-[70px] left-[80px] z-[2] bg-gray-500 rounded-[10px] max-w-[325px] w-[325px] h-[580px] mx-auto shadow-md cursor-pointer">
           <iframe 
             v-if="eventRef.location"
             :src="`https://www.google.com/maps?q=${encodeURIComponent(eventRef.location)}&output=embed`"

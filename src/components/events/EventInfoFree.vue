@@ -119,59 +119,59 @@ const handleCancelConfirm = async () => {
   <div>
     <div v-if="isUpdating" class="fixed inset-0 bg-black/50 flex justify-center items-center z-[9999]">
       <div class="bg-white p-8 rounded-[10px] flex items-center gap-4 text-[1.2rem] shadow-md">
-        <i class="fa-solid fa-spinner fa-spin text-[var(--color-primary-orange)]"></i>
+        <i class="fa-solid fa-spinner fa-spin text-[var(--color-primary-orange)] pr-[30px] mt-[13px] min-w-[30px]"></i>
         <span>更新中...</span>
       </div>
     </div>
 
     <div class="max-w-[100vw] pt-[2%] flex justify-center items-center">
       <div class="w-full max-w-[1200px] min-w-[1170px] bg-[#f1f1f1] pb-[30px] mx-auto relative rounded-[20px] overflow-hidden">
-        <div class="event-img">
-          <img :src="currentEvent.imageUrl" alt="活動圖片" />
+        <div>
+          <img :src="currentEvent.imageUrl" alt="活動圖片" class="w-full aspect-[3.5/1] object-cover"/>
         </div>
         <div class="event-content-box">
-          <div class="event-map">
+          <div class="absolute bottom-[70px] left-[80px] z-[2] bg-gray-500 rounded-[10px] max-w-[325px] w-[325px] h-[500px] mx-auto shadow-md cursor-pointer">
             <iframe
               v-if="currentEvent.location"
               :src="`https://www.google.com/maps?q=${encodeURIComponent(currentEvent.location)}&output=embed`"
               class="w-full h-full rounded-lg border-0">
             </iframe>
           </div>
-          <div class="event-content">
+          <div class="pt-[20px] pr-[70px] pb-[40px] pl-[500px]">
             <div class="flex flex-wrap gap-[10px] mt-[10px]">
               <div v-for="tag in currentTags" :key="tag.id" class="bg-[var(--color-black)] text-white text-center rounded-[20px] px-[20px] py-[8px] whitespace-nowrap">{{ tag.name }}</div>
             </div>
 
-            <h3 class="event-title">{{ currentEvent.name }}</h3>
+            <h3 class="text-[28px] font-bold mt-[20px] mb-[20px]">{{ currentEvent.name }}</h3>
 
-            <div v-if="formattedEventTime" class="event-content-info">
-              <i class="fa-solid fa-calendar"></i>
-              <p>活動時間：{{ formattedEventTime }}</p>
+            <div v-if="formattedEventTime" class="flex items-start py-[1px]">
+              <i class="fa-solid fa-calendar pr-[26px] mt-[13px] min-w-[30px]"></i>
+              <p class="text-[20px] leading-[2] m-0">活動時間：{{ formattedEventTime }}</p>
             </div>
 
-            <div class="event-content-info">
-              <i class="fa-solid fa-wine-glass"></i>
-              <p>店名：{{ currentEvent.barName }}</p>
+            <div class="flex items-start py-[1px]">
+              <i class="fa-solid fa-wine-glass pr-[30px] mt-[13px] min-w-[30px]"></i>
+              <p class="text-[20px] leading-[2] m-0">店名：{{ currentEvent.barName }}</p>
             </div>
 
-            <div class="event-content-info">
-              <i class="fa-solid fa-location-dot"></i>
-              <p>地址：{{ currentEvent.location }}</p>
+            <div class="flex items-start py-[1px]">
+              <i class="fa-solid fa-location-dot pr-[30px] mt-[13px] min-w-[30px]"></i>
+              <p class="text-[20px] leading-[2] m-0">地址：{{ currentEvent.location }}</p>
             </div>
 
-            <div class="event-content-info">
-              <i class="fa-solid fa-user"></i>
-              <p>
+            <div class="flex items-start py-[1px]">
+              <i class="fa-solid fa-user pr-[30px] mt-[13px] min-w-[30px]"></i>
+              <p class="text-[20px] leading-[2] m-0">
                 目前報名人數：<span>{{ joinedNum }}</span> ｜ 報名人數上限：<span>{{ currentEvent.maxPeople || '無報名人數限制' }}</span>
               </p>
             </div>
 
-            <div class="flex items-center py-[1px]">
-              <i class="fa-solid fa-circle-exclamation pr-[26px] text-[#860914] font-bold"></i>
-              <p class="text-[20px] leading-[2.5] m-0 text-[#860914] font-bold">注意： 活動開始前 24 小時內無法取消報名</p>
+            <div class="flex items-start py-[1px]">
+              <i class="fa-solid fa-circle-exclamation pr-[26px] text-[#860914] font-bold mt-[13px] min-w-[30px]"></i>
+              <p class="text-[20px] leading-[2] m-0 text-[#860914] font-bold">注意： 活動開始前 24 小時內無法取消報名</p>
             </div>
 
-            <div class="edit-btn-container">
+            <div class="flex">
               <button
                 @click="handleJoinToggle"
                 :disabled="isJoin || isUpdating"
@@ -220,143 +220,6 @@ const handleCancelConfirm = async () => {
 
 <style scoped>
 @reference "tailwindcss";
-
-/* .loading-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background-color: rgba(0, 0, 0, 0.5);
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  z-index: 9999;
-} */
-
-/* .loading-message {
-  background-color: white;
-  padding: 2rem;
-  border-radius: 10px;
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-  font-size: 1.2rem;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
-} */
-
-/* .loading-message i {
-  color: var(--color-primary-orange);
-} */
-
-.edit-btn-container {
-  @apply flex;
-}
-
-/* .event-information-section {
-  max-width: 100vw;
-  padding-top: 2%;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-} */
-
-/* .event-information-card {
-  max-width: 1200px;
-  min-width: 1170px;
-  width: 100%;
-  background-color: #f1f1f1;
-  padding-bottom: 30px;
-  margin: 0 auto;
-  position: relative;
-  border-radius: 20px;
-  overflow: hidden;
-  position: relative;
-} */
-
-/* .apply-tag {
-  background-color: var(--color-primary-red);
-  color: #f1f1f1;
-  padding: 20px 80px;
-  font-size: 28px;
-  position: absolute;
-  top: 0;
-  right: 80px;
-} */
-
-.event-img > img {
-  width: 100%;
-  aspect-ratio: 3.5 / 1;
-  object-fit: cover;
-}
-
-.event-map {
-  position: absolute;
-  bottom: 70px;
-  left: 80px;
-  z-index: 2;
-  background-color: gray;
-  border-radius: 10px;
-  max-width: 325px;
-  width: 325px;
-  height: 500px;
-  margin: 0 auto;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
-  cursor: pointer;
-}
-
-/* .event-tags {
-  display: flex;
-  margin-top: 10px;
-  flex-wrap: wrap;
-  gap: 10px;
-}
-
-.event-tags div {
-  background-color: var(--color-black);
-  padding: 8px 20px;
-  text-align: center;
-  border-radius: 20px;
-  color: white;
-  white-space: nowrap;
-} */
-
-/* .event-content-box {
-  display: flex;
-}
-
-.event-content {
-  padding: 20px 70px 40px 500px;
-}
-
-.event-content-info {
-  display: flex;
-  align-items: top;
-  padding: 1px 0;
-}
-
-.event-content-info p {
-  font-size: 20px;
-  line-height: 2;
-  margin: 0;
-} */
-
-.fa-solid {
-  padding: 0 30px 0 0;
-  margin-top: 13px;
-  min-width: 30px;
-}
-
-.fa-calendar {
-  padding-right: 26px;
-}
-
-.event-title {
-  font-size: 28px;
-  font-weight: bold;
-  margin-top: 20px;
-  margin-bottom: 20px;
-}
 
 .event-btn-free {
   margin-right: 30px;
