@@ -77,7 +77,7 @@ export function useEvent(event) {
   }
 
   function handleConfirmCancel() {
-    toggleJoin();
+    isJoin.value = false;
     showModal.value = false;
   }
 

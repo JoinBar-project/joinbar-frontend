@@ -4,8 +4,8 @@ import { toRef, computed, ref, watch, onMounted } from 'vue';
 import { getEventById } from '@/api/event';
 import EventHoster from './EventHoster.vue';
 import MessageBoard from './MessageBoard.vue';
-import ModalEdit from '@/components/events/ModalEdit.vue'
-
+import ModalEdit from '@/components/events/ModalEdit.vue';
+import BaseConfirmModal from '@/components/common/BaseConfirmModal.vue';
 
 const emit = defineEmits(['update']);
 
@@ -16,13 +16,34 @@ const props = defineProps({
   user: {
     type: Object,
     required: true,
-}
+  },
 });
 
 const currentUserId = computed(() => {
   const user = JSON.parse(localStorage.getItem('user'));
   return user?.id ? Number(user.id) : null;
 });
+
+const eventRef = toRef(props, 'event');
+const localEvent = ref({ ...props.event });
+const localTags = ref([...props.tags]);
+const isUpdating = ref(false);
+
+const {
+  isJoin,
+  joinedNum,
+  toggleJoin,
+  isOver24hr,
+  showModal,
+  formattedEventTime,
+  openCancelModal,
+  closeModal,
+  handleConfirmCancel
+} = useEvent(eventRef);
+
+const currentUser = computed(() => props.user || {});
+const currentEvent = computed(() => localEvent.value || {});
+const currentTags = computed(() => localTags.value || []);
 
 const isHostUser = computed(() => {
   return currentUserId.value !== null && Number(currentEvent.value.hostUser) === currentUserId.value;
@@ -31,14 +52,6 @@ const isHostUser = computed(() => {
 onMounted(() => {
   console.log('🔥 onMounted currentEvent:', currentEvent.value);
 });
-
-const eventRef = toRef(props, 'event');
-const localEvent = ref({ ...props.event });
-const localTags = ref([...props.tags]);
-const isUpdating = ref(false);
-
-const { isJoin, joinedNum, toggleJoin, isOver24hr, showModal, formattedEventTime, openCancelModal, closeModal, handleConfirmCancel } =
-  useEvent(eventRef);
 
 watch(() => props.event, (newEvent) => {
   if (newEvent && !isUpdating.value) {
@@ -54,40 +67,23 @@ watch(() => props.tags, (newTags) => {
   }
 }, { deep: true, immediate: true });
 
-
 async function reloadEventData() {
   if (!props.eventId && !localEvent.value?.id) {
     console.error('無法重新載入：缺少活動 ID');
     return;
   }
-
   const eventId = props.eventId || localEvent.value.id;
-  
   try {
     isUpdating.value = true;
-    console.log('開始重新載入活動資料...');
-    
     const { event: updatedEvent, tags: updatedTags } = await getEventById(eventId);
- 
-
-    if (updatedEvent) {
-      localEvent.value = { ...updatedEvent };
-    }
-    if (updatedTags) {
-      localTags.value = [...updatedTags];
-    }
-    console.log('活動資料重新載入成功:', { updatedEvent, updatedTags });
+    if (updatedEvent) localEvent.value = { ...updatedEvent };
+    if (updatedTags) localTags.value = [...updatedTags];
     emit('update', {
       event: localEvent.value,
-      tags: localTags.value
+      tags: localTags.value,
     });
-    
   } catch (error) {
     console.error('重新載入活動資料失敗:', error);
-    
-    if (error.response?.status === 401) {
-      console.warn('認證失敗，可能需要重新登入');
-    }
   } finally {
     isUpdating.value = false;
   }
@@ -95,14 +91,10 @@ async function reloadEventData() {
 
 async function handleEventUpdate() {
   console.log('活動更新完成，準備重新載入資料...');
-  
   setTimeout(async () => {
     await reloadEventData();
   }, 500);
 }
-
-const currentEvent = computed(() => localEvent.value || {});
-const currentTags = computed(() => localTags.value || []);
 
 const handleJoinToggle = async () => {
   try {
@@ -125,34 +117,10 @@ const handleCancelConfirm = async () => {
 
 <template>
   <div>
-
     <div v-if="isUpdating" class="loading-overlay">
       <div class="loading-message">
         <i class="fa-solid fa-spinner fa-spin"></i>
         <span>更新中...</span>
-      </div>
-    </div>
-
-    <div :class="['modal', { 'modal-open': showModal }]">
-      <div class="modal-box">
-        <h3 class="text-lg font-bold">確認取消報名</h3>
-        <p class="py-4">
-          您確定要取消這次報名嗎？ <br />
-          <span>取消後如人數額滿或是活動開始前24小時內都將無法報名</span>， <br />
-          請再次確認您的選擇。
-        </p>
-        <div class="modal-action">
-          <button
-            class="btn"
-            @click="closeModal">
-            放棄取消
-          </button>
-          <button
-            class="btn"
-            @click="handleCancelConfirm">
-            確認取消
-          </button>
-        </div>
       </div>
     </div>
 
@@ -163,7 +131,7 @@ const handleCancelConfirm = async () => {
         </div>
         <div class="event-content-box">
           <div class="event-map">
-            <iframe 
+            <iframe
               v-if="currentEvent.location"
               :src="`https://www.google.com/maps?q=${encodeURIComponent(currentEvent.location)}&output=embed`"
               class="w-full h-full rounded-lg border-0">
@@ -171,44 +139,38 @@ const handleCancelConfirm = async () => {
           </div>
           <div class="event-content">
             <div class="event-tags">
-              <div
-                v-for="tag in currentTags"
-                :key="tag.id">
-                {{ tag.name }}
-              </div>
+              <div v-for="tag in currentTags" :key="tag.id">{{ tag.name }}</div>
             </div>
 
-            <div>
-              <h3 class="event-title">
-                {{ currentEvent.name }}
-              </h3>
+            <h3 class="event-title">{{ currentEvent.name }}</h3>
 
-              <div
-                v-if="formattedEventTime"
-                class="event-content-info">
-                <i class="fa-solid fa-calendar"></i>
-                <p>活動時間：{{ formattedEventTime }}</p>
-              </div>
-
-              <div class="event-content-info">
-                <i class="fa-solid fa-wine-glass"></i>
-                <p>店名：{{ currentEvent.barName }}</p>
-              </div>
-
-              <div class="event-content-info">
-                <i class="fa-solid fa-location-dot"></i>
-                <p>地址：{{ currentEvent.location }}</p>
-              </div>
-
-              <div class="event-content-info">
-                <i class="fa-solid fa-user"></i>
-                <p>
-                  目前報名人數： <span>{{ joinedNum }}</span> ｜ 報名人數上限：<span>{{ currentEvent.maxPeople || '無報名人數限制' }}</span>
-                </p>
-              </div>
-
+            <div v-if="formattedEventTime" class="event-content-info">
+              <i class="fa-solid fa-calendar"></i>
+              <p>活動時間：{{ formattedEventTime }}</p>
             </div>
-            
+
+            <div class="event-content-info">
+              <i class="fa-solid fa-wine-glass"></i>
+              <p>店名：{{ currentEvent.barName }}</p>
+            </div>
+
+            <div class="event-content-info">
+              <i class="fa-solid fa-location-dot"></i>
+              <p>地址：{{ currentEvent.location }}</p>
+            </div>
+
+            <div class="event-content-info">
+              <i class="fa-solid fa-user"></i>
+              <p>
+                目前報名人數：<span>{{ joinedNum }}</span> ｜ 報名人數上限：<span>{{ currentEvent.maxPeople || '無報名人數限制' }}</span>
+              </p>
+            </div>
+
+            <div class="flex items-center py-[1px]">
+            <i class="fa-solid fa-circle-exclamation pr-[26px] text-[#860914] font-bold"></i>
+            <p class="text-[20px] leading-[2.5] m-0 text-[#860914] font-bold">注意： 活動開始前 24 小時內無法取消報名</p>
+          </div>
+
             <div class="edit-btn-container">
               <button
                 @click="handleJoinToggle"
@@ -218,7 +180,7 @@ const handleCancelConfirm = async () => {
                 class="event-btn event-btn-free">
                 {{ isUpdating ? '處理中...' : (isJoin ? '已報名' : '參加活動') }}
               </button>
-              
+
               <button
                 v-if="isJoin"
                 @click="openCancelModal()"
@@ -228,13 +190,12 @@ const handleCancelConfirm = async () => {
                 class="event-btn-free">
                 {{ isUpdating ? '處理中...' : '取消報名' }}
               </button>
-              
+
               <ModalEdit
                 v-if="currentEvent.id && isHostUser"
                 :event-id="currentEvent.id"
                 @update="handleEventUpdate"
               />
-
             </div>
           </div>
         </div>
@@ -243,6 +204,17 @@ const handleCancelConfirm = async () => {
 
     <EventHoster :user="currentEvent.hostUser" />
     <MessageBoard v-if="isJoin" />
+
+    <BaseConfirmModal
+      :visible="showModal"
+      type="warning"
+      title="取消報名"
+      message="取消後如人數額滿或活動開始前 24 小時內都將無法再次報名，請再次確認您的選擇。"
+      confirmText="確認"
+      cancelText="取消"
+      @confirm="handleCancelConfirm"
+      @cancel="closeModal"
+    />
   </div>
 </template>
 

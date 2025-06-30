@@ -10,6 +10,8 @@ import EventHoster from './EventHoster.vue';
 import MessageBoard from './MessageBoard.vue';
 import ModalEdit from '@/components/events/ModalEdit.vue';
 import BaseAlertModal from '@/components/common/BaseAlertModal.vue'
+import BaseConfirmModal from '@/components/common/BaseConfirmModal.vue'
+
 
 const props = defineProps({
   event: Object,
@@ -35,6 +37,27 @@ const showAlert = (type, title, message) => {
   alertVisible.value = true
 }
 
+const showCancelConfirmModal = ref(false)
+
+const openCancelModal = () => {
+  showCancelConfirmModal.value = true
+}
+
+const handleCancelConfirm = async () => {
+  try {
+    await cancelParticipation(eventRef.value.id) // 這是你自己的取消報名 API
+    showAlert('success', '已取消報名', '您已成功取消此活動的報名')
+    await reloadEventData()
+  } catch (err) {
+    showAlert('error', '取消失敗', err.message || '取消報名失敗，請稍後再試')
+  } finally {
+    showCancelConfirmModal.value = false
+  }
+}
+
+const handleCancelDismiss = () => {
+  showCancelConfirmModal.value = false
+}
 
 const router = useRouter();
 const cart = useCartStore();
@@ -309,7 +332,7 @@ onMounted(async () => {
 </script>
 
 <template>
-  <div :class="['modal', { 'modal-open': showModal }]">
+  <!-- <div :class="['modal', { 'modal-open': showModal }]">
     <div class="modal-box">
       <h3 class="text-lg font-bold">確認取消報名</h3>
       <p class="py-4">
@@ -322,7 +345,7 @@ onMounted(async () => {
         <button class="btn" @click="handleConfirmCancel">確認取消</button>
       </div>
     </div>
-  </div>
+  </div> -->
 
   <div class="flex justify-center items-center pt-[2%] max-w-full">
     <div class="relative w-full max-w-[1200px] min-w-[1000px] bg-[#f1f1f1] rounded-[20px] overflow-hidden pb-[30px]">
@@ -366,6 +389,11 @@ onMounted(async () => {
           <div class="flex items-center py-[1px]">
             <i class="fa-solid fa-dollar-sign pr-[30px] text-[#860914] font-bold"></i>
             <p class="text-[20px] leading-[2.5] m-0 text-[#860914] font-bold">費用：新台幣 <span>{{ eventRef.price }}</span> 元</p>
+          </div>
+
+          <div class="flex items-center py-[1px]">
+            <i class="fa-solid fa-circle-exclamation pr-[26px] text-[#860914] font-bold"></i>
+            <p class="text-[20px] leading-[2.5] m-0 text-[#860914] font-bold">注意： 付費活動無法取消</p>
           </div>
 
           <div class="flex items-center py-[1px]">
@@ -425,6 +453,16 @@ onMounted(async () => {
     :message="alertMessage"
     @close="alertVisible = false"
     @update="handleModalUpdate"
+  />
+  <BaseConfirmModal
+    :visible="showModal"
+    type="warning"
+    title="取消報名"
+    message="取消後如人數額滿或活動開始前 24 小時內都將無法再次報名，請再次確認您的選擇。"
+    confirmText="確認"
+    cancelText="取消"
+    @confirm="handleConfirmCancel"
+    @cancel="closeModal"
   />
 </template>
 
