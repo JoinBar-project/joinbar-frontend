@@ -10,8 +10,6 @@ import EventHoster from './EventHoster.vue';
 import MessageBoard from './MessageBoard.vue';
 import ModalEdit from '@/components/events/ModalEdit.vue';
 import BaseAlertModal from '@/components/common/BaseAlertModal.vue'
-import BaseConfirmModal from '@/components/common/BaseConfirmModal.vue'
-
 
 const props = defineProps({
   event: Object,

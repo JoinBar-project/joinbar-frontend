@@ -3,8 +3,22 @@ import { useEventForm } from '@/composables/useEventForm';
 import FormCreate from './FormCreate.vue';
 import AlertModal from '@/components/AlertModal.vue';
 import { useAuthStore } from '@/stores/authStore';
+import { ref } from 'vue';
+import BaseAlertModal from '@/components/common/BaseAlertModal.vue';
 
-const emit = defineEmits(['submit', 'eventCreated']);
+const emit = defineEmits(['submit', 'eventCreated', 'close']);
+
+const alertVisible = ref(false)
+const alertType = ref('warning')
+const alertTitle = ref('')
+const alertMessage = ref('')
+
+const showConfirmModal = (type, title, message) => {
+  alertType.value = type
+  alertTitle.value = title
+  alertMessage.value = message
+  alertVisible.value = true
+}
 
 const { showForm, showAlert, handleAlertAccept, handleAlertDeny, overlayClick } = useEventForm();
 const authStore = useAuthStore();
@@ -15,12 +29,13 @@ function handleSubmit(result) {
     showForm.value = false;
   
   } else {
-    console.error('建立活動失敗:', result.error);
+    showConfirmModal('warning', '建立活動失敗', '請洽客服');
+
   }
 }
 function handleClick() {
   if (!authStore.isAuthenticated) {
-    alert('請先登入才能建立活動');
+    showConfirmModal('warning', '尚未登入', '請先登入才能建立活動');
     return;
   }
   showForm.value = true;
@@ -34,6 +49,13 @@ function handleClick() {
       :visible="showAlert"
       @accept="handleAlertAccept"
       @deny="handleAlertDeny" 
+    />
+    <BaseAlertModal
+      :visible="alertVisible"
+      :type="alertType"
+      :title="alertTitle"
+      :message="alertMessage"
+      @close="alertVisible = false"
     />
     <button
       class="btn-open-form btn-create"

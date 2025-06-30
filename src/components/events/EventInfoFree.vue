@@ -114,6 +114,7 @@ const handleJoinToggle = async () => {
     await toggleJoin();
   } catch (error) {
     console.error('報名操作失敗:', error);
+    showAlert('warning', '尚未登入', '請先登入才能加入購物車');
   }
 };
 
