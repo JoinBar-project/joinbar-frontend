@@ -303,14 +303,14 @@ onMounted(async () => {
     </div>
   </div>
 
-  <div class="event-information-section">
-    <div class="event-information-card">
-      <div class="event-img">
-        <img :src="eventRef.imageUrl" alt="活動圖片" />
+  <div class="flex justify-center items-center pt-[2%] max-w-full">
+    <div class="relative w-full max-w-[1200px] min-w-[1000px] bg-[#f1f1f1] rounded-[20px] overflow-hidden pb-[30px]">
+      <div>
+        <img :src="eventRef.imageUrl" class="w-full aspect-[3.5/1] object-cover" alt="活動圖片" />
       </div>
 
-      <div class="event-content-box">
-        <div class="event-map">
+      <div class="flex">
+        <div class="absolute bottom-[70px] left-[80px] z-[2] bg-gray-500 rounded-[10px] max-w-[325px] w-[325px] h-[550px] mx-auto shadow-md cursor-pointer">
           <iframe 
             v-if="eventRef.location"
             :src="`https://www.google.com/maps?q=${encodeURIComponent(eventRef.location)}&output=embed`"
@@ -318,47 +318,47 @@ onMounted(async () => {
           </iframe>
         </div>
 
-        <div class="event-content">
-          <div class="event-tags">
-            <div v-for="tag in tagList" :key="tag.id">
+        <div class="pt-[40px] pr-[70px] pb-[40px] pl-[500px]">
+          <div class="flex mb-[20px]">
+            <div v-for="tag in tagList" :key="tag.id" class="bg-[var(--color-black)] text-white text-center rounded-[20px] px-[20px] py-[8px] mr-[10px]">
               {{ tag.name }}
             </div>
           </div>
 
-          <h3 class="event-title">{{ eventRef.name }}</h3>
+          <h3 class="text-[28px] my-[10px] font-bold">{{ eventRef.name }}</h3>
 
-          <div v-if="formattedEventTime" class="event-content-info">
-            <i class="fa-solid fa-calendar"></i>
-            <p>活動時間：{{ formattedEventTime }}</p>
+          <div v-if="formattedEventTime" class="flex items-center py-[1px]">
+            <i class="fa-solid fa-calendar pr-[26px]"></i>
+            <p class="text-[20px] leading-[2.5] m-0">活動時間：{{ formattedEventTime }}</p>
           </div>
 
-          <div class="event-content-info">
-            <i class="fa-solid fa-wine-glass"></i>
-            <p>店名：{{ eventRef.barName }}</p>
+          <div class="flex items-center py-[1px]">
+            <i class="fa-solid fa-wine-glass pr-[30px]"></i>
+            <p class="text-[20px] leading-[2.5] m-0">店名：{{ eventRef.barName }}</p>
           </div>
 
-          <div class="event-content-info">
-            <i class="fa-solid fa-location-dot"></i>
-            <p>地址：{{ eventRef.location }}</p>
+          <div class="flex items-center py-[1px]">
+            <i class="fa-solid fa-location-dot pr-[30px]"></i>
+            <p class="text-[20px] leading-[2.5] m-0">地址：{{ eventRef.location }}</p>
           </div>
 
-          <div class="event-content-info">
-            <i class="fa-solid fa-dollar-sign"></i>
-            <p class="event-payment">費用：新台幣 <span>{{ eventRef.price }}</span> 元</p>
+          <div class="flex items-center py-[1px]">
+            <i class="fa-solid fa-dollar-sign pr-[30px] text-[#860914] font-bold"></i>
+            <p class="text-[20px] leading-[2.5] m-0 text-[#860914] font-bold">費用：新台幣 <span>{{ eventRef.price }}</span> 元</p>
           </div>
 
-          <div class="event-content-info">
-            <i class="fa-solid fa-user"></i>
-            <p>
+          <div class="flex items-center py-[1px]">
+            <i class="fa-solid fa-user pr-[30px]"></i>
+            <p class="text-[20px] leading-[2.5] m-0">
               目前報名人數： <span>{{ joinedNum }}</span> ｜ 報名人數上限：
               <span>{{ eventRef.maxPeople || '無報名人數限制' }}</span>
             </p>
           </div>
 
-          <div class="edit-btn-container">
+          <div class="flex">
             <div v-if="hasParticipated" class="participation-status">
-              <div class="participation-badge">
-                <i class="fa-solid fa-check-circle"></i>
+              <div class="flex items-center gap-3 bg-white text-[#333] px-7 py-[10px] rounded-[20px] text-[24px] font-semibold shadow-md mt-[30px] mr-[30px] text-center cursor-default">
+                <i class="fa-solid fa-check-circle text-[20px] text-emerald-500"></i>
                 <span>已報名此活動</span>
               </div>
             </div>
@@ -367,7 +367,7 @@ onMounted(async () => {
               <button
                 @click="addToCart"
                 type="button"
-                class="event-btn event-btn-cart"
+                class="mt-[30px] mr-[30px] rounded-[20px] border-0 text-[24px] text-center shadow-md cursor-pointer transition-all duration-300 ease-in-out bg-white pt-[8px] pr-[28px] pb-[10px] pl-[28px] hover:bg-[#bbb] hover:text-white disabled:hover:bg-white disabled:hover:text-inherit opacity-100 disabled:opacity-60 disabled:cursor-not-allowed"
                 :disabled="isInCart || isProcessing"
                 :class="{ 'opacity-50 cursor-not-allowed': isInCart || isProcessing }"
               >
@@ -377,7 +377,7 @@ onMounted(async () => {
               <button 
                 @click="buyNow" 
                 type="button" 
-                class="event-btn event-btn-pay"
+                class="mt-[30px] mr-[30px] rounded-[20px] border-0 text-[24px] text-center shadow-md cursor-pointer transition-all duration-300 ease-in-out bg-[#860914] text-[#ecd8d8] pt-[8px] pr-[16px] pb-[10px] pl-[16px] hover:bg-[#d4624e] disabled:hover:bg-[#860914]"
                 :disabled="isProcessing"
                 :class="{ 'opacity-50 cursor-not-allowed': isProcessing }"
               >
@@ -402,32 +402,6 @@ onMounted(async () => {
 <style scoped>
 @reference "tailwindcss";
 
-.edit-btn-container {
-  @apply flex;
-}
-
-.participation-badge {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  background-color: white;
-  color: #333;
-  padding: 8px 28px 10px 28px;
-  border-radius: 20px;
-  font-size: 24px;
-  font-weight: 600;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
-  margin-top: 30px;
-  margin-right: 30px;
-  border: 0;
-  text-align: center;
-  cursor: default;
-}
-
-.participation-badge i {
-  font-size: 20px;
-  color: #10b981;
-}
 
 @keyframes fadeInUp {
   from {
@@ -440,125 +414,9 @@ onMounted(async () => {
   }
 }
 
-.event-information-section {
-  max-width: 100vw;
-  padding-top: 2%;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-}
 
-.event-information-card {
-  max-width: 1200px;
-  min-width: 1000px;
-  width: 100%;
-  background-color: #f1f1f1;
-  padding-bottom: 30px;
-  margin: 0 auto;
-  position: relative;
-  border-radius: 20px;
-  overflow: hidden;
-}
 
-.event-img > img {
-  width: 100%;
-  aspect-ratio: 3.5 / 1;
-  object-fit: cover;
-}
-
-.event-map {
-  position: absolute;
-  bottom: 70px;
-  left: 80px;
-  z-index: 2;
-  background-color: gray;
-  border-radius: 10px;
-  max-width: 325px;
-  width: 325px;
-  height: 550px;
-  margin: 0 auto;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
-  cursor: pointer;
-}
-
-.event-tags {
-  display: flex;
-  margin-bottom: 20px;
-}
-
-.event-tags div {
-  background-color: var(--color-black);
-  padding: 8px 20px;
-  text-align: center;
-  margin-right: 10px;
-  border-radius: 20px;
-  color: white;
-}
-
-.event-content-box {
-  display: flex;
-}
-
-.event-content {
-  padding: 40px 70px 40px 500px;
-}
-
-.event-content-info {
-  display: flex;
-  align-items: center;
-  padding: 1px 0;
-}
-
-.event-content-info p {
-  font-size: 20px;
-  line-height: 2.5;
-  margin: 0;
-}
-
-.fa-solid {
-  padding: 0 30px 0 0;
-}
-
-.fa-calendar {
-  padding-right: 26px;
-}
-
-.event-title {
-  font-size: 28px;
-  margin: 10px 0;
-  font-weight: bold;
-}
-
-.event-payment,
-.fa-dollar-sign {
-  color: #860914;
-  font-weight: bold;
-}
-
-.event-btn {
-  margin-right: 30px;
-  margin-top: 30px;
-  border-radius: 20px;
-  border: 0;
-  font-size: 24px;
-  text-align: center;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
-  cursor: pointer;
-  transition: all 0.3s ease;
-}
-
-.event-btn-pay {
-  background-color: #860914;
-  color: #ecd8d8;
-  padding: 8px 16px 10px 16px;
-  transition: background-color 0.3s ease, color 0.3s ease;
-}
-
-.event-btn-pay:hover:not(:disabled) {
-  background-color: #d4624e;
-}
-
-.event-btn-cart {
+/* .event-btn-cart {
   background-color: white;
   padding: 8px 28px 10px 28px;
   cursor: pointer;
@@ -567,7 +425,7 @@ onMounted(async () => {
 .event-btn-cart:hover:not(:disabled) {
   background-color: #bbb;
   color: white;
-}
+} */
 
 .event-btn:disabled {
   opacity: 0.6;
