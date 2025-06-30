@@ -98,13 +98,13 @@ npm run dev
 ---
 ### 組員分工
 
-| 組員     | GitHub                                                 | 功能：會員 | 功能：地圖  | 功能：活動  | 功能：金流  |  
-|----------|-------------------------------------------------------|------------|------------|------------|------------|
-| 卓訢妤   | [2xin15](https://github.com/2xin15)                    | - 登入、註冊、酒吧收藏頁面設計 <br> - footer、AI 聊天機器人、登入、註冊 RWD  | - 串接 Google Map API<br> - 導入 Gemini AI 實現智慧酒吧推薦系統 |            |            |
-| 鄭婉君   | [Bella-Cheng](https://github.com/Bella-Cheng)          |            |            | - 活動前端頁面設計 <br> - 訂閱頁面設計 |            |
-| 紀雅馨   | [rakku2code](https://github.com/rakku2code)            |            |            | - 活動功能模組化設計 <br> - 建立活動首頁資料取得 API <br> - 活動頁面設計 |            |
-| 陳紫婷   | [jasminecchen](https://github.com/jasminecchen)        |            |            | 活動紀錄切版 |            |
-| 戎彬     | [Benjung1215](https://github.com/Benjung1215)          |            |            |            | - 購物車、結帳頁面設計 <br> - 訂單管理頁面設計 |
-| 蔡昌成   | [kirito489](https://github.com/kirito489)              | 註銷帳號頁面設計 |            |            |            |
-| 竇孝武   | [TouHsiaoWu](https://github.com/TouHsiaoWu)            |            | - 地圖關鍵字搜尋 <br> - 即時篩選更新、多重篩選設定 <br> - 酒吧資訊卡、酒吧詳情頁面設計 |            |            |
+| 組員     | GitHub                                                 | 實現功能 |  
+|----------|-------------------------------------------------------|------------|
+| 卓訢妤   | [2xin15](https://github.com/2xin15)                    | 1. 登入、註冊、酒吧收藏頁面設計 <br> 2. footer、AI 聊天機器人、登入、註冊 RWD <br> 3. 串接 Google Map API<br> 4. 導入 Gemini AI 實現智慧酒吧推薦系統 |
+| 鄭婉君   | [Bella-Cheng](https://github.com/Bella-Cheng)          | 1. 活動前端頁面設計 <br> 2. 訂閱頁面設計|
+| 紀雅馨   | [rakku2code](https://github.com/rakku2code)            | 1. 活動功能模組化設計 <br> 2. 建立活動首頁資料取得 API <br> 3. 活動頁面設計|
+| 陳紫婷   | [jasminecchen](https://github.com/jasminecchen)        | 1. 活動紀錄切版 |
+| 戎彬     | [Benjung1215](https://github.com/Benjung1215)          | 1.  購物車、結帳頁面設計 <br> 2. 訂單管理頁面設計 |
+| 蔡昌成   | [kirito489](https://github.com/kirito489)              | 1. 註銷帳號頁面設計 |
+| 竇孝武   | [TouHsiaoWu](https://github.com/TouHsiaoWu)            | 1. 地圖關鍵字搜尋 <br> 2. 即時篩選更新、多重篩選設定 <br> 3. 酒吧資訊卡、酒吧詳情頁面設計 |
 
