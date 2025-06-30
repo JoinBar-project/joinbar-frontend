@@ -27,57 +27,99 @@
     </div>
 
     <div v-else>
-      <div class="cart-header">
-        <div>商品</div>
-        <div>單價</div>
-        <div>數量</div>
-        <div>小計</div>
-        <div>操作</div>
-      </div>
+      <div class="desktop-layout">
+        <div class="cart-header">
+          <div>商品</div>
+          <div>單價</div>
+          <div>數量</div>
+          <div>小計</div>
+          <div>操作</div>
+        </div>
 
-      <div v-for="item in cartItems" :key="item.id || item.eventId" class="cart-row">
-        <div class="product">
-          <img
-            class="product-img"
-            :src="item.imageUrl || item.image || 'https://placehold.co/80x80?text=No+Image'"
-            :alt="item.name"
-          />
-          <div class="product-info">
-            <p class="product-name">{{ item.name }}</p>
-            <p class="product-bar" v-if="item.barName">{{ item.barName }}</p>
+        <div v-for="item in cartItems" :key="item.id || item.eventId" class="cart-row">
+          <div class="product">
+            <img
+              class="product-img"
+              :src="item.imageUrl || item.image || 'https://placehold.co/80x80?text=No+Image'"
+              :alt="item.name"
+            />
+            <div class="product-info">
+              <p class="product-name">{{ item.name }}</p>
+              <p class="product-bar" v-if="item.barName">{{ item.barName }}</p>
+            </div>
+          </div>
+
+          <div class="price">${{ item.price }}</div>
+
+          <div class="qty-box">
+            <span>{{ item.quantity }}</span>
+          </div>
+
+          <div class="subtotal">${{ calcSubtotal(item) }}</div>
+
+          <div class="actions">
+            <button 
+              @click="handleRemoveItem(item)" 
+              class="remove-btn"
+              :disabled="cart.loading"
+            >
+              {{ cart.loading ? '處理中...' : '刪除' }}
+            </button>
           </div>
         </div>
+      </div>
 
-        <div class="price">${{ item.price }}</div>
-
-        <div class="qty-box">
-          <span>{{ item.quantity }}</span>
-        </div>
-
-        <div class="subtotal">${{ calcSubtotal(item) }}</div>
-
-        <div class="actions">
-          <button 
-            @click="handleRemoveItem(item)" 
-            class="remove-btn"
-            :disabled="cart.loading"
-          >
-            {{ cart.loading ? '處理中...' : '刪除' }}
-          </button>
+      <div class="mobile-layout">
+        <div v-for="item in cartItems" :key="item.id || item.eventId" class="cart-card">
+          <div class="card-header">
+            <img
+              class="product-img-mobile"
+              :src="item.imageUrl || item.image || 'https://placehold.co/60x60?text=No+Image'"
+              :alt="item.name"
+            />
+            <div class="product-info-mobile">
+              <h4 class="product-name-mobile">{{ item.name }}</h4>
+              <p class="product-bar-mobile" v-if="item.barName">{{ item.barName }}</p>
+            </div>
+            <button 
+              @click="handleRemoveItem(item)" 
+              class="remove-btn-mobile"
+              :disabled="cart.loading"
+            >
+              <span class="remove-icon">🗑️</span>
+            </button>
+          </div>
+          
+          <div class="card-details">
+            <div class="detail-row">
+              <span class="detail-label">單價</span>
+              <span class="detail-value">${{ item.price }}</span>
+            </div>
+            <div class="detail-row">
+              <span class="detail-label">數量</span>
+              <span class="detail-value">{{ item.quantity }}</span>
+            </div>
+            <div class="detail-row total-row">
+              <span class="detail-label">小計</span>
+              <span class="detail-value total-value">${{ calcSubtotal(item) }}</span>
+            </div>
+          </div>
         </div>
       </div>
 
-      <div class="total-bar">
-        <p class="total-label">
-          總金額：<strong>${{ totalPrice }}</strong>
-        </p>
-        <button 
-          class="checkout-btn" 
-          @click="goToPayment"
-          :disabled="cart.loading"
-        >
-          {{ cart.loading ? '處理中...' : '去買單' }}
-        </button>
+      <div class="total-section">
+        <div class="total-bar">
+          <p class="total-label">
+            總金額：<strong>${{ totalPrice }}</strong>
+          </p>
+          <button 
+            class="checkout-btn" 
+            @click="goToPayment"
+            :disabled="cart.loading"
+          >
+            {{ cart.loading ? '處理中...' : '去買單' }}
+          </button>
+        </div>
       </div>
     </div>
 
@@ -390,6 +432,14 @@ const goShopping = () => {
   background-color: rgba(235, 150, 164, 0.1);
 }
 
+.desktop-layout {
+  display: block;
+}
+
+.mobile-layout {
+  display: none;
+}
+
 .cart-header {
   display: flex;
   padding: 16px 0;
@@ -488,11 +538,14 @@ const goShopping = () => {
   cursor: not-allowed;
 }
 
+.total-section {
+  margin-top: 32px;
+}
+
 .total-bar {
   display: flex;
   justify-content: flex-end;
   align-items: center;
-  margin-top: 32px;
   gap: 16px;
 }
 
@@ -585,4 +638,182 @@ const goShopping = () => {
     transform: translateX(0);
   }
 }
+
+@media (max-width: 767px) {
+  .cart-container {
+    margin: 20px 16px;
+    padding: 20px;
+    border-radius: 16px;
+  }
+
+  .cart-container h2 {
+    font-size: 20px;
+    margin-bottom: 20px;
+  }
+
+  .desktop-layout {
+    display: none;
+  }
+
+  .mobile-layout {
+    display: block;
+  }
+
+  .cart-card {
+    background: rgba(245, 209, 192, 0.05);
+    border: 1px solid var(--color-icon-secondary, #bcaea4);
+    border-radius: 12px;
+    margin-bottom: 16px;
+    overflow: hidden;
+  }
+
+  .card-header {
+    display: flex;
+    align-items: center;
+    padding: 16px;
+    gap: 12px;
+  }
+
+  .product-img-mobile {
+    width: 60px;
+    height: 60px;
+    object-fit: cover;
+    border-radius: 8px;
+    background-color: #f0f0f0;
+    flex-shrink: 0;
+  }
+
+  .product-info-mobile {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .product-name-mobile {
+    font-size: 16px;
+    font-weight: 600;
+    margin: 0 0 4px 0;
+    color: var(--color-text-selected, #f5d1c0);
+    line-height: 1.3;
+  }
+
+  .product-bar-mobile {
+    font-size: 13px;
+    color: var(--color-text-unselected, #937e7e);
+    margin: 0;
+  }
+
+  .remove-btn-mobile {
+    background: none;
+    border: none;
+    padding: 8px;
+    cursor: pointer;
+    border-radius: 8px;
+    transition: background-color 0.2s;
+    flex-shrink: 0;
+    min-height: 44px;
+    min-width: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .remove-btn-mobile:hover {
+    background-color: rgba(235, 150, 164, 0.1);
+  }
+
+  .remove-icon {
+    font-size: 18px;
+  }
+
+  .card-details {
+    padding: 0 16px 16px 16px;
+    border-top: 1px solid rgba(188, 174, 164, 0.3);
+  }
+
+  .detail-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 0;
+    font-size: 14px;
+  }
+
+  .detail-label {
+    color: var(--color-text-unselected, #937e7e);
+    font-weight: 500;
+  }
+
+  .detail-value {
+    color: var(--color-text-selected, #f5d1c0);
+    font-weight: 600;
+  }
+
+  .total-row {
+    border-top: 1px solid rgba(188, 174, 164, 0.3);
+    margin-top: 8px;
+    padding-top: 12px;
+  }
+
+  .total-value {
+    font-size: 16px;
+    color: var(--color-select, #d17361);
+  }
+
+  .total-section {
+    margin-top: 24px;
+  }
+
+  .total-bar {
+    flex-direction: column;
+    gap: 16px;
+    background: rgba(245, 209, 192, 0.05);
+    padding: 20px;
+    border-radius: 12px;
+    border: 1px solid var(--color-icon-secondary, #bcaea4);
+  }
+
+  .total-label {
+    font-size: 18px;
+    text-align: center;
+  }
+
+  .checkout-btn {
+    width: 100%;
+    padding: 16px;
+    font-size: 16px;
+    font-weight: 600;
+    min-height: 48px;
+  }
+
+  .empty-cart {
+    padding: 60px 20px;
+  }
+
+  .empty-cart h3 {
+    font-size: 20px;
+  }
+
+  .empty-description {
+    font-size: 15px;
+  }
+
+  .error-actions {
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .retry-btn, .dismiss-btn {
+    width: 100%;
+    padding: 12px 16px;
+    min-height: 44px;
+  }
+
+  .success-toast {
+    bottom: 16px;
+    right: 16px;
+    left: 16px;
+    text-align: center;
+  }
+}
+
 </style>
