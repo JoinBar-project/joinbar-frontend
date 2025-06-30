@@ -117,15 +117,15 @@ const handleCancelConfirm = async () => {
 
 <template>
   <div>
-    <div v-if="isUpdating" class="loading-overlay">
-      <div class="loading-message">
-        <i class="fa-solid fa-spinner fa-spin"></i>
+    <div v-if="isUpdating" class="fixed inset-0 bg-black/50 flex justify-center items-center z-[9999]">
+      <div class="bg-white p-8 rounded-[10px] flex items-center gap-4 text-[1.2rem] shadow-md">
+        <i class="fa-solid fa-spinner fa-spin text-[var(--color-primary-orange)]"></i>
         <span>更新中...</span>
       </div>
     </div>
 
-    <div class="event-information-section">
-      <div class="event-information-card">
+    <div class="max-w-[100vw] pt-[2%] flex justify-center items-center">
+      <div class="w-full max-w-[1200px] min-w-[1170px] bg-[#f1f1f1] pb-[30px] mx-auto relative rounded-[20px] overflow-hidden">
         <div class="event-img">
           <img :src="currentEvent.imageUrl" alt="活動圖片" />
         </div>
@@ -138,8 +138,8 @@ const handleCancelConfirm = async () => {
             </iframe>
           </div>
           <div class="event-content">
-            <div class="event-tags">
-              <div v-for="tag in currentTags" :key="tag.id">{{ tag.name }}</div>
+            <div class="flex flex-wrap gap-[10px] mt-[10px]">
+              <div v-for="tag in currentTags" :key="tag.id" class="bg-[var(--color-black)] text-white text-center rounded-[20px] px-[20px] py-[8px] whitespace-nowrap">{{ tag.name }}</div>
             </div>
 
             <h3 class="event-title">{{ currentEvent.name }}</h3>
@@ -167,9 +167,9 @@ const handleCancelConfirm = async () => {
             </div>
 
             <div class="flex items-center py-[1px]">
-            <i class="fa-solid fa-circle-exclamation pr-[26px] text-[#860914] font-bold"></i>
-            <p class="text-[20px] leading-[2.5] m-0 text-[#860914] font-bold">注意： 活動開始前 24 小時內無法取消報名</p>
-          </div>
+              <i class="fa-solid fa-circle-exclamation pr-[26px] text-[#860914] font-bold"></i>
+              <p class="text-[20px] leading-[2.5] m-0 text-[#860914] font-bold">注意： 活動開始前 24 小時內無法取消報名</p>
+            </div>
 
             <div class="edit-btn-container">
               <button
@@ -221,7 +221,7 @@ const handleCancelConfirm = async () => {
 <style scoped>
 @reference "tailwindcss";
 
-.loading-overlay {
+/* .loading-overlay {
   position: fixed;
   top: 0;
   left: 0;
@@ -232,9 +232,9 @@ const handleCancelConfirm = async () => {
   justify-content: center;
   align-items: center;
   z-index: 9999;
-}
+} */
 
-.loading-message {
+/* .loading-message {
   background-color: white;
   padding: 2rem;
   border-radius: 10px;
@@ -243,25 +243,25 @@ const handleCancelConfirm = async () => {
   gap: 1rem;
   font-size: 1.2rem;
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
-}
+} */
 
-.loading-message i {
+/* .loading-message i {
   color: var(--color-primary-orange);
-}
+} */
 
 .edit-btn-container {
   @apply flex;
 }
 
-.event-information-section {
+/* .event-information-section {
   max-width: 100vw;
   padding-top: 2%;
   display: flex;
   justify-content: center;
   align-items: center;
-}
+} */
 
-.event-information-card {
+/* .event-information-card {
   max-width: 1200px;
   min-width: 1170px;
   width: 100%;
@@ -272,9 +272,9 @@ const handleCancelConfirm = async () => {
   border-radius: 20px;
   overflow: hidden;
   position: relative;
-}
+} */
 
-.apply-tag {
+/* .apply-tag {
   background-color: var(--color-primary-red);
   color: #f1f1f1;
   padding: 20px 80px;
@@ -282,7 +282,7 @@ const handleCancelConfirm = async () => {
   position: absolute;
   top: 0;
   right: 80px;
-}
+} */
 
 .event-img > img {
   width: 100%;
@@ -305,7 +305,7 @@ const handleCancelConfirm = async () => {
   cursor: pointer;
 }
 
-.event-tags {
+/* .event-tags {
   display: flex;
   margin-top: 10px;
   flex-wrap: wrap;
@@ -319,9 +319,9 @@ const handleCancelConfirm = async () => {
   border-radius: 20px;
   color: white;
   white-space: nowrap;
-}
+} */
 
-.event-content-box {
+/* .event-content-box {
   display: flex;
 }
 
@@ -339,7 +339,7 @@ const handleCancelConfirm = async () => {
   font-size: 20px;
   line-height: 2;
   margin: 0;
-}
+} */
 
 .fa-solid {
   padding: 0 30px 0 0;
