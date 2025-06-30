@@ -24,21 +24,14 @@ const { showForm, showAlert, handleAlertAccept, handleAlertDeny, overlayClick } 
 // 檢查用戶是否為活動主辦人
 const isEventOwner = computed(() => {
   const currentUserId = authStore.user?.id || authStore.currentUser?.id;
-  const eventHostId = props.event?.hostUser;
-  
-  console.log('編輯權限檢查:', {
-    currentUserId,
-    eventHostId,
-    isOwner: currentUserId && Number(currentUserId) === Number(eventHostId),
-    authStoreUser: authStore.user,
-    event: props.event
-  });
-  
+  const eventHostId = props.event?.hostUser?.id || props.event?.hostUser;
   return currentUserId && eventHostId && Number(currentUserId) === Number(eventHostId);
 });
 
+// 檢查是否可以顯示編輯按鈕
 const canEdit = computed(() => {
-  return authStore.isAuthenticated && isEventOwner.value && props.eventId;
+  const result = authStore.isAuthenticated && isEventOwner.value && props.eventId;
+  return result;
 });
 
 function handleUpdate() {
@@ -54,20 +47,12 @@ function handleUpdate() {
       @accept="handleAlertAccept"
       @deny="handleAlertDeny" 
     />
+    
     <button
       v-if="canEdit"
       class="btn-open-form btn-edit"
       @click="showForm = true">
       編輯活動
-    </button>
-    
-    <!-- 如果需要調試，可以暫時顯示這個按鈕 -->
-    <button
-      v-if="true"
-      class="btn-open-form btn-edit"
-      style="background: red !important;"
-      @click="showForm = true">
-      測試編輯按鈕
     </button>
     
     <transition name="popup">
