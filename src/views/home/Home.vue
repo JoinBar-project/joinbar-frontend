@@ -1,8 +1,11 @@
 <script setup>
 import { ref, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
 import AdModal from '@/components/AdModal.vue'
 import adImageFile from '@/assets/homepage/subscribe.jpg'
 import placeTypeMap from '@/composables/placeTypeMap'
+
+const router = useRouter()
 
 const showAd = ref(false)
 const adImage = adImageFile
@@ -57,26 +60,44 @@ const features = [
 
 const bars = [
   {
+    id: "draft_land",
     name: "Draft Land",
     image: new URL('@/assets/homepage/bar-1.jpg', import.meta.url).href,
     tags: ["酒吧"]
   },
   {
+    id: "ron_xinyi", 
     name: "榕 RON Xinyi",
     image: new URL('@/assets/homepage/bar-2.jpg', import.meta.url).href,
-    tags: ["酒吧", "cafe",  "餐廳"]
+    tags: ["酒吧", "cafe", "餐廳"]
   },
   {
-    name: "星夜 Starry night Bar",
+    id: "starry_night",
+    name: "星夜 Starry night Bar", 
     image: new URL('@/assets/homepage/bar-3.jpg', import.meta.url).href,
     tags: ["酒吧", "夜店"]
   },
   {
+    id: "revolver",
     name: "Revolver",
     image: new URL('@/assets/homepage/bar-4.jpg', import.meta.url).href,
     tags: ["酒吧"]
   }
 ]
+
+const handleBarClick = (bar) => {
+  router.push({
+    path: '/map',
+    query: {
+  
+      name: bar.name,
+      rating: bar.rating || '',
+      reviews: bar.reviews || 0,
+      address: bar.desc,
+      fromHome: 'true' 
+    }
+  })
+}
 
 const getTagLabel = (tag) => {
   return placeTypeMap?.[tag] || tag
@@ -125,7 +146,12 @@ const getTagLabel = (tag) => {
     <div class="section-number-bg num-2">2</div>
     <h2>熱門酒吧推薦，不醉不歸排行榜</h2>
     <div class="bar-cards-container">
-      <div class="bar-card" v-for="(bar, index) in bars" :key="index">
+      <div 
+        class="bar-card" 
+        v-for="(bar, index) in bars" 
+        :key="index"
+        @click="handleBarClick(bar)"
+      >
         <img :src="bar.image" :alt="bar.name" />
         <div class="bar-info">
           <h3>{{ bar.name }}</h3>
