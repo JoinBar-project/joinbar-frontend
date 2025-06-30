@@ -85,11 +85,67 @@ const defaultPlaceholderImage = 'https://placehold.co/400x300/decdd5/860914?text
 // Google Place Details
 const { getPlaceDetails } = useGooglePlaceDetails();
 
+// 讀取 .env 或 config 取得 Google Maps API Key
+const GOOGLE_MAPS_API_KEY = import.meta.env.VITE_GOOGLE_MAPS_API_KEY || '';
+
+// 等待 Google Maps 載入
+function waitForGoogleMaps(timeout = 5000) {
+  return new Promise((resolve, reject) => {
+    const start = Date.now();
+    function check() {
+      if (window.google && window.google.maps && window.google.maps.places) {
+        resolve();
+      } else if (Date.now() - start > timeout) {
+        reject(new Error('Google Maps API 載入逾時'));
+      } else {
+        setTimeout(check, 100);
+      }
+    }
+    check();
+  });
+}
+
+// 主動載入 Google Maps script
+function loadGoogleMapsScript() {
+  return new Promise((resolve, reject) => {
+    if (window.google && window.google.maps && window.google.maps.places) {
+      resolve();
+      return;
+    }
+    const existingScript = document.querySelector('script[src*="maps.googleapis.com"]');
+    if (existingScript) {
+      existingScript.addEventListener('load', resolve);
+      existingScript.addEventListener('error', reject);
+      return;
+    }
+    if (!GOOGLE_MAPS_API_KEY) {
+      reject(new Error('Google Maps API Key 未設定'));
+      return;
+    }
+    const script = document.createElement('script');
+    script.src = `https://maps.googleapis.com/maps/api/js?key=${GOOGLE_MAPS_API_KEY}&libraries=places,geometry`;
+    script.async = true;
+    script.defer = true;
+    script.onload = resolve;
+    script.onerror = reject;
+    document.head.appendChild(script);
+  });
+}
+
 // 生命週期 - 載入收藏列表
 onMounted(async () => {
   await favoritesStore.fetchFavorites();
-  for (const bar of favoriteBars.value) {
-    await patchGoogleDetails(bar);
+  try {
+    await loadGoogleMapsScript();
+    await waitForGoogleMaps(8000);
+    for (const bar of favoriteBars.value) {
+      await patchGoogleDetails(bar);
+    }
+  } catch (e) {
+    for (const bar of favoriteBars.value) {
+      if (!bar.imageUrl) bar.imageUrl = defaultPlaceholderImage;
+      if (!bar.images || bar.images.length === 0) bar.images = [bar.imageUrl];
+    }
   }
 });
 
