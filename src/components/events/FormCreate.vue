@@ -452,7 +452,7 @@ onUnmounted(() => {
   <section class="event-form" id="new-event">
     <div class="form-header">建立新活動</div>
     <div class="form-container">
-      <div class="form-image-upload" @click="triggerFileInput">
+      <div class="cursor-pointer form-image-upload rounded-3xl bg-gradient-to-br from-gray-100 to-gray-300 water-drop-upload hover:opacity-80 active:opacity-50" @click="triggerFileInput">
         <input
           ref="fileInput"
           type="file"
@@ -462,6 +462,7 @@ onUnmounted(() => {
         />
         
         <div v-if="!imagePreview" class="event-image-placeholder">
+          <i class="fa-solid fa-upload"></i>
           點擊更換活動圖
         </div>
         
@@ -589,7 +590,7 @@ onUnmounted(() => {
 }
 
 .form-image-upload {
-  @apply flex justify-center items-center w-full h-72 text-xl text-gray-400 bg-gray-200;
+  @apply flex justify-center items-center w-full h-72 text-xl text-gray-400;
 }
 
 .form-layout {

@@ -1,11 +1,11 @@
 <template>
   <div class="bar-list-wrapper">
-    <div v-if="bars.length === 0" class="no-results">
+    <div v-if="barsWithFavoriteStatus.length === 0" class="no-results">
       目前沒有符合條件的酒吧。
     </div>
     <div v-else class="bar-cards-list">
       <div
-        v-for="bar in bars"
+        v-for="bar in barsWithFavoriteStatus"
         :key="bar.place_id || bar.id"
         class="bar-card"
         @click="selectBar(bar)"
@@ -24,8 +24,9 @@
           />
           <button
             class="wishlist-button"
-            @click.stop="emitToggleWishlist(bar.place_id)"
+            @click.stop="emitToggleWishlist(bar)"
             :aria-label="bar.isWishlisted ? '取消收藏' : '加入收藏'"
+            :disabled="loading"
           >
             <svg
               xmlns="http://www.w3.org/2000/svg"
@@ -62,7 +63,9 @@
 </template>
 
 <script setup>
-import { watch, ref } from "vue";
+import { computed, onMounted } from "vue";
+import { useFavoritesStore } from "@/stores/favorites";
+import { storeToRefs } from "pinia";
 import placeTypeMap from "@/composables/placeTypeMap";
 
 const props = defineProps({
@@ -73,6 +76,25 @@ const props = defineProps({
 });
 
 const emit = defineEmits(["bar-selected", "toggle-wishlist"]);
+
+const favoritesStore = useFavoritesStore();
+const { loading } = storeToRefs(favoritesStore);
+
+// 載入收藏列表
+onMounted(async () => {
+  await favoritesStore.fetchFavorites();
+});
+
+// 計算每個酒吧的收藏狀態
+const barsWithFavoriteStatus = computed(() => {
+  return props.bars.map((bar) => {
+    const identifier = bar.place_id || bar.googlePlaceId || bar.id;
+    return {
+      ...bar,
+      isWishlisted: favoritesStore.isFavorited(identifier),
+    };
+  });
+});
 
 const defaultPlaceholderImage =
   "https://placehold.co/300x200/decdd5/860914?text=Bar+Image";
@@ -96,28 +118,46 @@ const selectBar = (bar) => {
   emit("bar-selected", bar);
 };
 
-const emitToggleWishlist = (placeId) => {
-  if (!placeId) {
-    console.warn("無法收藏/取消收藏，因為 place_id 不存在。");
+// 更新收藏切換功能
+const emitToggleWishlist = async (bar) => {
+  const identifier = bar.place_id || bar.googlePlaceId || bar.id;
+  if (!identifier) {
+    console.warn("無法收藏/取消收藏，因為缺少識別碼");
     return;
   }
-  emit("toggle-wishlist", placeId);
+
+  try {
+    // 準備最小且正確的 barData 給 store
+    const barData = {
+      name: bar.name,
+      place_id: bar.place_id || bar.googlePlaceId,
+      googlePlaceId: bar.googlePlaceId || bar.place_id,
+      id: bar.id || bar.barId,
+      address: bar.formatted_address || bar.address || bar.vicinity || '',
+      latitude: bar.geometry?.location
+        ? (typeof bar.geometry.location.lat === 'function'
+            ? bar.geometry.location.lat()
+            : bar.geometry.location.lat)
+        : bar.location?.lat || bar.latitude,
+      longitude: bar.geometry?.location
+        ? (typeof bar.geometry.location.lng === 'function'
+            ? bar.geometry.location.lng()
+            : bar.geometry.location.lng)
+        : bar.location?.lng || bar.longitude,
+    };
+    // 使用 store 的 toggle 功能
+    const newStatus = await favoritesStore.toggleFavorite(barData);
+    // 通知父組件更新
+    emit("toggle-wishlist", identifier);
+  } catch (error) {
+    console.error("Failed to toggle favorite:", error);
+    alert("操作失敗，請稍後再試");
+  }
 };
 
 const getTagLabel = (tag) => {
   return placeTypeMap[tag] || tag;
 };
-
-watch(
-  () => props.bars,
-  (newBars) => {
-    console.log(
-      "BarList 接收到的 bars prop 並更新列表，目前數量:",
-      newBars.length
-    );
-  },
-  { immediate: true }
-);
 </script>
 
 <style scoped>

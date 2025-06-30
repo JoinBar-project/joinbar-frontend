@@ -1,8 +1,14 @@
 <script setup>
-import { ref, onMounted } from 'vue';
+import { ref, onMounted, onUnmounted, nextTick } from 'vue';
 import { useRouter } from 'vue-router';
 import { useAuthStore } from '@/stores/authStore';
 import BaseAlertModal from '@/components/common/BaseAlertModal.vue';
+import flatpickr from 'flatpickr';
+import 'flatpickr/dist/flatpickr.css';
+import { Mandarin } from 'flatpickr/dist/l10n/zh.js';
+
+const birthdayInput = ref(null);
+const birthdayPicker = ref(null);
 
 const step = ref(1);
 const showPassword = ref(false);
@@ -27,7 +33,6 @@ const registerFields = [
   { model: 'nickname', placeholder: '暱稱 (選填)', icon: 'fa-solid fa-user-pen', type: 'text' },
   { model: 'email', placeholder: '電子郵件', icon: 'fa-solid fa-envelope', type: 'email' },
   { model: 'password', placeholder: ' 密碼', icon: 'fa-solid fa-key', type: 'password' },
-  { model: 'birthday', placeholder: ' 生日 (選填)', icon: 'fa-solid fa-cake-candles', type: 'date' },
 ]
 
 const barTypes = ['運動酒吧', '音樂酒吧', '學生酒吧', '餐酒館', '暢飲店'];
@@ -143,17 +148,20 @@ const validatePassword = (password) => {
 
 const validateBirthday = (birthday) => {
   if (!birthday || birthday.trim() === '') {
-    return true;
-  }
-
-  const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
-  if (!dateRegex.test(birthday)) {
-    birthdayErrorMessage.value = '生日格式錯誤，請使用 YYYY-MM-DD 格式';
+    birthdayErrorMessage.value = '生日為必填欄位（需年滿18歲）';
     return false;
   }
 
   const birthDate = new Date(birthday);
   const today = new Date();
+  
+  // 檢查是否為有效日期
+  if (isNaN(birthDate.getTime())) {
+    birthdayErrorMessage.value = '請選擇有效的日期';
+    return false;
+  }
+  
+  // 檢查生日不能是未來日期
   today.setHours(0, 0, 0, 0);
   birthDate.setHours(0, 0, 0, 0);
   
@@ -162,9 +170,73 @@ const validateBirthday = (birthday) => {
     return false;
   }
 
+  let age = today.getFullYear() - birthDate.getFullYear();
+  const monthDiff = today.getMonth() - birthDate.getMonth();
+  
+  // 未週歲 要減1
+  if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+    age--;
+  }
+
+  if (age < 18) {
+    birthdayErrorMessage.value = '很抱歉，您必須年滿18歲才能註冊帳號';
+    return false;
+  }
+
   return true;
 }
 
+const initFlatpickr = async () => {
+  await nextTick();
+  
+  if (birthdayInput.value && !birthdayPicker.value) {
+    // 100年前作為最小日期
+    const hundredYearsAgo = new Date();
+    hundredYearsAgo.setFullYear(hundredYearsAgo.getFullYear() - 100);
+
+    birthdayPicker.value = flatpickr(birthdayInput.value, {
+      locale: Mandarin,
+      dateFormat: 'Y-m-d',
+      maxDate: 'today', // 不能選未來日期
+      minDate: hundredYearsAgo, // 最小日期為100年前
+      allowInput: false,
+      clickOpens: true,
+      closeOnSelect: true,
+      
+      // 預設開啟到18年前
+      defaultDate: new Date(new Date().setFullYear(new Date().getFullYear() - 18)),
+      
+      onChange: function(selectedDates, dateStr) {
+        registrationForm.value.birthday = dateStr;
+        // 如果有錯誤 清除錯誤狀態
+        if (dateStr) {
+          clearError('birthday');
+        }
+      },
+      
+      onReady: function(selectedDates, dateStr, instance) {
+        // 安全檢查是否存在
+        if (instance && instance.calendarContainer) {
+          instance.calendarContainer.style.zIndex = '9999';
+        }
+      },
+      
+      // 在打開時設置 z-index
+      onOpen: function(selectedDates, dateStr, instance) {
+        if (instance && instance.calendarContainer) {
+          instance.calendarContainer.style.zIndex = '9999';
+        }
+      }
+    });
+  }
+}
+
+const destroyFlatpickr = () => {
+  if (birthdayPicker.value) {
+    birthdayPicker.value.destroy();
+    birthdayPicker.value = null;
+  }
+}
 
 const goToPreferences = () => {
   let valid = true
@@ -251,6 +323,10 @@ const handleEmailRegistration = async () => {
         }
       };
 
+      if (birthdayPicker.value) {
+        birthdayPicker.value.clear();
+      }
+
       step.value = 1;
 
       setTimeout(() => {
@@ -280,6 +356,10 @@ onMounted(async () => {
   if (result?.success) {
     router.push(result.redirect)
   }
+  await initFlatpickr();
+})
+onUnmounted(() => {
+  destroyFlatpickr();
 })
 </script>
 
@@ -348,8 +428,46 @@ onMounted(async () => {
                 <span v-else-if="field.model === 'nickname'">{{ nicknameErrorMessage }}</span>
                 <span v-else-if="field.model === 'email'">{{ emailErrorMessage }}</span>
                 <span v-else-if="field.model === 'password'">{{ passwordErrorMessage }}</span>
-                <span v-else-if="field.model === 'birthday'">{{ birthdayErrorMessage }}</span>
                 <span v-else>{{ field.placeholder }}為必填欄位</span>
+              </div>
+            </div>
+
+            <div class="space-y-1">
+              <div 
+                :class="[
+                  'flex items-center border rounded px-3 py-2 transition-colors cursor-pointer',
+                  errors.birthday 
+                    ? 'border-[var(--color-primary-orange)] border-2 bg-white' 
+                    : 'border-[var(--color-icon-secondary)]'
+                ]">
+                <i :class="[
+                  'fa-solid fa-cake-candles mr-2',
+                  errors.birthday ? 'text-[var(--color-black)]' : 'text-[var(--color-icon-secondary)]'
+                ]" />
+                <input 
+                  ref="birthdayInput"
+                  type="text"
+                  placeholder="請選擇生日（需年滿18歲）"
+                  :value="registrationForm.birthday"
+                  readonly
+                  :disabled="authStore.isAnyLoading"
+                  :class="[
+                    'w-full outline-none placeholder-opacity-70 transition-colors text-sm cursor-pointer',
+                    errors.birthday 
+                      ? 'text-[var(--color-primary-orange)] placeholder-[var(--color-primary-orange)]' 
+                      : 'text-[var(--color-secondary-green)] placeholder-[var(--color-secondary-green)]'
+                  ]"
+                  :style="!errors.birthday ? 'color: var(--color-primary-orange)' : ''"
+                />
+                <i :class="[
+                  'fa-solid fa-calendar ml-2',
+                  errors.birthday ? 'text-[var(--color-black)]' : 'text-[var(--color-icon-secondary)]'
+                ]" />
+              </div>
+
+              <!-- 生日錯誤訊息 -->
+              <div v-if="errors.birthday" class="text-[var(--color-primary-orange)] text-xs ml-1">
+                {{ birthdayErrorMessage }}
               </div>
             </div>
 
@@ -468,5 +586,57 @@ onMounted(async () => {
 .slide-fade-leave-to {
   opacity: 0;
   transform: translateX(-100px);
+}
+
+:deep(.flatpickr-calendar) {
+  border-radius: 12px !important;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15) !important;
+  border: 1px solid #e5e7eb !important;
+  font-family: inherit !important;
+}
+
+:deep(.flatpickr-day) {
+  border-radius: 6px !important;
+  font-weight: 500 !important;
+}
+
+:deep(.flatpickr-day.selected) {
+  background: var(--color-primary-orange) !important;
+  border-color: var(--color-primary-orange) !important;
+  color: white !important;
+}
+
+:deep(.flatpickr-day:hover:not(.selected)) {
+  background: var(--color-secondary-green) !important;
+  border-color: var(--color-secondary-green) !important;
+  color: white !important;
+}
+
+:deep(.flatpickr-day.today) {
+  border-color: var(--color-primary-orange) !important;
+  font-weight: 700 !important;
+}
+
+:deep(.flatpickr-months .flatpickr-month) {
+  background: var(--color-black) !important;
+  color: var(--color-secondary-green) !important;
+}
+
+:deep(.flatpickr-current-month .flatpickr-monthDropdown-months) {
+  background: var(--color-black) !important;
+  color: var(--color-secondary-green) !important;
+}
+
+:deep(.flatpickr-current-month .numInputWrapper span.arrowUp:after) {
+  border-bottom-color: var(--color-secondary-green) !important;
+}
+
+:deep(.flatpickr-current-month .numInputWrapper span.arrowDown:after) {
+  border-top-color: var(--color-secondary-green) !important;
+}
+
+:deep(.flatpickr-weekday) {
+  color: var(--color-icon-secondary) !important;
+  font-weight: 600 !important;
 }
 </style>
