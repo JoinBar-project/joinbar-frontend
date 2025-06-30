@@ -14,17 +14,20 @@ const userId = computed(() => user.value?.id);
 const profileLink = computed(() => ({ name: 'MemberProfile', params: { id: userId.value } }));
 const barLink = computed(() => ({ name: 'BarFavorites', params: { id: userId.value } }));
 const memberCardLink = computed(() => ({ name: 'MemberCard', params: { id: userId.value } }));
-const ordersLink = computed(() => ({ name: 'OrderRecords', params: { id: userId.value } }));
+const ordersLink = computed(() => ({ name: 'MemberOrderRecords', params: { id: userId.value } }));
 
 const selectedItem = ref('profile');
 const expandedEventRecords = ref(null);
+
+const showMobileDropdown = ref(false);
+const showSideMenu = ref(false);
 
 const menuItems = [
   { name: 'profile', label: '會員資料', icon: 'fa-user', to: profileLink },
   {
     name: 'event-records',
     label: '揪團活動紀錄',
-    icon: 'fa-calendar',
+    icon: 'fa-briefcase',
     children: [
       { name: 'published', label: '我發布的活動', icon: 'fa-bullhorn', to: { name: 'PublishedEvents', params: { id: userId.value } } },
       { name: 'joined', label: '我參加的活動', icon: 'fa-calendar-check', to: { name: 'JoinedEvents', params: { id: userId.value } } }
@@ -44,6 +47,18 @@ const handleMainMenuClick = (item) => {
   }
 };
 
+const handleMobileMenuClick = (item) => {
+  selectedItem.value = item.name;
+  router.push(item.to.value);
+  closeAllMobileDropdowns();
+};
+
+const handleMobileChildMenuClick = (child) => {
+  selectedItem.value = child.name;
+  router.push(child.to);
+  closeAllMobileDropdowns();
+};
+
 const toggleEventRecords = (name) => {
   if (expandedEventRecords.value === name) {
     expandedEventRecords.value = null;
@@ -51,6 +66,12 @@ const toggleEventRecords = (name) => {
     expandedEventRecords.value = name;
   }
 };
+
+const closeAllMobileDropdowns = () => {
+  showMobileDropdown.value = false;
+  showSideMenu.value = false;
+};
+
 const handleLogout = async () => {
   if (authStore.loginMethod === 'line') {
     try {
@@ -101,6 +122,7 @@ const handleLogout = async () => {
       });
     }
   }
+  closeAllMobileDropdowns();
 };
 
 const handleAccountDeletion = async () => {
@@ -249,7 +271,6 @@ const handleAccountDeletion = async () => {
         const confirmText = document.getElementById('swal-confirm-text').value;
         const finalConfirm = document.getElementById('swal-final-confirm').checked;
 
-        // 驗證表單
         const needsPassword = warningInfo.accountInfo.providerType === 'email';
         
         if (needsPassword && !password.trim()) {
@@ -279,7 +300,6 @@ const handleAccountDeletion = async () => {
       return;
     }
 
-    // 執行註銷
     Swal.fire({
       title: '處理中...',
       text: '正在註銷您的帳戶，請稍候',
@@ -304,7 +324,6 @@ const handleAccountDeletion = async () => {
       throw new Error(result.error || '註銷失敗');
     }
 
-    // 註銷成功
     await Swal.fire({
       title: '帳戶註銷成功',
       html: `
@@ -327,7 +346,6 @@ const handleAccountDeletion = async () => {
       width: '400px'
     });
 
-    // 清除登入狀態並導向首頁
     authStore.clearAuthState();
     router.push('/home');
   } catch(err) {
@@ -365,14 +383,14 @@ const handleAccountDeletion = async () => {
       confirmButtonColor: '#dc2626'
     });
   }
+  closeAllMobileDropdowns();
 }
 </script>
 
 <template>
-  <nav class="flex justify-center w-56 min-h-screen p-6 bg-gray-100">
+  <nav class="hidden md:flex justify-center w-56 min-h-screen p-6 bg-gray-100">
     <ul class="w-full space-y-1">
       <li v-for="item in menuItems" :key="item.name">
-        <!-- 左側選單 -->
         <div
           @click="handleMainMenuClick(item)"
           :class="[
@@ -392,7 +410,6 @@ const handleAccountDeletion = async () => {
             : '']" />
         </div>
 
-        <!-- 揪團活動紀錄的子選單 -->
         <div v-if="item.children && expandedEventRecords === item.name" class="px-2 py-2 mt-1 bg-[#e1ac6747] rounded-lg shadow-inner">
           <ul class="space-y-1">
             <li v-for="child in item.children" :key="child.name">
@@ -417,11 +434,150 @@ const handleAccountDeletion = async () => {
         <button @click="handleAccountDeletion"  class="flex items-center w-full gap-2 p-2 text-black transition rounded cursor-pointer hover:bg-gray-200">
           <i class="w-4 fa-solid fa-user-slash" />會員註銷</button>
       </li>
-      <!-- 登出 -->
       <li>
         <button @click="handleLogout" class="flex items-center w-full gap-2 p-2 text-black transition rounded cursor-pointer hover:bg-gray-200">
           <i class="w-4 fa-solid fa-arrow-right-from-bracket" />登出</button>
       </li>
     </ul>
   </nav>
+
+  <nav class="md:hidden bg-white border-b border-gray-200 shadow-sm sticky top-0 z-20">
+    <div class="px-2 py-2">
+      <div class="flex items-center justify-center relative">
+        <div class="absolute left-0 top-0 bottom-0 w-4 bg-gradient-to-r from-white to-transparent z-10 pointer-events-none"></div>
+        
+        <div class="flex space-x-1 overflow-x-auto scrollbar-hide w-full px-2" style="scroll-behavior: smooth;">
+        
+        <div class="absolute right-0 top-0 bottom-0 w-4 bg-gradient-to-l from-white to-transparent z-10 pointer-events-none"></div>
+          <button
+            @click="handleMobileMenuClick(menuItems[0])"
+            :class="[
+              'flex flex-col items-center px-3 py-2 rounded-lg transition-all duration-200 flex-shrink-0 min-w-[60px]',
+              selectedItem === 'profile'
+                ? 'bg-blue-100 text-blue-700 shadow-sm transform scale-95'
+                : 'text-gray-600 hover:bg-gray-50 hover:text-gray-800'
+            ]">
+            <i class="fa-solid fa-user text-base mb-1" />
+            <span class="text-xs font-medium whitespace-nowrap">會員資料</span>
+          </button>
+
+          <button
+            @click="handleMobileChildMenuClick({ name: 'published', to: { name: 'PublishedEvents', params: { id: userId } } })"
+            :class="[
+              'flex flex-col items-center px-3 py-2 rounded-lg transition-all duration-200 flex-shrink-0 min-w-[60px]',
+              selectedItem === 'published'
+                ? 'bg-blue-100 text-blue-700 shadow-sm transform scale-95'
+                : 'text-gray-600 hover:bg-gray-50 hover:text-gray-800'
+            ]">
+            <i class="fa-solid fa-bullhorn text-base mb-1" />
+            <span class="text-xs font-medium whitespace-nowrap">發布紀錄</span>
+          </button>
+
+          <button
+            @click="handleMobileChildMenuClick({ name: 'joined', to: { name: 'JoinedEvents', params: { id: userId } } })"
+            :class="[
+              'flex flex-col items-center px-3 py-2 rounded-lg transition-all duration-200 flex-shrink-0 min-w-[60px]',
+              selectedItem === 'joined'
+                ? 'bg-blue-100 text-blue-700 shadow-sm transform scale-95'
+                : 'text-gray-600 hover:bg-gray-50 hover:text-gray-800'
+            ]">
+            <i class="fa-solid fa-calendar-check text-base mb-1" />
+            <span class="text-xs font-medium whitespace-nowrap">參加紀錄</span>
+          </button>
+
+          <button
+            @click="handleMobileMenuClick(menuItems[2])"
+            :class="[
+              'flex flex-col items-center px-3 py-2 rounded-lg transition-all duration-200 flex-shrink-0 min-w-[60px]',
+              selectedItem === 'bar'
+                ? 'bg-blue-100 text-blue-700 shadow-sm transform scale-95'
+                : 'text-gray-600 hover:bg-gray-50 hover:text-gray-800'
+            ]">
+            <i class="fa-solid fa-beer-mug-empty text-base mb-1" />
+            <span class="text-xs font-medium whitespace-nowrap">酒吧收藏</span>
+          </button>
+
+          <button
+            @click="handleMobileMenuClick(menuItems[3])"
+            :class="[
+              'flex flex-col items-center px-3 py-2 rounded-lg transition-all duration-200 flex-shrink-0 min-w-[60px]',
+              selectedItem === 'card'
+                ? 'bg-blue-100 text-blue-700 shadow-sm transform scale-95'
+                : 'text-gray-600 hover:bg-gray-50 hover:text-gray-800'
+            ]">
+            <i class="fa-solid fa-id-card text-base mb-1" />
+            <span class="text-xs font-medium whitespace-nowrap">酒友卡</span>
+          </button>
+
+          <button
+            @click="handleMobileMenuClick(menuItems[4])"
+            :class="[
+              'flex flex-col items-center px-3 py-2 rounded-lg transition-all duration-200 flex-shrink-0 min-w-[60px]',
+              selectedItem === 'orders'
+                ? 'bg-blue-100 text-blue-700 shadow-sm transform scale-95'
+                : 'text-gray-600 hover:bg-gray-50 hover:text-gray-800'
+            ]">
+            <i class="fa-solid fa-receipt text-base mb-1" />
+            <span class="text-xs font-medium whitespace-nowrap">訂單紀錄</span>
+          </button>
+
+          <button
+            @click="handleAccountDeletion"
+            class="flex flex-col items-center px-3 py-2 rounded-lg transition-all duration-200 flex-shrink-0 min-w-[60px] text-red-600 hover:bg-red-50 hover:text-red-700">
+            <i class="fa-solid fa-user-slash text-base mb-1" />
+            <span class="text-xs font-medium whitespace-nowrap">會員註銷</span>
+          </button>
+
+          <button
+            @click="handleLogout"
+            class="flex flex-col items-center px-3 py-2 rounded-lg transition-all duration-200 flex-shrink-0 min-w-[60px] text-gray-600 hover:bg-gray-50 hover:text-gray-800">
+            <i class="fa-solid fa-arrow-right-from-bracket text-base mb-1" />
+            <span class="text-xs font-medium whitespace-nowrap">登出</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </nav>
+
+  <div 
+    v-if="showMobileDropdown" 
+    @click="closeAllMobileDropdowns"
+    class="fixed inset-0 z-40 md:hidden">
+  </div>
 </template>
+
+<style scoped>
+@media (max-width: 767px) {
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+
+  .overflow-x-auto::-webkit-scrollbar {
+    height: 4px;
+  }
+
+  .overflow-x-auto::-webkit-scrollbar-track {
+    background: rgba(0, 0, 0, 0.05);
+    border-radius: 2px;
+  }
+
+  .overflow-x-auto::-webkit-scrollbar-thumb {
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: 2px;
+  }
+
+  .overflow-x-auto::-webkit-scrollbar-thumb:hover {
+    background: rgba(0, 0, 0, 0.3);
+  }
+
+  .overflow-x-auto {
+    -webkit-overflow-scrolling: touch;
+    scroll-snap-type: x proximity;
+  }
+}
+</style>
