@@ -89,7 +89,7 @@ const showBadges = computed(() => {
 </script>
 
 <template>
-  <div class="w-full pt-8 flex justify-center items-center">
+  <div class="w-full pt-12 flex justify-center items-center">
     <div class="w-full max-w-[1200px] min-w-[1000px] bg-gray-100 rounded-2xl pb-10">
 
       <div class="w-full max-w-[1036px] mx-auto grid grid-cols-9 gap-5">

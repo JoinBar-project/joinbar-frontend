@@ -130,7 +130,7 @@ const handleCancelConfirm = async () => {
           <img :src="currentEvent.imageUrl" alt="活動圖片" class="w-full aspect-[3.5/1] object-cover"/>
         </div>
         <div class="event-content-box">
-          <div class="absolute bottom-[70px] left-[80px] z-[2] bg-gray-500 rounded-[10px] max-w-[325px] w-[325px] h-[500px] mx-auto shadow-md cursor-pointer">
+          <div class="absolute bottom-[70px] left-[80px] z-[2] bg-gray-500 rounded-[10px] max-w-[325px] w-[325px] h-[520px] mx-auto shadow-md cursor-pointer">
             <iframe
               v-if="currentEvent.location"
               :src="`https://www.google.com/maps?q=${encodeURIComponent(currentEvent.location)}&output=embed`"
@@ -202,8 +202,8 @@ const handleCancelConfirm = async () => {
       </div>
     </div>
 
-    <EventHoster :user="currentEvent.hostUser" />
-    <MessageBoard v-if="isJoin" />
+    <EventHoster :user="currentEvent.hostUser" class="mb-12" />
+    <MessageBoard v-if="isJoin" class="mb-12"/>
 
     <BaseConfirmModal
       :visible="showModal"
