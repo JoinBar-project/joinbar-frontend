@@ -1,17 +1,17 @@
 <script setup>
-import { ref, computed, onMounted, onUnmounted, nextTick } from 'vue';
-import axios from 'axios';
+import { ref, computed, watch, onMounted, onUnmounted, nextTick } from 'vue';
+import apiClient from '@/api/axios';
 import { useEventForm } from '@/composables/useEventForm';
 import { useAuthStore } from '@/stores/authStore';
 import { useTagStore } from '@/stores/tag';
 import Hashtag from './Hashtag.vue';
-import apiClient from '@/api/axios';
 import BaseAlertModal from '@/components/common/BaseAlertModal.vue';
+import { useGoogleMaps } from '@/composables/useGoogleMaps/userIndex.js';
+import debounce from 'lodash/debounce';
 
 import flatpickr from 'flatpickr';
 import 'flatpickr/dist/flatpickr.css';
 import { Mandarin } from 'flatpickr/dist/l10n/zh.js';
-
 const emit = defineEmits(['submit']);
 
 const authStore = useAuthStore();
@@ -39,6 +39,28 @@ const endDateInput = ref(null);
 const startDatePicker = ref(null);
 const endDatePicker = ref(null);
 
+// Google Maps 相關
+const mapContainer = ref(null);
+const {
+  map,
+  isReady,
+  loadGoogleMapsAPI,
+  initMap,
+  getGeocode,
+  addMarker,
+  clearMarkers,
+  panTo,
+  setZoom,
+  getPlacePredictions,
+} = useGoogleMaps(mapContainer, {
+  googleMapsApiKey: import.meta.env.VITE_GOOGLE_MAPS_API_KEY,
+  onError: (msg) => showAlert('地圖錯誤', msg, 'error'),
+});
+
+const searchBarName = ref('');
+const suggestions = ref([]);
+const barAddress = ref('');
+
 // Modal 狀態管理
 const alertModal = ref({
   visible: false,
@@ -61,6 +83,7 @@ const closeAlert = () => {
   alertModal.value.visible = false;
 };
 
+// 日期選擇器初始化
 const initFlatpickr = async () => {
   await nextTick();
   
@@ -122,6 +145,99 @@ const destroyFlatpickr = () => {
     endDatePicker.value = null;
   }
 }
+
+// Google Maps 功能
+const getSuggestions = debounce(async (input) => {
+  if (!input) {
+    suggestions.value = [];
+    return;
+  }
+  if (!isReady.value) return;
+  try {
+    suggestions.value = await getPlacePredictions(input);
+  } catch (error) {
+    console.error('獲取建議失敗:', error);
+    showAlert('搜尋錯誤', '無法獲取地點建議，請稍後再試', 'warning');
+  }
+}, 300);
+
+watch(searchBarName, (val) => {
+  getSuggestions(val);
+});
+
+const selectSuggestion = async (suggestion) => {
+  suggestions.value = [];
+  searchBarName.value = suggestion.description;
+  await searchBarLocation(suggestion.description);
+};
+
+const searchBarLocation = async (query) => {
+  if (!query) return;
+  if (!isReady.value) return;
+  
+  try {
+    const location = await getGeocode(query);
+    if (location) {
+      clearMarkers();
+      addMarker({
+        location,
+        title: query,
+        infoContent: query,
+        isBarLike: true,
+      });
+      panTo(location, 14);
+      setZoom(14);
+      barName.value = query;
+      barAddress.value = query;
+      eventLocation.value = query; // 更新表單的地址欄位
+    }
+  } catch (error) {
+    console.error('搜尋地點失敗:', error);
+    clearMarkers();
+    barAddress.value = '';
+    showAlert('搜尋失敗', '無法找到該地點，請嘗試其他關鍵字', 'warning');
+  }
+};
+
+// 監聽酒吧名稱變化，自動搜尋地點
+watch(barName, async (newName) => {
+  if (!newName) {
+    clearMarkers();
+    return;
+  }
+  if (!isReady.value) return;
+  
+  try {
+    const location = await getGeocode(newName);
+    if (location) {
+      clearMarkers();
+      addMarker({
+        location,
+        title: newName,
+        infoContent: newName,
+        isBarLike: true,
+      });
+      panTo(location, 16);
+      eventLocation.value = newName; // 同步更新表單地址
+    }
+  } catch (error) {
+    console.error('自動搜尋失敗:', error);
+    clearMarkers();
+  }
+});
+
+// 初始化
+onMounted(async () => {
+  await initFlatpickr();
+  await loadGoogleMapsAPI();
+  if (mapContainer.value) {
+    await initMap();
+  }
+});
+
+onUnmounted(() => {
+  destroyFlatpickr();
+});
 
 function handleImageSelect(event) {
   const file = event.target.files[0];
@@ -373,14 +489,29 @@ onUnmounted(() => {
           </div>
           <div class="form-row">
             <label for="bar-name">酒吧名稱</label>
-            <input
-              type="text"
-              id="bar-name"
-              v-model="barName"
-              placeholder="請輸入酒吧名稱" />
+            <div style="position: relative; width: 100%;">
+              <input
+                type="text"
+                id="bar-name"
+                v-model="searchBarName"
+                placeholder="請輸入酒吧名稱"
+                autocomplete="off"
+                style="width: 100%;"
+              />
+              <ul v-if="suggestions.length" class="suggestions-list" style="position: absolute; top: 40px; left: 0; right: 0; z-index: 20; background: white; border: 1px solid #ddd; border-radius: 8px; max-height: 200px; overflow-y: auto; box-shadow: 0 4px 10px rgba(0,0,0,0.1);">
+                <li
+                  v-for="(suggestion, idx) in suggestions"
+                  :key="idx"
+                  @click="selectSuggestion(suggestion)"
+                  style="padding: 10px 12px; cursor: pointer; border-bottom: 1px solid #f0f0f0; display: flex; align-items: center; gap: 6px;"
+                >
+                  <span style="font-size: 18px;">🔍</span> {{ suggestion.description }}
+                </li>
+              </ul>
+            </div>
           </div>
           <div class="event-location">
-            {{ eventLocation }}
+            {{ barAddress }}
           </div>
           <div class="form-row">
             <label for="event-start-date">開始日期</label>
@@ -425,11 +556,7 @@ onUnmounted(() => {
           <Hashtag v-model="eventHashtags" />
         </div>
         <div class="form-right">
-          <iframe 
-            v-if="eventLocation"
-            :src="`https://www.google.com/maps?q=${encodeURIComponent(eventLocation)}&output=embed`"
-            class="w-full h-full border-0 rounded-lg">
-          </iframe>
+          <div ref="mapContainer" class="w-full h-full border-0 rounded-lg" style="min-height: 300px; background: #2d2d2d;"></div>
         </div>
       </div>
       
