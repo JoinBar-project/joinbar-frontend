@@ -2,6 +2,7 @@
 import { ref, onMounted } from 'vue'
 import AdModal from '@/components/AdModal.vue'
 import adImageFile from '@/assets/homepage/subscribe.jpg'
+import placeTypeMap from '@/composables/placeTypeMap'
 
 const showAd = ref(false)
 const adImage = adImageFile
@@ -57,26 +58,29 @@ const features = [
 const bars = [
   {
     name: "Draft Land",
-    desc: "台北市大安區忠孝東路四段248巷2號",
-    image: new URL('@/assets/homepage/bar-1.jpg', import.meta.url).href
+    image: new URL('@/assets/homepage/bar-1.jpg', import.meta.url).href,
+    tags: ["酒吧"]
   },
   {
     name: "榕 RON Xinyi",
-    desc: "台北市信義區基隆路二段12號",
-    image: new URL('@/assets/homepage/bar-2.jpg', import.meta.url).href
+    image: new URL('@/assets/homepage/bar-2.jpg', import.meta.url).href,
+    tags: ["酒吧", "cafe",  "餐廳"]
   },
   {
     name: "星夜 Starry night Bar",
-    desc: "台北市大同區長安西路89號",
-    image: new URL('@/assets/homepage/bar-3.jpg', import.meta.url).href
+    image: new URL('@/assets/homepage/bar-3.jpg', import.meta.url).href,
+    tags: ["酒吧", "夜店"]
   },
   {
     name: "Revolver",
-    desc: "台北市中正區羅斯福路一段1-2號",
-    image: new URL('@/assets/homepage/bar-4.jpg', import.meta.url).href
+    image: new URL('@/assets/homepage/bar-4.jpg', import.meta.url).href,
+    tags: ["酒吧"]
   }
 ]
 
+const getTagLabel = (tag) => {
+  return placeTypeMap?.[tag] || tag
+}
 </script>
 
 <template>
@@ -125,12 +129,24 @@ const bars = [
         <img :src="bar.image" :alt="bar.name" />
         <div class="bar-info">
           <h3>{{ bar.name }}</h3>
+          
+          <div v-if="bar.tags && bar.tags.length" class="bar-tags-detail">
+            <div class="tags-wrapper">
+              <span
+                v-for="tag in bar.tags"
+                :key="tag"
+                class="detail-tag"
+              >
+                {{ tag }}
+              </span>
+            </div>
+          </div>
+          
           <p>{{ bar.desc }}</p>
         </div>
       </div>
     </div>
   </section>
-
 </template>
 
 <style scoped>
@@ -180,7 +196,6 @@ const bars = [
 .num-2 {
   @apply text-[#DAA258]/50;
 }
-
 
 .features-section {
   @apply bg-[rgba(175,177,140,0.5)];
@@ -254,4 +269,15 @@ const bars = [
   @apply m-0 text-[#666666] text-[14.4px];
 }
 
+.bar-tags-detail {
+  @apply mb-[12px];
+}
+
+.bar-tags-detail .tags-wrapper {
+  @apply flex flex-wrap gap-[10px];
+}
+
+.detail-tag {
+  @apply bg-[#e6f7ff] text-[#1890ff] px-[12px] py-[6px] rounded-[20px] text-[14px] whitespace-nowrap border border-[#91d5ff];
+}
 </style>
