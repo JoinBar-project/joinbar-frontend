@@ -3,7 +3,6 @@ import dayjs from 'dayjs';
 import utc from 'dayjs/plugin/utc';
 import timezone from 'dayjs/plugin/timezone';
 import 'dayjs/locale/zh-tw';
-import { joinEventById } from '@/api/event';
 
 dayjs.extend(utc);
 dayjs.extend(timezone);
@@ -11,7 +10,7 @@ dayjs.locale('zh-tw');
 
 const tz = 'Asia/Taipei';
 
-export function useEvent(event) {
+export function useEvent(event, showAlert = () => {}) {
   const isJoin = ref(false);
   const joinedNum = ref(0);
   const showModal = ref(false);
@@ -52,11 +51,24 @@ export function useEvent(event) {
   });
 
   function toggleJoin() {
-    console.log('🔄 toggleJoin 被調用，當前狀態:', isJoin.value);
+    const token = localStorage.getItem('access_token');
+    if (!token) {
+      showAlert('warning', '尚未登入', '請先登入才能參加活動');
+      return;
+    }
+
+    if (
+      event.value.maxPeople &&
+      joinedNum.value >= event.value.maxPeople &&
+      !isJoin.value
+    ) {
+      showAlert('warning', '人數已滿', '已達報名上限，無法再報名此活動');
+      return;
+    }
 
     isJoin.value = !isJoin.value;
 
-    if (isJoin.value === true) {
+    if (isJoin.value) {
       joinedNum.value++;
     } else {
       joinedNum.value--;

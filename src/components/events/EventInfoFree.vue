@@ -6,9 +6,9 @@ import EventHoster from './EventHoster.vue';
 import MessageBoard from './MessageBoard.vue';
 import ModalEdit from '@/components/events/ModalEdit.vue';
 import BaseConfirmModal from '@/components/common/BaseConfirmModal.vue';
-import BaseAlertModal from '@/components/common/BaseAlertModal.vue'
+import BaseAlertModal from '@/components/common/BaseAlertModal.vue';
 
-const emit = defineEmits(['update']);
+const emit = defineEmits(['update', 'close']);
 
 const props = defineProps({
   event: Object,
@@ -19,6 +19,18 @@ const props = defineProps({
     required: true,
   },
 });
+
+const alertVisible = ref(false);
+const alertType = ref('');
+const alertTitle = ref('');
+const alertMessage = ref('');
+
+function showAlert(type, title, message) {
+  alertType.value = type;
+  alertTitle.value = title;
+  alertMessage.value = message;
+  alertVisible.value = true;
+}
 
 const currentUserId = computed(() => {
   const user = JSON.parse(localStorage.getItem('user'));
@@ -40,7 +52,7 @@ const {
   openCancelModal,
   closeModal,
   handleConfirmCancel
-} = useEvent(eventRef);
+} = useEvent(eventRef, showAlert);
 
 const currentUser = computed(() => props.user || {});
 const currentEvent = computed(() => localEvent.value || {});
@@ -100,7 +112,6 @@ async function handleEventUpdate() {
 const handleJoinToggle = async () => {
   try {
     await toggleJoin();
-    await reloadEventData();
   } catch (error) {
     console.error('報名操作失敗:', error);
   }
@@ -215,6 +226,13 @@ const handleCancelConfirm = async () => {
       cancelText="取消"
       @confirm="handleCancelConfirm"
       @cancel="closeModal"
+    />
+    <BaseAlertModal
+      :visible="alertVisible"
+      :type="alertType"
+      :title="alertTitle"
+      :message="alertMessage"
+      @close="alertVisible = false"
     />
   </div>
 </template>
