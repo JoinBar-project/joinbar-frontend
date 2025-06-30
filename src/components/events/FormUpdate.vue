@@ -148,7 +148,7 @@ function triggerFileInput() {
   <section class="event-form" id="edit-event">
     <div class="form-header">編輯中</div>
     <div class="form-container">
-      <div class="form-image-upload" @click="triggerFileInput">
+      <div class="cursor-pointer form-image-upload rounded-3xl bg-gradient-to-br from-gray-100 to-gray-300 water-drop-upload hover:opacity-80 active:opacity-50" @click="triggerFileInput">
         <input
           ref="fileInput"
           type="file"
@@ -158,6 +158,7 @@ function triggerFileInput() {
         />
         
         <div v-if="!imagePreview" class="event-image-placeholder">
+          <i class="fa-solid fa-upload"></i>
           點擊更換活動圖
         </div>
         
@@ -165,10 +166,10 @@ function triggerFileInput() {
           <img
             :src="imagePreview"
             alt="活動圖片預覽"
-            class="w-full h-full object-cover"
+            class="object-cover w-full h-full"
           />
-          <div class="absolute inset-0 opacity-0 hover:opacity-100 transition-opacity rounded-t-xl flex items-center justify-center backdrop-blur-sm">
-            <span class="text-white text-lg font-medium">點擊重新選擇</span>
+          <div class="absolute inset-0 flex items-center justify-center transition-opacity opacity-0 hover:opacity-100 rounded-t-xl backdrop-blur-sm">
+            <span class="text-lg font-medium text-white">點擊重新選擇</span>
           </div>
         </div>
       </div>
@@ -232,7 +233,7 @@ function triggerFileInput() {
           <iframe 
             v-if="eventLocation"
             :src="`https://www.google.com/maps?q=${encodeURIComponent(eventLocation)}&output=embed`"
-            class="w-full h-full rounded-lg border-0">
+            class="w-full h-full border-0 rounded-lg">
           </iframe>
         </div>
       </div>
@@ -281,7 +282,7 @@ function triggerFileInput() {
 }
 
 .form-image-upload {
-  @apply flex justify-center items-center w-full h-72 text-xl text-gray-400 bg-gray-200;
+  @apply flex justify-center items-center w-full h-72 text-xl text-gray-400;
 }
 
 .form-layout {
