@@ -9,6 +9,7 @@ import { useLinePay } from '@/composables/useLinePay';
 import EventHoster from './EventHoster.vue';
 import MessageBoard from './MessageBoard.vue';
 import ModalEdit from '@/components/events/ModalEdit.vue';
+import BaseAlertModal from '@/components/common/BaseAlertModal.vue'
 
 const props = defineProps({
   event: Object,
@@ -20,7 +21,21 @@ const props = defineProps({
   }
 });
 
-const emit = defineEmits(['update']);
+const emit = defineEmits(['update','close']);
+
+const alertVisible = ref(false)
+const alertType = ref('warning')
+const alertTitle = ref('')
+const alertMessage = ref('')
+
+const showAlert = (type, title, message) => {
+  alertType.value = type
+  alertTitle.value = title
+  alertMessage.value = message
+  alertVisible.value = true
+}
+
+
 const router = useRouter();
 const cart = useCartStore();
 const authStore = useAuthStore();
@@ -45,7 +60,6 @@ const isAuthenticated = computed(() => {
 const {
   isJoin,
   joinedNum,
-  isOver24hr,
   showModal,
   formattedEventTime,
   closeModal,
@@ -126,8 +140,13 @@ const reloadEventData = async () => {
 };
 
 const addToCart = async () => {
+  if (!isAuthenticated.value) {
+    showAlert('warning', '尚未登入', '請先登入才能加入購物車');
+    return;
+  }
+  
   if (hasParticipated.value) {
-    alert('您已經報名過此活動了！');
+    showAlert('warning', '您已經報名過此活動了！');
     return;
   }
 
@@ -145,7 +164,8 @@ const addToCart = async () => {
       maxPeople: e.maxPeople,
       hostUser: e.hostUser,
     });
-    alert(result.message || '已加入購物車！');
+    showAlert('success', result.message || '已加入購物車！');
+
   } catch (error) {
     alert(error.message);
   }
@@ -162,14 +182,14 @@ const buyNow = async () => {
   });
 
   if (hasParticipated.value) {
-    alert('您已經報名過此活動了！');
+    showAlert('warning', '您已經報名過此活動了！');
+    
     return;
   }
 
   if (!isAuthenticated.value) {
-    console.warn('❌ 認證檢查失敗，用戶未登入');
-    const shouldLogin = confirm('請先登入後再進行購買\n\n點擊「確定」前往登入頁面');
-    if (shouldLogin) router.push('/login');
+    // console.warn('❌ 認證檢查失敗，用戶未登入');
+    showAlert('warning', '尚未登入', '請先登入才能加入購物車');
     return;
   }
 
@@ -194,7 +214,7 @@ const buyNow = async () => {
     const orderId = orderResponse.order.id || orderResponse.order.orderId;
 
     if (!orderId) {
-      throw new Error('訂單創建失敗，無法獲取訂單 ID');
+      showAlert('error', paymentResponse.data.message || '訂單建立失敗，無法獲取訂單 ID，請洽客服人員');
     }
 
     console.log('✅ 訂單創建成功:', {
@@ -209,7 +229,8 @@ const buyNow = async () => {
     });
 
     if (!paymentResponse.data.success) {
-      throw new Error(paymentResponse.data.message || 'LINE Pay 創建失敗');
+      showAlert('error', paymentResponse.data.message || 'LINE Pay 付款失敗，請洽客服人員');
+
     }
 
     const paymentResult = paymentResponse.data.data;
@@ -227,7 +248,7 @@ const buyNow = async () => {
     window.location.href = paymentResult.paymentUrl;
 
   } catch (error) {
-    console.error('❌ 立即購買失敗:', error);
+    showAlert('error', '立即購買失敗:', error)
     
     if (error.response) {
       console.error('❌ API 錯誤詳情:', {
@@ -397,6 +418,14 @@ onMounted(async () => {
   </div>
   <EventHoster :user="eventRef.hostUser" />
   <MessageBoard v-if="isJoin" />
+  <BaseAlertModal
+    :visible="alertVisible"
+    :type="alertType"
+    :title="alertTitle"
+    :message="alertMessage"
+    @close="alertVisible = false"
+    @update="handleModalUpdate"
+  />
 </template>
 
 <style scoped>
@@ -413,19 +442,6 @@ onMounted(async () => {
     transform: translateY(0);
   }
 }
-
-
-
-/* .event-btn-cart {
-  background-color: white;
-  padding: 8px 28px 10px 28px;
-  cursor: pointer;
-}
-
-.event-btn-cart:hover:not(:disabled) {
-  background-color: #bbb;
-  color: white;
-} */
 
 .event-btn:disabled {
   opacity: 0.6;
