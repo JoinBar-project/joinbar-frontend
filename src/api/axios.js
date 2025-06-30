@@ -8,7 +8,7 @@ const apiClient = axios.create({
   timeout: 10000,
   headers: {
     'Content-Type': 'application/json'
-  }
+  },
 });
 
 // 解析 JSON
@@ -24,7 +24,7 @@ const jsonParse = (jsonStr, defaultValue = {}) => {
 // 檢查token是否過期
 const isTokenExpired = (token) => {
   if (!token) return true;
-  
+
   try {
     // atob解析base64編碼字串
     const payload = JSON.parse(atob(token.split('.')[1]));
@@ -44,7 +44,7 @@ apiClient.interceptors.request.use(
     // 檢查是否需要添加 Authorization header (Email 登入)
     const token = localStorage.getItem('access_token');
     const user = jsonParse(localStorage.getItem('user'));
-    
+
     // 如果有 token 且不是 LINE 用戶，則添加 Authorization header
     if (token && !isTokenExpired(token) && user?.providerType !== 'line') {
       config.headers.Authorization = `Bearer ${token}`;
@@ -73,37 +73,93 @@ apiClient.interceptors.response.use(
     const method = error.config?.method?.toUpperCase() || 'UNKNOWN';
     const url = error.config?.url || 'unknown-url';
     const status = error.response?.status || 'no-status';
-    
+
     console.error(`API 錯誤: ${method} ${url} - ${status}`);
-    
+
     if (error.response) {
       const { status, data } = error.response;
-      
-      switch (status) {
-        case 401:
-          // Token 無效或過期
-          console.warn('認證失效，清除登入狀態');
 
-          localStorage.removeItem('access_token');
-          localStorage.removeItem('user');
-          try {
-            // 動態導入 store 和 router 避免循環依賴
-            const { useAuthStore } = await import('@/stores/authStore');
-            const { useRouter } = await import('vue-router');
-            const authStore = useAuthStore();
-            const router = useRouter();
-            // 清除前端狀態
-            authStore.clearAuthState();
-            if (router.currentRoute.value.path !== '/login') {
-              router.push('/login');
-            }
-          } catch (importError) {
-            console.error('動態導入失敗:', importError);
-            if (window.location.pathname !== '/login') {
+      switch (status) {
+        case 401: {
+          // Token 無效或過期
+          const originalRequest = error.config; // 先保留剛剛發送失敗的請求，等等用新的 access token 重新發送
+          // 先檢查是否為刷新 token 的請求本身
+          if (originalRequest.url === '/auth/refresh-token') {
+            localStorage.removeItem('access_token');
+            localStorage.removeItem('refresh_token');
+            localStorage.removeItem('user');
+
+            const { useAlertModal } = await import('@/composables/useAlertModal');
+            const { showAlert } = useAlertModal();
+            showAlert('warning', '登入資訊已過期', '為了保護您的帳戶安全，請重新登入。', '確認', () => {
               window.location.href = '/login';
+            });
+
+            return Promise.reject(error);
+          }
+
+          if (originalRequest._retry) {
+            // 如果之前已經有重新發送請求，就不再重試，直接拋錯，避免進入無限重試迴圈
+            return Promise.reject(error);
+          }
+
+          originalRequest._retry = true; // 標記這是第一次重新發送請求
+
+          try {
+            const user = jsonParse(localStorage.getItem('user'));
+            const isLineUser = user?.providerType === 'line';
+
+            const refreshToken = localStorage.getItem('refresh_token');
+            const resp = isLineUser
+              ? // 這邊改使用 axios 直接發送請求，避免當 refresh token 無效時，該請求也會收到 401 錯誤，觸發攔截器又嘗試刷新
+                await axios.post(
+                  `${API_BASE_URL}/auth/refresh-token`, {}, {
+                    withCredentials: true,
+                    headers: { 'Content-Type': 'application/json' }
+                  })
+              : await axios.post(`${API_BASE_URL}/auth/refresh-token`, {
+                    refreshToken // 用 resfresh token 換新的 access token
+                  }, {
+                    headers: { 'Content-Type': 'application/json' }
+                  });
+
+            const newAccessToken = resp.data.accessToken;
+
+            if (!isLineUser) {
+              localStorage.setItem('access_token', newAccessToken);
+            }
+
+            originalRequest.headers.Authorization = `Bearer ${newAccessToken}`;
+
+            return apiClient(originalRequest); // 重新發送原本失敗的請求
+          } catch (refreshError) {
+            localStorage.removeItem('access_token');
+            localStorage.removeItem('refresh_token');
+            localStorage.removeItem('user');
+
+            const { useAlertModal } = await import('@/composables/useAlertModal');
+            const { showAlert } = useAlertModal();
+            showAlert('warning', '登入資訊已過期', '為了保護您的帳戶安全，請重新登入。', '確認', () => {
+              window.location.href = '/login';
+            });
+
+            try {
+              // 動態導入 store 和 router 避免循環依賴
+              const { useAuthStore } = await import('@/stores/authStore');
+              const { useRouter } = await import('vue-router');
+              const authStore = useAuthStore();
+              const router = useRouter();
+              // 清除前端狀態
+              authStore.clearAuthState();
+            } catch (importError) {
+              console.error('動態導入失敗:', importError);
+              if (window.location.pathname !== '/login') {
+                window.location.href = '/login';
+              }
             }
           }
           break;
+        }
         case 403:
           console.warn('權限不足:', data?.message || '無權限存取此資源');
           break;
