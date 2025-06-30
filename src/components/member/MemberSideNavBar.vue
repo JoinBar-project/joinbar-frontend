@@ -441,7 +441,7 @@ const handleAccountDeletion = async () => {
     </ul>
   </nav>
 
-  <nav class="md:hidden bg-white border-b border-gray-200 shadow-sm">
+  <nav class="md:hidden bg-white border-b border-gray-200 shadow-sm sticky top-0 z-20">
     <div class="px-2 py-2">
       <div class="flex items-center justify-center relative">
         <div class="absolute left-0 top-0 bottom-0 w-4 bg-gradient-to-r from-white to-transparent z-10 pointer-events-none"></div>
