@@ -14,12 +14,16 @@
               class="main-image"
               @error="handleImageError"
             />
-            <div v-if="props.bar.images && props.bar.images.length > 1" class="image-nav">
-              <button class="nav-button prev-button" @click="prevImage">
-                <i class="fas fa-chevron-left"></i>
+            <div v-if="props.bar.images && props.bar.images.length > 1" class="absolute top-1/2 -translate-y-1/2 w-full flex justify-between px-4">
+              <button
+                class="bg-white/80 border-0 rounded-full w-10 h-10 cursor-pointer text-lg font-bold text-gray-800 transition-all hover:bg-white hover:scale-110"
+                @click="prevImage">
+                &lt;
               </button>
-              <button class="nav-button next-button" @click="nextImage">
-                <i class="fas fa-chevron-right"></i>
+              <button
+                class="bg-white/80 border-0 rounded-full w-10 h-10 cursor-pointer text-lg font-bold text-gray-800 transition-all hover:bg-white hover:scale-110"
+                @click="nextImage">
+                &gt;
               </button>
             </div>
             <div class="image-dots">

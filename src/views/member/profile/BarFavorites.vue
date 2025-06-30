@@ -11,31 +11,24 @@
         @click="selectBar(bar)"
       >
         <div class="bar-card-image">
-          <img
-            :src="bar.images && bar.images.length > 0 ? bar.images[0] : bar.imageUrl || defaultPlaceholderImage"
-            :alt="bar.name || 'Bar'"
-            class="bar-image"
-            loading="lazy"
-            @error="handleImageError"
-          />
-          <button
-            class="wishlist-button"
-            @click.stop="removeFavorite(bar)"
-            :aria-label="'取消收藏'"
-            :disabled="loading"
-          >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              class="wishlist-icon"
-              :fill="'red'"
-              viewBox="0 0 24 24"
-              stroke="none"
+          <figure class="relative h-44 overflow-hidden">
+            <img
+              :src="bar.images && bar.images.length > 0 ? bar.images[0] : bar.imageUrl || defaultPlaceholderImage"
+              :alt="bar.name || 'Bar'"
+              class="w-full h-full object-cover"
+              loading="lazy"
+              @error="handleImageError"
+            />
+            <button
+              class="w-8 h-8 rounded-full absolute top-3 right-3 hover:bg-rose-400"
+              @click.stop="removeFavorite(bar)"
+              :class="bar.isWishlisted ? 'bg-gray-300' : 'bg-rose-600'"
+              :aria-label="bar.isWishlisted ? '取消收藏' : '加入收藏'"
+              :disabled="loading"
             >
-              <path
-                d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"
-              />
-            </svg>
-          </button>
+              <i class="fas fa-heart text-white text-sm"></i>
+            </button>
+          </figure>
         </div>
         <div class="bar-card-content">
           <h3 class="bar-name">{{ bar.name }}</h3>
