@@ -37,28 +37,6 @@ const showAlert = (type, title, message) => {
   alertVisible.value = true
 }
 
-const showCancelConfirmModal = ref(false)
-
-const openCancelModal = () => {
-  showCancelConfirmModal.value = true
-}
-
-const handleCancelConfirm = async () => {
-  try {
-    await cancelParticipation(eventRef.value.id) // 這是你自己的取消報名 API
-    showAlert('success', '已取消報名', '您已成功取消此活動的報名')
-    await reloadEventData()
-  } catch (err) {
-    showAlert('error', '取消失敗', err.message || '取消報名失敗，請稍後再試')
-  } finally {
-    showCancelConfirmModal.value = false
-  }
-}
-
-const handleCancelDismiss = () => {
-  showCancelConfirmModal.value = false
-}
-
 const router = useRouter();
 const cart = useCartStore();
 const authStore = useAuthStore();
@@ -83,10 +61,7 @@ const isAuthenticated = computed(() => {
 const {
   isJoin,
   joinedNum,
-  showModal,
   formattedEventTime,
-  closeModal,
-  handleConfirmCancel,
   updateParticipationStatus
 } = useEvent(eventRef);
 
@@ -332,21 +307,6 @@ onMounted(async () => {
 </script>
 
 <template>
-  <!-- <div :class="['modal', { 'modal-open': showModal }]">
-    <div class="modal-box">
-      <h3 class="text-lg font-bold">確認取消報名</h3>
-      <p class="py-4">
-        您確定要取消這次報名嗎？<br />
-        <span>取消後如人數額滿或是活動開始前24小時內都將無法報名</span>，<br />
-        請再次確認您的選擇。
-      </p>
-      <div class="modal-action">
-        <button class="btn" @click="closeModal">放棄取消</button>
-        <button class="btn" @click="handleConfirmCancel">確認取消</button>
-      </div>
-    </div>
-  </div> -->
-
   <div class="flex justify-center items-center pt-[2%] max-w-full">
     <div class="relative w-full max-w-[1200px] min-w-[1170px] bg-[#f1f1f1] rounded-[20px] overflow-hidden pb-[30px]">
       <div>
@@ -453,16 +413,6 @@ onMounted(async () => {
     :message="alertMessage"
     @close="alertVisible = false"
     @update="handleModalUpdate"
-  />
-  <BaseConfirmModal
-    :visible="showModal"
-    type="warning"
-    title="取消報名"
-    message="取消後如人數額滿或活動開始前 24 小時內都將無法再次報名，請再次確認您的選擇。"
-    confirmText="確認"
-    cancelText="取消"
-    @confirm="handleConfirmCancel"
-    @cancel="closeModal"
   />
 </template>
 

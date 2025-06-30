@@ -6,6 +6,7 @@ import EventHoster from './EventHoster.vue';
 import MessageBoard from './MessageBoard.vue';
 import ModalEdit from '@/components/events/ModalEdit.vue';
 import BaseConfirmModal from '@/components/common/BaseConfirmModal.vue';
+import BaseAlertModal from '@/components/common/BaseAlertModal.vue'
 
 const emit = defineEmits(['update']);
 
