@@ -30,12 +30,12 @@
 <style scoped>
 @reference "tailwindcss";
 .footer {
-  @apply w-full bg-black text-[#e0e0e0] px-[5%] py-8 box-border z-[1000]
+  @apply w-full bg-black text-[#e0e0e0] px-[5%] py-4 box-border z-[1000]
     shadow-[0_-1px_5px_rgba(0,0,0,0.3)];
 }
 
 .footer-content {
-  @apply flex flex-col items-center justify-center gap-6 mx-auto text-center;
+  @apply flex flex-col items-center justify-center gap-4 mx-auto text-center;
   /* 桌面版橫向排列 */
   @apply md:flex-row md:justify-between md:items-center md:text-left md:gap-8;
 }
@@ -142,7 +142,7 @@
 /* 手機版優化 */
 @media (max-width: 768px) {
   .footer-content {
-    @apply gap-4;
+    @apply gap-3;
   }
   
   .footer-logo img {
