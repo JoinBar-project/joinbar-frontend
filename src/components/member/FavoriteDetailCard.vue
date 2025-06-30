@@ -48,7 +48,12 @@
             </div>
             <div class="opening-hours-detail">
               <h3>營業時間</h3>
-              <p>{{ props.bar.openingHoursText || '未提供營業時間' }}</p>
+              <template v-if="props.bar.openingHours && props.bar.openingHours.weekday_text && props.bar.openingHours.weekday_text.length">
+                <ul>
+                  <li v-for="(text, idx) in props.bar.openingHours.weekday_text" :key="idx">{{ text }}</li>
+                </ul>
+              </template>
+              <p v-else>{{ props.bar.openingHoursText || '未提供營業時間' }}</p>
             </div>
             <div v-if="props.bar.tags && props.bar.tags.length" class="bar-tags-detail">
               <h3>特色標籤</h3>
@@ -84,7 +89,7 @@
         </div>
         <div class="footer-actions">
           <div class="action-buttons-group">
-            <button class="action-button icon-button share-button" data-tooltip="分享">
+            <button class="action-button icon-button share-button" data-tooltip="分享" @click="showShareModal">
               <i class="fa-solid fa-share-nodes text-lg text-gray-600"></i>
             </button>
             <button class="action-button icon-button navigate-button" data-tooltip="導航" @click="navigateToBar(props.bar.latitude, props.bar.longitude)">
@@ -104,6 +109,34 @@
       </div>
     </div>
   </transition>
+  <div v-if="shareModalVisible" class="fixed inset-0 flex items-center justify-center w-screen h-screen share-modal-overlay z-2000" @click.self="closeShareModal">
+    <div class="relative overflow-hidden bg-white shadow-xl rounded-2xl w-80">
+      <div class="flex items-center justify-between px-6 py-5 text-black border-b border-gray-100">
+        <h3 class="text-lg font-bold text-gray-800">分享</h3>
+      </div>
+      <button class="absolute top-4 right-4 z-10 bg-white/90 backdrop-blur-sm border-0 rounded-full w-10 h-10 flex items-center justify-center cursor-pointer transition-all hover:bg-white hover:scale-110" @click="closeShareModal">
+        <i class="fa-solid fa-xmark text-gray-600 text-xl"></i>
+      </button>
+      <div class="flex justify-center gap-5 px-6 py-5">
+        <button class="flex flex-col items-center gap-2 p-4 transition-colors rounded-xl hover:bg-gray-50 min-w-20" @click="shareToLine">
+          <div class="flex items-center justify-center bg-green-500 rounded-full w-15 h-15">
+            <svg aria-label="Line logo" width="24" height="24" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16">
+              <g fill-rule="evenodd" stroke-linejoin="round" fill="white">
+                <path fill-rule="nonzero" d="M12.91 6.57c.232 0 .42.19.42.42 0 .23-.188.42-.42.42h-1.17v.75h1.17a.42.42 0 1 1 0 .84h-1.59a.42.42 0 0 1-.418-.42V5.4c0-.23.188-.42.42-.42h1.59a.42.42 0 0 1-.002.84h-1.17v.75h1.17zm-2.57 2.01a.421.421 0 0 1-.757.251l-1.63-2.217V8.58a.42.42 0 0 1-.42.42.42.42 0 0 1-.418-.42V5.4a.418.418 0 0 1 .755-.249L9.5 7.366V5.4c0-.23.188-.42.42-.42.23 0 .42.19.42.42v3.18zm-3.828 0c0 .23-.188.42-.42.42a.42.42 0 0 1-.418-.42V5.4c0-.23.188-.42.42-.42.23 0 .418.19.418.42v3.18zM4.868 9h-1.59c-.23 0-.42-.19-.42-.42V5.4c0-.23.19-.42.42-.42.232 0 .42.19.42.42v2.76h1.17a.42.42 0 1 1 0 .84M16 6.87C16 3.29 12.41.376 8 .376S0 3.29 0 6.87c0 3.208 2.846 5.896 6.69 6.405.26.056.615.172.705.394.08.2.053.518.026.722 0 0-.092.565-.113.685-.035.203-.16.79.693.432.854-.36 4.607-2.714 6.285-4.646C15.445 9.594 16 8.302 16 6.87"/>
+              </g>
+            </svg>
+          </div>
+          <span class="text-sm font-medium text-gray-700">Line</span>
+        </button>
+      </div>
+      <div class="flex items-center gap-2 px-6 py-4 border-t border-gray-100 bg-gray-50">
+        <input type="text" :value="shareUrl" readonly class="flex-1 px-3 py-2 text-xs text-gray-600 bg-white border border-gray-200 rounded-md focus:outline-none focus:border-blue-500" ref="urlInput" />
+        <button class="px-3 py-2 text-xs font-medium text-white transition-colors bg-blue-500 rounded-md hover:bg-blue-600 whitespace-nowrap" @click="copyUrl">
+          複製
+        </button>
+      </div>
+    </div>
+  </div>
 </template>
 
 <script setup>
@@ -292,6 +325,62 @@ onMounted(async () => {
     props.bar.images = [props.bar.imageUrl];
   }
 });
+
+// 分享功能
+const shareModalVisible = ref(false);
+const urlInput = ref(null);
+const showShareModal = () => { shareModalVisible.value = true; };
+const closeShareModal = () => { shareModalVisible.value = false; };
+const generateShareableUrl = () => {
+  const barId = props.bar.id || props.bar.place_id;
+  const currentPath = window.location.pathname;
+  const baseUrl = window.location.origin;
+  const params = new URLSearchParams();
+  params.set("barId", barId);
+  params.set("name", props.bar.name || "");
+  params.set("rating", props.bar.rating || "");
+  params.set("reviews", props.bar.reviews || 0);
+  params.set("address", props.bar.address || "");
+  return `${baseUrl}${currentPath}?${params.toString()}`;
+};
+const shareUrl = computed(() => generateShareableUrl());
+const copyUrl = async () => {
+  try {
+    const shareUrlVal = generateShareableUrl();
+    await navigator.clipboard.writeText(shareUrlVal);
+    alert("酒吧專屬連結已複製到剪貼簿！\n\n點擊此連結就能直接查看酒吧詳情。");
+    closeShareModal();
+  } catch (error) {
+    console.error("複製失敗:", error);
+    alert("複製失敗，請手動複製網址");
+  }
+};
+const shareToLine = () => {
+  try {
+    const barName = props.bar.name;
+    const barRating = props.bar.rating || "N/A";
+    const barAddress = props.bar.address || "";
+    const shareText = `推薦酒吧：${barName}\n評價：${barRating}星\n${barAddress}`;
+    const shareUrlVal = generateShareableUrl();
+    const lineShareUrl =
+      `https://social-plugins.line.me/lineit/share?` +
+      `url=${encodeURIComponent(shareUrlVal)}&` +
+      `text=${encodeURIComponent(shareText)}`;
+    const lineWindow = window.open(
+      lineShareUrl,
+      "lineShare",
+      "width=600,height=500"
+    );
+    if (lineWindow) {
+      closeShareModal();
+    } else {
+      copyUrl(`${shareText}\n${shareUrlVal}`);
+    }
+  } catch (error) {
+    console.error("Line 分享失敗:", error);
+    alert("Line 分享失敗，請稍後再試");
+  }
+};
 </script>
 
 <style scoped>
