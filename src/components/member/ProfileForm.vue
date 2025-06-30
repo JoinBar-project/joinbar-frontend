@@ -21,7 +21,7 @@ const props = defineProps({
           <div class="flex items-center w-64 px-3 py-2 bg-white border rounded"
             :class="[errors[field.model] 
             ? 'border-[var(--color-primary-orange)] border-2' 
-            : 'border-gray-300']">
+            : 'border-gray-400']">
             <i :class="[field.icon, 'text-gray-400 mr-2']" />
             <template v-if="isEdit">
               <input
