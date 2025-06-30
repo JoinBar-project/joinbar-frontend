@@ -85,8 +85,24 @@
               @click="handleRemoveItem(item)" 
               class="remove-btn-mobile"
               :disabled="cart.loading"
+              :title="'移除 ' + item.name"
             >
-              <span class="remove-icon">🗑️</span>
+              <!-- 选项1: 使用 FontAwesome 图标 -->
+              <i class="fa-solid fa-trash-can remove-icon"></i>
+              
+              <!-- 选项2: 使用 X 符号 (注释掉的备选方案)
+              <i class="fa-solid fa-xmark remove-icon"></i>
+              -->
+              
+              <!-- 选项3: 使用减号图标 (注释掉的备选方案)
+              <i class="fa-solid fa-minus-circle remove-icon"></i>
+              -->
+              
+              <!-- 选项4: 使用自定义 SVG 图标 (注释掉的备选方案)
+              <svg class="remove-icon-svg" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/>
+              </svg>
+              -->
             </button>
           </div>
           
@@ -708,21 +724,51 @@ const goShopping = () => {
     padding: 8px;
     cursor: pointer;
     border-radius: 8px;
-    transition: background-color 0.2s;
+    transition: all 0.2s ease;
     flex-shrink: 0;
     min-height: 44px;
     min-width: 44px;
     display: flex;
     align-items: center;
     justify-content: center;
+    color: var(--color-text-warn, #eb96a4);
   }
 
-  .remove-btn-mobile:hover {
-    background-color: rgba(235, 150, 164, 0.1);
+  .remove-btn-mobile:hover:not(:disabled) {
+    background-color: rgba(235, 150, 164, 0.15);
+    color: #d73847;
+    transform: scale(1.05);
   }
 
+  .remove-btn-mobile:active {
+    transform: scale(0.95);
+  }
+
+  .remove-btn-mobile:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    transform: none;
+  }
+
+  /* FontAwesome 图标样式 */
   .remove-icon {
-    font-size: 18px;
+    font-size: 16px;
+    transition: all 0.2s ease;
+  }
+
+  .remove-btn-mobile:hover:not(:disabled) .remove-icon {
+    transform: translateY(-1px);
+  }
+
+  /* SVG 图标样式 (备选方案) */
+  .remove-icon-svg {
+    width: 18px;
+    height: 18px;
+    transition: all 0.2s ease;
+  }
+
+  .remove-btn-mobile:hover:not(:disabled) .remove-icon-svg {
+    transform: translateY(-1px) scale(1.1);
   }
 
   .card-details {
@@ -815,5 +861,4 @@ const goShopping = () => {
     text-align: center;
   }
 }
-
 </style>

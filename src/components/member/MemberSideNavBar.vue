@@ -441,98 +441,99 @@ const handleAccountDeletion = async () => {
     </ul>
   </nav>
 
-  <nav class="md:hidden bg-white border-b border-gray-200">
-    <div class="px-3 py-2">
-      <div class="flex items-center justify-center space-x-2">
-        <div class="flex space-x-1 overflow-x-auto flex-shrink-0">
+  <nav class="md:hidden bg-white border-b border-gray-200 shadow-sm">
+    <div class="px-2 py-2">
+      <div class="flex items-center justify-center relative">
+        <div class="absolute left-0 top-0 bottom-0 w-4 bg-gradient-to-r from-white to-transparent z-10 pointer-events-none"></div>
+        
+        <div class="flex space-x-1 overflow-x-auto scrollbar-hide w-full px-2" style="scroll-behavior: smooth;">
+        
+        <div class="absolute right-0 top-0 bottom-0 w-4 bg-gradient-to-l from-white to-transparent z-10 pointer-events-none"></div>
           <button
             @click="handleMobileMenuClick(menuItems[0])"
             :class="[
-              'flex flex-col items-center px-2 py-1 rounded-lg transition flex-shrink-0',
+              'flex flex-col items-center px-3 py-2 rounded-lg transition-all duration-200 flex-shrink-0 min-w-[60px]',
               selectedItem === 'profile'
-                ? 'bg-blue-50 text-blue-600 scale-95'
-                : 'text-gray-600 hover:bg-gray-50'
+                ? 'bg-blue-100 text-blue-700 shadow-sm transform scale-95'
+                : 'text-gray-600 hover:bg-gray-50 hover:text-gray-800'
             ]">
-            <i class="fa-solid fa-user text-sm mb-1" />
-            <span class="text-xs whitespace-nowrap leading-tight">資料</span>
+            <i class="fa-solid fa-user text-base mb-1" />
+            <span class="text-xs font-medium whitespace-nowrap">會員資料</span>
           </button>
 
           <button
-            @click="handleMobileChildMenuClick({ name: 'published', to: { name: 'PublishedEvents', params: { id: userId.value } } })"
+            @click="handleMobileChildMenuClick({ name: 'published', to: { name: 'PublishedEvents', params: { id: userId } } })"
             :class="[
-              'flex flex-col items-center px-2 py-1 rounded-lg transition flex-shrink-0',
+              'flex flex-col items-center px-3 py-2 rounded-lg transition-all duration-200 flex-shrink-0 min-w-[60px]',
               selectedItem === 'published'
-                ? 'bg-blue-50 text-blue-600 scale-95'
-                : 'text-gray-600 hover:bg-gray-50'
+                ? 'bg-blue-100 text-blue-700 shadow-sm transform scale-95'
+                : 'text-gray-600 hover:bg-gray-50 hover:text-gray-800'
             ]">
-            <i class="fa-solid fa-bullhorn text-sm mb-1" />
-            <span class="text-xs whitespace-nowrap leading-tight">發布</span>
+            <i class="fa-solid fa-bullhorn text-base mb-1" />
+            <span class="text-xs font-medium whitespace-nowrap">發布紀錄</span>
           </button>
 
           <button
-            @click="handleMobileChildMenuClick({ name: 'joined', to: { name: 'JoinedEvents', params: { id: userId.value } } })"
+            @click="handleMobileChildMenuClick({ name: 'joined', to: { name: 'JoinedEvents', params: { id: userId } } })"
             :class="[
-              'flex flex-col items-center px-2 py-1 rounded-lg transition flex-shrink-0',
+              'flex flex-col items-center px-3 py-2 rounded-lg transition-all duration-200 flex-shrink-0 min-w-[60px]',
               selectedItem === 'joined'
-                ? 'bg-blue-50 text-blue-600 scale-95'
-                : 'text-gray-600 hover:bg-gray-50'
+                ? 'bg-blue-100 text-blue-700 shadow-sm transform scale-95'
+                : 'text-gray-600 hover:bg-gray-50 hover:text-gray-800'
             ]">
-            <i class="fa-solid fa-calendar-check text-sm mb-1" />
-            <span class="text-xs whitespace-nowrap leading-tight">參加</span>
+            <i class="fa-solid fa-calendar-check text-base mb-1" />
+            <span class="text-xs font-medium whitespace-nowrap">參加紀錄</span>
           </button>
 
           <button
             @click="handleMobileMenuClick(menuItems[2])"
             :class="[
-              'flex flex-col items-center px-2 py-1 rounded-lg transition flex-shrink-0',
+              'flex flex-col items-center px-3 py-2 rounded-lg transition-all duration-200 flex-shrink-0 min-w-[60px]',
               selectedItem === 'bar'
-                ? 'bg-blue-50 text-blue-600 scale-95'
-                : 'text-gray-600 hover:bg-gray-50'
+                ? 'bg-blue-100 text-blue-700 shadow-sm transform scale-95'
+                : 'text-gray-600 hover:bg-gray-50 hover:text-gray-800'
             ]">
-            <i class="fa-solid fa-beer-mug-empty text-sm mb-1" />
-            <span class="text-xs whitespace-nowrap leading-tight">收藏</span>
+            <i class="fa-solid fa-beer-mug-empty text-base mb-1" />
+            <span class="text-xs font-medium whitespace-nowrap">酒吧收藏</span>
           </button>
 
           <button
             @click="handleMobileMenuClick(menuItems[3])"
             :class="[
-              'flex flex-col items-center px-2 py-1 rounded-lg transition flex-shrink-0',
+              'flex flex-col items-center px-3 py-2 rounded-lg transition-all duration-200 flex-shrink-0 min-w-[60px]',
               selectedItem === 'card'
-                ? 'bg-blue-50 text-blue-600 scale-95'
-                : 'text-gray-600 hover:bg-gray-50'
+                ? 'bg-blue-100 text-blue-700 shadow-sm transform scale-95'
+                : 'text-gray-600 hover:bg-gray-50 hover:text-gray-800'
             ]">
-            <i class="fa-solid fa-id-card text-sm mb-1" />
-            <span class="text-xs whitespace-nowrap leading-tight">酒友卡</span>
+            <i class="fa-solid fa-id-card text-base mb-1" />
+            <span class="text-xs font-medium whitespace-nowrap">酒友卡</span>
           </button>
 
           <button
             @click="handleMobileMenuClick(menuItems[4])"
             :class="[
-              'flex flex-col items-center px-2 py-1 rounded-lg transition flex-shrink-0',
+              'flex flex-col items-center px-3 py-2 rounded-lg transition-all duration-200 flex-shrink-0 min-w-[60px]',
               selectedItem === 'orders'
-                ? 'bg-blue-50 text-blue-600 scale-95'
-                : 'text-gray-600 hover:bg-gray-50'
+                ? 'bg-blue-100 text-blue-700 shadow-sm transform scale-95'
+                : 'text-gray-600 hover:bg-gray-50 hover:text-gray-800'
             ]">
-            <i class="fa-solid fa-receipt text-sm mb-1" />
-            <span class="text-xs whitespace-nowrap leading-tight">訂單</span>
+            <i class="fa-solid fa-receipt text-base mb-1" />
+            <span class="text-xs font-medium whitespace-nowrap">訂單紀錄</span>
           </button>
 
-
-        <div class="flex space-x-1 flex-shrink-0 pr-4">
           <button
             @click="handleAccountDeletion"
-            class="flex flex-col items-center px-2 py-1 rounded-lg transition flex-shrink-0 text-red-600 hover:bg-red-50">
-            <i class="fa-solid fa-user-slash text-sm mb-1" />
-            <span class="text-xs whitespace-nowrap leading-tight">註銷</span>
+            class="flex flex-col items-center px-3 py-2 rounded-lg transition-all duration-200 flex-shrink-0 min-w-[60px] text-red-600 hover:bg-red-50 hover:text-red-700">
+            <i class="fa-solid fa-user-slash text-base mb-1" />
+            <span class="text-xs font-medium whitespace-nowrap">會員註銷</span>
           </button>
 
           <button
             @click="handleLogout"
-            class="flex flex-col items-center px-2 py-1 rounded-lg transition flex-shrink-0 text-gray-600 hover:bg-gray-50">
-            <i class="fa-solid fa-arrow-right-from-bracket text-sm mb-1" />
-            <span class="text-xs whitespace-nowrap leading-tight">登出</span>
+            class="flex flex-col items-center px-3 py-2 rounded-lg transition-all duration-200 flex-shrink-0 min-w-[60px] text-gray-600 hover:bg-gray-50 hover:text-gray-800">
+            <i class="fa-solid fa-arrow-right-from-bracket text-base mb-1" />
+            <span class="text-xs font-medium whitespace-nowrap">登出</span>
           </button>
-        </div>
         </div>
       </div>
     </div>
@@ -547,21 +548,36 @@ const handleAccountDeletion = async () => {
 
 <style scoped>
 @media (max-width: 767px) {
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+
   .overflow-x-auto::-webkit-scrollbar {
-    height: 3px;
+    height: 4px;
   }
 
   .overflow-x-auto::-webkit-scrollbar-track {
-    background: transparent;
+    background: rgba(0, 0, 0, 0.05);
+    border-radius: 2px;
   }
 
   .overflow-x-auto::-webkit-scrollbar-thumb {
-    background: #d1d5db;
+    background: rgba(0, 0, 0, 0.2);
     border-radius: 2px;
   }
 
   .overflow-x-auto::-webkit-scrollbar-thumb:hover {
-    background: #9ca3af;
+    background: rgba(0, 0, 0, 0.3);
+  }
+
+  .overflow-x-auto {
+    -webkit-overflow-scrolling: touch;
+    scroll-snap-type: x proximity;
   }
 }
 </style>
