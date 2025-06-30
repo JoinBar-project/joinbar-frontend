@@ -3,8 +3,8 @@ import { computed, ref } from 'vue';
 import { useEventForm } from '@/composables/useEventForm';
 import FormUpdate from './FormUpdate.vue';
 import { useAuthStore } from '@/stores/authStore';
-import BaseAlertModal from '@/components/BaseAlertModal.vue';
-import BaseConfirmModal from '@/components/BaseConfirmModal.vue';
+import BaseAlertModal from '@/components/common/BaseAlertModal.vue';
+import BaseConfirmModal from '@/components/common/BaseConfirmModal.vue';
 
 const emit = defineEmits(['update']);
 const props = defineProps({
