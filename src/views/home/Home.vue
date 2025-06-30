@@ -56,23 +56,23 @@ const features = [
 
 const bars = [
   {
-    name: "The Alchemist's Corner",
-    desc: "神秘的燈光與獨創調酒。",
+    name: "Draft Land",
+    desc: "台北市大安區忠孝東路四段248巷2號",
     image: new URL('@/assets/homepage/bar-1.jpg', import.meta.url).href
   },
   {
-    name: "Sunset Vista Rooftop",
-    desc: "城市天際線下的微醺時光。",
+    name: "榕 RON Xinyi",
+    desc: "台北市信義區基隆路二段12號",
     image: new URL('@/assets/homepage/bar-2.jpg', import.meta.url).href
   },
   {
-    name: "Liquid Artistry",
-    desc: "欣賞調酒師的指尖魔法。",
+    name: "星夜 Starry night Bar",
+    desc: "台北市大同區長安西路89號",
     image: new URL('@/assets/homepage/bar-3.jpg', import.meta.url).href
   },
   {
-    name: "The Cozy Barrel",
-    desc: "溫馨舒適的週末好去處。",
+    name: "Revolver",
+    desc: "台北市中正區羅斯福路一段1-2號",
     image: new URL('@/assets/homepage/bar-4.jpg', import.meta.url).href
   }
 ]
