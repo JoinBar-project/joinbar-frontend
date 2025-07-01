@@ -8,7 +8,7 @@ export const favoritesAPI = {
   async getFavorites(userId = null) {
     try {
       const params = userId ? { userId } : {};
-      const response = await axios.get(`${API_BASE_URL}/favorites`, { params });
+      const response = await axios.get(`${API_BASE_URL}/api/favorites`, { params });
       return response.data.favorites || [];
     } catch (error) {
       console.error("Error fetching favorites:", error);
@@ -20,7 +20,7 @@ export const favoritesAPI = {
   async toggleFavorite(barId, data) {
     try {
       const response = await axios.put(
-        `${API_BASE_URL}/favorites/${barId}`,
+        `${API_BASE_URL}/api/favorites/${barId}`,
         data
       );
       return response.data;
@@ -35,7 +35,7 @@ export const favoritesAPI = {
     try {
       const params = googlePlaceId ? { googlePlaceId } : {};
       const response = await axios.get(
-        `${API_BASE_URL}/favorites/${barId}/status`,
+        `${API_BASE_URL}/api/favorites/${barId}/status`,
         { params }
       );
       return response.data;
@@ -49,7 +49,7 @@ export const favoritesAPI = {
   async checkMultipleFavoriteStatus(identifiers) {
     try {
       const response = await axios.post(
-        `${API_BASE_URL}/favorites/check-multiple`,
+        `${API_BASE_URL}/api/favorites/check-multiple`,
         { identifiers }
       );
       return response.data;
@@ -64,7 +64,7 @@ export const favoritesAPI = {
     try {
       const params = googlePlaceId ? { googlePlaceId } : {};
       const response = await axios.delete(
-        `${API_BASE_URL}/favorites/${barId}`,
+        `${API_BASE_URL}/api/favorites/${barId}`,
         { params }
       );
       return response.data;
