@@ -194,7 +194,7 @@ const createOrder = async (orderData) => {
 
     validateOrderData(orderData)
     
-    const response = await apiClient.post('/api/orders/create', orderData)
+    const response = await apiClient.post('/orders/create', orderData)
 
     if (response.data.order) {
       currentOrder.value = response.data.order
@@ -223,7 +223,7 @@ const getOrderDetails = async (orderId) => {
     error.value = ''
 
     const processedOrderId = validateOrderId(orderId)
-    const response = await apiClient.get(`/api/orders/${processedOrderId}/details`)
+    const response = await apiClient.get(`/orders/${processedOrderId}/details`)
     
     if (response.data.order) {
       currentOrder.value = response.data.order
@@ -245,7 +245,7 @@ const getOrderDetailsByNumber = async (orderNumber) => {
     isLoading.value = true
     error.value = ''
 
-    const response = await apiClient.get(`/api/orders/number/${orderNumber}/details`)
+    const response = await apiClient.get(`/orders/number/${orderNumber}/details`)
     
     if (response.data.order) {
       currentOrder.value = response.data.order
@@ -274,7 +274,7 @@ const confirmPayment = async (orderId, paymentData) => {
     console.log(`🔄 確認付款，更新訂單狀態...`)
     const processedOrderId = validateOrderId(orderId)
     
-    const response = await apiClient.put(`/api/orders/confirm-payment/${processedOrderId}`, {
+    const response = await apiClient.put(`/orders/confirm-payment/${processedOrderId}`, {
       paymentId: paymentData.paymentId,
       paymentMethod: paymentData.paymentMethod
     })
@@ -306,7 +306,7 @@ const cancelOrder = async (orderId, reason = '') => {
     error.value = ''
 
     const processedOrderId = validateOrderId(orderId)
-    const response = await apiClient.delete(`/api/orders/${processedOrderId}`, {
+    const response = await apiClient.delete(`/orders/${processedOrderId}`, {
       data: { reason }
     })
 
@@ -330,7 +330,7 @@ const getOrderHistory = async () => {
     isLoading.value = true
     error.value = ''
 
-    const response = await apiClient.get('/api/orders/history')
+    const response = await apiClient.get('/orders/history')
     
     if (response.data.orders) {
       orderHistory.value = response.data.orders
@@ -416,7 +416,7 @@ const pollPaymentStatus = async (orderId, maxAttempts = 30, interval = 2000, ski
       
       if (skipLoading) {
         const processedOrderId = validateOrderId(orderId)
-        const response = await apiClient.get(`/api/orders/${processedOrderId}/details`)
+        const response = await apiClient.get(`/orders/${processedOrderId}/details`)
         orderData = response.data
       } else {
         orderData = await getOrderDetails(orderId)
@@ -487,7 +487,7 @@ const getUserOrderHistory = async () => {
     isLoading.value = true
     error.value = ''
     console.log('🔄 載入用戶訂單歷史...')
-    const response = await apiClient.get('/api/orders/history')
+    const response = await apiClient.get('/orders/history')
     
     if (response.data.orders) {
       orderHistory.value = response.data.orders
