@@ -223,7 +223,7 @@ const getOrderDetails = async (orderId) => {
     error.value = ''
 
     const processedOrderId = validateOrderId(orderId)
-    const response = await apiClient.get(`/orders/${processedOrderId}/details`)
+    const response = await apiClient.get(`/api/orders/${processedOrderId}/details`)
     
     if (response.data.order) {
       currentOrder.value = response.data.order
@@ -416,7 +416,7 @@ const pollPaymentStatus = async (orderId, maxAttempts = 30, interval = 2000, ski
       
       if (skipLoading) {
         const processedOrderId = validateOrderId(orderId)
-        const response = await apiClient.get(`/orders/${processedOrderId}/details`)
+        const response = await apiClient.get(`/api/orders/${processedOrderId}/details`)
         orderData = response.data
       } else {
         orderData = await getOrderDetails(orderId)
