@@ -1,28 +1,28 @@
 <script setup>
-import { useEvent } from '@/composables/useEvent.js';
-import { toRef, computed, ref, watch, onMounted } from 'vue';
+import { useEvent } from "@/composables/useEvent.js";
+import { toRef, computed, ref, watch, onMounted } from "vue";
 // import axios from 'axios'; // 這一行被移除了
-import { getEventById } from '@/api/event'; // 保留這個，因為會使用它來獲取資料
-import EventHoster from './EventHoster.vue';
-import MessageBoard from './MessageBoard.vue';
-import ModalEdit from '@/components/events/ModalEdit.vue'
-import { useGoogleMaps } from '@/composables/useGoogleMaps/userIndex.js';
+import { getEventById } from "@/api/event"; // 保留這個，因為會使用它來獲取資料
+import EventHoster from "./EventHoster.vue";
+import MessageBoard from "./MessageBoard.vue";
+import ModalEdit from "@/components/events/ModalEdit.vue";
+import { useGoogleMaps } from "@/composables/useGoogleMaps/userIndex.js";
 
-
-const emit = defineEmits(['update']);
+const emit = defineEmits(["update"]);
 
 const props = defineProps({
   event: Object,
   tags: Array,
   eventId: String,
-  user: { // 確保這裡的 props.user 是完整且有定義的
+  user: {
+    // 確保這裡的 props.user 是完整且有定義的
     type: Object,
     required: true,
-  }
+  },
 });
 
 // 移除重複宣告，保留這一組
-const eventRef = toRef(props, 'event');
+const eventRef = toRef(props, "event");
 const localEvent = ref({ ...props.event });
 const localTags = ref([...props.tags]);
 const isUpdating = ref(false);
@@ -33,12 +33,15 @@ const currentTags = computed(() => localTags.value || []);
 
 // 再宣告 isHostUser
 const currentUserId = computed(() => {
-  const user = JSON.parse(localStorage.getItem('user'));
+  const user = JSON.parse(localStorage.getItem("user"));
   return user?.id ? Number(user.id) : null;
 });
 
 const isHostUser = computed(() => {
-  return currentUserId.value !== null && Number(currentEvent.value.hostUser) === currentUserId.value;
+  return (
+    currentUserId.value !== null &&
+    Number(currentEvent.value.hostUser) === currentUserId.value
+  );
 });
 
 // Google Maps 相關
@@ -54,17 +57,26 @@ const {
   panTo,
   setZoom,
 } = useGoogleMaps(mapContainer, {
-  googleMapsApiKey: import.meta.env.VITE_Maps_API_KEY, // 將這裡改回 VITE_Maps_API_KEY，因為 VITE_Maps_API_KEY 可能是筆誤
-  onError: (msg) => console.error('Google Maps 錯誤:', msg),
+  googleMapsApiKey: import.meta.env.VITE_GOOGLE_MAPS_API_KEY, // 將這裡改回 VITE_Maps_API_KEY，因為 VITE_Maps_API_KEY 可能是筆誤
+  onError: (msg) => console.error("Google Maps 錯誤:", msg),
   scrollwheel: false,
 });
 
 onMounted(() => {
-  console.log('🔥 onMounted currentEvent:', currentEvent.value);
+  console.log("🔥 onMounted currentEvent:", currentEvent.value);
 });
 
-const { isJoin, joinedNum, toggleJoin, isOver24hr, showModal, formattedEventTime, openCancelModal, closeModal, handleConfirmCancel } =
-  useEvent(eventRef);
+const {
+  isJoin,
+  joinedNum,
+  toggleJoin,
+  isOver24hr,
+  showModal,
+  formattedEventTime,
+  openCancelModal,
+  closeModal,
+  handleConfirmCancel,
+} = useEvent(eventRef);
 
 // 初始化 Google Maps
 onMounted(async () => {
@@ -78,87 +90,100 @@ onMounted(async () => {
       }
     }
   } catch (error) {
-    console.error('初始化 Google Maps 失敗:', error);
+    console.error("初始化 Google Maps 失敗:", error);
   }
 });
 
 // 顯示活動位置的函數
 const displayEventLocation = async (location) => {
   if (!location || !isReady.value) {
-    console.log('無法顯示位置 - location:', location, 'isReady:', isReady.value);
+    console.log(
+      "無法顯示位置 - location:",
+      location,
+      "isReady:",
+      isReady.value
+    );
     return;
   }
-  
+
   try {
-    console.log('嘗試顯示位置:', location);
-    
+    console.log("嘗試顯示位置:", location);
+
     // 使用 geocoding 將地址轉換為經緯度
     const coordinates = await getGeocode(location);
-    
+
     if (coordinates) {
-      console.log('取得經緯度:', coordinates);
-      
+      console.log("取得經緯度:", coordinates);
+
       // 清除現有標記
       clearMarkers();
-      
+
       // 添加新標記，強制 isBarLike: true
       addMarker({
         location: coordinates,
-        title: currentEvent.value?.barName || '活動地點',
+        title: currentEvent.value?.barName || "活動地點",
         infoContent: `
           <div style="font-size: 14px;">
-            <strong>${currentEvent.value?.barName || '活動地點'}</strong><br>
+            <strong>${currentEvent.value?.barName || "活動地點"}</strong><br>
             <span style="color: #666;">${location}</span>
           </div>
         `,
         isBarLike: true,
       });
-      
+
       // 將地圖中心移動到標記位置
       panTo(coordinates, 16);
       setZoom(16);
-      
-      console.log('地圖位置設置成功:', coordinates);
+
+      console.log("地圖位置設置成功:", coordinates);
     } else {
-      console.warn('無法取得位置的經緯度:', location);
+      console.warn("無法取得位置的經緯度:", location);
       // 如果 geocoding 失敗，設置一個預設位置（台北市中心）
-      const defaultLocation = { lat: 25.0330, lng: 121.5654 };
+      const defaultLocation = { lat: 25.033, lng: 121.5654 };
       panTo(defaultLocation, 12);
       setZoom(12);
-      console.log('使用預設位置:', defaultLocation);
+      console.log("使用預設位置:", defaultLocation);
     }
   } catch (error) {
-    console.error('顯示活動位置失敗:', error);
+    console.error("顯示活動位置失敗:", error);
     // 發生錯誤時也設置預設位置
     try {
-      const defaultLocation = { lat: 25.0330, lng: 121.5654 };
+      const defaultLocation = { lat: 25.033, lng: 121.5654 };
       panTo(defaultLocation, 12);
       setZoom(12);
-      console.log('錯誤後使用預設位置:', defaultLocation);
+      console.log("錯誤後使用預設位置:", defaultLocation);
     } catch (fallbackError) {
-      console.error('連預設位置都無法設置:', fallbackError);
+      console.error("連預設位置都無法設置:", fallbackError);
     }
   }
 };
 
-watch(() => props.event, (newEvent) => {
-  if (newEvent && !isUpdating.value) {
-    localEvent.value = { ...newEvent };
-    console.log('事件資料已更新:', newEvent);
-    
-    // 當活動資料更新時，更新地圖位置
-    if (newEvent.location && isReady.value) {
-      displayEventLocation(newEvent.location);
-    }
-  }
-}, { deep: true, immediate: true });
+watch(
+  () => props.event,
+  (newEvent) => {
+    if (newEvent && !isUpdating.value) {
+      localEvent.value = { ...newEvent };
+      console.log("事件資料已更新:", newEvent);
 
-watch(() => props.tags, (newTags) => {
-  if (newTags && !isUpdating.value) {
-    localTags.value = [...newTags];
-    console.log('標籤資料已更新:', newTags);
-  }
-}, { deep: true, immediate: true });
+      // 當活動資料更新時，更新地圖位置
+      if (newEvent.location && isReady.value) {
+        displayEventLocation(newEvent.location);
+      }
+    }
+  },
+  { deep: true, immediate: true }
+);
+
+watch(
+  () => props.tags,
+  (newTags) => {
+    if (newTags && !isUpdating.value) {
+      localTags.value = [...newTags];
+      console.log("標籤資料已更新:", newTags);
+    }
+  },
+  { deep: true, immediate: true }
+);
 
 // 當 Google Maps 準備就緒且有活動資料時，顯示位置
 watch([isReady, () => currentEvent.value?.location], ([ready, location]) => {
@@ -169,25 +194,26 @@ watch([isReady, () => currentEvent.value?.location], ([ready, location]) => {
 
 async function reloadEventData() {
   if (!props.eventId && !localEvent.value?.id) {
-    console.error('無法重新載入：缺少活動 ID');
+    console.error("無法重新載入：缺少活動 ID");
     return;
   }
 
   const eventId = props.eventId || localEvent.value.id;
-  
+
   try {
     isUpdating.value = true;
-    console.log('開始重新載入活動資料...');
-    
+    console.log("開始重新載入活動資料...");
+
     // 統一使用 getEventById 來獲取活動資料，移除了 axios.get 的直接呼叫
     // const token = localStorage.getItem('access_token'); // 這行也不需要了
     // const response = await axios.get(...) // 這部分被移除了
-    
-    const { event: updatedEvent, tags: updatedTags } = await getEventById(eventId);
-    
+
+    const { event: updatedEvent, tags: updatedTags } =
+      await getEventById(eventId);
+
     if (updatedEvent) {
       localEvent.value = { ...updatedEvent };
-      
+
       // 重新載入資料後，更新地圖位置
       if (updatedEvent.location && isReady.value) {
         await displayEventLocation(updatedEvent.location);
@@ -196,19 +222,18 @@ async function reloadEventData() {
     if (updatedTags) {
       localTags.value = [...updatedTags];
     }
-    
-    console.log('活動資料重新載入成功:', { updatedEvent, updatedTags });
-    
-    emit('update', {
+
+    console.log("活動資料重新載入成功:", { updatedEvent, updatedTags });
+
+    emit("update", {
       event: localEvent.value,
-      tags: localTags.value
+      tags: localTags.value,
     });
-    
   } catch (error) {
-    console.error('重新載入活動資料失敗:', error);
-    
+    console.error("重新載入活動資料失敗:", error);
+
     if (error.response?.status === 401) {
-      console.warn('認證失敗，可能需要重新登入');
+      console.warn("認證失敗，可能需要重新登入");
     }
   } finally {
     isUpdating.value = false;
@@ -216,8 +241,8 @@ async function reloadEventData() {
 }
 
 async function handleEventUpdate() {
-  console.log('活動更新完成，準備重新載入資料...');
-  
+  console.log("活動更新完成，準備重新載入資料...");
+
   setTimeout(async () => {
     await reloadEventData();
   }, 500);
@@ -228,7 +253,7 @@ const handleJoinToggle = async () => {
     await toggleJoin();
     await reloadEventData();
   } catch (error) {
-    console.error('報名操作失敗:', error);
+    console.error("報名操作失敗:", error);
   }
 };
 
@@ -237,14 +262,13 @@ const handleCancelConfirm = async () => {
     await handleConfirmCancel();
     await reloadEventData();
   } catch (error) {
-    console.error('取消報名失敗:', error);
+    console.error("取消報名失敗:", error);
   }
 };
 </script>
 
 <template>
   <div>
-
     <div v-if="isUpdating" class="loading-overlay">
       <div class="loading-message">
         <i class="fa-solid fa-spinner fa-spin"></i>
@@ -257,20 +281,13 @@ const handleCancelConfirm = async () => {
         <h3 class="text-lg font-bold">確認取消報名</h3>
         <p class="py-4">
           您確定要取消這次報名嗎？ <br />
-          <span>取消後如人數額滿或是活動開始前24小時內都將無法報名</span>， <br />
+          <span>取消後如人數額滿或是活動開始前24小時內都將無法報名</span>，
+          <br />
           請再次確認您的選擇。
         </p>
         <div class="modal-action">
-          <button
-            class="btn"
-            @click="closeModal">
-            放棄取消
-          </button>
-          <button
-            class="btn"
-            @click="handleCancelConfirm">
-            確認取消
-          </button>
+          <button class="btn" @click="closeModal">放棄取消</button>
+          <button class="btn" @click="handleCancelConfirm">確認取消</button>
         </div>
       </div>
     </div>
@@ -282,13 +299,15 @@ const handleCancelConfirm = async () => {
         </div>
         <div class="event-content-box">
           <div class="event-map">
-            <div ref="mapContainer" class="w-full h-full rounded-lg border-0" style="min-height: 300px; background: #2d2d2d;"></div>
+            <div
+              ref="mapContainer"
+              class="w-full h-full rounded-lg border-0"
+              style="min-height: 300px; background: #2d2d2d"
+            ></div>
           </div>
           <div class="event-content">
             <div class="event-tags">
-              <div
-                v-for="tag in currentTags"
-                :key="tag.id">
+              <div v-for="tag in currentTags" :key="tag.id">
                 {{ tag.name }}
               </div>
             </div>
@@ -298,9 +317,7 @@ const handleCancelConfirm = async () => {
                 {{ currentEvent.name }}
               </h3>
 
-              <div
-                v-if="formattedEventTime"
-                class="event-content-info">
+              <div v-if="formattedEventTime" class="event-content-info">
                 <i class="fa-solid fa-calendar"></i>
                 <p>活動時間：{{ formattedEventTime }}</p>
               </div>
@@ -318,38 +335,48 @@ const handleCancelConfirm = async () => {
               <div class="event-content-info">
                 <i class="fa-solid fa-user"></i>
                 <p>
-                  目前報名人數： <span>{{ joinedNum }}</span> ｜ 報名人數上限：<span>{{ currentEvent.maxPeople || '無報名人數限制' }}</span>
+                  目前報名人數： <span>{{ joinedNum }}</span> ｜
+                  報名人數上限：<span>{{
+                    currentEvent.maxPeople || "無報名人數限制"
+                  }}</span>
                 </p>
               </div>
-
             </div>
-            
+
             <div class="edit-btn-container">
               <button
                 @click="handleJoinToggle"
                 :disabled="isJoin || isUpdating"
-                :class="{ 'opacity-50 cursor-not-allowed': isJoin || isUpdating }"
+                :class="{
+                  'opacity-50 cursor-not-allowed': isJoin || isUpdating,
+                }"
                 type="button"
-                class="event-btn event-btn-free">
-                {{ isUpdating ? '處理中...' : (isJoin ? '已報名' : '參加活動') }}
+                class="event-btn event-btn-free"
+              >
+                {{ isUpdating ? "處理中..." : isJoin ? "已報名" : "參加活動" }}
               </button>
-              
+
               <button
                 v-if="isJoin"
                 @click="openCancelModal()"
                 :disabled="!isOver24hr || isUpdating"
-                :class="['event-btn-free', (isOver24hr && !isUpdating) ? 'cursor-pointer' : 'cursor-not-allowed opacity-50']"
+                :class="[
+                  'event-btn-free',
+                  isOver24hr && !isUpdating
+                    ? 'cursor-pointer'
+                    : 'cursor-not-allowed opacity-50',
+                ]"
                 type="button"
-                class="event-btn-free">
-                {{ isUpdating ? '處理中...' : '取消報名' }}
+                class="event-btn-free"
+              >
+                {{ isUpdating ? "處理中..." : "取消報名" }}
               </button>
-              
+
               <ModalEdit
                 v-if="currentEvent.id && isHostUser"
                 :event-id="currentEvent.id"
                 @update="handleEventUpdate"
               />
-
             </div>
           </div>
         </div>
@@ -511,7 +538,9 @@ const handleCancelConfirm = async () => {
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
   background-color: white;
   padding: 8px 45px 10px 45px;
-  transition: background-color 0.3s ease, color 0.3s ease;
+  transition:
+    background-color 0.3s ease,
+    color 0.3s ease;
 }
 
 .event-btn-free:hover:not(:disabled) {
