@@ -106,5 +106,5 @@ npm run dev
 | 陳紫婷   | [jasminecchen](https://github.com/jasminecchen)        | 1. 活動紀錄切版 |
 | 戎彬     | [Benjung1215](https://github.com/Benjung1215)          | 1.  購物車、結帳頁面設計 <br> 2. 訂單管理頁面設計 |
 | 蔡昌成   | [kirito489](https://github.com/kirito489)              | 1. 註銷帳號頁面設計 |
-| 竇孝武   | [TouHsiaoWu](https://github.com/TouHsiaoWu)            | 1. 地圖關鍵字搜尋 <br> 2. 即時篩選更新、多重篩選設定 <br> 3. 酒吧資訊卡、酒吧詳情頁面設計 |
+| 竇孝武   | [DouFreddy](https://github.com/DouFreddy)            | 1. 地圖關鍵字搜尋 <br> 2. 即時篩選更新、多重篩選設定 <br> 3. 酒吧資訊卡、酒吧詳情頁面設計 |
 
