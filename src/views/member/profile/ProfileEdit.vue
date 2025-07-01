@@ -426,11 +426,6 @@ onMounted(async () => {
         <div class="w-full">
           <h2 class="text-xl font-semibold mb-4 text-[var(--color-primary-orange)]">個人資料</h2>
           
-          <!-- 個人資料編輯狀態指示 -->
-          <div class="mb-2 text-xs text-gray-500">
-            編輯模式: {{ editMode === 'profile' ? '編輯中' : '查看中' }}
-          </div>
-          
           <ProfileForm
             :form="editMode === 'profile' ? profileForm : profile"
             :isEdit="editMode === 'profile'"
@@ -445,7 +440,7 @@ onMounted(async () => {
                 <button
                   @click="saveProfile"
                   :disabled="isProfileSaving"
-                  class="px-6 py-2 font-medium text-white transition duration-300 transform bg-blue-500 rounded-lg shadow-md hover:scale-105 hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none">
+                  class="px-6 py-2 font-medium text-white transition duration-300 transform bg-gradient-to-r from-[var(--color-secondary-green)] to-[var(--color-primary-orange)] rounded-lg shadow-md hover:scale-105 hover:brightness-110 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none">
                   <span v-if="isProfileSaving" class="flex items-center justify-center">
                     <i class="mr-2 fa-solid fa-spinner fa-spin"></i>
                     儲存中...
@@ -468,10 +463,9 @@ onMounted(async () => {
               <button
                 @click="startProfileEdit"
                 :disabled="editMode === 'preferences'"
-                class="px-4 py-2 text-white transition-all duration-150 bg-blue-500 rounded cursor-pointer active:scale-98 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-blue-600">
+                class="px-4 py-2 text-white transition-all duration-150 bg-[var(--color-primary-orange)] rounded cursor-pointer active:scale-98 disabled:opacity-50 disabled:cursor-not-allowed hover:brightness-110">
                 <i class="mr-2 fa-solid fa-user"></i>
                 編輯個人資料
-                <span class="ml-1 text-xs">({{ editMode === 'preferences' ? '偏好編輯中' : '可點擊' }})</span>
               </button>
             </template>
           </div>
@@ -480,11 +474,6 @@ onMounted(async () => {
         <!-- 偏好設定區塊 -->
         <div class="w-full">
           <h2 class="text-xl font-semibold mb-4 text-[var(--color-primary-orange)]">酒吧偏好</h2>
-          
-          <!-- 偏好設定編輯狀態指示 -->
-          <div class="mb-2 text-xs text-gray-500">
-            編輯模式: {{ editMode === 'preferences' ? '編輯中' : '查看中' }}
-          </div>
           
           <PreferencesForm 
             :preferences="displayPreferences"
@@ -527,7 +516,6 @@ onMounted(async () => {
                 class="px-4 py-2 bg-[var(--color-primary-orange)] text-white rounded cursor-pointer active:scale-98 transition-all duration-150 disabled:opacity-50 disabled:cursor-not-allowed hover:brightness-110">
                 <i class="mr-2 fa-solid fa-heart"></i>
                 編輯偏好設定
-                <span class="ml-1 text-xs">({{ editMode === 'profile' ? '個人資料編輯中' : '可點擊' }})</span>
               </button>
             </template>
           </div>
@@ -547,7 +535,3 @@ onMounted(async () => {
     />
   </div>
 </template>
-
-<style scoped>
-
-</style>
