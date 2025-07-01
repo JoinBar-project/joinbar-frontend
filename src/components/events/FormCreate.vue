@@ -1,28 +1,28 @@
 <script setup>
-import { ref, computed, watch, onMounted } from 'vue';
-import apiClient from '@/api/axios';
-import { useEventForm } from '@/composables/useEventForm';
-import { useAuthStore } from '@/stores/authStore';
-import { useTagStore } from '@/stores/tag';
-import Hashtag from './Hashtag.vue';
-import { useGoogleMaps } from '@/composables/useGoogleMaps/userIndex.js';
-import debounce from 'lodash/debounce';
+import { ref, computed, watch, onMounted } from "vue";
+import apiClient from "@/api/axios";
+import { useEventForm } from "@/composables/useEventForm";
+import { useAuthStore } from "@/stores/authStore";
+import { useTagStore } from "@/stores/tag";
+import Hashtag from "./Hashtag.vue";
+import { useGoogleMaps } from "@/composables/useGoogleMaps/userIndex.js";
+import debounce from "lodash/debounce";
 
-const emit = defineEmits(['submit']);
+const emit = defineEmits(["submit"]);
 
 const authStore = useAuthStore();
 const tagStore = useTagStore();
 
-const isAdmin = computed(() => authStore.user?.role === 'admin');
+const isAdmin = computed(() => authStore.user?.role === "admin");
 
-const { 
-  eventName, 
-  barName, 
-  eventLocation, 
-  eventStartDate, 
-  eventEndDate, 
-  eventPrice, 
-  eventPeople, 
+const {
+  eventName,
+  barName,
+  eventLocation,
+  eventStartDate,
+  eventEndDate,
+  eventPrice,
+  eventPeople,
   eventHashtags,
 } = useEventForm();
 
@@ -47,9 +47,9 @@ const {
   onError: (msg) => alert(msg),
 });
 
-const searchBarName = ref('');
+const searchBarName = ref("");
 const suggestions = ref([]);
-const barAddress = ref('');
+const barAddress = ref("");
 const suppressSuggestions = ref(false);
 
 const getSuggestions = debounce(async (input) => {
@@ -73,8 +73,8 @@ const selectSuggestion = async (suggestion) => {
     const detail = await getPlaceDetails(suggestion.place_id);
     if (detail && detail.geometry && detail.geometry.location) {
       barName.value = detail.name;
-      eventLocation.value = detail.formatted_address || '';
-      barAddress.value = detail.formatted_address || '';
+      eventLocation.value = detail.formatted_address || "";
+      barAddress.value = detail.formatted_address || "";
       searchBarName.value = detail.name;
       const location = {
         lat: detail.geometry.location.lat(),
@@ -84,7 +84,7 @@ const selectSuggestion = async (suggestion) => {
       addMarker({
         location,
         title: detail.name,
-        infoContent: `<div style='font-size:14px;'><strong>${detail.name}</strong><br><span style='color:#666;'>${detail.formatted_address || ''}</span></div>`,
+        infoContent: `<div style='font-size:14px;'><strong>${detail.name}</strong><br><span style='color:#666;'>${detail.formatted_address || ""}</span></div>`,
         isBarLike: true,
       });
       panTo(location, 14);
@@ -93,7 +93,9 @@ const selectSuggestion = async (suggestion) => {
   } else {
     await searchBarLocation(suggestion.description);
   }
-  setTimeout(() => { suppressSuggestions.value = false; }, 0);
+  setTimeout(() => {
+    suppressSuggestions.value = false;
+  }, 0);
 };
 
 const searchBarLocation = async (query) => {
@@ -117,8 +119,8 @@ const searchBarLocation = async (query) => {
     }
   } catch (e) {
     clearMarkers();
-    barAddress.value = '';
-    eventLocation.value = '';
+    barAddress.value = "";
+    eventLocation.value = "";
   }
 };
 
@@ -155,18 +157,18 @@ watch(barName, async (newName) => {
 function handleImageSelect(event) {
   const file = event.target.files[0];
   if (file) {
-    if (!file.type.startsWith('image/')) {
-      alert('請選擇圖片檔案');
+    if (!file.type.startsWith("image/")) {
+      alert("請選擇圖片檔案");
       return;
     }
-    
+
     if (file.size > 1 * 1024 * 1024) {
-      alert('圖片檔案大小不能超過 1MB');
+      alert("圖片檔案大小不能超過 1MB");
       return;
     }
-    
+
     imageFile.value = file;
-    
+
     const reader = new FileReader();
     reader.onload = (e) => {
       imagePreview.value = e.target.result;
@@ -181,99 +183,115 @@ function triggerFileInput() {
 
 async function onSubmit() {
   if (!authStore.isAuthenticated) {
-    alert('請先登入後再建立活動');
+    alert("請先登入後再建立活動");
     return;
   }
 
-  if (!eventName.value || !barName.value || !eventStartDate.value || !eventEndDate.value || !eventPeople.value) {
-    alert('請完整填寫所有欄位！');
+  if (
+    !eventName.value ||
+    !barName.value ||
+    !eventStartDate.value ||
+    !eventEndDate.value ||
+    !eventPeople.value
+  ) {
+    alert("請完整填寫所有欄位！");
     return;
   }
 
   if (isAdmin.value && (!eventPrice.value || isNaN(eventPrice.value))) {
-    alert('請輸入有效的價格！');
+    alert("請輸入有效的價格！");
     return;
   }
 
+  if (barAddress.value) {
+    eventLocation.value = barAddress.value;
+  }
+  console.log(
+    "送出地點:",
+    eventLocation.value,
+    barAddress.value,
+    searchBarName.value
+  );
+
   try {
     const formData = new FormData();
-    
-    const isValidTagFormat = Array.isArray(eventHashtags.value) && 
-      eventHashtags.value.every(tag => typeof tag === 'number');
-    
+
+    const isValidTagFormat =
+      Array.isArray(eventHashtags.value) &&
+      eventHashtags.value.every((tag) => typeof tag === "number");
+
     if (!isValidTagFormat) {
-      console.error('標籤格式錯誤，期望數字陣列，實際:', eventHashtags.value);
+      console.error("標籤格式錯誤，期望數字陣列，實際:", eventHashtags.value);
     }
 
-    formData.append('name', eventName.value);
-    formData.append('barName', barName.value);
-    formData.append('location', eventLocation.value);
-    formData.append('startAt', eventStartDate.value);
-    formData.append('endAt', eventEndDate.value);
-    formData.append('maxPeople', eventPeople.value);
-    
+    formData.append("name", eventName.value);
+    formData.append("barName", barName.value);
+    formData.append("location", eventLocation.value);
+    formData.append("startAt", eventStartDate.value);
+    formData.append("endAt", eventEndDate.value);
+    formData.append("maxPeople", eventPeople.value);
+
     if (isAdmin.value && eventPrice.value) {
-      formData.append('price', eventPrice.value);
+      formData.append("price", eventPrice.value);
     }
-    
-    if (imageFile.value) {
-      formData.append('image', imageFile.value);
-    }
-    
-    formData.append('tags', JSON.stringify(eventHashtags.value));
 
-    const response = await apiClient.post('/event/create', formData, {
+    if (imageFile.value) {
+      formData.append("image", imageFile.value);
+    }
+
+    formData.append("tags", JSON.stringify(eventHashtags.value));
+
+    const response = await apiClient.post("/event/create", formData, {
       headers: {
-        'Content-Type': 'multipart/form-data',
+        "Content-Type": "multipart/form-data",
       },
     });
-    
-    eventName.value = '';
-    barName.value = '';
-    eventLocation.value = '';
-    eventStartDate.value = '';
-    eventEndDate.value = '';
-    eventPrice.value = '';
-    eventPeople.value = '';
+
+    eventName.value = "";
+    barName.value = "";
+    eventLocation.value = "";
+    eventStartDate.value = "";
+    eventEndDate.value = "";
+    eventPrice.value = "";
+    eventPeople.value = "";
     eventHashtags.value = [];
-    
+
     if (imageFile.value) imageFile.value = null;
     if (imagePreview.value) imagePreview.value = null;
-    
-    alert('活動建立成功！');
-    
-    emit('submit', {
+
+    alert("活動建立成功！");
+
+    emit("submit", {
       success: true,
-      newEvent: response.data.event || response.data
+      newEvent: response.data.event || response.data,
     });
-    
   } catch (error) {
-    console.error('=== 建立失敗 ===');
-    console.error('完整錯誤:', error);
-    
-    let errorMessage = '發生未知錯誤';
-    
+    console.error("=== 建立失敗 ===");
+    console.error("完整錯誤:", error);
+
+    let errorMessage = "發生未知錯誤";
+
     if (error.response) {
-      console.error('伺服器錯誤詳情:', {
+      console.error("伺服器錯誤詳情:", {
         status: error.response.status,
         data: error.response.data,
-        headers: error.response.headers
+        headers: error.response.headers,
       });
-      errorMessage = error.response.data?.message || '伺服器錯誤';
+      errorMessage = error.response.data?.message || "伺服器錯誤";
       alert(`建立失敗: ${errorMessage}`);
     } else if (error.request) {
-      console.error('網路錯誤:', error.request);
-      errorMessage = '網路連線錯誤，請檢查網路狀態';
+      console.error("網路錯誤:", error.request);
+      errorMessage = "網路連線錯誤，請檢查網路狀態";
       alert(errorMessage);
     } else {
-      console.error('其他錯誤:', error.message);
+      console.error("其他錯誤:", error.message);
       errorMessage = error.message;
       alert(`發生錯誤: ${errorMessage}`);
     }
-    
-    emit('submit', {
+
+    emit("submit", {
       success: false,
-      error: errorMessage
+      error: errorMessage,
     });
   }
 }
@@ -283,32 +301,37 @@ async function onSubmit() {
   <section class="event-form" id="new-event">
     <div class="form-header">建立新活動</div>
     <div class="form-container">
-      <div class="cursor-pointer form-image-upload rounded-3xl bg-gradient-to-br from-gray-100 to-gray-300 water-drop-upload hover:opacity-80 active:opacity-50" @click="triggerFileInput">
+      <div
+        class="bg-gradient-to-br from-gray-100 to-gray-300 rounded-3xl cursor-pointer form-image-upload water-drop-upload hover:opacity-80 active:opacity-50"
+        @click="triggerFileInput"
+      >
         <input
           ref="fileInput"
           type="file"
           accept="image/*"
           @change="handleImageSelect"
-          style="display: none;"
+          style="display: none"
         />
-        
+
         <div v-if="!imagePreview" class="event-image-placeholder">
           <i class="fa-solid fa-upload"></i>
           點擊更換活動圖
         </div>
-        
+
         <div v-else class="relative w-full h-full">
           <img
             :src="imagePreview"
             alt="活動圖片預覽"
             class="object-cover w-full h-full"
           />
-          <div class="absolute inset-0 flex items-center justify-center transition-opacity opacity-0 hover:opacity-100 rounded-t-xl backdrop-blur-sm">
+          <div
+            class="flex absolute inset-0 justify-center items-center rounded-t-xl opacity-0 backdrop-blur-sm transition-opacity hover:opacity-100"
+          >
             <span class="text-lg font-medium text-white">點擊重新選擇</span>
           </div>
         </div>
       </div>
-      
+
       <div class="form-layout">
         <div class="form-left">
           <div class="form-row">
@@ -317,27 +340,52 @@ async function onSubmit() {
               type="text"
               id="event-name"
               v-model="eventName"
-              placeholder="請輸入活動名稱" />
+              placeholder="請輸入活動名稱"
+            />
           </div>
           <div class="form-row">
             <label for="bar-name">酒吧名稱</label>
-            <div style="position: relative; width: 100%;">
+            <div style="position: relative; width: 100%">
               <input
                 type="text"
                 id="bar-name"
                 v-model="searchBarName"
                 placeholder="請輸入酒吧名稱"
                 autocomplete="off"
-                style="width: 100%;"
+                style="width: 100%"
               />
-              <ul v-if="suggestions.length" class="suggestions-list" style="position: absolute; top: 40px; left: 0; right: 0; z-index: 20; background: white; border: 1px solid #ddd; border-radius: 8px; max-height: 200px; overflow-y: auto; box-shadow: 0 4px 10px rgba(0,0,0,0.1);">
+              <ul
+                v-if="suggestions.length"
+                class="suggestions-list"
+                style="
+                  position: absolute;
+                  top: 40px;
+                  left: 0;
+                  right: 0;
+                  z-index: 20;
+                  background: white;
+                  border: 1px solid #ddd;
+                  border-radius: 8px;
+                  max-height: 200px;
+                  overflow-y: auto;
+                  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+                "
+              >
                 <li
                   v-for="(suggestion, idx) in suggestions"
                   :key="idx"
                   @click="selectSuggestion(suggestion)"
-                  style="padding: 10px 12px; cursor: pointer; border-bottom: 1px solid #f0f0f0; display: flex; align-items: center; gap: 6px;"
+                  style="
+                    padding: 10px 12px;
+                    cursor: pointer;
+                    border-bottom: 1px solid #f0f0f0;
+                    display: flex;
+                    align-items: center;
+                    gap: 6px;
+                  "
                 >
-                  <span style="font-size: 18px;">🔍</span> {{ suggestion.description }}
+                  <span style="font-size: 18px">🔍</span>
+                  {{ suggestion.description }}
                 </li>
               </ul>
             </div>
@@ -350,14 +398,16 @@ async function onSubmit() {
             <input
               type="datetime-local"
               id="event-start-date"
-              v-model="eventStartDate" />
+              v-model="eventStartDate"
+            />
           </div>
           <div class="form-row">
             <label for="event-end-date">結束日期</label>
             <input
               type="datetime-local"
               id="event-end-date"
-              v-model="eventEndDate" />
+              v-model="eventEndDate"
+            />
           </div>
           <div class="form-row" v-if="isAdmin">
             <label for="event-price">價格</label>
@@ -365,7 +415,8 @@ async function onSubmit() {
               type="number"
               id="event-price"
               v-model="eventPrice"
-              placeholder="請輸入價格" />
+              placeholder="請輸入價格"
+            />
           </div>
           <div class="form-row">
             <label for="event-people">參加人數</label>
@@ -375,22 +426,22 @@ async function onSubmit() {
               v-model="eventPeople"
               min="1"
               step="1"
-              max="30" />
+              max="30"
+            />
           </div>
           <Hashtag v-model="eventHashtags" />
         </div>
         <div class="form-right">
-          <div ref="mapContainer" class="w-full h-full border-0 rounded-lg" style="min-height: 300px; background: #2d2d2d;"></div>
+          <div
+            ref="mapContainer"
+            class="w-full h-full rounded-lg border-0"
+            style="min-height: 300px; background: #2d2d2d"
+          ></div>
         </div>
       </div>
-      
+
       <div class="form-bottom">
-        <button
-          type="button"
-          class="btn-submit"
-          @click="onSubmit">
-          發佈
-        </button>
+        <button type="button" class="btn-submit" @click="onSubmit">發佈</button>
       </div>
     </div>
   </section>
