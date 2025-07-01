@@ -9,20 +9,52 @@ export const favoritesAPI = {
     try {
       const params = userId ? { userId } : {};
       const response = await axios.get(`${API_BASE_URL}/favorites`, { params });
-      return response.data.favorites;
+      return response.data.favorites || [];
     } catch (error) {
       console.error("Error fetching favorites:", error);
       throw error;
     }
   },
 
-  // 新增收藏
-  async addFavorite(data) {
+  // 切換收藏狀態（新增或移除）
+  async toggleFavorite(barId, data) {
     try {
-      const response = await axios.post(`${API_BASE_URL}/favorites`, data);
+      const response = await axios.put(
+        `${API_BASE_URL}/favorites/${barId}`,
+        data
+      );
       return response.data;
     } catch (error) {
-      console.error("Error adding favorite:", error);
+      console.error("Error toggling favorite:", error);
+      throw error;
+    }
+  },
+
+  // 檢查收藏狀態
+  async checkFavoriteStatus(barId, googlePlaceId = null) {
+    try {
+      const params = googlePlaceId ? { googlePlaceId } : {};
+      const response = await axios.get(
+        `${API_BASE_URL}/favorites/${barId}/status`,
+        { params }
+      );
+      return response.data;
+    } catch (error) {
+      console.error("Error checking favorite status:", error);
+      throw error;
+    }
+  },
+
+  // 批量檢查收藏狀態
+  async checkMultipleFavoriteStatus(identifiers) {
+    try {
+      const response = await axios.post(
+        `${API_BASE_URL}/favorites/check-multiple`,
+        { identifiers }
+      );
+      return response.data;
+    } catch (error) {
+      console.error("Error checking multiple favorite status:", error);
       throw error;
     }
   },

@@ -1,6 +1,6 @@
 <script setup>
 import { ref, computed, watch, onMounted } from 'vue';
-import apiClient from '@/api/axios'
+import apiClient from '@/api/axios';
 import { useEventForm } from '@/composables/useEventForm';
 import { useAuthStore } from '@/stores/authStore';
 import { useTagStore } from '@/stores/tag';
@@ -32,7 +32,6 @@ const fileInput = ref(null);
 
 const mapContainer = ref(null);
 const {
-  map,
   isReady,
   loadGoogleMapsAPI,
   initMap,
@@ -42,6 +41,7 @@ const {
   panTo,
   setZoom,
   getPlacePredictions,
+  getPlaceDetails,
 } = useGoogleMaps(mapContainer, {
   googleMapsApiKey: import.meta.env.VITE_GOOGLE_MAPS_API_KEY,
   onError: (msg) => alert(msg),
@@ -50,6 +50,7 @@ const {
 const searchBarName = ref('');
 const suggestions = ref([]);
 const barAddress = ref('');
+const suppressSuggestions = ref(false);
 
 const getSuggestions = debounce(async (input) => {
   if (!input) {
@@ -61,12 +62,38 @@ const getSuggestions = debounce(async (input) => {
 }, 300);
 
 watch(searchBarName, (val) => {
+  if (suppressSuggestions.value) return;
   getSuggestions(val);
 });
 
 const selectSuggestion = async (suggestion) => {
+  suppressSuggestions.value = true;
   suggestions.value = [];
-  await searchBarLocation(suggestion.description);
+  if (suggestion.place_id) {
+    const detail = await getPlaceDetails(suggestion.place_id);
+    if (detail && detail.geometry && detail.geometry.location) {
+      barName.value = detail.name;
+      eventLocation.value = detail.formatted_address || '';
+      barAddress.value = detail.formatted_address || '';
+      searchBarName.value = detail.name;
+      const location = {
+        lat: detail.geometry.location.lat(),
+        lng: detail.geometry.location.lng(),
+      };
+      clearMarkers();
+      addMarker({
+        location,
+        title: detail.name,
+        infoContent: `<div style='font-size:14px;'><strong>${detail.name}</strong><br><span style='color:#666;'>${detail.formatted_address || ''}</span></div>`,
+        isBarLike: true,
+      });
+      panTo(location, 14);
+      setZoom(14);
+    }
+  } else {
+    await searchBarLocation(suggestion.description);
+  }
+  setTimeout(() => { suppressSuggestions.value = false; }, 0);
 };
 
 const searchBarLocation = async (query) => {
@@ -86,10 +113,12 @@ const searchBarLocation = async (query) => {
       setZoom(14);
       barName.value = query;
       barAddress.value = query;
+      eventLocation.value = query;
     }
   } catch (e) {
     clearMarkers();
     barAddress.value = '';
+    eventLocation.value = '';
   }
 };
 
@@ -254,7 +283,7 @@ async function onSubmit() {
   <section class="event-form" id="new-event">
     <div class="form-header">建立新活動</div>
     <div class="form-container">
-      <div class="form-image-upload" @click="triggerFileInput">
+      <div class="cursor-pointer form-image-upload rounded-3xl bg-gradient-to-br from-gray-100 to-gray-300 water-drop-upload hover:opacity-80 active:opacity-50" @click="triggerFileInput">
         <input
           ref="fileInput"
           type="file"
@@ -264,6 +293,7 @@ async function onSubmit() {
         />
         
         <div v-if="!imagePreview" class="event-image-placeholder">
+          <i class="fa-solid fa-upload"></i>
           點擊更換活動圖
         </div>
         
@@ -350,7 +380,7 @@ async function onSubmit() {
           <Hashtag v-model="eventHashtags" />
         </div>
         <div class="form-right">
-          <div ref="mapContainer" class="w-full h-full rounded-lg border-0" style="min-height: 300px; background: #2d2d2d;"></div>
+          <div ref="mapContainer" class="w-full h-full border-0 rounded-lg" style="min-height: 300px; background: #2d2d2d;"></div>
         </div>
       </div>
       
@@ -383,7 +413,7 @@ async function onSubmit() {
 }
 
 .form-image-upload {
-  @apply flex justify-center items-center w-full h-72 text-xl text-gray-400 bg-gray-200;
+  @apply flex justify-center items-center w-full h-72 text-xl text-gray-400;
 }
 
 .form-layout {
