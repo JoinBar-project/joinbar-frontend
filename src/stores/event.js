@@ -3,6 +3,7 @@ import { ref } from 'vue'
 import axios from 'axios'
 
 axios.defaults.baseURL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000'
+console.log('📦 axios baseURL:', axios.defaults.baseURL);
 
 export const useEventStore = defineStore('event', () => {
   const event = ref(null)
