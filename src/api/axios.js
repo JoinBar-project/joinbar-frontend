@@ -113,11 +113,11 @@ apiClient.interceptors.response.use(
             const resp = isLineUser
               ? // 這邊改使用 axios 直接發送請求，避免當 refresh token 無效時，該請求也會收到 401 錯誤，觸發攔截器又嘗試刷新
                 await axios.post(
-                  `${API_BASE_URL}/auth/refresh-token`, {}, {
+                  `${API_BASE_URL}/api/auth/refresh-token`, {}, {
                     withCredentials: true,
                     headers: { 'Content-Type': 'application/json' }
                   })
-              : await axios.post(`${API_BASE_URL}/auth/refresh-token`, {
+              : await axios.post(`${API_BASE_URL}/api/auth/refresh-token`, {
                     refreshToken // 用 resfresh token 換新的 access token
                   }, {
                     headers: { 'Content-Type': 'application/json' }

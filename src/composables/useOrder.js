@@ -32,7 +32,7 @@ export const PAYMENT_METHOD_TEXT = {
 }
 
 const apiClient = axios.create({
- baseURL: API_BASE_URL,
+ baseURL: `${API_BASE_URL}/api`,
  timeout: 10000,
  headers: {
    'Content-Type': 'application/json'

@@ -22,6 +22,8 @@ export function useEventForm(eventId = null) {
   
   const showForm = ref(false)
   const showAlert = ref(false)
+
+  const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:3000";
   
   // 等加入地圖元件：暫時自動填寫地點
   watch(barName, (newVal) => {
@@ -109,7 +111,7 @@ export function useEventForm(eventId = null) {
       // 取得標籤資料，優先使用 EventStore，否則直接呼叫 API
       let tagIds = eventStore.tagIds
       if (!tagIds || tagIds === undefined) {
-        const apiRes = await axios.get(`/api/event/${id}`)
+        const apiRes = await axios.get(`${API_BASE_URL}/api/event/${id}`)
         tagIds = apiRes.data.tags || []
       }
       

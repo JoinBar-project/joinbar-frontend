@@ -2,6 +2,8 @@ import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import axios from 'axios'
 
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000'
+
 export const useTagStore = defineStore('tag', () => {
   
   const tags = ref([])
@@ -11,7 +13,7 @@ export const useTagStore = defineStore('tag', () => {
   })
 
   const fetchTags = async () => {
-    const res = await axios.get('/api/tags/list')
+    const res = await axios.get(`${API_BASE_URL}/api/tags/list`)
     tags.value = res.data
   }
 

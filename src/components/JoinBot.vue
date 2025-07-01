@@ -14,7 +14,7 @@
       // 手機版
       'max-md:w-16 max-md:h-16'
     ]">
-      <img src="/JoinBot.png" alt="JoinBot Icon" class="w-full h-full object-contain" />
+      <img src="/JoinBot.png" alt="JoinBot Icon" class="object-contain w-full h-full" />
     </button>
 
     <div v-if="showGreetingBubble" :class="[
@@ -57,7 +57,7 @@
         'font-bold mb-4 text-center text-gray-800 leading-snug',
         'text-lg max-md:text-base'
       ]">
-        你的 JoinBot <br class="max-md:block hidden" />
+        你的 JoinBot <br class="hidden max-md:block" />
         智慧酒吧推薦小幫手
       </h3>
 
@@ -154,6 +154,8 @@ function clearInputError() {
   }
 }
 
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:3000";
+
 async function askJoinBot() {
   if (!userMessage.value.trim()) {
     inputError.value = true
@@ -163,7 +165,7 @@ async function askJoinBot() {
 
   response.value = '我來想想唷...'
   try {
-    const res = await axios.post(`${import.meta.env.VITE_API_BASE_URL}/api/barAi/recommendAI`, {
+    const res = await axios.post(`${API_BASE_URL}/api/barAi/recommendAI`, {
       message: userMessage.value
     })
     response.value = res.data.result
