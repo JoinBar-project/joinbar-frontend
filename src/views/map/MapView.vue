@@ -30,52 +30,39 @@
                 v-model="searchQuery"
                 placeholder="搜尋地點..."
                 @input="debouncedSearchSuggestions"
+                style="margin-left: 0"
               />
               <button
                 @click="handleSearch"
                 class="search-button-mobile"
                 :disabled="!isReady"
+                style="margin-left: 0"
               >
                 <i class="fas fa-search"></i>
               </button>
+              <ul v-if="suggestions.length" class="suggestions-list-mobile">
+                <li
+                  v-for="(suggestion, idx) in suggestions"
+                  :key="idx"
+                  @click="selectSuggestion(suggestion)"
+                >
+                  <span style="font-size: 18px">🔍</span>
+                  {{ suggestion.description }}
+                </li>
+              </ul>
             </div>
-            <ul
-              v-if="suggestions.length"
-              class="suggestions-list-mobile"
-              style="
-                position: absolute;
-                top: 100%;
-                left: 0;
-                right: 0;
-                z-index: 1000;
-              "
-            >
-              <li
-                v-for="(suggestion, idx) in suggestions"
-                :key="idx"
-                @click="selectSuggestion(suggestion)"
-                style="
-                  padding: 12px;
-                  border-bottom: 1px solid #f0f0f0;
-                  cursor: pointer;
-                  font-size: 14px;
-                  background: white;
-                "
-              >
-                <span style="font-size: 18px">🔍</span>
-                {{ suggestion.description }}
-              </li>
-            </ul>
           </div>
           <button
             @click="handleGetCurrentLocation"
             class="ml-1 location-button-mobile mobile-control-button"
+            style="margin-left: 4px"
           >
             <i class="fas fa-location-arrow"></i>
           </button>
           <button
             class="ml-1 filter-toggle-button mobile-control-button"
             @click="toggleFilterPanel"
+            style="margin-left: 4px"
           >
             <i class="fas fa-filter"></i>
           </button>
@@ -84,7 +71,7 @@
     </div>
 
     <div
-      class="desktop-top-controls hidden md:flex absolute top-5 left-[400px] z-[100] flex-row flex-wrap items-center gap-[10px] p-[15px] bg-white/90 rounded-lg shadow-[0_4px_12px_rgba(0,0,0,0.2)] transition-[left] duration-300 ease-in-out"
+      class="top-left-controls absolute top-5 left-[400px] z-[100] flex flex-row flex-wrap items-center gap-[10px] p-[15px] bg-white/90 rounded-lg shadow-[0_4px_12px_rgba(0,0,0,0.2)] transition-[left] duration-300 ease-in-out"
     >
       <button
         class="filter-toggle-button map-control-button"
@@ -1105,6 +1092,58 @@ onUnmounted(() => {
   .map-fullscreen {
     padding-top: 60px;
   }
+  .mobile-top-controls {
+    justify-content: flex-start !important;
+  }
+  .flex.flex-1.gap-2.items-center.min-w-0 {
+    justify-content: flex-start !important;
+  }
+  .search-panel-mobile {
+    margin-left: 0 !important;
+    width: 70vw !important;
+    min-width: 180px;
+    max-width: 95vw;
+  }
+  .input-group-mobile {
+    margin-left: 0 !important;
+  }
+  .search-input-mobile {
+    margin-left: 0 !important;
+    width: 100% !important;
+  }
+  .search-button-mobile {
+    margin-left: 0 !important;
+  }
+  .mobile-control-button {
+    margin-left: 4px !important;
+  }
+  .suggestions-list-mobile {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    width: 100%;
+    background: white;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    max-height: 220px;
+    overflow-y: auto;
+    z-index: 2000;
+    margin-top: 4px;
+  }
+  .suggestions-list-mobile li {
+    padding: 12px;
+    border-bottom: 1px solid #f0f0f0;
+    cursor: pointer;
+    font-size: 14px;
+    background: white;
+  }
+  .suggestions-list-mobile li:hover {
+    background-color: #f8f9fa;
+  }
+  .suggestions-list-mobile li:last-child {
+    border-bottom: none;
+  }
 }
 
 /* 底部按鈕樣式 */
@@ -1125,7 +1164,7 @@ onUnmounted(() => {
 }
 
 /* 桌面版樣式保持不變 */
-.desktop-top-controls {
+.top-left-controls {
   /* 原有樣式 */
 }
 
