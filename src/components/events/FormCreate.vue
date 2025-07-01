@@ -1,6 +1,6 @@
 <script setup>
 import { ref, computed, watch, onMounted } from 'vue';
-import apiClient from '@/api/axios'
+import apiClient from '@/api/axios';
 import { useEventForm } from '@/composables/useEventForm';
 import { useAuthStore } from '@/stores/authStore';
 import { useTagStore } from '@/stores/tag';
@@ -32,7 +32,6 @@ const fileInput = ref(null);
 
 const mapContainer = ref(null);
 const {
-  map,
   isReady,
   loadGoogleMapsAPI,
   initMap,
@@ -42,6 +41,7 @@ const {
   panTo,
   setZoom,
   getPlacePredictions,
+  getPlaceDetails,
 } = useGoogleMaps(mapContainer, {
   googleMapsApiKey: import.meta.env.VITE_GOOGLE_MAPS_API_KEY,
   onError: (msg) => alert(msg),
@@ -50,6 +50,7 @@ const {
 const searchBarName = ref('');
 const suggestions = ref([]);
 const barAddress = ref('');
+const suppressSuggestions = ref(false);
 
 const getSuggestions = debounce(async (input) => {
   if (!input) {
@@ -61,12 +62,38 @@ const getSuggestions = debounce(async (input) => {
 }, 300);
 
 watch(searchBarName, (val) => {
+  if (suppressSuggestions.value) return;
   getSuggestions(val);
 });
 
 const selectSuggestion = async (suggestion) => {
+  suppressSuggestions.value = true;
   suggestions.value = [];
-  await searchBarLocation(suggestion.description);
+  if (suggestion.place_id) {
+    const detail = await getPlaceDetails(suggestion.place_id);
+    if (detail && detail.geometry && detail.geometry.location) {
+      barName.value = detail.name;
+      eventLocation.value = detail.formatted_address || '';
+      barAddress.value = detail.formatted_address || '';
+      searchBarName.value = detail.name;
+      const location = {
+        lat: detail.geometry.location.lat(),
+        lng: detail.geometry.location.lng(),
+      };
+      clearMarkers();
+      addMarker({
+        location,
+        title: detail.name,
+        infoContent: `<div style='font-size:14px;'><strong>${detail.name}</strong><br><span style='color:#666;'>${detail.formatted_address || ''}</span></div>`,
+        isBarLike: true,
+      });
+      panTo(location, 14);
+      setZoom(14);
+    }
+  } else {
+    await searchBarLocation(suggestion.description);
+  }
+  setTimeout(() => { suppressSuggestions.value = false; }, 0);
 };
 
 const searchBarLocation = async (query) => {
@@ -86,10 +113,12 @@ const searchBarLocation = async (query) => {
       setZoom(14);
       barName.value = query;
       barAddress.value = query;
+      eventLocation.value = query;
     }
   } catch (e) {
     clearMarkers();
     barAddress.value = '';
+    eventLocation.value = '';
   }
 };
 

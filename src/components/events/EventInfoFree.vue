@@ -1,10 +1,12 @@
 <script setup>
 import { useEvent } from '@/composables/useEvent.js';
 import { toRef, computed, ref, watch, onMounted } from 'vue';
-import { getEventById } from '@/api/event';
+// import axios from 'axios'; // 這一行被移除了
+import { getEventById } from '@/api/event'; // 保留這個，因為會使用它來獲取資料
 import EventHoster from './EventHoster.vue';
 import MessageBoard from './MessageBoard.vue';
 import ModalEdit from '@/components/events/ModalEdit.vue'
+import { useGoogleMaps } from '@/composables/useGoogleMaps/userIndex.js';
 
 
 const emit = defineEmits(['update']);
@@ -13,12 +15,23 @@ const props = defineProps({
   event: Object,
   tags: Array,
   eventId: String,
-  user: {
+  user: { // 確保這裡的 props.user 是完整且有定義的
     type: Object,
     required: true,
-}
+  }
 });
 
+// 移除重複宣告，保留這一組
+const eventRef = toRef(props, 'event');
+const localEvent = ref({ ...props.event });
+const localTags = ref([...props.tags]);
+const isUpdating = ref(false);
+
+// 先宣告 currentEvent
+const currentEvent = computed(() => localEvent.value || {});
+const currentTags = computed(() => localTags.value || []);
+
+// 再宣告 isHostUser
 const currentUserId = computed(() => {
   const user = JSON.parse(localStorage.getItem('user'));
   return user?.id ? Number(user.id) : null;
@@ -28,22 +41,115 @@ const isHostUser = computed(() => {
   return currentUserId.value !== null && Number(currentEvent.value.hostUser) === currentUserId.value;
 });
 
+// Google Maps 相關
+const mapContainer = ref(null);
+const {
+  map,
+  isReady,
+  loadGoogleMapsAPI,
+  initMap,
+  getGeocode,
+  addMarker,
+  clearMarkers,
+  panTo,
+  setZoom,
+} = useGoogleMaps(mapContainer, {
+  googleMapsApiKey: import.meta.env.VITE_Maps_API_KEY, // 將這裡改回 VITE_Maps_API_KEY，因為 VITE_Maps_API_KEY 可能是筆誤
+  onError: (msg) => console.error('Google Maps 錯誤:', msg),
+  scrollwheel: false,
+});
+
 onMounted(() => {
   console.log('🔥 onMounted currentEvent:', currentEvent.value);
 });
 
-const eventRef = toRef(props, 'event');
-const localEvent = ref({ ...props.event });
-const localTags = ref([...props.tags]);
-const isUpdating = ref(false);
-
 const { isJoin, joinedNum, toggleJoin, isOver24hr, showModal, formattedEventTime, openCancelModal, closeModal, handleConfirmCancel } =
   useEvent(eventRef);
+
+// 初始化 Google Maps
+onMounted(async () => {
+  try {
+    await loadGoogleMapsAPI();
+    if (mapContainer.value) {
+      await initMap();
+      // 如果活動資料已經存在，立即顯示地圖
+      if (currentEvent.value?.location) {
+        await displayEventLocation(currentEvent.value.location);
+      }
+    }
+  } catch (error) {
+    console.error('初始化 Google Maps 失敗:', error);
+  }
+});
+
+// 顯示活動位置的函數
+const displayEventLocation = async (location) => {
+  if (!location || !isReady.value) {
+    console.log('無法顯示位置 - location:', location, 'isReady:', isReady.value);
+    return;
+  }
+  
+  try {
+    console.log('嘗試顯示位置:', location);
+    
+    // 使用 geocoding 將地址轉換為經緯度
+    const coordinates = await getGeocode(location);
+    
+    if (coordinates) {
+      console.log('取得經緯度:', coordinates);
+      
+      // 清除現有標記
+      clearMarkers();
+      
+      // 添加新標記，強制 isBarLike: true
+      addMarker({
+        location: coordinates,
+        title: currentEvent.value?.barName || '活動地點',
+        infoContent: `
+          <div style="font-size: 14px;">
+            <strong>${currentEvent.value?.barName || '活動地點'}</strong><br>
+            <span style="color: #666;">${location}</span>
+          </div>
+        `,
+        isBarLike: true,
+      });
+      
+      // 將地圖中心移動到標記位置
+      panTo(coordinates, 16);
+      setZoom(16);
+      
+      console.log('地圖位置設置成功:', coordinates);
+    } else {
+      console.warn('無法取得位置的經緯度:', location);
+      // 如果 geocoding 失敗，設置一個預設位置（台北市中心）
+      const defaultLocation = { lat: 25.0330, lng: 121.5654 };
+      panTo(defaultLocation, 12);
+      setZoom(12);
+      console.log('使用預設位置:', defaultLocation);
+    }
+  } catch (error) {
+    console.error('顯示活動位置失敗:', error);
+    // 發生錯誤時也設置預設位置
+    try {
+      const defaultLocation = { lat: 25.0330, lng: 121.5654 };
+      panTo(defaultLocation, 12);
+      setZoom(12);
+      console.log('錯誤後使用預設位置:', defaultLocation);
+    } catch (fallbackError) {
+      console.error('連預設位置都無法設置:', fallbackError);
+    }
+  }
+};
 
 watch(() => props.event, (newEvent) => {
   if (newEvent && !isUpdating.value) {
     localEvent.value = { ...newEvent };
     console.log('事件資料已更新:', newEvent);
+    
+    // 當活動資料更新時，更新地圖位置
+    if (newEvent.location && isReady.value) {
+      displayEventLocation(newEvent.location);
+    }
   }
 }, { deep: true, immediate: true });
 
@@ -54,6 +160,12 @@ watch(() => props.tags, (newTags) => {
   }
 }, { deep: true, immediate: true });
 
+// 當 Google Maps 準備就緒且有活動資料時，顯示位置
+watch([isReady, () => currentEvent.value?.location], ([ready, location]) => {
+  if (ready && location) {
+    displayEventLocation(location);
+  }
+});
 
 async function reloadEventData() {
   if (!props.eventId && !localEvent.value?.id) {
@@ -67,16 +179,26 @@ async function reloadEventData() {
     isUpdating.value = true;
     console.log('開始重新載入活動資料...');
     
+    // 統一使用 getEventById 來獲取活動資料，移除了 axios.get 的直接呼叫
+    // const token = localStorage.getItem('access_token'); // 這行也不需要了
+    // const response = await axios.get(...) // 這部分被移除了
+    
     const { event: updatedEvent, tags: updatedTags } = await getEventById(eventId);
- 
-
+    
     if (updatedEvent) {
       localEvent.value = { ...updatedEvent };
+      
+      // 重新載入資料後，更新地圖位置
+      if (updatedEvent.location && isReady.value) {
+        await displayEventLocation(updatedEvent.location);
+      }
     }
     if (updatedTags) {
       localTags.value = [...updatedTags];
     }
+    
     console.log('活動資料重新載入成功:', { updatedEvent, updatedTags });
+    
     emit('update', {
       event: localEvent.value,
       tags: localTags.value
@@ -100,9 +222,6 @@ async function handleEventUpdate() {
     await reloadEventData();
   }, 500);
 }
-
-const currentEvent = computed(() => localEvent.value || {});
-const currentTags = computed(() => localTags.value || []);
 
 const handleJoinToggle = async () => {
   try {
@@ -163,11 +282,7 @@ const handleCancelConfirm = async () => {
         </div>
         <div class="event-content-box">
           <div class="event-map">
-            <iframe 
-              v-if="currentEvent.location"
-              :src="`https://www.google.com/maps?q=${encodeURIComponent(currentEvent.location)}&output=embed`"
-              class="w-full h-full rounded-lg border-0">
-            </iframe>
+            <div ref="mapContainer" class="w-full h-full rounded-lg border-0" style="min-height: 300px; background: #2d2d2d;"></div>
           </div>
           <div class="event-content">
             <div class="event-tags">
