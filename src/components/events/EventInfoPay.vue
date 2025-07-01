@@ -711,4 +711,9 @@ button:disabled.event-btn-cart:hover {
     margin-bottom: 20px;
   }
 }
+
+:deep(.BaseAlertModal),
+:deep(.BaseConfirmModal) {
+  z-index: 99999 !important;
+}
 </style>

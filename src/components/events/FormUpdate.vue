@@ -789,4 +789,9 @@ onUnmounted(() => {
 :deep(.flatpickr-time input) {
   border-radius: 6px !important;
 }
+
+:deep(.BaseAlertModal),
+:deep(.BaseConfirmModal) {
+  z-index: 99999 !important;
+}
 </style>

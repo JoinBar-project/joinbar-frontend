@@ -508,4 +508,8 @@ const handleCancelConfirm = async () => {
 .login-prompt {
   margin-top: 30px;
 }
+
+:deep(.BaseAlertModal) {
+  z-index: 99999 !important;
+}
 </style>

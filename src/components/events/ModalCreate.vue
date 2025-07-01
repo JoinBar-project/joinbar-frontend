@@ -269,4 +269,9 @@ async function handleOverlayClick() {
     @apply mx-4 max-w-[calc(100vw-2rem)];
   }
 }
+
+:deep(.BaseAlertModal),
+:deep(.BaseConfirmModal) {
+  z-index: 99999 !important;
+}
 </style>

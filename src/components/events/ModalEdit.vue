@@ -262,4 +262,9 @@ async function handleOverlayClick() {
 .popup-close-btn:hover {
   @apply text-orange-600;
 }
+
+:deep(.BaseAlertModal),
+:deep(.BaseConfirmModal) {
+  z-index: 99999 !important;
+}
 </style>

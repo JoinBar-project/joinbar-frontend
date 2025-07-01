@@ -2,10 +2,10 @@
   <transition name="modal-fade">
     <div 
       v-if="visible" 
-      class="fixed inset-0 z-50 flex items-center justify-center bg-black/40" 
+      class="modal-overlay"
       @click.self="onCancel"
     >
-      <div class="w-full max-w-md p-6 space-y-4 bg-white shadow-xl rounded-2xl">
+      <div class="modal-content">
 
         <!-- 可選的圖標區域 -->
         <div v-if="type" class="flex justify-center mb-2">
@@ -59,7 +59,7 @@ const props = defineProps({
   type: {
     type: String,
     default: null,
-    validator: (value) => !value || ['warning', 'danger', 'question','success'].includes(value)
+    validator: (value) => !value || ['warning', 'danger', 'question'].includes(value)
   },
   confirmText: {
     type: String,
@@ -84,8 +84,7 @@ const iconBackgroundClass = computed(() => {
   const classes = {
     warning: 'bg-yellow-500',
     danger: 'bg-red-500',
-    question: 'bg-blue-500',
-    success: 'bg-green-500'
+    question: 'bg-blue-500'
   }
   return classes[props.type] || 'bg-gray-500'
 })
@@ -94,14 +93,33 @@ const confirmButtonClass = computed(() => {
   const classes = {
     warning: 'bg-gradient-to-r from-yellow-500 to-yellow-600',
     danger: 'bg-gradient-to-r from-[#df5b5b] to-[#b82f11]',
-    question: 'bg-gradient-to-r from-blue-500 to-blue-600',
-    success: 'text-[var(--color-black)] bg-gradient-to-r from-[#a9ebd4] to-[#02bc7d]'
+    question: 'bg-gradient-to-r from-blue-500 to-blue-600'
   }
   return classes[props.type] || 'bg-gradient-to-r from-[#df5b5b] to-[#b82f11]'
 })
 </script>
 
 <style scoped>
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 99999 !important;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: rgba(0, 0, 0, 0.4);
+}
+
+.modal-content {
+  width: 100%;
+  max-width: 28rem;
+  padding: 1.5rem;
+  background-color: white;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+  border-radius: 1rem;
+  z-index: 99999 !important;
+}
+
 .modal-fade-enter-active,
 .modal-fade-leave-active {
   transition: opacity 0.2s ease;

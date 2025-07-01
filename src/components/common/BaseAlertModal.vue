@@ -38,10 +38,10 @@ const buttonClass = computed(() => {
   <transition name="modal-fade">
     <div
       v-if="visible"
-      class="fixed inset-0 z-50 flex items-center justify-center bg-black/40"
+      class="modal-overlay"
       @click.self="onClose"
     >
-      <div class="w-full max-w-md p-6 space-y-4 text-center bg-white shadow-xl rounded-2xl">
+      <div class="modal-content">
         <slot name="icon">
           <!-- 根據類型顯示不同圖標 -->
           <img v-if="type === 'success'" src="/checkmark.png" class="w-12 h-12 mx-auto" alt="成功 icon" />
@@ -87,6 +87,28 @@ const buttonClass = computed(() => {
 </template>
 
 <style scoped>
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 99999 !important;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: rgba(0, 0, 0, 0.4);
+}
+
+.modal-content {
+  width: 100%;
+  max-width: 28rem;
+  padding: 1.5rem;
+  space-y: 1rem;
+  text-align: center;
+  background-color: white;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+  border-radius: 1rem;
+  z-index: 99999 !important;
+}
+
 .modal-fade-enter-active,
 .modal-fade-leave-active {
   transition: opacity 0.25s ease;
