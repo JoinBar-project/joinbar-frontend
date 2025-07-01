@@ -121,9 +121,17 @@ async function handleFormClose() {
   }
 }
 
-// 處理背景點擊
-async function handleOverlayClick() {
-  await handleFormClose();
+async function handleOverlayClick(event) {
+  // 檢查是否有其他 Modal 正在顯示
+  const hasActiveModal = document.querySelector('.BaseAlertModal, .BaseConfirmModal, [role="dialog"]');
+  
+  if (hasActiveModal) {
+    return; // 如果有其他 Modal 顯示，不處理背景點擊
+  }
+  
+  if (event.target.classList.contains('popup-overlay')) {
+    await handleFormClose();
+  }
 }
 </script>
 
@@ -160,7 +168,7 @@ async function handleOverlayClick() {
         v-if="showForm"
         class="popup-overlay"
         @click="handleOverlayClick">
-        <div class="modal-content">
+        <div class="modal-content" @click.stop>
           <button
             class="popup-close-btn"
             @click="handleFormClose">

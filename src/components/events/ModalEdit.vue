@@ -105,7 +105,15 @@ const canEdit = computed(() => {
 function handleUpdate() {
   showForm.value = false;
   emit('update');
-  showAlert('更新成功', '活動已成功更新！', 'success');
+}
+
+function handleDelete() {
+  showForm.value = false;
+  emit('update');
+}
+
+function handleCancel() {
+  showForm.value = false;
 }
 
 // 處理權限檢查的點擊事件
@@ -142,8 +150,10 @@ async function handleFormClose() {
 }
 
 // 處理背景點擊
-async function handleOverlayClick() {
-  await handleFormClose();
+async function handleOverlayClick(event) {
+  if (event.target.classList.contains('popup-overlay')) {
+    await handleFormClose();
+  }
 }
 </script>
 
@@ -197,7 +207,7 @@ async function handleOverlayClick() {
         v-if="showForm"
         class="popup-overlay"
         @click="handleOverlayClick">
-        <div class="modal-content">
+        <div class="modal-content" @click.stop>
           <button
             class="popup-close-btn"
             @click="handleFormClose">
@@ -207,8 +217,9 @@ async function handleOverlayClick() {
             <FormUpdate
               :event-id="props.eventId"
               @click.stop
-              @update="handleUpdate"
-              @cancel="handleFormClose"/>
+              @update.stop="handleUpdate"
+              @delete.stop="handleDelete"
+              @cancel.stop="handleCancel"/>
           </div>
           <div v-else>
             <p>請選擇要編輯的活動</p>

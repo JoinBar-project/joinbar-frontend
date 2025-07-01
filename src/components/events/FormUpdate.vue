@@ -207,6 +207,18 @@ watch([eventStartDate, eventEndDate], () => {
   updateFlatpickrValues();
 });
 
+async function onCancel() {
+  const confirmed = await showConfirm(
+    '確認關閉', 
+    '您確定要關閉編輯表單嗎？\n\n未儲存的變更將會遺失。',
+    'warning'
+  );
+  
+  if (confirmed) {
+    emit('cancel');
+  }
+}
+
 async function onUpdate() {
   if (loading.value) return;
 
@@ -311,9 +323,11 @@ async function onUpdate() {
     const res = await apiClient.put(`/event/update/${props.eventId}`, formData, requestConfig);
 
     if (res.status >= 200 && res.status < 300) {
-      showAlert('更新成功', '活動更新成功！', 'success');
-      emit('update');
-    } else {
+        showAlert('更新成功', '活動更新成功！', 'success');
+        setTimeout(() => {
+          emit('update');
+        }, 1500);
+      } else {
       const errorMessage = res.data?.message || res.data?.error || `HTTP ${res.status} 錯誤`;
       showAlert('更新失敗', errorMessage, 'error');
     }
@@ -416,6 +430,7 @@ async function onDelete() {
       
       // 延遲導航，讓用戶看到成功訊息
       setTimeout(() => {
+        emit('delete');
         router.push({
           path: '/event',
           state: { message: '活動已成功刪除！' }
@@ -652,7 +667,7 @@ onUnmounted(() => {
         <button
           type="button"
           class="btn-cancle"
-          @click="() => emit('cancel')"
+          @click="onCancel"
           :disabled="loading">
           取消修改
         </button>
