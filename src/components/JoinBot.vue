@@ -2,7 +2,7 @@
   <div :class="[
   'fixed z-50 flex flex-row-reverse items-end gap-2 transition-all duration-300',
   isOverlappingFooter
-    ? 'md:bottom-24 max-md:bottom-52 right-4'
+    ? 'md:bottom-[144px] max-md:bottom-52 right-4'
     : 'md:bottom-8 max-md:bottom-8 right-4'
 ]">
 
@@ -163,7 +163,7 @@ async function askJoinBot() {
 
   response.value = '我來想想唷...'
   try {
-    const res = await axios.post(`${import.meta.env.VITE_API_BASE_URL}/barAi/recommendAI`, {
+    const res = await axios.post(`${import.meta.env.VITE_API_BASE_URL}/api/barAi/recommendAI`, {
       message: userMessage.value
     })
     response.value = res.data.result

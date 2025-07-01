@@ -7,6 +7,7 @@ import MessageBoard from './MessageBoard.vue';
 import ModalEdit from '@/components/events/ModalEdit.vue';
 import BaseConfirmModal from '@/components/common/BaseConfirmModal.vue';
 import BaseAlertModal from '@/components/common/BaseAlertModal.vue';
+import { useGoogleMaps } from "@/composables/useGoogleMaps/userIndex.js";
 
 const emit = defineEmits(['update', 'close']);
 
@@ -32,15 +33,103 @@ function showAlert(type, title, message) {
   alertVisible.value = true;
 }
 
-const currentUserId = computed(() => {
-  const user = JSON.parse(localStorage.getItem('user'));
-  return user?.id ? Number(user.id) : null;
-});
-
 const eventRef = toRef(props, 'event');
 const localEvent = ref({ ...props.event });
 const localTags = ref([...props.tags]);
 const isUpdating = ref(false);
+
+const currentEvent = computed(() => localEvent.value || {});
+const currentTags = computed(() => localTags.value || []);
+const currentUserId = computed(() => {
+  const user = JSON.parse(localStorage.getItem("user"));
+  return user?.id ? Number(user.id) : null;
+});
+const isHostUser = computed(() => {
+  return (
+    currentUserId.value !== null &&
+    Number(currentEvent.value.hostUser) === currentUserId.value
+  );
+});
+
+const mapContainer = ref(null);
+const {
+  map,
+  isReady,
+  loadGoogleMapsAPI,
+  initMap,
+  getGeocode,
+  addMarker,
+  clearMarkers,
+  panTo,
+  setZoom,
+} = useGoogleMaps(mapContainer, {
+  googleMapsApiKey: import.meta.env.VITE_GOOGLE_MAPS_API_KEY,
+  onError: (msg) => console.error("Google Maps 錯誤:", msg),
+  scrollwheel: false,
+});
+
+const displayEventLocation = async (location) => {
+  if (!location || !isReady.value) return;
+  try {
+    const coordinates = await getGeocode(location);
+    if (coordinates) {
+      clearMarkers();
+      addMarker({
+        location: coordinates,
+        title: currentEvent.value?.barName || "活動地點",
+        infoContent: `<div style="font-size: 14px;"><strong>${currentEvent.value?.barName}</strong><br><span style="color: #666;">${location}</span></div>`,
+        isBarLike: true,
+      });
+      panTo(coordinates, 16);
+      setZoom(16);
+    } else {
+      const fallback = { lat: 25.033, lng: 121.5654 };
+      panTo(fallback, 12);
+      setZoom(12);
+    }
+  } catch (error) {
+    const fallback = { lat: 25.033, lng: 121.5654 };
+    panTo(fallback, 12);
+    setZoom(12);
+  }
+};
+
+onMounted(async () => {
+  await loadGoogleMapsAPI();
+  if (mapContainer.value) {
+    await initMap();
+    if (currentEvent.value?.location) {
+      await displayEventLocation(currentEvent.value.location);
+    }
+  }
+});
+
+watch(
+  () => props.event,
+  (newEvent) => {
+    if (newEvent && !isUpdating.value) {
+      localEvent.value = { ...newEvent };
+      if (newEvent.location && isReady.value) {
+        displayEventLocation(newEvent.location);
+      }
+    }
+  },
+  { deep: true, immediate: true }
+);
+
+watch(
+  () => props.tags,
+  (newTags) => {
+    if (newTags && !isUpdating.value) {
+      localTags.value = [...newTags];
+    }
+  },
+  { deep: true, immediate: true }
+);
+
+watch([isReady, () => currentEvent.value?.location], ([ready, location]) => {
+  if (ready && location) displayEventLocation(location);
+});
 
 const {
   isJoin,
@@ -51,69 +140,38 @@ const {
   formattedEventTime,
   openCancelModal,
   closeModal,
-  handleConfirmCancel
+  handleConfirmCancel,
 } = useEvent(eventRef, showAlert);
 
-const currentUser = computed(() => props.user || {});
-const currentEvent = computed(() => localEvent.value || {});
-const currentTags = computed(() => localTags.value || []);
-
-const isHostUser = computed(() => {
-  return currentUserId.value !== null && Number(currentEvent.value.hostUser) === currentUserId.value;
-});
-
-onMounted(() => {
-  console.log('🔥 onMounted currentEvent:', currentEvent.value);
-});
-
-watch(() => props.event, (newEvent) => {
-  if (newEvent && !isUpdating.value) {
-    localEvent.value = { ...newEvent };
-    console.log('事件資料已更新:', newEvent);
-  }
-}, { deep: true, immediate: true });
-
-watch(() => props.tags, (newTags) => {
-  if (newTags && !isUpdating.value) {
-    localTags.value = [...newTags];
-    console.log('標籤資料已更新:', newTags);
-  }
-}, { deep: true, immediate: true });
-
 async function reloadEventData() {
-  if (!props.eventId && !localEvent.value?.id) {
-    console.error('無法重新載入：缺少活動 ID');
-    return;
-  }
-  const eventId = props.eventId || localEvent.value.id;
+  const eventId = props.eventId || localEvent.value?.id;
+  if (!eventId) return;
   try {
     isUpdating.value = true;
     const { event: updatedEvent, tags: updatedTags } = await getEventById(eventId);
-    if (updatedEvent) localEvent.value = { ...updatedEvent };
+    if (updatedEvent) {
+      localEvent.value = { ...updatedEvent };
+      if (updatedEvent.location && isReady.value) {
+        await displayEventLocation(updatedEvent.location);
+      }
+    }
     if (updatedTags) localTags.value = [...updatedTags];
-    emit('update', {
-      event: localEvent.value,
-      tags: localTags.value,
-    });
+    emit("update", { event: localEvent.value, tags: localTags.value });
   } catch (error) {
-    console.error('重新載入活動資料失敗:', error);
+    console.error("活動資料載入失敗:", error);
   } finally {
     isUpdating.value = false;
   }
 }
 
 async function handleEventUpdate() {
-  console.log('活動更新完成，準備重新載入資料...');
-  setTimeout(async () => {
-    await reloadEventData();
-  }, 500);
+  setTimeout(reloadEventData, 500);
 }
 
 const handleJoinToggle = async () => {
   try {
     await toggleJoin();
   } catch (error) {
-    console.error('報名操作失敗:', error);
     showAlert('warning', '尚未登入', '請先登入才能加入購物車');
   }
 };
@@ -123,16 +181,19 @@ const handleCancelConfirm = async () => {
     await handleConfirmCancel();
     await reloadEventData();
   } catch (error) {
-    console.error('取消報名失敗:', error);
+    console.error("取消報名失敗:", error);
   }
 };
 </script>
 
+
 <template>
   <div>
+
     <div v-if="isUpdating" class="fixed inset-0 bg-black/50 flex justify-center items-center z-[9999]">
       <div class="bg-white p-8 rounded-[10px] flex items-center gap-4 text-[1.2rem] shadow-md">
         <i class="fa-solid fa-spinner fa-spin text-[var(--color-primary-orange)] pr-[30px] mt-[13px] min-w-[30px]"></i>
+
         <span>更新中...</span>
       </div>
     </div>
@@ -144,11 +205,11 @@ const handleCancelConfirm = async () => {
         </div>
         <div class="event-content-box">
           <div class="absolute bottom-[70px] left-[80px] z-[2] bg-gray-500 rounded-[10px] max-w-[325px] w-[325px] h-[520px] mx-auto shadow-md cursor-pointer">
-            <iframe
-              v-if="currentEvent.location"
-              :src="`https://www.google.com/maps?q=${encodeURIComponent(currentEvent.location)}&output=embed`"
-              class="w-full h-full rounded-lg border-0">
-            </iframe>
+            <div
+              ref="mapContainer"
+              class="w-full h-full rounded-lg border-0"
+              style="min-height: 300px; background: #2d2d2d"
+            ></div>
           </div>
           <div class="pt-[20px] pr-[70px] pb-[40px] pl-[500px]">
             <div class="flex flex-wrap gap-[10px] mt-[10px]">
@@ -185,23 +246,33 @@ const handleCancelConfirm = async () => {
             </div>
 
             <div class="flex">
+
               <button
                 @click="handleJoinToggle"
                 :disabled="isJoin || isUpdating"
-                :class="{ 'opacity-50 cursor-not-allowed': isJoin || isUpdating }"
+                :class="{
+                  'opacity-50 cursor-not-allowed': isJoin || isUpdating,
+                }"
                 type="button"
-                class="event-btn event-btn-free">
-                {{ isUpdating ? '處理中...' : (isJoin ? '已報名' : '參加活動') }}
+                class="event-btn event-btn-free"
+              >
+                {{ isUpdating ? "處理中..." : isJoin ? "已報名" : "參加活動" }}
               </button>
 
               <button
                 v-if="isJoin"
                 @click="openCancelModal()"
                 :disabled="!isOver24hr || isUpdating"
-                :class="['event-btn-free', (isOver24hr && !isUpdating) ? 'cursor-pointer' : 'cursor-not-allowed opacity-50']"
+                :class="[
+                  'event-btn-free',
+                  isOver24hr && !isUpdating
+                    ? 'cursor-pointer'
+                    : 'cursor-not-allowed opacity-50',
+                ]"
                 type="button"
-                class="event-btn-free">
-                {{ isUpdating ? '處理中...' : '取消報名' }}
+                class="event-btn-free"
+              >
+                {{ isUpdating ? "處理中..." : "取消報名" }}
               </button>
 
               <ModalEdit
@@ -251,7 +322,9 @@ const handleCancelConfirm = async () => {
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
   background-color: white;
   padding: 8px 45px 10px 45px;
-  transition: background-color 0.3s ease, color 0.3s ease;
+  transition:
+    background-color 0.3s ease,
+    color 0.3s ease;
 }
 
 .event-btn-free:hover:not(:disabled) {

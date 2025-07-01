@@ -212,6 +212,7 @@ const goToOrders = () => {
   margin: 40px auto;
   padding: 20px;
 }
+
 .row {
   display: flex;
   justify-content: space-between;
@@ -236,6 +237,7 @@ const goToOrders = () => {
   text-align: center;
   padding: 60px 20px;
 }
+
 .spinner {
   width: 32px;
   height: 32px;
@@ -245,52 +247,63 @@ const goToOrders = () => {
   animation: spin 1s linear infinite;
   margin: 0 auto 16px auto;
 }
+
 @keyframes spin {
   to { transform: rotate(360deg); }
 }
+
 .content {
   display: flex;
   flex-direction: column;
   gap: 24px;
 }
+
 .header {
   text-align: center;
   padding: 40px 20px;
   background: #f8fafc;
   border-radius: 12px;
 }
+
 .icon {
   font-size: 48px;
   margin-bottom: 16px;
 }
+
 .header h1 {
   margin: 0 0 8px 0;
   font-size: 24px;
   color: #333;
 }
+
 .header p {
   margin: 0;
   color: #666;
 }
+
 .card {
   background: white;
   border: 1px solid #e5e7eb;
   border-radius: 8px;
   padding: 24px;
 }
+
 .card h3 {
   margin: 0 0 16px 0;
   font-size: 16px;
   color: #333;
 }
+
 .row:last-child {
   border-bottom: none;
 }
+
 .amount {
   color: #dc2626;
   font-weight: 600;
   font-size: 18px;
 }
+
 .item {
   display: flex;
   justify-content: space-between;
@@ -298,26 +311,32 @@ const goToOrders = () => {
   padding: 12px 0;
   border-bottom: 1px solid #f3f4f6;
 }
+
 .item:last-child {
   border-bottom: none;
 }
+
 .item-name {
   font-weight: 500;
   color: #333;
 }
+
 .item-bar {
   font-size: 13px;
   color: #666;
   margin-top: 4px;
 }
+
 .item-price {
   color: #dc2626;
   font-weight: 500;
 }
+
 .actions {
   display: flex;
   gap: 12px;
 }
+
 .btn {
   flex: 1;
   padding: 12px 20px;
@@ -327,35 +346,131 @@ const goToOrders = () => {
   cursor: pointer;
   border: none;
   transition: all 0.2s;
+  min-height: 48px;
 }
+
 .btn-primary {
   background: #dc2626;
   color: white;
 }
+
 .btn-primary:hover {
   background: #b91c1c;
 }
+
 .btn-outline {
   background: white;
   color: #dc2626;
   border: 1px solid #dc2626;
 }
+
 .btn-outline:hover {
   background: #dc2626;
   color: white;
 }
-@media (max-width: 768px) {
+
+/* 767px以下移动端微调 */
+@media (max-width: 767px) {
   .container {
-    margin: 20px 16px;
+    margin: 20px auto;
     padding: 16px;
+    width: calc(100% - 32px);
+    max-width: 600px;
   }
+
+  .header {
+    padding: 32px 16px;
+  }
+
+  .header h1 {
+    font-size: 20px;
+  }
+
+  .icon {
+    font-size: 40px;
+    margin-bottom: 12px;
+  }
+
+  .card {
+    padding: 20px;
+  }
+
   .actions {
     flex-direction: column;
+    gap: 12px;
   }
+
+  .btn {
+    width: 100%;
+    padding: 16px 20px;
+    font-size: 15px;
+    min-height: 52px;
+  }
+
   .row, .item {
     flex-direction: column;
     align-items: flex-start;
-    gap: 4px;
+    gap: 8px;
+    padding: 16px 0;
+  }
+
+  .row span:first-child, .item-name {
+    font-size: 14px;
+    color: #666;
+    font-weight: 500;
+  }
+
+  .row span:last-child {
+    font-size: 15px;
+    font-weight: 600;
+    color: #333;
+  }
+
+  .amount {
+    font-size: 18px;
+  }
+
+  .item-price {
+    font-size: 16px;
+    align-self: flex-end;
+    margin-top: 4px;
+  }
+
+  .order-status-label {
+    padding: 6px 12px;
+    font-size: 13px;
+  }
+}
+
+/* 480px以下小屏幕微调 */
+@media (max-width: 480px) {
+  .container {
+    margin: 16px auto;
+    padding: 12px;
+    width: calc(100% - 24px);
+    max-width: 600px;
+  }
+
+  .header {
+    padding: 24px 12px;
+  }
+
+  .header h1 {
+    font-size: 18px;
+  }
+
+  .icon {
+    font-size: 36px;
+  }
+
+  .card {
+    padding: 16px;
+  }
+
+  .btn {
+    padding: 14px 16px;
+    font-size: 14px;
+    min-height: 48px;
   }
 }
 </style>
