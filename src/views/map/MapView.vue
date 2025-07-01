@@ -20,6 +20,7 @@
           <div
             class="flex-shrink w-32 search-panel-mobile sm:w-40"
             ref="searchInputRef"
+            style="position: relative"
           >
             <div class="input-group-mobile">
               <input
@@ -38,13 +39,31 @@
                 <i class="fas fa-search"></i>
               </button>
             </div>
-            <ul v-if="suggestions.length" class="suggestions-list-mobile">
+            <ul
+              v-if="suggestions.length"
+              class="suggestions-list-mobile"
+              style="
+                position: absolute;
+                top: 100%;
+                left: 0;
+                right: 0;
+                z-index: 1000;
+              "
+            >
               <li
-                v-for="(suggestion, index) in suggestions"
-                :key="index"
+                v-for="(suggestion, idx) in suggestions"
+                :key="idx"
                 @click="selectSuggestion(suggestion)"
+                style="
+                  padding: 12px;
+                  border-bottom: 1px solid #f0f0f0;
+                  cursor: pointer;
+                  font-size: 14px;
+                  background: white;
+                "
               >
-                🔍 {{ suggestion.description }}
+                <span style="font-size: 18px">🔍</span>
+                {{ suggestion.description }}
               </li>
             </ul>
           </div>
