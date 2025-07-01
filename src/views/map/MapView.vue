@@ -16,9 +16,9 @@
             </span>
           </button>
         </div>
-        <div class="flex flex-1 gap-2 items-center min-w-0">
+        <div class="flex flex-1 gap-1 items-center min-w-0">
           <div
-            class="flex-shrink w-32 search-panel-mobile sm:w-40"
+            class="flex-shrink w-24 search-panel-mobile sm:w-32"
             ref="searchInputRef"
             style="position: relative"
           >
@@ -40,29 +40,29 @@
               >
                 <i class="fas fa-search"></i>
               </button>
-              <ul v-if="suggestions.length" class="suggestions-list-mobile">
-                <li
-                  v-for="(suggestion, idx) in suggestions"
-                  :key="idx"
-                  @click="selectSuggestion(suggestion)"
-                >
-                  <span style="font-size: 18px">🔍</span>
-                  {{ suggestion.description }}
-                </li>
-              </ul>
             </div>
+            
+            <!-- 建議選項放回這裡 -->
+            <ul v-if="suggestions.length && isMobile" class="suggestions-list-mobile-overlay">
+              <li
+                v-for="(suggestion, idx) in suggestions"
+                :key="idx"
+                @click="selectSuggestion(suggestion)"
+              >
+                <span style="font-size: 16px">🔍</span>
+                {{ suggestion.description }}
+              </li>
+            </ul>
           </div>
           <button
             @click="handleGetCurrentLocation"
-            class="ml-1 location-button-mobile mobile-control-button"
-            style="margin-left: 4px"
+            class="location-button-mobile mobile-control-button"
           >
             <i class="fas fa-location-arrow"></i>
           </button>
           <button
-            class="ml-1 filter-toggle-button mobile-control-button"
+            class="filter-toggle-button mobile-control-button"
             @click="toggleFilterPanel"
-            style="margin-left: 4px"
           >
             <i class="fas fa-filter"></i>
           </button>
@@ -90,7 +90,7 @@
             placeholder="輸入地點名稱或關鍵字"
             @input="debouncedSearchSuggestions"
           />
-          <ul v-if="suggestions.length" class="suggestions-list">
+          <ul v-if="suggestions.length && !isMobile" class="suggestions-list">
             <li
               v-for="(suggestion, index) in suggestions"
               :key="index"
@@ -283,26 +283,119 @@ const filteredBars = computed(() => {
   if (!Array.isArray(bars)) bars = [];
   const filters = currentFilters.value;
 
-  // 過濾評分
-  if (filters.ratingSort !== "any") {
-    bars = bars.filter((bar) => {
-      if (filters.ratingSort === "above_4" && bar.rating < 4) return false;
-      if (filters.ratingSort === "above_3" && bar.rating < 3) return false;
-      return true;
-    });
+  const districtTagsList = [
+    "信義區",
+    "大安區",
+    "中山區",
+    "松山區",
+    "萬華區",
+    "士林區",
+  ];
+
+  if (filters.address && filters.address !== "current_location") {
+    if (Array.isArray(filters.address)) {
+      if (filters.address.length > 0) {
+        bars = bars.filter((bar) =>
+          filters.address.some((addr) => bar.address?.includes(addr))
+        );
+      }
+    } else if (
+      typeof filters.address === "string" &&
+      filters.address !== "current_location"
+    ) {
+      bars = bars.filter((bar) => bar.address?.includes(filters.address));
+    }
   }
 
-  // 過濾營業時間
+  if (filters.tags && filters.tags.length > 0) {
+    const nonDistrictTags = filters.tags.filter(
+      (tag) => !districtTagsList.includes(tag)
+    );
+    const selectedDistrictTagsFromTagsFilter = filters.tags.filter((tag) =>
+      districtTagsList.includes(tag)
+    );
+
+    if (nonDistrictTags.length > 0) {
+      bars = bars.filter((bar) =>
+        nonDistrictTags.every((tag) => bar.tags?.includes(tag))
+      );
+    }
+
+    if (selectedDistrictTagsFromTagsFilter.length > 0) {
+      if (filters.address && filters.address !== "current_location") {
+        let addressArr = Array.isArray(filters.address)
+          ? filters.address
+          : [filters.address];
+        const hasMatchingDistrict = selectedDistrictTagsFromTagsFilter.some(
+          (tag) => addressArr.some((addr) => addr.includes(tag))
+        );
+        if (!hasMatchingDistrict) {
+          return [];
+        }
+      } else {
+        bars = bars.filter((bar) =>
+          selectedDistrictTagsFromTagsFilter.every((tag) => {
+            return bar.address?.includes(tag);
+          })
+        );
+      }
+    }
+  }
+
+  if (
+    map &&
+    typeof googleMapsInstance === "function" &&
+    googleMapsInstance() &&
+    googleMapsInstance().maps &&
+    googleMapsInstance().maps.geometry &&
+    googleMapsInstance().maps.geometry.spherical
+  ) {
+    const mapCenter = map.value.getCenter && map.value.getCenter();
+    if (mapCenter) {
+      const centerLatLng = new window.google.maps.LatLng(
+        mapCenter.lat(),
+        mapCenter.lng()
+      );
+      bars = bars
+        .map((bar) => {
+          if (
+            !bar.location ||
+            typeof bar.location.lat === "undefined" ||
+            typeof bar.location.lng === "undefined"
+          ) {
+            return { ...bar, distance: Infinity };
+          }
+          const barLatLng = new window.google.maps.LatLng(
+            bar.location.lat,
+            bar.location.lng
+          );
+          bar.distance =
+            googleMapsInstance().maps.geometry.spherical.computeDistanceBetween(
+              centerLatLng,
+              barLatLng
+            );
+          return bar;
+        })
+        .filter((bar) => {
+          return (
+            bar.distance !== undefined &&
+            bar.distance >= filters.minDistance &&
+            bar.distance <= filters.maxDistance
+          );
+        });
+    }
+  }
+
   if (
     filters.minOpenHour !== 0 ||
     filters.minOpenMinute !== 0 ||
     filters.maxOpenHour !== 24 ||
     filters.maxOpenMinute !== 0
   ) {
-    const now = dayjs();
-    const currentDay = now.day(); // 0 = 星期日, 6 = 星期六
-
     bars = bars.filter((bar) => {
+      const now = dayjs();
+      const currentDay = now.day(); // 0 = 星期日, 6 = 星期六
+
       if (!bar.opening_hours || !bar.opening_hours.periods) {
         return false; // 如果沒有營業時間資訊，則不顯示
       }
@@ -382,11 +475,10 @@ const filteredBars = computed(() => {
     });
   }
 
-  // 過濾標籤
-  if (filters.tags && filters.tags.length > 0) {
-    bars = bars.filter((bar) => {
-      return filters.tags.every((tag) => bar.tags.includes(tag));
-    });
+  if (filters.ratingSort === "highToLow") {
+    bars.sort((a, b) => (b.rating || 0) - (a.rating || 0));
+  } else if (filters.ratingSort === "lowToHigh") {
+    bars.sort((a, b) => (a.rating || 0) - (b.rating || 0));
   }
 
   const result = [];
@@ -957,24 +1049,71 @@ onUnmounted(() => {
 </script>
 
 <style scoped>
+/* 修改手機版搜尋建議選項 */
+.suggestions-list-mobile-overlay {
+  position: absolute; /* 改回 absolute 定位 */
+  top: 100%; /* 緊貼搜尋欄位下方 */
+  left: 0;
+  right: 0; /* 與搜尋欄位同寬 */
+  width: auto;
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  max-height: 200px;
+  overflow-y: auto;
+  z-index: 1000; /* 確保高於其他元素 */
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  margin-top: 4px; /* 與搜尋欄位間隔 */
+}
+
+.suggestions-list-mobile-overlay li {
+  padding: 12px 16px;
+  border-bottom: 1px solid #f0f0f0;
+  cursor: pointer;
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  transition: background-color 0.2s ease;
+}
+
+.suggestions-list-mobile-overlay li:hover {
+  background-color: #f8f9fa;
+}
+
+.suggestions-list-mobile-overlay li:last-child {
+  border-bottom: none;
+}
+
+.suggestions-list-mobile-overlay li:first-child {
+  border-radius: 8px 8px 0 0;
+}
+
+.suggestions-list-mobile-overlay li:last-child {
+  border-radius: 0 0 8px 8px;
+}
+
 /* 手機版樣式 */
 .mobile-top-controls {
   padding-top: env(safe-area-inset-top);
 }
 
 .mobile-control-button {
-  padding: 8px;
+  padding: 6px; /* 減小內邊距 */
   border: none;
   background-color: #f8f9fa;
   color: #333;
-  border-radius: 8px;
+  border-radius: 6px; /* 減小圓角 */
   cursor: pointer;
   transition: background-color 0.2s;
-  min-width: 40px;
-  height: 40px;
+  min-width: 32px; /* 減小最小寬度 */
+  height: 32px; /* 減小高度 */
   display: flex;
   align-items: center;
   justify-content: center;
+  font-size: 12px; /* 減小圖標大小 */
 }
 
 .mobile-control-button:hover {
@@ -983,12 +1122,14 @@ onUnmounted(() => {
 
 .search-panel-mobile {
   position: relative;
+  flex-shrink: 1; /* 允許收縮 */
+  z-index: 200; /* 提高層級 */
 }
 
 .input-group-mobile {
   display: flex;
   background-color: #f8f9fa;
-  border-radius: 20px;
+  border-radius: 16px; /* 減小圓角 */
   overflow: hidden;
 }
 
@@ -996,46 +1137,19 @@ onUnmounted(() => {
   flex: 1;
   border: none;
   background: transparent;
-  padding: 8px 12px;
+  padding: 6px 8px; /* 減小內邊距 */
   outline: none;
-  font-size: 14px;
+  font-size: 12px; /* 減小字體 */
+  min-width: 0; /* 允許收縮到最小 */
 }
 
 .search-button-mobile {
-  padding: 8px 12px;
+  padding: 6px 8px; /* 減小內邊距 */
   border: none;
   background: transparent;
   color: #666;
   cursor: pointer;
-}
-
-.suggestions-list-mobile {
-  position: absolute;
-  top: 100%;
-  left: 0;
-  right: 0;
-  background: white;
-  border-radius: 8px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-  max-height: 200px;
-  overflow-y: auto;
-  z-index: 1000;
-  margin-top: 4px;
-}
-
-.suggestions-list-mobile li {
-  padding: 12px;
-  border-bottom: 1px solid #f0f0f0;
-  cursor: pointer;
-  font-size: 14px;
-}
-
-.suggestions-list-mobile li:hover {
-  background-color: #f8f9fa;
-}
-
-.suggestions-list-mobile li:last-child {
-  border-bottom: none;
+  font-size: 12px; /* 減小圖標大小 */
 }
 
 /* 側邊欄手機版樣式 */
@@ -1058,9 +1172,10 @@ onUnmounted(() => {
     max-width: 100vw !important;
     position: relative;
   }
+
   .bar-list-sidebar {
     position: absolute !important;
-    top: 60px !important; /* 頂部控制欄高度，可依實際調整 */
+    top: 60px !important;
     left: 0 !important;
     width: 80vw !important;
     max-width: 350px !important;
@@ -1072,77 +1187,68 @@ onUnmounted(() => {
     transition: none;
     padding: 0;
   }
+
   .sidebar-mobile-hidden {
     display: none !important;
   }
+
   .mobile-sidebar-header {
     border-radius: 12px 12px 0 0;
   }
+
   .flex-grow.p-4.overflow-y-auto {
     max-height: 60vh;
     overflow-y: auto;
   }
+
   .map-container {
     width: 100%;
-    height: calc(100vh - 60px); /* 減去頂部控制欄高度 */
-    margin-top: 60px; /* 為頂部控制欄留空間 */
+    height: calc(100vh - 60px);
+    margin-top: 60px;
     padding-bottom: env(safe-area-inset-bottom);
   }
 
   .map-fullscreen {
     padding-top: 60px;
   }
+
   .mobile-top-controls {
     justify-content: flex-start !important;
   }
-  .flex.flex-1.gap-2.items-center.min-w-0 {
+
+  .flex.flex-1.gap-1.items-center.min-w-0 {
     justify-content: flex-start !important;
+    gap: 0.25rem !important; /* 使用更小的間距 */
   }
+
   .search-panel-mobile {
-    margin-left: 0 !important;
-    width: 70vw !important;
-    min-width: 180px;
-    max-width: 95vw;
+    width: 120px !important; /* 固定更小的寬度 */
+    min-width: 100px !important;
+    max-width: 140px !important;
   }
-  .input-group-mobile {
-    margin-left: 0 !important;
-  }
-  .search-input-mobile {
-    margin-left: 0 !important;
-    width: 100% !important;
-  }
-  .search-button-mobile {
-    margin-left: 0 !important;
-  }
+
   .mobile-control-button {
-    margin-left: 4px !important;
+    min-width: 28px !important; /* 更小的按鈕 */
+    height: 28px !important;
+    font-size: 11px !important;
+    margin-left: 2px !important; /* 減小間距 */
   }
-  .suggestions-list-mobile {
-    position: absolute;
-    top: 100%;
-    left: 0;
-    right: 0;
-    width: 100%;
-    background: white;
-    border-radius: 8px;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-    max-height: 220px;
-    overflow-y: auto;
-    z-index: 2000;
-    margin-top: 4px;
+}
+
+@media (max-width: 480px) {
+  .search-panel-mobile {
+    width: 100px !important; /* 在更小螢幕上進一步縮小 */
+    min-width: 90px !important;
   }
-  .suggestions-list-mobile li {
-    padding: 12px;
-    border-bottom: 1px solid #f0f0f0;
-    cursor: pointer;
-    font-size: 14px;
-    background: white;
+
+  .mobile-control-button {
+    min-width: 26px !important;
+    height: 26px !important;
+    font-size: 10px !important;
   }
-  .suggestions-list-mobile li:hover {
-    background-color: #f8f9fa;
-  }
-  .suggestions-list-mobile li:last-child {
-    border-bottom: none;
+
+  .search-input-mobile {
+    font-size: 16px; /* 防止iOS縮放 */
   }
 }
 
@@ -1159,13 +1265,22 @@ onUnmounted(() => {
   left: 0 !important;
   width: 100% !important;
   height: 100% !important;
-  z-index: 300 !important;
+  z-index: 600 !important;
   padding-top: env(safe-area-inset-top);
 }
 
 /* 桌面版樣式保持不變 */
 .top-left-controls {
-  /* 原有樣式 */
+  gap: 0;
+  flex-wrap: nowrap;
+  align-items: center;
+  justify-content: flex-start;
+}
+
+.search-and-location-group {
+  display: flex;
+  flex-grow: 1;
+  align-items: center;
 }
 
 .map-control-button {
@@ -1191,7 +1306,6 @@ onUnmounted(() => {
   box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
 }
 
-/* 原有樣式保持不變 */
 .filter-toggle-button {
   order: 1;
   padding: 0;
@@ -1205,15 +1319,11 @@ onUnmounted(() => {
   height: 40px;
   font-size: 24px;
   color: #3a3435;
+  margin-right: 10px;
 }
 
 .search-panel-map {
-  order: 2;
-  display: flex;
-  position: relative;
-  width: 300px;
-  flex-shrink: 1;
-  align-items: center;
+  display: none;
 }
 
 .input-group {
@@ -1242,14 +1352,50 @@ onUnmounted(() => {
   margin: 0;
   border: 1px solid #decdd5;
   border-left: 0;
-  border-radius: 0px 5px 5px 0px;
+  border-right: 0;
+  border-radius: 0;
   cursor: pointer;
-  order: 3;
   box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
   outline: none;
   transition:
     background-color 0.2s,
     transform 0.2s;
+}
+
+.search-bt:hover {
+  background-color: var(--color-primary-orange);
+  color: #ffffff;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+}
+
+.search-bt:active {
+  transform: translateY(0);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.search-input:focus {
+  border-color: #b8a28e;
+  box-shadow: 0 0 0 2px rgba(184, 162, 142, 0.2);
+}
+
+.place-now-map {
+  padding: 8px 12px;
+  margin: 0;
+  border: 1px solid #decdd5;
+  border-left: 0;
+  background-color: var(--color-main-text);
+  color: #3a3435;
+  border-radius: 0 8px 8px 0;
+  cursor: pointer;
+  white-space: nowrap;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+  outline: none;
+}
+
+.place-now-map:hover {
+  background-color: var(--color-primary-orange);
+  color: #ffffff;
 }
 
 .suggestions-list {
@@ -1273,6 +1419,10 @@ onUnmounted(() => {
   padding: 10px 12px;
   cursor: pointer;
   border-bottom: 1px solid #f0f0f0;
+}
+
+.suggestions-list li:last-child {
+  border-bottom: none;
 }
 
 .suggestions-list li:hover {
@@ -1326,26 +1476,13 @@ onUnmounted(() => {
   }
 }
 
-/* 確保在不同螢幕尺寸下的適配 */
-@media (max-width: 480px) {
-  .mobile-top-controls .flex {
-    padding: 8px;
-  }
-
-  .mobile-control-button {
-    min-width: 36px;
-    height: 36px;
-    font-size: 14px;
-  }
-
-  .search-input-mobile {
-    font-size: 16px; /* 防止iOS縮放 */
-  }
-}
-
 @media (min-width: 768px) {
   .mobile-top-controls,
   .mobile-bottom-toggle {
+    display: none !important;
+  }
+
+  .suggestions-list-mobile-overlay {
     display: none !important;
   }
 
@@ -1361,6 +1498,47 @@ onUnmounted(() => {
   html,
   body {
     overflow-x: hidden !important;
+  }
+
+  .top-left-controls {
+    width: auto;
+    max-width: calc(100vw - 420px);
+    flex-wrap: nowrap;
+    gap: 10px;
+  }
+
+  .search-panel-map {
+    display: none;
+  }
+
+  .search-and-location-group {
+    display: flex;
+    align-items: center;
+    flex-grow: 1;
+  }
+
+  .filter-toggle-button {
+    margin-right: 0;
+  }
+
+  .input-group {
+    flex: 1;
+  }
+
+  .search-input {
+    border-radius: 8px 0 0 8px;
+    border-right: none;
+  }
+
+  .search-bt {
+    border-radius: 0;
+    border-left: none;
+    border-right: none;
+  }
+
+  .place-now-map {
+    border-radius: 0 8px 8px 0;
+    border-left: none;
   }
 }
 </style>
