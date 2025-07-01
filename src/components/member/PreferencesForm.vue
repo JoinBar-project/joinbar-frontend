@@ -34,7 +34,7 @@ const barTypes = [
 
 // 酒吧氛圍
 const barMoods = [
-  { key: 'joy', label: '熱鬧歡樂', icon: 'fa-solid fa-party-horn' },
+  { key: 'joy', label: '熱鬧歡樂', icon: 'fa-solid fa-champagne-glasses' },
   { key: 'romantic', label: '浪漫私密', icon: 'fa-solid fa-heart' },
   { key: 'oldschool', label: '復古懷舊', icon: 'fa-solid fa-record-vinyl' },
   { key: 'highlevel', label: '高級精緻', icon: 'fa-solid fa-crown' },
@@ -92,7 +92,7 @@ defineExpose({
             'text-xs md:text-sm py-3 px-2 rounded-lg border transition-all duration-200 flex flex-col items-center justify-center min-h-[75px] md:min-h-[80px] hover:scale-105',
             internalPreferences.types.includes(type.key)
               ? 'bg-[var(--color-primary-orange)] text-white border-[var(--color-primary-orange)] shadow-md'
-              : 'bg-[var(--color-icon-secondary)] text-[var(--color-black)] border-[var(--color-icon-secondary)] hover:bg-gray-300',
+              : 'bg-[var(--color-icon-secondary)] text-[var(--color-black)] border-[var(--color-icon-secondary)] hover:bg-[var(--color-primary-orange)] hover:text-white',
             isEdit ? 'cursor-pointer' : 'cursor-default opacity-70'
           ]">
           <i :class="type.icon + ' text-base md:text-lg mb-1'"></i>
@@ -102,9 +102,9 @@ defineExpose({
     </div>
 
     <div class="flex items-center my-4">
-      <div class="flex-grow h-px bg-gray-300"></div>
-      <span class="px-4 text-sm text-gray-300">和</span>
-      <div class="flex-grow h-px bg-gray-300"></div>
+      <div class="flex-grow h-px bg-gray-500"></div>
+      <span class="px-4 text-sm text-gray-500">和</span>
+      <div class="flex-grow h-px bg-gray-500"></div>
     </div>
 
     <div>
@@ -121,7 +121,7 @@ defineExpose({
             'text-xs md:text-sm py-3 px-2 rounded-lg border transition-all duration-200 flex flex-col items-center justify-center min-h-[75px] md:min-h-[80px] hover:scale-105',
             internalPreferences.moods.includes(mood.key)
               ? 'bg-[var(--color-primary-orange)] text-white border-[var(--color-primary-orange)] shadow-md'
-              : 'bg-[var(--color-icon-secondary)] text-[var(--color-black)] border-[var(--color-icon-secondary)] hover:bg-gray-300',
+              : 'bg-[var(--color-icon-secondary)] text-[var(--color-black)] border-[var(--color-icon-secondary)] hover:bg-[var(--color-primary-orange)] hover:text-white',
             isEdit ? 'cursor-pointer' : 'cursor-default opacity-70'
           ]">
           <i :class="mood.icon + ' text-base md:text-lg mb-1'"></i>
@@ -131,11 +131,11 @@ defineExpose({
     </div>
 
     <!-- 編輯模式顯示 -->
-    <div v-if="isEdit" class="pt-4 mt-4 text-center border-t border-gray-300">
+    <!-- <div v-if="isEdit" class="pt-4 mt-4 text-center border-t border-gray-300">
       <p class="px-4 text-xs text-gray-300">
         修改後會立即更新您的推薦結果
       </p>
-    </div>
+    </div> -->
   </div>
 </template>
 

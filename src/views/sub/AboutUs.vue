@@ -37,7 +37,8 @@
               酒吧偏好、標籤資料庫建置 <br>
               酒吧標籤後端 API 設計及 CRUD <br>
               導入 Gemini AI 實現智慧酒吧 推薦系統 <br>
-              登入、註冊、酒吧收藏切版
+              登入、註冊、酒吧收藏、關於我們頁面設計 <br>
+              首頁、登入、註冊、AI 聊天機器人 RWD
             </p>
             <div class="flex justify-center gap-4">
               <a href="https://github.com/2xin15" target="_blank" class="inline-flex items-center gap-2 px-8 py-2 text-sm font-medium rounded-full transition-all duration-300 bg-[#24292e] text-white hover:bg-[#1a1e22] hover:-translate-y-0.5">
@@ -64,7 +65,7 @@
               會員資料表建置 <br>
               註冊登入及會員資料後端 API<br>
               會員個人資料及頭像串接<br>
-              活動紀錄切版
+              活動紀錄頁面設計
             </p>
             <div class="flex justify-center gap-4">
               <a href="https://github.com/jasminecchen" target="_blank" class="inline-flex items-center gap-2 px-8 py-2 text-sm font-medium rounded-full transition-all duration-300 bg-[#24292e] text-white hover:bg-[#1a1e22] hover:-translate-y-0.5">
@@ -92,7 +93,7 @@
               活動資料庫建置<br>
               活動後端 API 設計及 CRUD<br>
               活動前端切版畫面<br>
-              訂閱切版 及 串接金流<br>
+              訂閱頁面設計 及 串接金流<br>
               訂閱後端 API 設計及 CRUD
             </p>
             <div class="flex justify-center gap-4">
@@ -111,34 +112,7 @@
         <!-- 成員4 -->
         <div class="member-card group relative overflow-hidden bg-white/90 backdrop-blur-sm rounded-[20px] p-8 text-center shadow-[0_25px_60px_rgba(0,0,0,0.25)] transition-all duration-500 hover:-translate-y-4 border">
           <div class="mb-6">
-            <img src="/yaxin.png" alt="成員4" class="w-[120px] h-[120px] rounded-full object-cover border-[4px] shadow-[0_5px_15px_rgba(0,0,0,0.1)] transition-transform duration-500 group-hover:scale-110 mx-auto ring-4" />
-          </div>
-          <div class="text-center">
-            <h3 class="text-[1.5rem] font-semibold text-[#2c3e50] mb-2">紀雅馨</h3>
-            <p class="text-base text-[#7f8c8d] font-medium mb-4">負責內容</p>
-            <p class="text-sm text-[#5a6c7d] leading-relaxed mb-6">
-              前端基礎建構 <br>
-              活動功能模組化設計<br>
-              建立活動首頁資料取得 API<br>
-              活動頁切版畫面
-            </p>
-            <div class="flex justify-center gap-4">
-              <a href="https://github.com/rakku2code" target="_blank" class="inline-flex items-center gap-2 px-8 py-2 text-sm font-medium rounded-full transition-all duration-300 bg-[#24292e] text-white hover:bg-[#1a1e22] hover:-translate-y-0.5">
-                <i class="fab fa-github"></i>
-                GitHub
-              </a>
-              <a href="mailto:rakku2code@gmail.com" class="inline-flex items-center gap-2 px-8 py-2 text-sm font-medium rounded-full transition-all duration-300 bg-[var(--color-primary-orange)] text-white hover:bg-[var(--color-secondary-green)] hover:-translate-y-0.5">
-                <i class="fas fa-envelope"></i>
-                Email
-              </a>
-            </div>
-          </div>
-        </div>
-
-        <!-- 成員5 -->
-        <div class="member-card group relative overflow-hidden bg-white/90 backdrop-blur-sm rounded-[20px] p-8 text-center shadow-[0_25px_60px_rgba(0,0,0,0.25)] transition-all duration-500 hover:-translate-y-4 border">
-          <div class="mb-6">
-            <img src="/tsai.jpg" alt="成員5" class="w-[120px] h-[120px] rounded-full object-cover border-[4px] shadow-[0_5px_15px_rgba(0,0,0,0.1)] transition-transform duration-500 group-hover:scale-110 mx-auto ring-4" />
+            <img src="/tsai.jpg" alt="成員4" class="w-[120px] h-[120px] rounded-full object-cover border-[4px] shadow-[0_5px_15px_rgba(0,0,0,0.1)] transition-transform duration-500 group-hover:scale-110 mx-auto ring-4" />
           </div>
           <div class="text-center">
             <h3 class="text-[1.5rem] font-semibold text-[#2c3e50] mb-2">蔡昌成</h3>
@@ -163,20 +137,20 @@
           </div>
         </div>
 
-        <!-- 成員6 -->
+        <!-- 成員5 -->
         <div class="member-card group relative overflow-hidden bg-white/90 backdrop-blur-sm rounded-[20px] p-8 text-center shadow-[0_25px_60px_rgba(0,0,0,0.25)] transition-all duration-500 hover:-translate-y-4 border">
           <div class="mb-6">
-            <img src="/bing.jpg" alt="成員6" class="w-[120px] h-[120px] rounded-full object-cover border-[4px] shadow-[0_5px_15px_rgba(0,0,0,0.1)] transition-transform duration-500 group-hover:scale-110 mx-auto ring-4" />
+            <img src="/bing.jpg" alt="成員5" class="w-[120px] h-[120px] rounded-full object-cover border-[4px] shadow-[0_5px_15px_rgba(0,0,0,0.1)] transition-transform duration-500 group-hover:scale-110 mx-auto ring-4" />
           </div>
           <div class="text-center">
             <h3 class="text-[1.5rem] font-semibold text-[#2c3e50] mb-2">戎彬</h3>
             <p class="text-base text-[#7f8c8d] font-medium mb-4">負責內容</p>
             <p class="text-sm text-[#5a6c7d] leading-relaxed mb-6">
-              購物車、結帳頁面切版 <br>
+              購物車、結帳頁面設計 <br>
               訂單前後端 API 串接<br>
               Line Pay 串接<br>
               購物車後端 API 設計<br>
-              訂單管理頁面切版
+              訂單管理頁面設計
             </p>
             <div class="flex justify-center gap-4">
               <a href="https://github.com/Benjung1215" target="_blank" class="inline-flex items-center gap-2 px-8 py-2 text-sm font-medium rounded-full transition-all duration-300 bg-[#24292e] text-white hover:bg-[#1a1e22] hover:-translate-y-0.5">
@@ -191,10 +165,10 @@
           </div>
         </div>
 
-        <!-- 成員7 -->
+        <!-- 成員6 -->
         <div class="member-card group relative overflow-hidden bg-white/95 backdrop-blur-sm rounded-[20px] p-8 text-center shadow-[0_20px_60px_rgba(0,0,0,0.15)] transition-all duration-500 hover:-translate-y-3 hover:shadow-[0_30px_80px_rgba(139,69,19,0.25)] border border-white/20">
           <div class="mb-6">
-            <img src="/wuu.png" alt="成員7" class="w-[120px] h-[120px] rounded-full object-cover border-[4px] border-[#f8f9fa] shadow-[0_5px_15px_rgba(0,0,0,0.1)] transition-transform duration-300 hover:scale-105 hover:shadow-[0_8px_25px_rgba(0,0,0,0.15)] mx-auto" />
+            <img src="/wuu.png" alt="成員6" class="w-[120px] h-[120px] rounded-full object-cover border-[4px] border-[#f8f9fa] shadow-[0_5px_15px_rgba(0,0,0,0.1)] transition-transform duration-300 hover:scale-105 hover:shadow-[0_8px_25px_rgba(0,0,0,0.15)] mx-auto" />
           </div>
           <div class="text-center">
             <h3 class="text-[1.5rem] font-semibold text-[#2c3e50] mb-2">竇孝武</h3>
