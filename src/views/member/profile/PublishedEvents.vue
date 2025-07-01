@@ -1,70 +1,39 @@
 <script setup>
-import { ref, computed } from 'vue';
+import { ref, computed, onMounted } from 'vue';
+import { storeToRefs } from 'pinia';
+import { useAuthStore } from '@/stores/authStore';
+import apiClient from '@/api/axios';
+import PublishedEventCard from '@/components/member/PublishedEventCard.vue';
 import { Listbox, ListboxButton, ListboxOptions, ListboxOption } from '@headlessui/vue';
 import { ChevronUpDownIcon } from '@heroicons/vue/20/solid';
+import dayjs from 'dayjs';
+import utc from 'dayjs/plugin/utc';
+import timezone from 'dayjs/plugin/timezone';
+import 'dayjs/locale/zh-tw';
 
-const publishedEvents = ref([
-  {
-    id: 1,
-    title: '精釀啤酒體驗夜',
-    date: '2025-07-18',
-    location: 'Moon',
-    status: '進行中',
-    currentNum: 0,
-    maxNum: 32,
-    imageUrl: new URL('@/assets/events/3_pexels-bohlemedia-1089932.jpg', import.meta.url).href
-  },
-  {
-    id: 2,
-    title: '威士忌入門工作坊',
-    date: '2025-07-20',
-    location: 'Whiskey House',
-    status: '進行中',
-    currentNum: 10,
-    maxNum: 20,
-    imageUrl: new URL('@/assets/events/2_pexels-i-rem-dur-1175044181-32651589.jpg', import.meta.url).href
-  },
-  {
-    id: 3,
-    title: '調酒師互動表演秀',
-    date: '2025-07-22',
-    location: 'Bar Showroom',
-    status: '進行中',
-    currentNum: 15,
-    maxNum: 25,
-    imageUrl: new URL('@/assets/events/1_pexels-18393328-6469749.jpg', import.meta.url).href
-  },
-  {
-    id: 4,
-    title: '夏日特調比賽',
-    date: '2025-06-10',
-    location: 'Sunset Bar',
-    status: '已結束',
-    currentNum: 15,
-    maxNum: 25,
-    imageUrl: new URL('@/assets/events/4_pexels-lazarus-ziridis-351891426-32641339.jpg', import.meta.url).href
-  },
-  {
-    id: 5,
-    title: '一杯酒的距離',
-    date: '2025-06-05',
-    location: 'Retro Club',
-    status: '已結束',
-    currentNum: 4,
-    maxNum: 10,
-    imageUrl: new URL('@/assets/events/5_pexels-cottonbro-4255484.jpg', import.meta.url).href
-  },
-  {
-    id: 6,
-    title: '葡萄酒品鑑沙龍',
-    date: '2025-06-01',
-    location: 'Wine Cellar',
-    status: '已結束',
-    currentNum: 6,
-    maxNum: 12,
-    imageUrl: new URL('@/assets/events/6_pexels-elina-sazonova-1850595.jpg', import.meta.url).href
+dayjs.extend(utc);
+dayjs.extend(timezone);
+dayjs.locale('zh-tw');
+
+const authStore = useAuthStore();
+const { user } = storeToRefs(authStore);
+
+const publishedEvents = ref([]);
+const isLoading = ref(true);
+
+onMounted(async () => {
+  try {
+    const res = await apiClient.get('/event/all', {
+      params: { hostUser: user.value.id }
+    });
+    console.log(res.data);
+    publishedEvents.value = res.data;
+  } catch (err) {
+    console.error('我發佈的活動載入失敗', err);
+  } finally {
+    isLoading.value = false;
   }
-]);
+});
 
 const statusFilter = ref('全部');
 const sortOrder = ref('desc');
@@ -72,13 +41,25 @@ const sortOrder = ref('desc');
 const filteredEvents = computed(() => {
   let result = publishedEvents.value;
 
+  result = result.map(event => {
+    const now = dayjs();
+    const endTime = dayjs(event.endAt);
+
+    const statusText = endTime.isBefore(now) ? '已結束' : '即將到來';
+
+    return {
+      ...event,
+      statusText
+    };
+  });
+
   if (statusFilter.value !== '全部') {
-    result = result.filter(event => event.status === statusFilter.value);
+    result = result.filter(event => event.statusText === statusFilter.value);
   }
 
   result = result.slice().sort((a, b) => {
-    const dateA = new Date(a.date);
-    const dateB = new Date(b.date);
+    const dateA = new Date(a.startAt);
+    const dateB = new Date(b.startAt);
     return sortOrder.value === 'desc' ? dateB - dateA : dateA - dateB;
   });
 
@@ -104,7 +85,12 @@ const filteredEvents = computed(() => {
 
             <ListboxOptions
               class="absolute z-10 w-full py-1 mt-1 overflow-auto text-sm bg-white rounded-md shadow-lg max-h-60 ring-1 ring-black/10 focus:outline-none">
-              <ListboxOption v-for="option in ['全部', '進行中', '已結束']" :key="option" :value="option" as="template" v-slot="{ selected, active }">
+              <ListboxOption
+                v-for="option in ['全部', '即將到來', '已結束']"
+                :key="option"
+                :value="option"
+                as="template"
+                v-slot="{ selected, active }">
                 <li
                   class="relative py-2 pl-10 pr-4 cursor-default select-none"
                   :class="{
@@ -115,7 +101,7 @@ const filteredEvents = computed(() => {
                     {{ option }}
                   </span>
                   <span v-if="selected" class="absolute inset-y-0 left-0 flex items-center pl-3 text-white">
-                     <i class="w-4 h-4 fa-solid fa-check"></i>
+                    <i class="w-4 h-4 fa-solid fa-check"></i>
                   </span>
                 </li>
               </ListboxOption>
@@ -168,39 +154,10 @@ const filteredEvents = computed(() => {
         </Listbox>
       </div>
     </div>
-
-    <div v-if="publishedEvents.length === 0" class="text-gray-500">尚未發布任何活動。</div>
-
+    <div v-if="isLoading">載入中...</div>
+    <div v-else-if="publishedEvents.length === 0" class="text-gray-500">尚未發布任何活動。</div>
     <ul v-else class="w-full space-y-6">
-      <li
-        v-for="event in filteredEvents"
-        :key="event.id"
-        class="grid grid-cols-1 md:grid-cols-[8rem_1fr] gap-4 p-6 bg-white rounded-xl border border-gray-100 shadow-sm hover:-translate-y-1 hover:scale-[1.005] hover:shadow-lg transition-all duration-300 ease-in-out cursor-pointer">
-        <div class="w-full overflow-hidden rounded aspect-square md:w-32">
-          <img :src="event.imageUrl" alt="event-image" class="object-cover w-full h-full" />
-        </div>
-        <div class="flex flex-col justify-between h-full">
-          <div class="flex items-start justify-between">
-            <h3 class="text-lg font-bold">{{ event.title }}</h3>
-            <span
-              class="px-3 py-1 text-sm rounded-full"
-              :class="event.status === '進行中' ? 'bg-green-200 text-green-800' : 'bg-gray-300 text-gray-600'">
-              {{ event.status }}
-            </span>
-          </div>
-
-          <div class="grid grid-cols-[1.5rem_1fr] gap-1 text-sm text-gray-600 pt-2">
-            <div><i class="w-5 text-center fa-solid fa-table"></i></div>
-            <div>活動日期：{{ event.date }}</div>
-
-            <div><i class="w-5 text-center fa-solid fa-wine-glass"></i></div>
-            <div>地點：{{ event.location }}</div>
-
-            <div><i class="w-5 text-center fa-solid fa-user"></i></div>
-            <div>報名人數：{{ event.currentNum }} / {{ event.maxNum }}</div>
-          </div>
-        </div>
-      </li>
+      <PublishedEventCard v-for="event in filteredEvents" :key="event.id" :event="event" />
     </ul>
   </section>
 </template>
