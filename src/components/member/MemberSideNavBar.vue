@@ -14,7 +14,7 @@ const userId = computed(() => user.value?.id);
 const profileLink = computed(() => ({ name: 'MemberProfile', params: { id: userId.value } }));
 const barLink = computed(() => ({ name: 'BarFavorites', params: { id: userId.value } }));
 const memberCardLink = computed(() => ({ name: 'MemberCard', params: { id: userId.value } }));
-const ordersLink = computed(() => ({ name: 'OrderRecords', params: { id: userId.value } }));
+const ordersLink = computed(() => ({ name: 'MemberOrderRecords', params: { id: userId.value } }));
 
 const selectedItem = ref('profile');
 const expandedEventRecords = ref(null);
