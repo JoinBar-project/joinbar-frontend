@@ -51,7 +51,7 @@ export const useCartStore = defineStore('cart', () => {
       
       const config = {
         method,
-        url: `${API_BASE_URL}/cart${url}`, 
+        url: `${API_BASE_URL}/api/cart${url}`, 
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
