@@ -193,7 +193,7 @@ async function onSubmit() {
     
     formData.append('tags', JSON.stringify(eventHashtags.value));
 
-    const response = await apiClient.post('/event/create', formData, {
+    const response = await apiClient.post('/api/event/create', formData, {
       headers: {
         'Content-Type': 'multipart/form-data',
       },
