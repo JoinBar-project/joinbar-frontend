@@ -54,12 +54,12 @@ function goToInfo() {
   <div class="event-card" @click="goToInfo">
     <img :src="props.event.imageUrl" alt="活動圖片" class="event-img" />
     <div class="event-info">
-      <p class="time text-gray-400 leading-normal">
+      <p class="leading-normal text-gray-400 time">
         {{ formatEventDate(props.event.startAt) }} ~ {{ formatEventDate(props.event.endAt) }}
       </p>
       <h3 class="title h-[5.5rem]">{{ props.event.name }}</h3>
       <p class="leading-normal">
-        <span class="location">📍{{ sliceChinese(props.event.location, 6) }}</span>｜<span class="bar-name leading-[2.5]">{{ props.event.barName }}</span>
+        <span class="bar-name leading-[2.5]">{{ props.event.barName }}</span>
       </p>
       <div class="bottom-row">
         <div class="tags">
