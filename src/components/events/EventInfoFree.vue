@@ -5,7 +5,7 @@ import axios from 'axios';
 import EventHoster from './EventHoster.vue';
 import MessageBoard from './MessageBoard.vue';
 import ModalEdit from '@/components/events/ModalEdit.vue'
-
+import { useAuthStore } from '@/stores/authStore'; 
 
 const emit = defineEmits(['update']);
 
@@ -15,13 +15,23 @@ const props = defineProps({
   eventId: String,
 });
 
+const authStore = useAuthStore(); 
+
 const currentUserId = computed(() => {
-  const user = JSON.parse(localStorage.getItem('user'));
-  return user?.id ? Number(user.id) : null;
+  return authStore.user?.id || authStore.currentUser?.id || (() => {
+    try {
+      const user = JSON.parse(localStorage.getItem('user') || '{}');
+      return user?.id ? Number(user.id) : null;
+    } catch {
+      return null;
+    }
+  })();
 });
 
 const isHostUser = computed(() => {
-  return currentUserId.value !== null && Number(currentEvent.value.hostUser) === currentUserId.value;
+  const userId = currentUserId.value;
+  const hostId = currentEvent.value?.hostUser?.id || currentEvent.value?.hostUser;
+  return userId !== null && hostId !== null && Number(userId) === Number(hostId);
 });
 
 const eventRef = toRef(props, 'event');
@@ -46,7 +56,6 @@ watch(() => props.tags, (newTags) => {
   }
 }, { deep: true, immediate: true });
 
-
 async function reloadEventData() {
   if (!props.eventId && !localEvent.value?.id) {
     console.error('無法重新載入：缺少活動 ID');
@@ -65,7 +74,6 @@ async function reloadEventData() {
     });
     
     if (response.data) {
-
       if (response.data.event) {
         localEvent.value = { ...response.data.event };
       }
@@ -124,7 +132,6 @@ const handleCancelConfirm = async () => {
 
 <template>
   <div>
-
     <div v-if="isUpdating" class="loading-overlay">
       <div class="loading-message">
         <i class="fa-solid fa-spinner fa-spin"></i>
@@ -205,36 +212,45 @@ const handleCancelConfirm = async () => {
                   目前報名人數： <span>{{ joinedNum }}</span> ｜ 報名人數上限：<span>{{ currentEvent.maxPeople || '無報名人數限制' }}</span>
                 </p>
               </div>
-
             </div>
             
             <div class="edit-btn-container">
-              <button
-                @click="handleJoinToggle"
-                :disabled="isJoin || isUpdating"
-                :class="{ 'opacity-50 cursor-not-allowed': isJoin || isUpdating }"
-                type="button"
-                class="event-btn event-btn-free">
-                {{ isUpdating ? '處理中...' : (isJoin ? '已報名' : '參加活動') }}
-              </button>
-              
-              <button
-                v-if="isJoin"
-                @click="openCancelModal()"
-                :disabled="!isOver24hr || isUpdating"
-                :class="['event-btn-free', (isOver24hr && !isUpdating) ? 'cursor-pointer' : 'cursor-not-allowed opacity-50']"
-                type="button"
-                class="event-btn-free">
-                {{ isUpdating ? '處理中...' : '取消報名' }}
-              </button>
-              
+              <!-- 主辦人 -->
               <ModalEdit
-                v-if="currentEvent.id"
+                v-if="isHostUser && currentEvent.id"
                 :event-id="currentEvent.id"
                 :event="currentEvent"
                 @update="handleEventUpdate"
               />
-
+              
+              <!-- 非主辦人 -->
+              <template v-else-if="!isHostUser && authStore?.isAuthenticated">
+                <button
+                  @click="handleJoinToggle"
+                  :disabled="isJoin || isUpdating"
+                  :class="{ 'opacity-50 cursor-not-allowed': isJoin || isUpdating }"
+                  type="button"
+                  class="event-btn event-btn-free">
+                  {{ isUpdating ? '處理中...' : (isJoin ? '已報名' : '參加活動') }}
+                </button>
+                
+                <button
+                  v-if="isJoin"
+                  @click="openCancelModal()"
+                  :disabled="!isOver24hr || isUpdating"
+                  :class="['event-btn-free', (isOver24hr && !isUpdating) ? 'cursor-pointer' : 'cursor-not-allowed opacity-50']"
+                  type="button"
+                  class="event-btn-free">
+                  {{ isUpdating ? '處理中...' : '取消報名' }}
+                </button>
+              </template>
+              
+              <!-- 未登入用戶提示 -->
+              <div v-else-if="!authStore?.isAuthenticated" class="login-prompt">
+                <p style="padding: 20px; background: #f0f0f0; border-radius: 10px; text-align: center;">
+                  請先登入以參加活動
+                </p>
+              </div>
             </div>
           </div>
         </div>
@@ -278,7 +294,7 @@ const handleCancelConfirm = async () => {
 }
 
 .edit-btn-container {
-  @apply flex;
+  @apply flex flex-col;
 }
 
 .event-information-section {
@@ -407,5 +423,9 @@ const handleCancelConfirm = async () => {
 .event-btn-free:disabled {
   opacity: 0.6;
   cursor: not-allowed;
+}
+
+.login-prompt {
+  margin-top: 30px;
 }
 </style>

@@ -28,8 +28,14 @@ const tagList = ref([...props.tags]);
 const isProcessing = ref(false);
 const hasParticipated = ref(false); 
 
+const isOwner = computed(() => {
+  const currentUserId = authStore.currentUser?.id || authStore.user?.id;
+  const hostUserId = eventRef.value?.hostUser?.id || eventRef.value?.hostUser;
+  return currentUserId !== null && hostUserId !== null && Number(currentUserId) === Number(hostUserId);
+});
+
 const isInCart = computed(() => cart.isInCart(eventRef.value.id));
-const isOwner = computed(() => authStore.currentUser?.id === eventRef.value.hostUser);
+
 const isAuthenticated = computed(() => {
   return authStore.isAuthenticated || 
          !!authStore.user || 
@@ -350,14 +356,16 @@ onMounted(async () => {
           </div>
 
           <div class="edit-btn-container">
-            <div v-if="hasParticipated" class="participation-status">
-              <div class="participation-badge">
-                <i class="fa-solid fa-check-circle"></i>
-                <span>已報名此活動</span>
-              </div>
-            </div>
-
-            <template v-else>
+            <!-- 主辦人：顯示編輯按鈕 -->
+            <ModalEdit
+              v-if="isOwner && eventRef.id"
+              :event-id="eventRef.id"
+              :event="eventRef"
+              @update="handleEventUpdate"
+            />
+          
+            <!-- 非主辦人且未參與：顯示購買按鈕 -->
+            <template v-else-if="!isOwner && !hasParticipated && authStore?.isAuthenticated">
               <button
                 @click="addToCart"
                 type="button"
@@ -378,13 +386,21 @@ onMounted(async () => {
                 {{ isProcessing ? '處理中...' : '立即報名' }}
               </button>
             </template>
-
-            <ModalEdit
-              v-if="eventRef.id"
-              :event-id="eventRef.id"
-              :event="eventRef"
-              @update="handleEventUpdate"
-            />
+          
+            <!-- 非主辦人且已參與：顯示參與狀態 -->
+            <div v-else-if="!isOwner && hasParticipated" class="participation-status">
+              <div class="participation-badge">
+                <i class="fa-solid fa-check-circle"></i>
+                <span>已報名此活動</span>
+              </div>
+            </div>
+            
+            <!-- 未登入用戶提示 -->
+            <div v-else-if="!authStore?.isAuthenticated" class="login-prompt">
+              <p style="padding: 20px; background: #f0f0f0; border-radius: 10px; text-align: center;">
+                請先登入以參加活動
+              </p>
+            </div>
           </div>
         </div>
       </div>
@@ -398,7 +414,7 @@ onMounted(async () => {
 @reference "tailwindcss";
 
 .edit-btn-container {
-  @apply flex;
+  @apply flex flex-col;
 }
 
 .participation-badge {
@@ -422,6 +438,10 @@ onMounted(async () => {
 .participation-badge i {
   font-size: 20px;
   color: #10b981;
+}
+
+.login-prompt {
+  margin-top: 30px;
 }
 
 @keyframes fadeInUp {
