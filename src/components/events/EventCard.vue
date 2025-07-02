@@ -67,7 +67,7 @@ function goToInfo() {
         </p>
         <h3 class="title h-[5.5rem]">{{ props.event.name }}</h3>
         <p class="md:leading-normal leading-2">
-          <span class="location">📍{{ sliceChinese(props.event.location, 6) }}</span>｜<span class="bar-name leading-[2.5]">{{ props.event.barName }}</span>
+          <span class="location">📍{{ sliceChinese(props.event.location, 6) }}</span>｜<span class="bar-name leading-[2] md:leading-[2.5]">{{ props.event.barName }}</span>
         </p>
       </div>
     </div>
