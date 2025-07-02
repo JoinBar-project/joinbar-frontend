@@ -2,6 +2,8 @@
   <div class="flex overflow-hidden relative w-screen h-screen">
     <!-- 將 Navbar slot/區塊移到這裡，確保在最上層 -->
     <slot name="navbar"></slot>
+
+    <!-- 手機版頂部控制項 -->
     <div
       class="mobile-top-controls md:hidden absolute top-0 left-0 right-0 z-[90] bg-white shadow-md w-full overflow-x-hidden"
     >
@@ -79,8 +81,9 @@
       </div>
     </div>
 
+    <!-- 桌面版頂部控制項 -->
     <div
-      class="top-left-controls absolute top-5 left-[400px] z-[100] flex flex-row flex-wrap items-center gap-[10px] p-[15px] bg-white/90 rounded-lg shadow-[0_4px_12px_rgba(0,0,0,0.2)] transition-[left] duration-300 ease-in-out"
+      class="top-left-controls hidden md:flex absolute top-5 left-[400px] z-[100] flex-row flex-wrap items-center gap-[10px] p-[15px] bg-white/90 rounded-lg shadow-[0_4px_12px_rgba(0,0,0,0.2)] transition-[left] duration-300 ease-in-out"
     >
       <button
         class="filter-toggle-button map-control-button"
@@ -1150,10 +1153,9 @@ onUnmounted(() => {
   flex: 1;
   border: none;
   background: transparent;
-  padding: 6px 8px; /* 減小內邊距 */
+  padding: 6px 4px; /* 減小內邊距 */
   outline: none;
   font-size: 12px; /* 減小字體 */
-  min-width: 0; /* 允許收縮到最小 */
 }
 
 .search-button-mobile {
@@ -1163,6 +1165,12 @@ onUnmounted(() => {
   color: #666;
   cursor: pointer;
   font-size: 12px; /* 減小圖標大小 */
+}
+
+.search-button-mobile i {
+  font-size: 16px;
+  vertical-align: middle;
+  color: #333;
 }
 
 /* 側邊欄手機版樣式 */
@@ -1230,14 +1238,13 @@ onUnmounted(() => {
   }
 
   .mobile-top-controls .flex.flex-1.gap-1.items-center.min-w-0 {
-    justify-content: flex-end;
-    gap: 4px;
+    margin-left: 8px;
   }
 
   .search-panel-mobile {
-    width: 180px;
-    min-width: 140px;
-    max-width: 200px;
+    width: 120px;
+    min-width: 100px;
+    max-width: 120px;
   }
 
   .mobile-control-button {
@@ -1261,21 +1268,45 @@ onUnmounted(() => {
     font-size: 12px;
   }
   .mobile-bottom-toggle button {
+    width: 90px;
+    min-width: 105px;
+    max-width: 105px;
     padding: 4px 10px;
-    font-size: 12px;
-    min-height: 28px;
+    min-height: 24px;
     height: 28px;
-    border-radius: 16px;
+    border-radius: 14px;
     gap: 4px;
+    margin-left: -4px;
   }
   .mobile-bottom-toggle button i {
-    font-size: 13px;
+    font-size: 11px;
   }
   .mobile-bottom-toggle button span {
-    font-size: 12px;
+    font-size: 10px;
   }
   .filter-panel-mobile {
     padding-top: 24px;
+  }
+  .location-button-mobile,
+  .filter-toggle-button {
+    width: 28px;
+    height: 28px;
+    min-width: 28px;
+    min-height: 28px;
+    font-size: 16px;
+    margin-left: 2px;
+  }
+  .filter-svg-icon {
+    width: 18px;
+    height: 18px;
+  }
+
+  .mobile-top-controls .flex.flex-wrap.gap-2.justify-between.items-center.p-3 {
+    transform: scale(1.18);
+    transform-origin: left center;
+    width: 100%;
+    max-width: 100vw;
+    box-sizing: border-box;
   }
 }
 
@@ -1369,7 +1400,11 @@ onUnmounted(() => {
 }
 
 .search-panel-map {
-  display: none;
+  display: flex;
+  position: relative;
+  width: 300px;
+  flex-shrink: 1;
+  align-items: center;
 }
 
 .input-group {
@@ -1539,6 +1574,7 @@ onUnmounted(() => {
   .bar-list-sidebar {
     position: relative;
     transform: none;
+    width: 380px;
   }
 
   html,
@@ -1554,7 +1590,7 @@ onUnmounted(() => {
   }
 
   .search-panel-map {
-    display: none;
+    display: flex;
   }
 
   .search-and-location-group {
@@ -1591,5 +1627,17 @@ onUnmounted(() => {
 /* 會員選單 z-index 最高 */
 :global(.mobile-menu.open) {
   z-index: 99999 !important;
+}
+
+/* 藍色圈圈縮小但字體不變 */
+.mobile-bottom-toggle .rounded-full.bg-blue-500 {
+  padding: 2px 6px !important; /* py-0.5 px-1.5 */
+  font-size: 12px !important;
+  min-width: 22px;
+  min-height: 18px;
+  line-height: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
 </style>
