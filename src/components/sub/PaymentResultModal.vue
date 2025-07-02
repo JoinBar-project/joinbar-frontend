@@ -71,7 +71,7 @@ function handleConfirm() {
   if (isSuccess.value) {
     router.push(`/member/${user.id}/member-card`)
   } else {
-    router.push('/subs')
+    router.push('/subscription')
   }
 }
 
