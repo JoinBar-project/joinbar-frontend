@@ -1,7 +1,9 @@
 <template>
   <div class="flex overflow-hidden relative w-screen h-screen">
+    <!-- 將 Navbar slot/區塊移到這裡，確保在最上層 -->
+    <slot name="navbar"></slot>
     <div
-      class="mobile-top-controls md:hidden absolute top-0 left-0 right-0 z-[100] bg-white shadow-md w-full overflow-x-hidden"
+      class="mobile-top-controls md:hidden absolute top-0 left-0 right-0 z-[90] bg-white shadow-md w-full overflow-x-hidden"
     >
       <div class="flex flex-wrap gap-2 justify-between items-center p-3">
         <div class="flex-shrink-0 mobile-bottom-toggle">
@@ -41,9 +43,12 @@
                 <i class="fas fa-search"></i>
               </button>
             </div>
-            
+
             <!-- 建議選項放回這裡 -->
-            <ul v-if="suggestions.length && isMobile" class="suggestions-list-mobile-overlay">
+            <ul
+              v-if="suggestions.length && isMobile"
+              class="suggestions-list-mobile-overlay"
+            >
               <li
                 v-for="(suggestion, idx) in suggestions"
                 :key="idx"
@@ -1051,21 +1056,21 @@ onUnmounted(() => {
 <style scoped>
 /* 修改手機版搜尋建議選項 */
 .suggestions-list-mobile-overlay {
-  position: absolute; /* 改回 absolute 定位 */
-  top: 100%; /* 緊貼搜尋欄位下方 */
+  position: absolute;
+  top: 100%;
   left: 0;
-  right: 0; /* 與搜尋欄位同寬 */
+  right: 0;
   width: auto;
   background: white;
   border-radius: 8px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
   max-height: 200px;
   overflow-y: auto;
-  z-index: 1000; /* 確保高於其他元素 */
+  z-index: 80; /* 降低 z-index，避免蓋住 Navbar */
   margin: 0;
   padding: 0;
   list-style: none;
-  margin-top: 4px; /* 與搜尋欄位間隔 */
+  margin-top: 4px;
 }
 
 .suggestions-list-mobile-overlay li {
@@ -1154,7 +1159,7 @@ onUnmounted(() => {
 
 /* 側邊欄手機版樣式 */
 .bar-list-sidebar {
-  width: 380px;
+  width: 160px;
   background-color: #f7f7f7;
   display: flex;
   flex-direction: column;
@@ -1174,29 +1179,29 @@ onUnmounted(() => {
   }
 
   .bar-list-sidebar {
-    position: absolute !important;
-    top: 60px !important;
-    left: 0 !important;
-    width: 80vw !important;
-    max-width: 350px !important;
-    height: auto !important;
+    position: absolute;
+    top: 60px;
+    left: 0;
+    width: 80vw;
+    max-width: 320px;
+    height: auto;
     border-radius: 12px;
     box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
-    z-index: 300 !important;
+    z-index: 300;
     background: #fff;
     transition: none;
     padding: 0;
   }
 
   .sidebar-mobile-hidden {
-    display: none !important;
+    display: none;
   }
 
   .mobile-sidebar-header {
     border-radius: 12px 12px 0 0;
   }
 
-  .flex-grow.p-4.overflow-y-auto {
+  .bar-list-sidebar .flex-grow.p-4.overflow-y-auto {
     max-height: 60vh;
     overflow-y: auto;
   }
@@ -1213,42 +1218,73 @@ onUnmounted(() => {
   }
 
   .mobile-top-controls {
-    justify-content: flex-start !important;
+    justify-content: flex-start;
   }
 
-  .flex.flex-1.gap-1.items-center.min-w-0 {
-    justify-content: flex-start !important;
-    gap: 0.25rem !important; /* 使用更小的間距 */
+  .mobile-top-controls .flex.flex-1.gap-1.items-center.min-w-0 {
+    justify-content: flex-end;
+    gap: 4px;
   }
 
   .search-panel-mobile {
-    width: 120px !important; /* 固定更小的寬度 */
-    min-width: 100px !important;
-    max-width: 140px !important;
+    width: 180px;
+    min-width: 140px;
+    max-width: 200px;
   }
 
   .mobile-control-button {
-    min-width: 28px !important; /* 更小的按鈕 */
-    height: 28px !important;
-    font-size: 11px !important;
-    margin-left: 2px !important; /* 減小間距 */
+    min-width: 33px;
+    height: 28px;
+    font-size: 11px;
+    margin-left: 2px;
+  }
+
+  .filter-toggle-button {
+    width: 28px;
+    height: 28px;
+    font-size: 12px;
+    margin-right: -10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+  }
+  .filter-toggle-button i {
+    font-size: 12px;
+  }
+  .mobile-bottom-toggle button {
+    padding: 4px 10px;
+    font-size: 12px;
+    min-height: 28px;
+    height: 28px;
+    border-radius: 16px;
+    gap: 4px;
+  }
+  .mobile-bottom-toggle button i {
+    font-size: 13px;
+  }
+  .mobile-bottom-toggle button span {
+    font-size: 12px;
+  }
+  .filter-panel-mobile {
+    padding-top: 24px;
   }
 }
 
 @media (max-width: 480px) {
   .search-panel-mobile {
-    width: 100px !important; /* 在更小螢幕上進一步縮小 */
-    min-width: 90px !important;
+    width: 140px;
+    min-width: 120px;
   }
 
   .mobile-control-button {
-    min-width: 26px !important;
-    height: 26px !important;
-    font-size: 10px !important;
+    min-width: 26px;
+    height: 26px;
+    font-size: 10px;
   }
 
   .search-input-mobile {
-    font-size: 16px; /* 防止iOS縮放 */
+    font-size: 16px;
   }
 }
 
@@ -1271,7 +1307,7 @@ onUnmounted(() => {
 
 /* 桌面版樣式保持不變 */
 .top-left-controls {
-  gap: 0;
+  gap: 0px;
   flex-wrap: nowrap;
   align-items: center;
   justify-content: flex-start;
@@ -1317,9 +1353,9 @@ onUnmounted(() => {
   justify-content: center;
   width: 40px;
   height: 40px;
-  font-size: 24px;
+  font-size: 18px;
   color: #3a3435;
-  margin-right: 10px;
+  margin-right: -10px;
 }
 
 .search-panel-map {

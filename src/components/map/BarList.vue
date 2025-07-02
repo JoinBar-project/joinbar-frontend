@@ -133,16 +133,16 @@ const emitToggleWishlist = async (bar) => {
       place_id: bar.place_id || bar.googlePlaceId,
       googlePlaceId: bar.googlePlaceId || bar.place_id,
       id: bar.id || bar.barId,
-      address: bar.formatted_address || bar.address || bar.vicinity || '',
+      address: bar.formatted_address || bar.address || bar.vicinity || "",
       latitude: bar.geometry?.location
-        ? (typeof bar.geometry.location.lat === 'function'
-            ? bar.geometry.location.lat()
-            : bar.geometry.location.lat)
+        ? typeof bar.geometry.location.lat === "function"
+          ? bar.geometry.location.lat()
+          : bar.geometry.location.lat
         : bar.location?.lat || bar.latitude,
       longitude: bar.geometry?.location
-        ? (typeof bar.geometry.location.lng === 'function'
-            ? bar.geometry.location.lng()
-            : bar.geometry.location.lng)
+        ? typeof bar.geometry.location.lng === "function"
+          ? bar.geometry.location.lng()
+          : bar.geometry.location.lng
         : bar.location?.lng || bar.longitude,
     };
     // 使用 store 的 toggle 功能
