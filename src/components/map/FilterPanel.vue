@@ -35,7 +35,11 @@
     </div>
 
     <div class="mb-8">
-      <label for="addressFilter" class="block font-semibold text-[var(--color-black)] mb-[13px] text-[16px]">地點</label>
+      <label
+        for="addressFilter"
+        class="block font-semibold text-[var(--color-black)] mb-[13px] text-[16px]"
+        >地點</label
+      >
       <select
         id="addressFilter"
         v-model="filters.address"
@@ -53,7 +57,11 @@
     </div>
 
     <div class="mb-8">
-      <label for="ratingFilter" class="block font-semibold text-[var(--color-black)] mb-[13px] text-[16px]">評價</label>
+      <label
+        for="ratingFilter"
+        class="block font-semibold text-[var(--color-black)] mb-[13px] text-[16px]"
+        >評價</label
+      >
       <select
         id="ratingFilter"
         v-model="filters.ratingSort"
@@ -68,7 +76,10 @@
     </div>
 
     <div class="mb-8">
-      <label class="block font-semibold text-[var(--color-black)] mb-[13px] text-[16px]">距離 (公尺)</label>
+      <label
+        class="block font-semibold text-[var(--color-black)] mb-[13px] text-[16px]"
+        >距離 (公尺)</label
+      >
       <div class="range-inputs">
         <input
           type="number"
@@ -104,7 +115,10 @@
     </div>
 
     <div class="mb-8">
-      <label class="block font-semibold text-[var(--color-black)] mb-[13px] text-[16px]">營業時間</label>
+      <label
+        class="block font-semibold text-[var(--color-black)] mb-[13px] text-[16px]"
+        >營業時間</label
+      >
       <div class="time-picker-vertical">
         <div class="time-picker-row-single">
           <label class="time-label"></label>
@@ -136,16 +150,21 @@
     </div>
 
     <div class="mb-8">
-      <label class="block font-semibold text-[var(--color-black)] mb-[13px] text-[16px]">標籤</label>
+      <label
+        class="block font-semibold text-[var(--color-black)] mb-[13px] text-[16px]"
+        >標籤</label
+      >
       <div class="grid gap-3 [grid-template-columns:repeat(auto-fit,_120px)]">
         <button
           v-for="([type, label], idx) in tagList"
           :key="type"
           @click="handleTagClick(type)"
           class="w-full justify-center text-center px-0 py-[10px] rounded-[14px] text-[14px] font-medium whitespace-nowrap cursor-pointer transition-all duration-200 border"
-          :class="props.selectedTag === type
-            ? 'bg-[var(--color-primary-orange)] text-white border-[var(--color-primary-orange)] shadow-md'
-            : 'bg-[var(--color-main-text)] text-[var(--color-black)] border-[#e0e0e0] hover:bg-[var(--color-primary-orange)] hover:text-white hover:border-[var(--color-primary-orange)]'"
+          :class="
+            props.selectedTag === type
+              ? 'bg-[var(--color-primary-orange)] text-white border-[var(--color-primary-orange)] shadow-md'
+              : 'bg-[var(--color-main-text)] text-[var(--color-black)] border-[#e0e0e0] hover:bg-[var(--color-primary-orange)] hover:text-white hover:border-[var(--color-primary-orange)]'
+          "
         >
           {{ label }}
         </button>

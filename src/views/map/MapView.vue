@@ -40,7 +40,6 @@
                 @click="handleSearch"
                 class="search-button-mobile"
                 :disabled="!isReady"
-                style="margin-left: 0"
               >
                 <i class="fas fa-search"></i>
               </button>
@@ -1145,32 +1144,42 @@ onUnmounted(() => {
 .input-group-mobile {
   display: flex;
   background-color: #f8f9fa;
-  border-radius: 16px; /* 減小圓角 */
+  border-radius: 16px;
   overflow: hidden;
+  align-items: stretch;
+  height: 32px;
 }
 
 .search-input-mobile {
   flex: 1;
   border: none;
   background: transparent;
-  padding: 6px 4px; /* 減小內邊距 */
+  padding: 8px 12px;
   outline: none;
-  font-size: 12px; /* 減小字體 */
+  font-size: 14px;
+  min-width: 0;
+  height: 32px;
 }
 
 .search-button-mobile {
-  padding: 6px 8px; /* 減小內邊距 */
+  min-width: 32px;
+  min-height: 32px;
+  padding: 2px 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   border: none;
   background: transparent;
   color: #666;
   cursor: pointer;
-  font-size: 12px; /* 減小圖標大小 */
 }
 
 .search-button-mobile i {
   font-size: 16px;
-  vertical-align: middle;
-  color: #333;
+  color: #666;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 /* 側邊欄手機版樣式 */
@@ -1269,8 +1278,8 @@ onUnmounted(() => {
   }
   .mobile-bottom-toggle button {
     width: 90px;
-    min-width: 105px;
-    max-width: 105px;
+    min-width: 108px;
+    max-width: 108px;
     padding: 4px 10px;
     min-height: 24px;
     height: 28px;
