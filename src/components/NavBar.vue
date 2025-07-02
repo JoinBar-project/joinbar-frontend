@@ -212,7 +212,7 @@ const handleNavClick = (path) => {
 }
 
 .logo img {
-  @apply h-12 w-auto;
+  @apply h-8 w-auto;
 }
 
 .nav-links {
