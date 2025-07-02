@@ -87,22 +87,8 @@
               :disabled="cart.loading"
               :title="'移除 ' + item.name"
             >
-              <!-- 选项1: 使用 FontAwesome 图标 -->
               <i class="fa-solid fa-trash-can remove-icon"></i>
               
-              <!-- 选项2: 使用 X 符号 (注释掉的备选方案)
-              <i class="fa-solid fa-xmark remove-icon"></i>
-              -->
-              
-              <!-- 选项3: 使用减号图标 (注释掉的备选方案)
-              <i class="fa-solid fa-minus-circle remove-icon"></i>
-              -->
-              
-              <!-- 选项4: 使用自定义 SVG 图标 (注释掉的备选方案)
-              <svg class="remove-icon-svg" viewBox="0 0 24 24" fill="currentColor">
-                <path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/>
-              </svg>
-              -->
             </button>
           </div>
           
