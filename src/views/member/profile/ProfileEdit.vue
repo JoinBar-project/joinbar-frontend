@@ -115,6 +115,7 @@ const avatarFile = ref(null);
 const avatarPreview = ref('');
 const defaultAvatar = '/default-user-avatar.png';
 const isAvatarRemoved = ref(false);
+const avatarInputRef = ref(null);
 
 // 載入狀態
 const isProfileSaving = ref(false);
@@ -198,11 +199,24 @@ const updatePreferences = (newPreferences) => {
 // 頭像處理
 const handleAvatarChange = (event) => {
   const file = event.target.files[0];
-  if (file && file.type.startsWith('image/')) {
+  
+  if (file) {
+    const allowedTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/jfif'];
+    
+    if (!allowedTypes.includes(file.type)) {
+      showAlert('error', '檔案格式錯誤', '請選擇 JPEG / PNG / WebP / JFIF 格式的圖片');
+      event.target.value = '';
+      return;
+    }
+
+    if (file.size > 1 * 1024 * 1024) {
+      showAlert('error', '檔案太大', '圖片檔案大小不能超過 1MB');
+      event.target.value = '';
+      return;
+    }
+
     avatarFile.value = file;
     avatarPreview.value = URL.createObjectURL(file);
-  } else {
-    alert('請選擇圖片檔案');
   }
 };
 
@@ -210,6 +224,11 @@ const handleRemoveAvatar = () => {
   isAvatarRemoved.value = true;
   avatarFile.value = null;
   avatarPreview.value = defaultAvatar;
+
+  // 清空 input，讓使用者可以重新選擇同一個檔案
+  if (avatarInputRef.value) {
+    avatarInputRef.value.value = '';
+  }
 };
 
 // 將 Naive Date 格式化為 ISO 字符串
@@ -414,7 +433,10 @@ onMounted(async () => {
             class="mt-4 px-4 py-2 bg-[var(--color-black)] text-[var(--color-secondary-pink)] rounded cursor-pointer hover:bg-opacity-80 active:scale-98 transition-all duration-150">
             <i class="mr-1 fa-solid fa-arrow-up-from-bracket"></i> 上傳頭像
           </label>
-          <input type="file" hidden id="avatar" @change="handleAvatarChange" />
+
+          <input type="file" hidden id="avatar"
+          ref="avatarInputRef"
+          @change="handleAvatarChange" />
 
           <button
             type="button"
