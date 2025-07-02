@@ -2,6 +2,7 @@
 import { ref } from 'vue';
 import { useRouter } from 'vue-router';
 import { useAuthStore } from '@/stores/authStore';
+import { useCartStore } from '@/stores/cartStore'; 
 import { storeToRefs } from 'pinia';
 import { computed } from 'vue';
 import UserAvatar from '@/components/UserAvatar.vue';
@@ -9,6 +10,7 @@ import Swal from 'sweetalert2';
 
 const router = useRouter();
 const authStore = useAuthStore();
+const cartStore = useCartStore();
 const { user, isAuthenticated } = storeToRefs(authStore);
 
 const isMobileMenuOpen = ref(false);
@@ -20,6 +22,20 @@ const toggleMobileMenu = () => {
 const closeMobileMenu = () => {
   isMobileMenuOpen.value = false;
 };
+
+const cartItemCount = computed(() => {
+  const items = cartStore.items;
+  
+  if (items && typeof items === 'object' && 'items' in items) {
+    return Array.isArray(items.items) ? items.items.length : 0;
+  }
+  
+  if (Array.isArray(items)) {
+    return items.length;
+  }
+  
+  return 0;
+});
 
 const goToMember = () => {
   router.push({
@@ -124,7 +140,12 @@ const handleNavClick = (path) => {
         </div>
       </li>
       <li>
-        <RouterLink to="/cart"><img class="cart-icon" src="/cart.png" alt="Cart Icon" /></RouterLink>
+        <RouterLink to="/cart" class="cart-link-wrapper">
+          <img class="cart-icon" src="/cart.png" alt="Cart Icon" />
+          <span v-if="cartItemCount > 0" class="cart-badge">
+            {{ cartItemCount > 99 ? '99+' : cartItemCount }}
+          </span>
+        </RouterLink>
       </li>
     </ul>
 
@@ -143,11 +164,9 @@ const handleNavClick = (path) => {
       @click="closeMobileMenu">
     </div>
 
-    <!-- 更新的手機版側邊欄 -->
     <div class="mobile-menu" :class="{ 'open': isMobileMenuOpen }">
       <button @click="closeMobileMenu" class="close-btn">×</button>
       
-      <!-- 用戶頭像和資訊區域 -->
       <div v-if="isAuthenticated" class="mobile-user-section">
         <div class="mobile-user-avatar-container" @click="goToMember">
           <div class="mobile-user-avatar">
@@ -161,7 +180,6 @@ const handleNavClick = (path) => {
         <div class="mobile-username">{{ user.username }}</div>
       </div>
 
-      <!-- 登入提示區域（未登入時） -->
       <div v-else class="mobile-login-section">
         <div class="mobile-login-avatar">
           <div class="default-avatar"></div>
@@ -169,7 +187,6 @@ const handleNavClick = (path) => {
         <button @click="handleNavClick('/login')" class="mobile-login-text">點擊登入</button>
       </div>
 
-      <!-- 導航菜單 -->
       <ul class="mobile-nav-links">
         <li>
           <button @click="handleNavClick('/map')" class="mobile-nav-item">
@@ -267,7 +284,6 @@ const handleNavClick = (path) => {
   z-index: 1990;
 }
 
-/* 更新的手機版側邊欄樣式 */
 .mobile-menu {
   @apply fixed top-0 right-0 h-full bg-white text-black transform translate-x-full transition-transform duration-300 ease-in-out;
   width: 60vw;
@@ -284,7 +300,6 @@ const handleNavClick = (path) => {
   z-index: 1999;
 }
 
-/* 用戶區域樣式 */
 .mobile-user-section {
   @apply flex flex-col items-center pt-8 pb-3 px-6;
   background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
@@ -311,7 +326,6 @@ const handleNavClick = (path) => {
   @apply text-lg font-semibold text-gray-800 text-center;
 }
 
-/* 登入區域樣式 */
 .mobile-login-section {
   @apply flex flex-col items-center pt-8 pb-3 px-6;
   background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
@@ -333,7 +347,6 @@ const handleNavClick = (path) => {
   @apply text-lg font-medium text-gray-600 bg-transparent border-none cursor-pointer hover:text-gray-800 transition-colors duration-200;
 }
 
-/* 導航菜單樣式 */
 .mobile-nav-links {
   @apply list-none p-0 m-0 flex-1;
 }
@@ -366,6 +379,17 @@ const handleNavClick = (path) => {
 .logout-item:hover .mobile-nav-icon,
 .logout-item:hover span {
   @apply text-red-500;
+}
+
+.cart-link-wrapper {
+  @apply relative;
+}
+
+.cart-badge {
+  @apply absolute bg-red-500 text-white text-xs font-bold rounded-full min-w-4 h-4 flex items-center justify-center border-2 border-white leading-none z-10;
+  top: 15px;
+  right: 2px;
+  font-size: 10px;
 }
 
 @media (max-width: 767px) {
