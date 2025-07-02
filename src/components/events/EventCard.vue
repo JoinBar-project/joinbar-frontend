@@ -52,27 +52,32 @@ function goToInfo() {
 
 <template>
   <div class="event-card" @click="goToInfo">
-    <img :src="props.event.imageUrl" alt="活動圖片" class="event-img" />
-    <div class="event-info">
-      <p class="time text-gray-400 leading-normal">
-        {{ formatEventDate(props.event.startAt) }} ~ {{ formatEventDate(props.event.endAt) }}
-      </p>
-      <h3 class="title h-[5.5rem]">{{ props.event.name }}</h3>
-      <p class="leading-normal">
-        <span class="location">📍{{ sliceChinese(props.event.location, 6) }}</span>｜<span class="bar-name leading-[2.5]">{{ props.event.barName }}</span>
-      </p>
-      <div class="bottom-row">
-        <div class="tags">
-          <span class="tag" v-for="tagId in props.event.tagIds" :key="tagId">
-            #{{ getTagName(tagId) }}
-          </span>
-        </div>
-        <div v-if="props.event.price === null" class="btn-open-form bg-[var(--color-secondary-green)] text-white hover:bg-[var(--color-primary-orange)]">
-          查看詳情
-        </div>
-        <div v-else class="btn-open-form bg-[var(--color-primary-red)] text-white hover:bg-[var(--color-primary-orange)]">
-          查看付費活動
-        </div>
+    
+    <div>
+      <img :src="props.event.imageUrl" alt="活動圖片" class="event-img" />
+      <div class="event-info">
+        <p class="time text-gray-400 leading-normal">
+          {{ formatEventDate(props.event.startAt) }} ~ {{ formatEventDate(props.event.endAt) }}
+        </p>
+        <h3 class="title h-[5.5rem]">{{ props.event.name }}</h3>
+        <p class="md:leading-normal leading-2">
+          <span class="location">📍{{ sliceChinese(props.event.location, 6) }}</span>｜<span class="bar-name leading-[2.5]">{{ props.event.barName }}</span>
+        </p>
+      </div>
+    </div>
+ 
+    <div class="bottom-row p-4">
+      <div class="tags">
+        <span class="tag" v-for="tagId in props.event.tagIds" :key="tagId">
+          #{{ getTagName(tagId) }}
+        </span>
+      </div>
+      <div v-if="props.event.price === null" class="btn-open-form bg-[var(--color-secondary-green)] text-white hover:bg-[var(--color-primary-orange)]
+      active:bg-[var(--color-primary-orange)] text-xs md:text-xl">
+        查看詳情
+      </div>
+      <div v-else class="btn-open-form bg-[var(--color-primary-red)] text-white hover:bg-[var(--color-primary-orange)] active:bg-[var(--color-primary-orange)] text-xs md:text-xl">
+        查看付費活動
       </div>
     </div>
   </div>
@@ -82,7 +87,7 @@ function goToInfo() {
 @reference "tailwindcss";
 
 .event-card {
-  @apply bg-gray-100 rounded-2xl m-2 transition duration-300 transform hover:-translate-y-1 hover:shadow-xl cursor-pointer;
+  @apply flex flex-col justify-between bg-gray-100 rounded-2xl m-2 transition duration-300 transform hover:-translate-y-1 hover:shadow-xl cursor-pointer;
 }
 
 .event-img {
@@ -110,7 +115,7 @@ function goToInfo() {
 }
 
 .tag {
-  @apply inline-block border-2 px-2 py-1 rounded-2xl text-xs font-medium;
+  @apply inline-block border-2 px-2 py-1 rounded-2xl font-medium text-[10px] md:text-lg;
   border-color: #8B7355;
   color: #8B7355;
 }
@@ -124,19 +129,12 @@ function goToInfo() {
 }
 
 .bottom-row {
-  @apply flex items-center justify-between gap-2 mt-2;
+  @apply flex items-center justify-between flex-wrap gap-2 mt-2;
+  margin-top: auto;
 }
 
 .btn-open-form {
-  @apply flex justify-center mt-2 w-32 py-2 text-white rounded-2xl transition duration-200;
+  @apply flex justify-center w-24 md:w-40 py-2 text-white rounded-2xl transition duration-200;
 }
 
-/* .btn-edit {
-  background-color: var(--color-primary-red);
-  color: white;
-} */
-
-/* .open-info-btn:hover {
-  background-color: #878a6a;
-} */
 </style>
