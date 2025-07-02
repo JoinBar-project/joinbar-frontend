@@ -1,17 +1,16 @@
 <script setup>
-import { ref, computed, watch, onMounted, onUnmounted, nextTick } from 'vue';
-import apiClient from '@/api/axios';
+import { ref, computed, onMounted, onUnmounted, nextTick } from 'vue';
+import axios from 'axios';
 import { useEventForm } from '@/composables/useEventForm';
 import { useAuthStore } from '@/stores/authStore';
 import { useTagStore } from '@/stores/tag';
 import Hashtag from './Hashtag.vue';
-import BaseAlertModal from '@/components/common/BaseAlertModal.vue';
-import { useGoogleMaps } from '@/composables/useGoogleMaps/userIndex.js';
-import debounce from 'lodash/debounce';
+import apiClient from '@/api/axios';
 
 import flatpickr from 'flatpickr';
 import 'flatpickr/dist/flatpickr.css';
 import { Mandarin } from 'flatpickr/dist/l10n/zh.js';
+
 const emit = defineEmits(['submit']);
 
 const authStore = useAuthStore();
@@ -39,51 +38,6 @@ const endDateInput = ref(null);
 const startDatePicker = ref(null);
 const endDatePicker = ref(null);
 
-// Google Maps 相關
-const mapContainer = ref(null);
-const {
-  map,
-  isReady,
-  loadGoogleMapsAPI,
-  initMap,
-  getGeocode,
-  addMarker,
-  clearMarkers,
-  panTo,
-  setZoom,
-  getPlacePredictions,
-} = useGoogleMaps(mapContainer, {
-  googleMapsApiKey: import.meta.env.VITE_GOOGLE_MAPS_API_KEY,
-  onError: (msg) => showAlert('地圖錯誤', msg, 'error'),
-});
-
-const searchBarName = ref('');
-const suggestions = ref([]);
-const barAddress = ref('');
-
-// Modal 狀態管理
-const alertModal = ref({
-  visible: false,
-  title: '',
-  message: '',
-  type: 'default'
-});
-
-// Modal 控制函數
-const showAlert = (title, message, type = 'default') => {
-  alertModal.value = {
-    visible: true,
-    title,
-    message,
-    type
-  };
-};
-
-const closeAlert = () => {
-  alertModal.value.visible = false;
-};
-
-// 日期選擇器初始化
 const initFlatpickr = async () => {
   await nextTick();
   
@@ -102,11 +56,11 @@ const initFlatpickr = async () => {
       onChange: function(selectedDates, dateStr) {
         eventStartDate.value = dateStr;
         
-        // 選定開始日期時 設定最小時間
+        // 當開始日期改變時，更新結束日期的最小值
         if (endDatePicker.value && selectedDates[0]) {
           endDatePicker.value.set('minDate', selectedDates[0]);
           
-          // 結束日期早於開始日期 清掉結束日期
+          // 如果結束日期早於開始日期，清空結束日期
           if (eventEndDate.value && new Date(eventEndDate.value) <= selectedDates[0]) {
             endDatePicker.value.clear();
             eventEndDate.value = '';
@@ -135,6 +89,7 @@ const initFlatpickr = async () => {
   }
 }
 
+// 銷毀 flatpickr
 const destroyFlatpickr = () => {
   if (startDatePicker.value) {
     startDatePicker.value.destroy();
@@ -146,109 +101,16 @@ const destroyFlatpickr = () => {
   }
 }
 
-// Google Maps 功能
-const getSuggestions = debounce(async (input) => {
-  if (!input) {
-    suggestions.value = [];
-    return;
-  }
-  if (!isReady.value) return;
-  try {
-    suggestions.value = await getPlacePredictions(input);
-  } catch (error) {
-    console.error('獲取建議失敗:', error);
-    showAlert('搜尋錯誤', '無法獲取地點建議，請稍後再試', 'warning');
-  }
-}, 300);
-
-watch(searchBarName, (val) => {
-  getSuggestions(val);
-});
-
-const selectSuggestion = async (suggestion) => {
-  suggestions.value = [];
-  searchBarName.value = suggestion.description;
-  await searchBarLocation(suggestion.description);
-};
-
-const searchBarLocation = async (query) => {
-  if (!query) return;
-  if (!isReady.value) return;
-  
-  try {
-    const location = await getGeocode(query);
-    if (location) {
-      clearMarkers();
-      addMarker({
-        location,
-        title: query,
-        infoContent: query,
-        isBarLike: true,
-      });
-      panTo(location, 14);
-      setZoom(14);
-      barName.value = query;
-      barAddress.value = query;
-      eventLocation.value = query; // 更新表單的地址欄位
-    }
-  } catch (error) {
-    console.error('搜尋地點失敗:', error);
-    clearMarkers();
-    barAddress.value = '';
-    showAlert('搜尋失敗', '無法找到該地點，請嘗試其他關鍵字', 'warning');
-  }
-};
-
-// 監聽酒吧名稱變化，自動搜尋地點
-watch(barName, async (newName) => {
-  if (!newName) {
-    clearMarkers();
-    return;
-  }
-  if (!isReady.value) return;
-  
-  try {
-    const location = await getGeocode(newName);
-    if (location) {
-      clearMarkers();
-      addMarker({
-        location,
-        title: newName,
-        infoContent: newName,
-        isBarLike: true,
-      });
-      panTo(location, 16);
-      eventLocation.value = newName; // 同步更新表單地址
-    }
-  } catch (error) {
-    console.error('自動搜尋失敗:', error);
-    clearMarkers();
-  }
-});
-
-// 初始化
-onMounted(async () => {
-  await initFlatpickr();
-  await loadGoogleMapsAPI();
-  if (mapContainer.value) {
-    await initMap();
-  }
-});
-
-onUnmounted(() => {
-  destroyFlatpickr();
-});
-
 function handleImageSelect(event) {
   const file = event.target.files[0];
   if (file) {
     if (!file.type.startsWith('image/')) {
-      showAlert('檔案類型錯誤', '請選擇圖片檔案', 'error');
+      alert('請選擇圖片檔案');
       return;
     }
     
     if (file.size > 1 * 1024 * 1024) {
-      showAlert('檔案過大', '圖片檔案大小不能超過 1MB', 'warning');
+      alert('圖片檔案大小不能超過 1MB');
       return;
     }
     
@@ -267,44 +129,18 @@ function triggerFileInput() {
 }
 
 async function onSubmit() {
-  // 檢查登入狀態
   if (!authStore.isAuthenticated) {
-    showAlert('需要登入', '請先登入後再建立活動', 'warning');
+    alert('請先登入後再建立活動');
     return;
   }
 
-  // 檢查必填欄位
-  const missingFields = [];
-  if (!eventName.value) missingFields.push('活動名稱');
-  if (!barName.value) missingFields.push('酒吧名稱');
-  if (!eventStartDate.value) missingFields.push('開始日期');
-  if (!eventEndDate.value) missingFields.push('結束日期');
-  if (!eventPeople.value) missingFields.push('參加人數');
-
-  if (missingFields.length > 0) {
-    showAlert('欄位未完整', `請完整填寫以下欄位：${missingFields.join('、')}`, 'warning');
+  if (!eventName.value || !barName.value || !eventStartDate.value || !eventEndDate.value || !eventPeople.value) {
+    alert('請完整填寫所有欄位！');
     return;
   }
 
-  // 檢查管理員價格
   if (isAdmin.value && (!eventPrice.value || isNaN(eventPrice.value))) {
-    showAlert('價格錯誤', '請輸入有效的價格！', 'warning');
-    return;
-  }
-
-  // 檢查日期邏輯
-  const startDate = new Date(eventStartDate.value);
-  const endDate = new Date(eventEndDate.value);
-  
-  if (startDate >= endDate) {
-    showAlert('日期錯誤', '結束日期必須晚於開始日期', 'warning');
-    return;
-  }
-
-  // 檢查人數限制
-  const peopleCount = parseInt(eventPeople.value);
-  if (peopleCount < 1 || peopleCount > 30) {
-    showAlert('人數限制', '參加人數必須在 1 到 30 人之間', 'warning');
+    alert('請輸入有效的價格！');
     return;
   }
 
@@ -351,14 +187,14 @@ async function onSubmit() {
     eventPeople.value = '';
     eventHashtags.value = [];
     
-    // 清空日期
+    // 清空日期選擇器
     if (startDatePicker.value) startDatePicker.value.clear();
     if (endDatePicker.value) endDatePicker.value.clear();
     
     if (imageFile.value) imageFile.value = null;
     if (imagePreview.value) imagePreview.value = null;
     
-    showAlert('建立成功', '活動建立成功！', 'success');
+    alert('活動建立成功！');
     
     emit('submit', {
       success: true,
@@ -370,7 +206,6 @@ async function onSubmit() {
     console.error('完整錯誤:', error);
     
     let errorMessage = '發生未知錯誤';
-    let alertType = 'error';
     
     if (error.response) {
       console.error('伺服器錯誤詳情:', {
@@ -378,50 +213,17 @@ async function onSubmit() {
         data: error.response.data,
         headers: error.response.headers
       });
-      
-      const status = error.response.status;
-      const responseData = error.response.data;
-      
-      switch (status) {
-        case 400:
-          errorMessage = responseData?.message || '請求資料格式錯誤，請檢查所有欄位';
-          alertType = 'warning';
-          break;
-        case 401:
-          errorMessage = '登入已過期，請重新登入';
-          alertType = 'warning';
-          break;
-        case 403:
-          errorMessage = '權限不足，無法建立活動';
-          alertType = 'warning';
-          break;
-        case 413:
-          errorMessage = '上傳的圖片檔案過大，請選擇較小的圖片';
-          alertType = 'warning';
-          break;
-        case 422:
-          errorMessage = responseData?.message || '資料驗證失敗，請檢查輸入內容';
-          alertType = 'warning';
-          break;
-        case 500:
-          errorMessage = '伺服器內部錯誤，請稍後再試';
-          alertType = 'error';
-          break;
-        default:
-          errorMessage = responseData?.message || `伺服器錯誤 (${status})`;
-          alertType = 'error';
-      }
+      errorMessage = error.response.data?.message || '伺服器錯誤';
+      alert(`建立失敗: ${errorMessage}`);
     } else if (error.request) {
       console.error('網路錯誤:', error.request);
       errorMessage = '網路連線錯誤，請檢查網路狀態';
-      alertType = 'error';
+      alert(errorMessage);
     } else {
       console.error('其他錯誤:', error.message);
       errorMessage = error.message;
-      alertType = 'error';
+      alert(`發生錯誤: ${errorMessage}`);
     }
-    
-    showAlert('建立失敗', errorMessage, alertType);
     
     emit('submit', {
       success: false,
@@ -440,19 +242,10 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <!-- Alert Modal -->
-  <BaseAlertModal
-    :visible="alertModal.visible"
-    :title="alertModal.title"
-    :message="alertModal.message"
-    :type="alertModal.type"
-    @close="closeAlert"
-  />
-
   <section class="event-form" id="new-event">
     <div class="form-header">建立新活動</div>
     <div class="form-container">
-      <div class="cursor-pointer form-image-upload rounded-3xl bg-gradient-to-br from-gray-100 to-gray-300 water-drop-upload hover:opacity-80 active:opacity-50" @click="triggerFileInput">
+      <div class="form-image-upload" @click="triggerFileInput">
         <input
           ref="fileInput"
           type="file"
@@ -462,7 +255,6 @@ onUnmounted(() => {
         />
         
         <div v-if="!imagePreview" class="event-image-placeholder">
-          <i class="fa-solid fa-upload"></i>
           點擊更換活動圖
         </div>
         
@@ -490,29 +282,14 @@ onUnmounted(() => {
           </div>
           <div class="form-row">
             <label for="bar-name">酒吧名稱</label>
-            <div style="position: relative; width: 100%;">
-              <input
-                type="text"
-                id="bar-name"
-                v-model="searchBarName"
-                placeholder="請輸入酒吧名稱"
-                autocomplete="off"
-                style="width: 100%;"
-              />
-              <ul v-if="suggestions.length" class="suggestions-list" style="position: absolute; top: 40px; left: 0; right: 0; z-index: 20; background: white; border: 1px solid #ddd; border-radius: 8px; max-height: 200px; overflow-y: auto; box-shadow: 0 4px 10px rgba(0,0,0,0.1);">
-                <li
-                  v-for="(suggestion, idx) in suggestions"
-                  :key="idx"
-                  @click="selectSuggestion(suggestion)"
-                  style="padding: 10px 12px; cursor: pointer; border-bottom: 1px solid #f0f0f0; display: flex; align-items: center; gap: 6px;"
-                >
-                  <span style="font-size: 18px;">🔍</span> {{ suggestion.description }}
-                </li>
-              </ul>
-            </div>
+            <input
+              type="text"
+              id="bar-name"
+              v-model="barName"
+              placeholder="請輸入酒吧名稱" />
           </div>
           <div class="event-location">
-            {{ barAddress }}
+            {{ eventLocation }}
           </div>
           <div class="form-row">
             <label for="event-start-date">開始日期</label>
@@ -557,7 +334,11 @@ onUnmounted(() => {
           <Hashtag v-model="eventHashtags" />
         </div>
         <div class="form-right">
-          <div ref="mapContainer" class="w-full h-full border-0 rounded-lg" style="min-height: 300px; background: #2d2d2d;"></div>
+          <iframe 
+            v-if="eventLocation"
+            :src="`https://www.google.com/maps?q=${encodeURIComponent(eventLocation)}&output=embed`"
+            class="w-full h-full border-0 rounded-lg">
+          </iframe>
         </div>
       </div>
       
@@ -590,7 +371,7 @@ onUnmounted(() => {
 }
 
 .form-image-upload {
-  @apply flex justify-center items-center w-full h-72 text-xl text-gray-400;
+  @apply flex justify-center items-center w-full h-72 text-xl text-gray-400 bg-gray-200;
 }
 
 .form-layout {
@@ -640,6 +421,7 @@ onUnmounted(() => {
   background-color: var(--color-primary-orange);
 }
 
+/* Flatpickr 自定義樣式 */
 :deep(.flatpickr-calendar) {
   border-radius: 12px !important;
   box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15) !important;
@@ -661,10 +443,5 @@ onUnmounted(() => {
 
 :deep(.flatpickr-time input) {
   border-radius: 6px !important;
-}
-
-:deep(.BaseAlertModal),
-:deep(.BaseConfirmModal) {
-  z-index: 99999 !important;
 }
 </style>
