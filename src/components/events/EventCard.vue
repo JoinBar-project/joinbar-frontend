@@ -1,5 +1,7 @@
 <script setup>
 import dayjs from 'dayjs'
+import timezone from 'dayjs/plugin/timezone'
+import utc from 'dayjs/plugin/utc'
 import 'dayjs/locale/zh-tw'
 import weekday from 'dayjs/plugin/weekday'
 import localizedFormat from 'dayjs/plugin/localizedFormat'
@@ -22,6 +24,10 @@ const props = defineProps({
   },
 })
 
+console.log('🕒 props.event.startAt:', props.event.startAt)
+console.log('📘 typeof:', typeof props.event.startAt)
+console.log('🔍 包含 T 和 Z?', props.event.startAt?.includes?.('T'), props.event.startAt?.includes?.('Z'))
+
 const emit = defineEmits(['update'])
 
 const tagStore = useTagStore()
@@ -34,7 +40,7 @@ function getTagName(id) {
 function formatEventDate(dateStr) {
   if (!dateStr) return ''
   const weekMap = ['日', '一', '二', '三', '四', '五', '六']
-  const d = dayjs(dateStr)
+  const d = dayjs(dateStr).tz('Asia/Taipei')
   return `${d.format('LL')}(${weekMap[d.day()]}) ${d.format('HH:mm')}`
 }
 
