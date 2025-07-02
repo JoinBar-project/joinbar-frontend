@@ -54,12 +54,12 @@ function goToInfo() {
   <div class="event-card" @click="goToInfo">
     <img :src="props.event.imageUrl" alt="活動圖片" class="event-img" />
     <div class="event-info">
-      <p class="time text-gray-400">
+      <p class="time text-gray-400 leading-normal">
         {{ formatEventDate(props.event.startAt) }} ~ {{ formatEventDate(props.event.endAt) }}
       </p>
       <h3 class="title h-[5.5rem]">{{ props.event.name }}</h3>
-      <p>
-        <span class="location">📍{{ sliceChinese(props.event.location, 6) }}</span>｜<span class="bar-name">{{ props.event.barName }}</span>
+      <p class="leading-normal">
+        <span class="location">📍{{ sliceChinese(props.event.location, 6) }}</span>｜<span class="bar-name leading-[2.5]">{{ props.event.barName }}</span>
       </p>
       <div class="bottom-row">
         <div class="tags">
@@ -67,8 +67,11 @@ function goToInfo() {
             #{{ getTagName(tagId) }}
           </span>
         </div>
-        <div class="btn-open-form btn-edit open-info-btn pointer-events-none">
+        <div v-if="props.event.price === null" class="btn-open-form bg-[var(--color-secondary-green)] text-white hover:bg-[var(--color-primary-orange)]">
           查看詳情
+        </div>
+        <div v-else class="btn-open-form bg-[var(--color-primary-red)] text-white hover:bg-[var(--color-primary-orange)]">
+          查看付費活動
         </div>
       </div>
     </div>
@@ -128,11 +131,12 @@ function goToInfo() {
   @apply flex justify-center mt-2 w-32 py-2 text-white rounded-2xl transition duration-200;
 }
 
-.btn-edit {
-  background-color: #afb18c;
-}
+/* .btn-edit {
+  background-color: var(--color-primary-red);
+  color: white;
+} */
 
-.open-info-btn:hover {
+/* .open-info-btn:hover {
   background-color: #878a6a;
-}
+} */
 </style>

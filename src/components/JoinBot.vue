@@ -8,13 +8,13 @@
 
     <button @click="toggleChat" 
     :class="[
-      'glow-button rounded-full shadow-lg hover:scale-110 transition-all duration-300 overflow-hidden p-0 border-none bg-transparent',
+      'glow-button rounded-full shadow-lg hover:scale-110 transition-all duration-300 overflow-hidden p-0 border-none bg-transparent cursor-pointer',
       // 桌面版
       'w-20 h-20',
       // 手機版
       'max-md:w-16 max-md:h-16'
     ]">
-      <img src="/JoinBot.png" alt="JoinBot Icon" class="object-contain w-full h-full" />
+      <img src="/JoinBot.png" alt="JoinBot Icon" class="object-contain w-full h-full rounded-full bg-transparent" />
     </button>
 
     <div v-if="showGreetingBubble" :class="[

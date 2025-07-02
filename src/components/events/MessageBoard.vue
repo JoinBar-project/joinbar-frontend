@@ -167,7 +167,7 @@ onMounted(() => {
 <style scoped>
 .event-message-section {
   max-width: 100vw;
-  padding-top: 2%;
+  /* padding-top: 2%; */
   display: flex;
   justify-content: center;
   align-items: center;
