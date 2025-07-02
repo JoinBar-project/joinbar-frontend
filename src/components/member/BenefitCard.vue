@@ -68,39 +68,44 @@ const imageMap = {
 }
 
 const imageUrl = computed(() => imageMap[benefit.benefit] || cocktail)
-
-
 </script>
 
 <template>
-  <div class="card card-side bg-base-100 shadow-sm w-full max-w-xl max-h-70">
-    <figure class="aspect-square overflow-hidden relative w-[40%]">
+  <div class="w-full max-w-xl shadow-sm card md:card-side bg-base-100 md:max-h-70">
+    <figure class="aspect-square md:aspect-auto overflow-hidden relative w-full md:w-[40%] h-48 md:h-auto">
       <img
-        class="w-full h-full object-cover"
+        class="object-cover w-full h-full"
         :src="imageUrl"
         alt="imageUrl"
       />
-      <div class="absolute bottom-0 left-0 w-full h-10 bg-black/80 text-white text-center text-sm flex items-center justify-center">
+      <div class="absolute bottom-0 left-0 flex items-center justify-center w-full h-8 text-xs text-center text-white md:h-10 bg-black/80 md:text-sm">
         <p>開車不喝酒，喝酒不開車</p>
       </div>
     </figure>
-    <div class="pt-2 pl-4">
-      <h2 class="card-title text-[var(--color-primary-red)] py-2">{{ benefit.benefit }}</h2>
-      <p class="text-sm text-gray-700">票號：<span class="text-sm text-gray-500">{{ benefit.id }}</span></p>
-      <p class="text-sm">使用時間：<span class="text-sm py-2 font-bold text-[var(--color-primary-red)]">{{ dateRange }}</span></p>
+    
+    <div class="flex-1 p-4 md:pt-2 md:pl-4">
+      <h2 class="card-title text-[var(--color-primary-red)] py-2 text-lg md:text-xl">{{ benefit.benefit }}</h2>
+      
+      <div class="space-y-1 md:space-y-0">
+        <p class="text-sm text-gray-700">票號：<span class="text-sm text-gray-500">{{ benefit.id }}</span></p>
+        <p class="text-sm">使用時間：<span class="text-sm py-2 font-bold text-[var(--color-primary-red)]">{{ dateRange }}</span></p>
+      </div>
 
-      <p class="text-xs pt-2 text-gray-700">注意事項：</p>
-      <p class="text-xs text-gray-500">
-        限定五家酒吧使用<br />
-        照片僅供參考，以店家提供為主
-      </p>
-      <div class="flex">
+      <div class="mt-3 md:mt-2">
+        <p class="text-xs text-gray-700">注意事項：</p>
+        <p class="text-xs text-gray-500">
+          限定五家酒吧使用<br />
+          照片僅供參考，以店家提供為主
+        </p>
+      </div>
+      
+      <div class="flex flex-col gap-2 mt-4 md:flex-row md:gap-0 md:mt-2">
         <select
           v-model="selectBar"
           :disabled="isUsed || isExpired"
           class="select bg-white border-[2px] 
           border-[var(--color-primary-orange)] 
-          focus:outline-none mt-2"
+          focus:outline-none w-full md:w-auto md:mr-2"
         >
           <option disabled value="">選擇酒吧</option>
           <option 
@@ -111,12 +116,13 @@ const imageUrl = computed(() => imageMap[benefit.benefit] || cocktail)
             {{ bar.name }}
           </option>
         </select>
+        
         <button 
           @click="toggleModal"
           :disabled="isUsed || isExpired"
           type="button"
           class="btn text-white bg-[var(--color-primary-red)]
-          hover:bg-[var(--color-primary-orange)] mt-2">
+          hover:bg-[var(--color-primary-orange)] w-full md:w-auto">
           {{ 
             isUsed ? '已使用' :
             isExpired ? '已過期' :
@@ -124,12 +130,11 @@ const imageUrl = computed(() => imageMap[benefit.benefit] || cocktail)
           }}
         </button>
       </div>
-      
     </div>
   </div>
 
   <div v-if="showSelecBarModal" class="modal modal-open">
-    <div class="modal-box">
+    <div class="max-w-sm modal-box md:max-w-md">
       <h3 class="text-lg font-bold">提醒</h3>
       <p class="py-4">請先選擇酒吧</p>
       <div class="modal-action">
@@ -138,18 +143,18 @@ const imageUrl = computed(() => imageMap[benefit.benefit] || cocktail)
         </form>
       </div>
     </div>
-  </div >
+  </div>
 
   <div v-if="showBenefitModal" class="modal modal-open">
-    <div class="modal-box">
+    <div class="max-w-sm modal-box md:max-w-md">
       <h3 class="text-lg font-bold">使用優惠券</h3>
       <p class="py-4">您確定要使用優惠券嗎？</p>
       <div class="modal-action">
         <form method="dialog">
-          <button @click="closeCancelRedeemModal" type="button" class="btn mx-2">取消</button>
+          <button @click="closeCancelRedeemModal" type="button" class="mx-2 btn">取消</button>
           <button @click="handleConfirmRedeemModal" type="button" class="btn">確認</button>
         </form>
       </div>
     </div>
-  </div >
+  </div>
 </template>
