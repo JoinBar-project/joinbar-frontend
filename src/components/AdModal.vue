@@ -8,8 +8,8 @@ defineProps({
 </script>
 
 <template>
-  <div class="fixed inset-0 z-50 flex items-center justify-center backdrop-blur-sm bg-transparent ">
-    <div class="relative bg-white rounded-2xl overflow-hidden shadow-lg max-w-md w-full">
+  <div class="fixed inset-0 z-50 flex items-center justify-center backdrop-blur-sm bg-transparent">
+    <div class="relative bg-white rounded-2xl overflow-hidden shadow-lg w-full max-w-md mx-4 md:mx-auto">
       <button
         @click="$emit('close')"
         class="absolute top-3 right-4 bg-white text-black text-3xl font-bold w-8 h-8 rounded-full flex items-center justify-center transition duration-200"

@@ -10,7 +10,7 @@ onMounted(() => {
   showAd.value = true
 })
 
-const videoUrl = new URL('@/assets/homepage/JOINBAR-NOLOGO.mp4', import.meta.url).href
+const videoUrl = new URL('@/assets/homepage/BAR.mp4', import.meta.url).href
 
 const features = [
   {
