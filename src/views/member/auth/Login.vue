@@ -99,14 +99,15 @@
       <!-- 社群登入 -->
       <div class="flex flex-col sm:flex-row justify-center items-center mt-4 gap-3 sm:space-x-2">
         <button
-          class="btn bg-white text-black border-[#e5e5e5] border-2 flex items-center justify-center px-4 py-2 rounded-lg hover:scale-105 transition text-sm w-full sm:w-auto">
-          <img src="/google.svg" alt="Google logo" class="w-5 h-5 mr-2" />
-          Login with Google
+          @click="useTestAccount"
+          class="flex-1 btn bg-white text-black border-[#e5e5e5] border-2 flex items-center justify-center px-4 py-2 rounded-lg hover:scale-105 transition text-sm w-full sm:w-auto duration-300 shadow-none hover:shadow-none">
+          <img src="/testWine.png" alt="test logo" class="w-5 h-5 mr-2" />
+          Test Account
         </button>
 
         <button
           @click="handleLineLogin"
-          class="btn bg-[var(--color-line-green)] text-white border-[var(--color-line-green-dark)] border-2 flex items-center justify-center px-4 py-2 rounded-lg hover:scale-105 transition text-sm w-full sm:w-auto">
+          class="flex-1 btn bg-[var(--color-line-green)] text-white border-[var(--color-line-green-dark)] border-2 flex items-center justify-center px-4 py-2 rounded-lg hover:scale-105 transition text-sm w-full sm:w-auto shadow-none">
           <img src="/line.svg" alt="Line logo" class="w-5 h-5 mr-2" />
           <span v-if="authStore.isLineLoading">載入中...</span>
           <span v-else>Login with LINE</span>
@@ -122,13 +123,6 @@
           <span v-if="authStore.isEmailLoading">登入中...</span>
           <span v-else>登入</span>
         </button>
-      </div>
-
-      <!-- 測試帳號 -->
-      <div
-        class="text-center mt-2 text-sm text-[var(--color-primary-orange)] underline underline-offset-4 cursor-pointer hover:text-[var(--color-secondary-green)] transition"
-        @click="useTestAccount">
-        測試帳號登入
       </div>
 
       <!-- 註冊區 -->
