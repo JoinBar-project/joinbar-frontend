@@ -69,7 +69,11 @@
             class="filter-toggle-button mobile-control-button"
             @click="toggleFilterPanel"
           >
-            <i class="fas fa-filter"></i>
+            <img
+              src="/filter-toggle-button.svg"
+              alt="filter"
+              class="filter-svg-icon"
+            />
           </button>
         </div>
       </div>
@@ -82,7 +86,11 @@
         class="filter-toggle-button map-control-button"
         @click="toggleFilterPanel"
       >
-        <i class="fas fa-filter"></i>
+        <img
+          src="/filter-toggle-button.svg"
+          alt="filter"
+          class="filter-svg-icon"
+        />
       </button>
 
       <div class="search-panel-map">
@@ -1066,7 +1074,7 @@ onUnmounted(() => {
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
   max-height: 200px;
   overflow-y: auto;
-  z-index: 80; /* 降低 z-index，避免蓋住 Navbar */
+  z-index: 1000; /* 降低 z-index，避免蓋住 Navbar */
   margin: 0;
   padding: 0;
   list-style: none;
@@ -1343,19 +1351,21 @@ onUnmounted(() => {
 }
 
 .filter-toggle-button {
-  order: 1;
-  padding: 0;
-  background-color: transparent;
+  background: #f8f9fa;
+  border: none;
   box-shadow: none;
-  border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 40px;
-  height: 40px;
-  font-size: 18px;
-  color: #3a3435;
-  margin-right: -10px;
+  padding: 0;
+}
+.filter-toggle-button:hover {
+  background: #e9ecef;
+}
+.filter-svg-icon {
+  width: 16px;
+  height: 16px;
+  display: block;
 }
 
 .search-panel-map {
@@ -1576,5 +1586,10 @@ onUnmounted(() => {
     border-radius: 0 8px 8px 0;
     border-left: none;
   }
+}
+
+/* 會員選單 z-index 最高 */
+:global(.mobile-menu.open) {
+  z-index: 99999 !important;
 }
 </style>
