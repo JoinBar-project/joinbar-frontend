@@ -1,7 +1,7 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import AdModal from '@/components/AdModal.vue'
-import adImageFile from '@/assets/homepage/subscribe.jpg'
+import adImageFile from '@/assets/homepage/subscribe.png'
 
 const showAd = ref(false)
 const adImage = adImageFile
@@ -33,9 +33,9 @@ const features = [
     gridArea: "1 / 4 / 2 / 5"
   },
   {
-    title: "喜好推薦",
-    image: new URL('@/assets/homepage/like.gif', import.meta.url).href,
-    action: "goToFavorite",
+    title: "用戶評論",
+    image: new URL('@/assets/homepage/interaction.gif', import.meta.url).href,
+    path: "/comments",
     gridArea: "2 / 1 / 3 / 2"
   },
   {

@@ -9,7 +9,7 @@ defineProps({
 
 <template>
   <div class="fixed inset-0 z-50 flex items-center justify-center backdrop-blur-sm bg-transparent">
-    <div class="relative bg-white rounded-2xl overflow-hidden shadow-lg w-full max-w-md mx-4 md:mx-auto">
+    <div class="relative bg-transparent rounded-2xl overflow-hidden shadow-lg w-full max-w-md mx-4 md:mx-auto">
       <button
         @click="$emit('close')"
         class="absolute top-3 right-4 bg-white text-black text-3xl font-bold w-8 h-8 rounded-full flex items-center justify-center transition duration-200"
@@ -19,7 +19,13 @@ defineProps({
       >
         &times;
       </button>
-      <img :src="adImage" alt="廣告" class="w-full h-auto object-cover" />
+      <router-link to="/subscription">
+        <img
+          :src="adImage"
+          alt="廣告"
+          class="w-full h-auto object-cover rounded-2xl cursor-pointer"
+        />
+      </router-link>
     </div>
   </div>
 </template>
