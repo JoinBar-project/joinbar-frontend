@@ -5,6 +5,7 @@ import AlertModal from '@/components/AlertModal.vue';
 import { useAuthStore } from '@/stores/authStore';
 
 
+const authStore = useAuthStore();
 const emit = defineEmits(['update']);
 const props = defineProps({
   eventId: {

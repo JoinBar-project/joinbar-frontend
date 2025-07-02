@@ -1,6 +1,5 @@
 <script setup>
 import { ref, watch, onMounted, onUnmounted, nextTick } from 'vue';
-import axios from 'axios';
 import { useEventForm } from '@/composables/useEventForm';
 import { useEventStore } from '@/stores/event';
 import Hashtag from './Hashtag.vue';
@@ -14,8 +13,7 @@ const emit = defineEmits(['update', 'delete', 'cancel']);
 const props = defineProps({ eventId: String });
 
 const eventStore = useEventStore();
-
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:3000";
+const router = useRouter();
 
 const {
   eventName,
@@ -27,8 +25,6 @@ const {
   eventPeople,
   eventHashtags,
   eventImageUrl,
-  handleUpdate,
-  handleDelete,
   loadEvent,
   isAdmin,
 } = useEventForm(props.eventId);
@@ -154,44 +150,77 @@ watch([eventStartDate, eventEndDate], () => {
 async function onUpdate() {
   if (loading.value) return;
 
+  // 基本驗證
+  if (!eventName.value?.trim()) {
+    alert('請填寫活動名稱！');
+    return;
+  }
+  if (!barName.value?.trim()) {
+    alert('請填寫酒吧名稱！');
+    return;
+  }
+  if (!eventStartDate.value) {
+    alert('請選擇開始日期！');
+    return;
+  }
+  if (!eventEndDate.value) {
+    alert('請選擇結束日期！');
+    return;
+  }
+  if (!eventPeople.value) {
+    alert('請填寫參加人數！');
+    return;
+  }
+
   loading.value = true;
+
   try {
-    const token = localStorage.getItem('access_token');
-    if (!token) {
-      alert('登入已過期，請重新登入');
-      return;
+    const formData = new FormData();
+    
+    // 基本資料
+    formData.append('name', eventName.value.trim());
+    formData.append('barName', barName.value.trim());
+    formData.append('startAt', eventStartDate.value);
+    formData.append('endAt', eventEndDate.value);
+    formData.append('maxPeople', String(eventPeople.value));
+    
+    // 可選資料
+    if (eventLocation.value?.trim()) {
+      formData.append('location', eventLocation.value.trim());
     }
 
-    const formData = new FormData();
-    formData.append('name', eventName.value || '');
-    formData.append('barName', barName.value || '');
-    formData.append('location', eventLocation.value || '');
-    formData.append('startAt', eventStartDate.value || '');
-    formData.append('endAt', eventEndDate.value || '');
-    formData.append('price', eventPrice.value || '');
-    formData.append('maxPeople', eventPeople.value || '');
+    // 價格處理
+    if (isAdmin.value && eventPrice.value) {
+      formData.append('price', String(eventPrice.value));
+    }
 
+    // 圖片檔案
     if (imageFile.value) {
       formData.append('image', imageFile.value);
     }
 
-    if (Array.isArray(eventHashtags.value)) {
-      const tagIds = eventHashtags.value.map(tag => tag.id ?? tag);
-      formData.append('tags', JSON.stringify(tagIds));
+    // 標籤處理
+    if (Array.isArray(eventHashtags.value) && eventHashtags.value.length > 0) {
+      const tagIds = eventHashtags.value.map(tag => {
+        if (typeof tag === 'object' && tag.id) {
+          return Number(tag.id);
+        }
+        return Number(tag);
+      }).filter(id => !isNaN(id) && id > 0);
+      
+      if (tagIds.length > 0) {
+        formData.append('tags', JSON.stringify(tagIds));
+      }
     }
 
-    const res = await axios.put(`${API_BASE_URL}/api/event/update/${props.eventId}`, formData, {
-      headers: {
-        'Authorization': `Bearer ${token}`,
-      },
-      validateStatus: () => true,
-    });
+    // 使用 EventStore 的 updateEvent 方法
+    const result = await eventStore.updateEvent(props.eventId, formData);
 
-    if (res.status >= 200 && res.status < 300) {
+    if (result.success) {
       alert('活動更新成功！');
       emit('update');
     } else {
-      alert(`更新失敗：${res.data?.message || '後端回傳錯誤'}`);
+      alert(`更新失敗：${result.error}`);
     }
 
   } catch (error) {
@@ -202,21 +231,27 @@ async function onUpdate() {
   }
 }
 
-const router = useRouter();
-
 async function onDelete() {
   if (loading.value || !confirm('確定要刪除這個活動嗎？')) return;
 
   loading.value = true;
+  
   try {
-    await eventStore.deleteEvent(props.eventId);
-    router.push({
-      path: '/event',
-      state: { message: '活動已成功刪除！' }
-    });
+    const result = await eventStore.deleteEvent(props.eventId);
+    
+    if (result.success) {
+      alert('活動刪除成功！');
+      router.push({
+        path: '/event',
+        state: { message: '活動已成功刪除！' }
+      });
+    } else {
+      alert(`刪除失敗: ${result.error}`);
+    }
+    
   } catch (error) {
-    const errorMessage = eventStore.error || error?.message || '刪除失敗，請稍後再試';
-    alert(`刪除失敗: ${errorMessage}`);
+    console.error('[活動刪除失敗]', error);
+    alert('刪除操作發生錯誤，請稍後再試');
   } finally {
     loading.value = false;
   }
@@ -224,16 +259,27 @@ async function onDelete() {
 
 function handleImageSelect(event) {
   const file = event.target.files[0];
-  if (file && file.type.startsWith('image/') && file.size <= 5 * 1024 * 1024) {
-    imageFile.value = file;
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      imagePreview.value = e.target.result;
-    };
-    reader.readAsDataURL(file);
-  } else {
-    alert(file?.size > 1 * 1024 * 1024 ? '圖片檔案大小不能超過 1MB' : '請選擇圖片檔案');
+  console.log('選擇圖片:', file);
+  
+  if (!file) return;
+  
+  if (!file.type.startsWith('image/')) {
+    alert('請選擇圖片檔案');
+    return;
   }
+  
+  if (file.size > 5 * 1024 * 1024) {
+    alert('圖片檔案大小不能超過 5MB');
+    return;
+  }
+  
+  imageFile.value = file;
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    imagePreview.value = e.target.result;
+    console.log('圖片預覽已更新');
+  };
+  reader.readAsDataURL(file);
 }
 
 function triggerFileInput() {
@@ -278,26 +324,28 @@ onUnmounted(() => {
       <div class="form-layout">
         <div class="form-left">
           <div class="form-row">
-            <label for="event-name">活動名稱</label>
+            <label for="event-name">活動名稱*</label>
             <input
               type="text"
               id="event-name"
               v-model="eventName"
-              placeholder="請輸入活動名稱" />
+              placeholder="請輸入活動名稱"
+              required />
           </div>
           <div class="form-row">
-            <label for="bar-name">酒吧名稱</label>
+            <label for="bar-name">酒吧名稱*</label>
             <input
               type="text"
               id="bar-name"
               v-model="barName"
-              placeholder="請輸入酒吧名稱" />
+              placeholder="請輸入酒吧名稱"
+              required />
           </div>
           <div class="event-location">
             {{ eventLocation }}
           </div>
           <div class="form-row">
-            <label for="event-start-date">開始日期</label>
+            <label for="event-start-date">開始日期*</label>
             <input
               ref="startDateInput"
               type="text"
@@ -305,11 +353,12 @@ onUnmounted(() => {
               :value="eventStartDate"
               placeholder="請選擇開始日期時間"
               readonly
+              required
               class="cursor-pointer"
             />
           </div>
           <div class="form-row">
-            <label for="event-end-date">結束日期</label>
+            <label for="event-end-date">結束日期*</label>
             <input
               ref="endDateInput"
               type="text"
@@ -317,6 +366,7 @@ onUnmounted(() => {
               :value="eventEndDate"
               placeholder="請選擇結束日期時間"
               readonly
+              required
               class="cursor-pointer"
             />
           </div>
@@ -326,17 +376,19 @@ onUnmounted(() => {
               type="number"
               id="event-price"
               v-model="eventPrice"
-              placeholder="請輸入價格" />
+              placeholder="請輸入價格"
+              min="0" />
           </div>
           <div class="form-row">
-            <label for="event-people">參加人數</label>
+            <label for="event-people">參加人數*</label>
             <input
               type="number"
               id="event-people"
               v-model="eventPeople"
               min="1"
               step="1"
-              max="30" />
+              max="30"
+              required />
           </div>
           <Hashtag v-model="eventHashtags" />
         </div>
@@ -414,7 +466,7 @@ onUnmounted(() => {
 }
 
 .form-row label {
-  @apply text-base text-center;
+  @apply text-base text-center font-medium;
 }
 
 .form-row input {
@@ -424,17 +476,26 @@ onUnmounted(() => {
          placeholder:text-gray-400;
 }
 
+.form-row input:required {
+  @apply border-red-300;
+}
+
+.form-row input:required:valid {
+  @apply border-green-300;
+}
+
 .event-location {
-  @apply text-base ml-28;
+  @apply text-base ml-28 font-medium;
   color: var(--color-primary-red);
 }
 
 .form-bottom {
-  @apply px-12 grid grid-cols-3 pb-5;
+  @apply px-12 grid grid-cols-3 pb-5 gap-4;
 }
 
 .form-bottom button {
-  @apply block mx-auto w-44 py-1 text-lg rounded-xl cursor-pointer;
+  @apply block mx-auto w-44 py-2 text-lg rounded-xl cursor-pointer font-medium
+         transition-all duration-200 ease-in-out;
 }
 
 .form-bottom button:disabled {
@@ -443,27 +504,26 @@ onUnmounted(() => {
 
 .btn-delete {
   @apply border-2 border-gray-500 text-gray-700 
-         hover:bg-gray-600 hover:text-white hover:border-gray-600
-         transition-all duration-200 ease-in-out;
+         hover:bg-gray-600 hover:text-white hover:border-gray-600;
 }
 
 .btn-cancle {
-  @apply border-2 text-green-600
-         hover:text-white transition-all duration-200 ease-in-out;
+  @apply border-2 text-green-600;
   border-color: var(--color-secondary-green);
   color: var(--color-secondary-green);
 }
 
-.btn-cancle:hover {
+.btn-cancle:hover:not(:disabled) {
   background-color: var(--color-secondary-green);
+  color: white;
 }
 
 .btn-confirm {
-  @apply text-white transition-all duration-200 ease-in-out;
+  @apply text-white;
   background-color: var(--color-primary-orange);
 }
 
-.btn-confirm:hover {
+.btn-confirm:hover:not(:disabled) {
   background-color: var(--color-primary-red);
 }
 

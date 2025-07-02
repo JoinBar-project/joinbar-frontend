@@ -49,9 +49,13 @@ const isProcessing = ref(false);
 const hasParticipated = ref(false);
 
 const isInCart = computed(() => cart.isInCart(eventRef.value.id));
-const isOwner = computed(
-  () => authStore.currentUser?.id === eventRef.value.hostUser
-);
+
+const isOwner = computed(() => {
+  const currentUserId = authStore.currentUser?.id || authStore.user?.id;
+  const hostUserId = eventRef.value?.hostUser?.id || eventRef.value?.hostUser;
+  return currentUserId !== null && hostUserId !== null && Number(currentUserId) === Number(hostUserId);
+});
+
 const isAuthenticated = computed(() => {
   return (
     authStore.isAuthenticated ||
@@ -443,7 +447,7 @@ onMounted(async () => {
           </div>
           <div class="flex items-center py-[1px]">
             <i class="fa-solid fa-dollar-sign pr-[30px] text-[#860914] font-bold"></i>
-            <p class="text-[20px] leading-[2.5] m-0 text-[#860914] font-bold">費用：新台幣 <span>{{ eventRef.price }}</span> 元</p>v
+            <p class="text-[20px] leading-[2.5] m-0 text-[#860914] font-bold">費用：新台幣 <span>{{ eventRef.price }}</span> 元</p>
           </div>
 
           <div class="flex items-center py-[1px]">
@@ -460,14 +464,24 @@ onMounted(async () => {
           </div>
 
           <div class="flex">
-            <div v-if="hasParticipated" class="participation-status">
+            <!-- 主辦人：顯示編輯按鈕 -->
+            <ModalEdit
+              v-if="isOwner && eventRef.id"
+              :event-id="eventRef.id"
+              :event="eventRef"
+              @update="handleEventUpdate"
+            />
+
+            <!-- 非主辦人且已參與：顯示參與狀態 -->
+            <div v-else-if="!isOwner && hasParticipated"  class="participation-status">
               <div class="flex items-center gap-3 bg-white text-[#333] px-7 py-[10px] rounded-[20px] text-[24px] font-semibold shadow-md mt-[30px] mr-[30px] text-center cursor-default">
                 <i class="fa-solid fa-check-circle text-[20px] text-emerald-500"></i>
                 <span>已報名此活動</span>
               </div>
             </div>
 
-            <template v-else>
+            <!-- 非主辦人且未參與：顯示購買按鈕 -->
+            <template v-else-if="!isOwner && !hasParticipated && authStore?.isAuthenticated">
               <button
                 @click="addToCart"
                 type="button"
@@ -497,11 +511,12 @@ onMounted(async () => {
               </button>
             </template>
 
-            <ModalEdit
-              v-if="isOwner && eventRef.id"
-              :event-id="eventRef.id"
-              @update="handleEventUpdate"
-            />
+            <!-- 未登入用戶提示 -->
+            <div v-else-if="!authStore?.isAuthenticated" class="login-prompt">
+              <p style="padding: 20px; background: #f0f0f0; border-radius: 10px; text-align: center;">
+                請先登入以參加活動
+              </p>
+            </div>
           </div>
         </div>
       </div>
@@ -532,6 +547,10 @@ onMounted(async () => {
     opacity: 1;
     transform: translateY(0);
   }
+}
+
+.login-prompt {
+  margin-top: 30px;
 }
 
 .event-btn:disabled {

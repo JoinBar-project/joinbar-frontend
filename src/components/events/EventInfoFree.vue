@@ -8,6 +8,8 @@ import ModalEdit from '@/components/events/ModalEdit.vue';
 import BaseConfirmModal from '@/components/common/BaseConfirmModal.vue';
 import BaseAlertModal from '@/components/common/BaseAlertModal.vue';
 import { useGoogleMaps } from "@/composables/useGoogleMaps/userIndex.js";
+import { useAuthStore } from '@/stores/authStore'; 
+const authStore = useAuthStore(); 
 
 const emit = defineEmits(['update', 'close']);
 
@@ -40,15 +42,22 @@ const isUpdating = ref(false);
 
 const currentEvent = computed(() => localEvent.value || {});
 const currentTags = computed(() => localTags.value || []);
+
 const currentUserId = computed(() => {
-  const user = JSON.parse(localStorage.getItem("user"));
-  return user?.id ? Number(user.id) : null;
+  return authStore.user?.id || authStore.currentUser?.id || (() => {
+    try {
+      const user = JSON.parse(localStorage.getItem('user') || '{}');
+      return user?.id ? Number(user.id) : null;
+    } catch {
+      return null;
+    }
+  })();
 });
+
 const isHostUser = computed(() => {
-  return (
-    currentUserId.value !== null &&
-    Number(currentEvent.value.hostUser) === currentUserId.value
-  );
+  const userId = currentUserId.value;
+  const hostId = currentEvent.value?.hostUser?.id || currentEvent.value?.hostUser;
+  return userId !== null && hostId !== null && Number(userId) === Number(hostId);
 });
 
 const mapContainer = ref(null);
@@ -247,39 +256,42 @@ const handleCancelConfirm = async () => {
 
             <div class="flex">
 
-              <button
-                @click="handleJoinToggle"
-                :disabled="isJoin || isUpdating"
-                :class="{
-                  'opacity-50 cursor-not-allowed': isJoin || isUpdating,
-                }"
-                type="button"
-                class="event-btn event-btn-free"
-              >
-                {{ isUpdating ? "處理中..." : isJoin ? "已報名" : "參加活動" }}
-              </button>
-
-              <button
-                v-if="isJoin"
-                @click="openCancelModal()"
-                :disabled="!isOver24hr || isUpdating"
-                :class="[
-                  'event-btn-free',
-                  isOver24hr && !isUpdating
-                    ? 'cursor-pointer'
-                    : 'cursor-not-allowed opacity-50',
-                ]"
-                type="button"
-                class="event-btn-free"
-              >
-                {{ isUpdating ? "處理中..." : "取消報名" }}
-              </button>
-
+              <!-- 主辦人 -->
               <ModalEdit
-                v-if="currentEvent.id && isHostUser"
+                v-if="isHostUser && currentEvent.id"
                 :event-id="currentEvent.id"
+                :event="currentEvent"
                 @update="handleEventUpdate"
               />
+
+              <!-- 非主辦人 -->
+              <template v-else-if="!isHostUser && authStore?.isAuthenticated">
+                <button
+                  @click="handleJoinToggle"
+                  :disabled="isJoin || isUpdating"
+                  :class="{ 'opacity-50 cursor-not-allowed': isJoin || isUpdating }"
+                  type="button"
+                  class="event-btn event-btn-free">
+                  {{ isUpdating ? '處理中...' : (isJoin ? '已報名' : '參加活動') }}
+                </button>
+                
+                <button
+                  v-if="isJoin"
+                  @click="openCancelModal()"
+                  :disabled="!isOver24hr || isUpdating"
+                  :class="['event-btn-free', (isOver24hr && !isUpdating) ? 'cursor-pointer' : 'cursor-not-allowed opacity-50']"
+                  type="button"
+                  class="event-btn-free">
+                  {{ isUpdating ? '處理中...' : '取消報名' }}
+                </button>
+              </template>
+
+              <!-- 未登入用戶提示 -->
+              <div v-else-if="!authStore?.isAuthenticated" class="login-prompt">
+                <p style="padding: 20px; background: #f0f0f0; border-radius: 10px; text-align: center;">
+                  請先登入以參加活動
+                </p>
+              </div>
             </div>
           </div>
         </div>
@@ -335,5 +347,9 @@ const handleCancelConfirm = async () => {
 .event-btn-free:disabled {
   opacity: 0.6;
   cursor: not-allowed;
+}
+
+.login-prompt {
+  margin-top: 30px;
 }
 </style>
