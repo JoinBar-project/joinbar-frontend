@@ -149,14 +149,16 @@ const handleNavClick = (path) => {
       
       <!-- 用戶頭像和資訊區域 -->
       <div v-if="isAuthenticated" class="mobile-user-section">
-        <div class="mobile-user-avatar" @click="goToMember">
-          <UserAvatar 
-            :avatar-url="avatarUrl"
-            :display-name="user.username"
-            size="lg" />
+        <div class="mobile-user-avatar-container" @click="goToMember">
+          <div class="mobile-user-avatar">
+            <UserAvatar 
+              :avatar-url="avatarUrl"
+              :display-name="user.username"
+              size="md" />
+          </div>
+          <div class="hover-tooltip">會員中心</div>
         </div>
         <div class="mobile-username">{{ user.username }}</div>
-        <div class="mobile-user-subtitle" @click="goToMember">會員中心</div>
       </div>
 
       <!-- 登入提示區域（未登入時） -->
@@ -267,7 +269,8 @@ const handleNavClick = (path) => {
 
 /* 更新的手機版側邊欄樣式 */
 .mobile-menu {
-  @apply fixed top-0 right-0 w-64 h-full bg-white text-black transform translate-x-full transition-transform duration-300 ease-in-out;
+  @apply fixed top-0 right-0 h-full bg-white text-black transform translate-x-full transition-transform duration-300 ease-in-out;
+  width: 60vw;
   z-index: 1995;
   box-shadow: -2px 0 10px rgba(0, 0, 0, 0.1);
 }
@@ -283,25 +286,34 @@ const handleNavClick = (path) => {
 
 /* 用戶區域樣式 */
 .mobile-user-section {
-  @apply flex flex-col items-center pt-12 pb-4 px-6;
+  @apply flex flex-col items-center pt-8 pb-3 px-6;
   background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
 }
 
+.mobile-user-avatar-container {
+  @apply relative mb-2 cursor-pointer;
+}
+
 .mobile-user-avatar {
-  @apply mb-2 cursor-pointer;
+  @apply transition-transform duration-200 hover:scale-105;
+}
+
+.hover-tooltip {
+  @apply absolute -bottom-8 left-1/2 transform -translate-x-1/2 bg-gray-800 text-white text-xs px-2 py-1 rounded opacity-0 transition-opacity duration-200 whitespace-nowrap;
+  pointer-events: none;
+}
+
+.mobile-user-avatar-container:hover .hover-tooltip {
+  @apply opacity-100;
 }
 
 .mobile-username {
   @apply text-lg font-semibold text-gray-800 text-center;
 }
 
-.mobile-user-subtitle {
-  @apply text-sm text-blue-600 text-center cursor-pointer hover:text-blue-800 transition-colors duration-200 mt-1;
-}
-
 /* 登入區域樣式 */
 .mobile-login-section {
-  @apply flex flex-col items-center pt-12 pb-4 px-6;
+  @apply flex flex-col items-center pt-8 pb-3 px-6;
   background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
 }
 
@@ -310,7 +322,7 @@ const handleNavClick = (path) => {
 }
 
 .default-avatar {
-  @apply w-16 h-16 rounded-full bg-gray-300 flex items-center justify-center;
+  @apply w-12 h-12 rounded-full bg-gray-300 flex items-center justify-center;
   background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="%23999"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>');
   background-size: 60%;
   background-repeat: no-repeat;
@@ -332,6 +344,7 @@ const handleNavClick = (path) => {
 
 .mobile-nav-item {
   @apply w-full flex items-center gap-4 px-4 py-4 text-left hover:bg-gray-50 transition-colors duration-200 border-none bg-transparent cursor-pointer;
+  padding-right: 12px;
 }
 
 .mobile-nav-icon {
