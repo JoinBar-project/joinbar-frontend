@@ -6,14 +6,6 @@ import adImageFile from '@/assets/homepage/subscribe.jpg'
 const showAd = ref(false)
 const adImage = adImageFile
 
-// onMounted(() => {
-//   const hasSeenAd = localStorage.getItem('hasSeenAd')
-//   if (!hasSeenAd) {
-//     showAd.value = true
-//     localStorage.setItem('hasSeenAd', 'true')
-//   }
-// })
-
 onMounted(() => {
   showAd.value = true
 })
@@ -41,9 +33,9 @@ const features = [
     gridArea: "1 / 4 / 2 / 5"
   },
   {
-    title: "用戶評論",
-    image: new URL('@/assets/homepage/interaction.gif', import.meta.url).href,
-    path: "/comments",
+    title: "喜好推薦",
+    image: new URL('@/assets/homepage/like.gif', import.meta.url).href,
+    action: "goToFavorite",
     gridArea: "2 / 1 / 3 / 2"
   },
   {
@@ -76,7 +68,6 @@ const bars = [
     image: new URL('@/assets/homepage/bar-4.jpg', import.meta.url).href
   }
 ]
-
 </script>
 
 <template>
@@ -101,14 +92,21 @@ const bars = [
 
   <section id="features" class="features-section">
     <div class="section-number-bg num-1">1</div>
-    <h2>JoinBar 為你串連酒吧、活動與朋友</h2>
+    <h2 class="text-center text-2xl font-bold leading-snug sm:hidden">
+      JoinBar 為你串連<br />酒吧、活動與朋友
+    </h2>
+    <h2 class="text-center text-2xl font-bold leading-snug hidden sm:block">
+      JoinBar 為你串連酒吧、活動與朋友
+    </h2>
     <div class="features-grid">
       <router-link
         v-for="(feature, index) in features"
         :key="index"
         :to="feature.path"
         class="feature-card"
-        :style="{ gridArea: feature.gridArea }"
+        :class="[
+          index === 0 ? 'main-feature compact-card' : 'sub-feature',
+        ]"
       >
         <img :src="feature.image" :alt="feature.title" />
         <h3>{{ feature.title }}</h3>
@@ -119,7 +117,13 @@ const bars = [
 
   <section id="popular" class="popular-bars-section">
     <div class="section-number-bg num-2">2</div>
-    <h2>熱門酒吧推薦，不醉不歸排行榜</h2>
+
+    <h2 class="text-center text-2xl font-bold leading-snug sm:hidden">
+      熱門酒吧推薦，<br />不醉不歸排行榜
+    </h2>
+    <h2 class="text-center text-2xl font-bold leading-snug hidden sm:block">
+      熱門酒吧推薦，不醉不歸排行榜
+    </h2>
     <div class="bar-cards-container">
       <div class="bar-card" v-for="(bar, index) in bars" :key="index">
         <img :src="bar.image" :alt="bar.name" />
@@ -130,7 +134,6 @@ const bars = [
       </div>
     </div>
   </section>
-
 </template>
 
 <style scoped>
@@ -181,20 +184,96 @@ const bars = [
   @apply text-[#DAA258]/50;
 }
 
-
 .features-section {
   @apply bg-[rgba(175,177,140,0.5)];
 }
 
+/* 手機版佈局 */
 .features-grid {
-  @apply grid gap-[24px] max-w-[1200px] mx-auto relative z-[2];
-  grid-template-columns: repeat(4, 1fr);
-  grid-template-rows: repeat(2, 1fr);
-  aspect-ratio: 2.5 / 1;
+  @apply max-w-[1200px] mx-auto relative z-[2];
+}
+
+@media (max-width: 767px) {
+  .features-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    grid-template-rows: auto auto auto;
+    gap: 20px;
+    padding: 0 16px;
+    grid-template-areas: 
+      "main main"
+      "item2 item3"
+      "item4 item5";
+  }
+
+  .feature-card:nth-child(1) {
+    grid-area: main;
+    min-height: 160px; 
+  }
+
+  .feature-card:nth-child(2) {
+    grid-area: item2;
+  }
+
+  .feature-card:nth-child(3) {
+    grid-area: item3;
+  }
+
+  .feature-card:nth-child(4) {
+    grid-area: item4;
+  }
+
+  .feature-card:nth-child(5) {
+    grid-area: item5;
+  }
+}
+
+/* 桌面版 - Grid 佈局 */
+@media (min-width: 768px) {
+  .features-grid {
+    @apply grid gap-[24px];
+    grid-template-columns: repeat(4, 1fr);
+    grid-template-rows: repeat(2, 1fr);
+    aspect-ratio: 2.5 / 1;
+  }
+
+  .feature-card:nth-child(1) {
+    grid-area: 1 / 2 / 3 / 4;
+  }
+  .feature-card:nth-child(2) {
+    grid-area: 1 / 1 / 2 / 2; 
+  }
+  .feature-card:nth-child(3) {
+    grid-area: 1 / 4 / 2 / 5; 
+  }
+  .feature-card:nth-child(4) {
+    grid-area: 2 / 1 / 3 / 2; 
+  }
+  .feature-card:nth-child(5) {
+    grid-area: 2 / 4 / 3 / 5; 
+  }
 }
 
 .feature-card {
   @apply bg-white border border-[#e0e0e0] rounded-[12px] p-[16px] flex flex-col justify-end items-center text-center text-[17.6px] font-bold shadow-[0_4px_8px_rgba(0,0,0,0.05)] transition-transform duration-300 ease-in-out cursor-pointer;
+}
+
+/* 主要功能卡片縮小樣式 */
+.compact-card {
+  @apply py-[4px]; /* 進一步減少上下內距 */
+  min-height: 120px; /* 設定較小的最小高度 */
+}
+
+.compact-card img {
+  transform: scale(0.6); /* 圖片縮小到60% */
+  transform-origin: center;
+}
+
+/* 桌面版主要卡片稍微增加內距 */
+@media (min-width: 768px) {
+  .compact-card {
+    @apply py-[12px];
+  }
 }
 
 .feature-card:hover {
@@ -253,5 +332,4 @@ const bars = [
 .bar-card p {
   @apply m-0 text-[#666666] text-[14.4px];
 }
-
 </style>

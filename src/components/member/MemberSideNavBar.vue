@@ -14,17 +14,20 @@ const userId = computed(() => user.value?.id);
 const profileLink = computed(() => ({ name: 'MemberProfile', params: { id: userId.value } }));
 const barLink = computed(() => ({ name: 'BarFavorites', params: { id: userId.value } }));
 const memberCardLink = computed(() => ({ name: 'MemberCard', params: { id: userId.value } }));
-const ordersLink = computed(() => ({ name: 'OrderRecords', params: { id: userId.value } }));
+const ordersLink = computed(() => ({ name: 'MemberOrderRecords', params: { id: userId.value } }));
 
 const selectedItem = ref('profile');
 const expandedEventRecords = ref(null);
+
+const showMobileDropdown = ref(false);
+const showSideMenu = ref(false);
 
 const menuItems = [
   { name: 'profile', label: '會員資料', icon: 'fa-user', to: profileLink },
   {
     name: 'event-records',
     label: '揪團活動紀錄',
-    icon: 'fa-calendar',
+    icon: 'fa-briefcase',
     children: [
       { name: 'published', label: '我發布的活動', icon: 'fa-bullhorn', to: { name: 'PublishedEvents', params: { id: userId.value } } },
       { name: 'joined', label: '我參加的活動', icon: 'fa-calendar-check', to: { name: 'JoinedEvents', params: { id: userId.value } } }
@@ -44,6 +47,18 @@ const handleMainMenuClick = (item) => {
   }
 };
 
+const handleMobileMenuClick = (item) => {
+  selectedItem.value = item.name;
+  router.push(item.to.value);
+  closeAllMobileDropdowns();
+};
+
+const handleMobileChildMenuClick = (child) => {
+  selectedItem.value = child.name;
+  router.push(child.to);
+  closeAllMobileDropdowns();
+};
+
 const toggleEventRecords = (name) => {
   if (expandedEventRecords.value === name) {
     expandedEventRecords.value = null;
@@ -51,6 +66,12 @@ const toggleEventRecords = (name) => {
     expandedEventRecords.value = name;
   }
 };
+
+const closeAllMobileDropdowns = () => {
+  showMobileDropdown.value = false;
+  showSideMenu.value = false;
+};
+
 const handleLogout = async () => {
   if (authStore.loginMethod === 'line') {
     try {
@@ -101,6 +122,7 @@ const handleLogout = async () => {
       });
     }
   }
+  closeAllMobileDropdowns();
 };
 
 const handleAccountDeletion = async () => {
@@ -131,125 +153,151 @@ const handleAccountDeletion = async () => {
     console.log('帳戶載入成功:', warningInfo);
 
     const { value: formData } = await Swal.fire({
-      title: '<span style="color: #dc2626; font-weight: bold;">會員註銷確認</span>',
+      title: '<span style="color: #860914; font-weight: 600; font-size: 24px;">帳戶註銷確認</span>',
       html: `
-        <div style="text-align: left; max-height: 500px; overflow-y: auto;">
+        <div style="text-align: left; max-height: 600px; overflow-y: auto; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">
 
-          <!-- 重要警告 -->
-          <div style="background: #fef2f2; border: 2px solid #fecaca; border-radius: 8px; padding: 16px; margin-bottom: 20px;">
-            <h4 style="color: #dc2626; font-weight: bold; margin: 0 0 12px 0; font-size: 16px;">
-              <i class="fas fa-exclamation-triangle"></i> 重要警告
-            </h4>
-            <p style="margin: 0 0 12px 0; color: #7f1d1d;">此操作將：</p>
-            <ul style="margin: 0; padding-left: 20px; color: #7f1d1d;">
-              <li style="margin-bottom: 8px;"><strong>永久刪除</strong>您的所有個人資料</li>
-              <li style="margin-bottom: 8px;"><strong>無法恢復</strong>您的帳戶和資料</li>
-              <li style="margin-bottom: 8px;"><strong>立即生效</strong>且不可逆轉</li>
-              <li style="margin-bottom: 8px;"><strong>清除所有</strong>活動紀錄和收藏</li>
-            </ul>
+          <!-- 頂部說明 -->
+          <div style="background: linear-gradient(135deg,rgb(242, 242, 242) 0%,rgb(240, 240, 240) 100%); border-radius: 12px; padding: 16px; margin-bottom: 20px; text-align: center;">
+            <div style="width: 48px; height: 48px; background: var(--color-icon-secondary); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 12px;">
+              <i class="fas fa-user-minus" style="color:[var(--color-text-unselected)]; font-size: 20px;"></i>
+            </div>
+            <p style="margin: 0; color:rgb(67, 63, 59); font-size: 14px; line-height: 1.4;">
+              我們很遺憾看到您離開，在進行之前請確認以下資訊
+            </p>
           </div>
 
-          <!-- 帳戶資訊 -->
-          <div style="background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 8px; padding: 16px; margin-bottom: 20px;">
-            <h4 style="color: #374151; font-weight: bold; margin: 0 0 12px 0; font-size: 16px;">您的帳戶資訊</h4>
-            <div style="font-size: 14px;">
-              <div style="margin-bottom: 8px;">
-                <span style="font-weight: 500; color: #6b7280;">使用者名稱：</span>
-                <span style="margin-left: 8px; color: #111827;">${warningInfo.accountInfo.username}</span>
+          <!-- 帳戶資訊卡片 -->
+          <div style="background: white; border: 1px solid #e2e8f0; border-radius: 12px; padding: 20px; margin-bottom: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
+            <div style="display: flex; align-items: center; margin-bottom: 16px;">
+              <div style="width: 8px; height: 8px; background: #10b981; border-radius: 50%; margin-right: 12px;"></div>
+              <h4 style="color: #1f2937; font-weight: 600; margin: 0; font-size: 16px;">您的帳戶資訊</h4>
+            </div>
+            <div style="font-size: 14px; line-height: 1.6;">
+              <div style="margin-bottom: 10px; display: flex; justify-content: space-between;">
+                <span style="color: #64748b; font-weight: 500;">使用者名稱</span>
+                <span style="color: #1f2937; font-weight: 500;">${warningInfo.accountInfo.username}</span>
               </div>
               ${warningInfo.accountInfo.email ? `
-                <div style="margin-bottom: 8px;">
-                  <span style="font-weight: 500; color: #6b7280;">電子郵件：</span>
-                  <span style="margin-left: 8px; color: #111827;">${warningInfo.accountInfo.email}</span>
+                <div style="margin-bottom: 10px; display: flex; justify-content: space-between;">
+                  <span style="color: #64748b; font-weight: 500;">電子郵件</span>
+                  <span style="color: #1f2937; font-weight: 500;">${warningInfo.accountInfo.email}</span>
                 </div>
               ` : ''}
               ${warningInfo.accountInfo.lineUserId ? `
-                <div style="margin-bottom: 8px;">
-                  <span style="font-weight: 500; color: #6b7280;">LINE 帳號：</span>
-                  <span style="margin-left: 8px; color: #059669;">已連結</span>
+                <div style="margin-bottom: 10px; display: flex; justify-content: space-between;">
+                  <span style="color: #64748b; font-weight: 500;">LINE 帳號</span>
+                  <span style="color: #10b981; font-weight: 500;">已連結</span>
                 </div>
               ` : ''}
-              <div>
-                <span style="font-weight: 500; color: #6b7280;">登入方式：</span>
-                <span style="margin-left: 8px; color: #111827;">${warningInfo.accountInfo.providerType === 'email' ? '電子郵件' : 'LINE'}</span>
+              <div style="display: flex; justify-content: space-between;">
+                <span style="color: #64748b; font-weight: 500;">登入方式</span>
+                <span style="color: #1f2937; font-weight: 500;">${warningInfo.accountInfo.providerType === 'email' ? '電子郵件' : 'LINE'}</span>
               </div>
             </div>
           </div>
 
-          <!-- 註銷後果 -->
-          <div style="background: #fef2f2; border: 1px solid #fecaca; border-radius: 8px; padding: 16px; margin-bottom: 20px;">
-            <h4 style="color: #dc2626; font-weight: bold; margin: 0 0 12px 0; font-size: 16px;">註銷後果</h4>
-            <ul style="margin: 0; padding-left: 20px; font-size: 14px;">
-              ${warningInfo.consequences.map(consequence => `
-                <li style="margin-bottom: 6px; color: #7f1d1d;">
-                  <i class="fas fa-times-circle" style="color: #dc2626; margin-right: 6px;"></i>
-                  ${consequence}
-                </li>
-              `).join('')}
-            </ul>
+          <!-- 影響說明 -->
+          <div style="background-image: linear-gradient(to right, #ffecd2 0%, #fcb69f 100%); border: 2px solid #fcb69f; border-radius: 12px; padding: 20px; margin-bottom: 20px;">
+            <div style="display: flex; align-items: center; margin-bottom: 16px;">
+              <div style="width: 24px; height: 24px; background: #fda085; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin-right: 12px;">
+                <i class="fas fa-info" style="color: white; font-size: 12px;"></i>
+              </div>
+              <h4 style="color: #860914; font-weight: 600; margin: 0; font-size: 16px;">註銷後的影響</h4>
+            </div>
+            <div style="background: rgba(255,255,255,0.7); border-radius: 8px; padding: 16px;">
+              <ul style="margin: 0; padding-left: 20px; font-size: 14px; line-height: 1.6;">
+                ${warningInfo.consequences.map(consequence => `
+                  <li style="margin-bottom: 8px; color: #860914;">
+                    ${consequence}
+                  </li>
+                `).join('')}
+              </ul>
+            </div>
           </div>
 
-          <div style="border: 2px solid #dc2626; border-radius: 8px; padding: 16px; background: #fffbeb;">
-            <h4 style="color: #dc2626; font-weight: bold; margin: 0 0 16px 0; font-size: 16px;">
-              <i class="fas fa-shield-alt"></i> 安全驗證
-            </h4>
+          <!-- 安全驗證區域 -->
+          <div style="background: white; border: 2px solid #e2e8f0; border-radius: 12px; padding: 24px; margin-bottom: 20px;">
+            <div style="display: flex; align-items: center; margin-bottom: 20px;">
+              <div style="width: 32px; height: 32px; background: linear-gradient(135deg, #ffc3a0, #ffafbd); border-radius: 8px; display: flex; align-items: center; justify-content: center; margin-right: 12px;">
+                <i class="fas fa-shield-alt" style="color: white; font-size: 16px;"></i>
+              </div>
+              <h4 style="color: #1f2937; font-weight: 600; margin: 0; font-size: 18px;">安全驗證</h4>
+            </div>
+            
             ${warningInfo.accountInfo.providerType === 'email' ? `
-              <div style="margin-bottom: 16px;">
-                <label style="display: block; font-weight: 500; color: #374151; margin-bottom: 6px;">
-                  請輸入您的密碼以確認身份 <span style="color: #dc2626;">*</span>
+              <div style="margin-bottom: 20px;">
+                <label style="display: block; font-weight: 500; color: #374151; margin-bottom: 8px; font-size: 14px;">
+                  請輸入您的密碼以確認身份 <span style="color: #ef4444;">*</span>
                 </label>
                 <input
                   id="swal-password"
                   type="password"
-                  style="width: 100%; padding: 8px 12px; border: 2px solid #d1d5db; border-radius: 6px; font-size: 14px;"
+                  style="width: 100%; padding: 12px 16px; border: 2px solid #e2e8f0; border-radius: 8px; font-size: 14px; transition: border-color 0.2s; box-sizing: border-box;"
                   placeholder="請輸入密碼"
+                  onFocus="this.style.borderColor='#3b82f6'"
+                  onBlur="this.style.borderColor='#e2e8f0'"
                 />
               </div>
             ` : ''}
-            <div style="margin-bottom: 16px;">
-              <label style="display: block; font-weight: 500; color: #374151; margin-bottom: 6px;">
-                請輸入「<span style="color: #dc2626; font-weight: bold;">刪除我的帳戶</span>」以確認 <span style="color: #dc2626;">*</span>
+            
+            <div style="margin-bottom: 20px;">
+              <label style="display: block; font-weight: 500; color: #374151; margin-bottom: 8px; font-size: 14px;">
+                請輸入「<span style="color: #860914; font-weight: 600;">刪除我的帳戶</span>」以確認 <span style="color: #ef4444;">*</span>
               </label>
               <input
                 id="swal-confirm-text"
                 type="text"
-                style="width: 100%; padding: 8px 12px; border: 2px solid #d1d5db; border-radius: 6px; font-size: 14px;"
+                style="width: 100%; padding: 12px 16px; border: 2px solid #e2e8f0; border-radius: 8px; font-size: 14px; transition: border-color 0.2s; box-sizing: border-box;"
                 placeholder="刪除我的帳戶"
+                onFocus="this.style.borderColor='#3b82f6'"
+                onBlur="this.style.borderColor='#e2e8f0'"
               />
             </div>
-            <div style="display: flex; align-items: flex-start;">
+            
+            <div style="display: flex; align-items: flex-start; background: #f8fafc; padding: 16px; border-radius: 8px;">
               <input
                 id="swal-final-confirm"
                 type="checkbox"
-                style="margin-top: 4px; margin-right: 8px; width: 16px; height: 16px;"
+                style="margin-top: 2px; margin-right: 12px; width: 18px; height: 18px; accent-color: #3b82f6;"
               />
-              <label for="swal-final-confirm" style="font-size: 14px; color: #374151; line-height: 1.4;">
-                我了解此操作無法復原，並確認要永久刪除我的帳戶 <span style="color: #dc2626;">*</span>
+              <label for="swal-final-confirm" style="font-size: 14px; color: #374151; line-height: 1.5; cursor: pointer;">
+                我了解此操作無法復原，並確認要永久刪除我的帳戶 <span style="color: #ef4444;">*</span>
               </label>
             </div>
           </div>
 
-          <!-- 最終警告 -->
-          <div style="background: #7f1d1d; color: white; border-radius: 8px; padding: 12px; margin-top: 20px; text-align: center;">
-            <p style="margin: 0; font-weight: bold;">
-              <i class="fas fa-exclamation-triangle" style="margin-right: 6px;"></i>
+          <!-- 最終確認 -->
+          <div style="background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%); border: 1px solid #f87171; border-radius: 12px; padding: 20px; text-align: center;">
+            <div style="width: 48px; height: 48px; background: #ef4444; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 12px;">
+              <i class="fas fa-exclamation-triangle" style="color: white; font-size: 20px;"></i>
+            </div>
+            <p style="margin: 0; font-weight: 600; color: #991b1b; font-size: 16px;">
               確認後將立即且永久刪除您的帳戶
+            </p>
+            <p style="margin: 8px 0 0 0; font-size: 14px; color: #7f1d1d;">
+              此動作無法復原，請謹慎考慮
             </p>
           </div>
         </div>`,
+
       focusConfirm: false,
       showCancelButton: true,
       confirmButtonText: '<i class="fas fa-trash-alt"></i> 確認刪除帳戶',
       cancelButtonText: '<i class="fas fa-times"></i> 取消',
-      confirmButtonColor: '#dc2626',
-      cancelButtonColor: '#6b7280',
-      width: '650px',
+      confirmButtonColor: '#860914',
+      cancelButtonColor: '#cec5be',
+      width: '680px',
+      customClass: {
+        popup: 'modern-swal-popup',
+        confirmButton: 'modern-swal-confirm',
+        cancelButton: 'modern-swal-cancel'
+      },
       preConfirm: () => {
         const password = document.getElementById('swal-password')?.value || '';
         const confirmText = document.getElementById('swal-confirm-text').value;
         const finalConfirm = document.getElementById('swal-final-confirm').checked;
 
-        // 驗證表單
         const needsPassword = warningInfo.accountInfo.providerType === 'email';
         
         if (needsPassword && !password.trim()) {
@@ -279,7 +327,6 @@ const handleAccountDeletion = async () => {
       return;
     }
 
-    // 執行註銷
     Swal.fire({
       title: '處理中...',
       text: '正在註銷您的帳戶，請稍候',
@@ -304,30 +351,33 @@ const handleAccountDeletion = async () => {
       throw new Error(result.error || '註銷失敗');
     }
 
-    // 註銷成功
     await Swal.fire({
-      title: '帳戶註銷成功',
+      title: '<span style="color: #1f2937; font-weight: 600;">帳戶註銷成功</span>',
       html: `
-        <div style="text-align: center;">
-          <div style="margin-bottom: 20px;">
-            <i class="fas fa-check-circle" style="color: #059669; font-size: 48px;"></i>
+        <div style="text-align: center; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">
+          <div style="margin-bottom: 24px;">
+            <div style="width: 80px; height: 80px; background: linear-gradient(135deg, #10b981, #059669); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto; box-shadow: 0 4px 20px rgba(16, 185, 129, 0.3);">
+              <i class="fas fa-check" style="color: white; font-size: 32px;"></i>
+            </div>
           </div>
-          <p style="margin-bottom: 16px; font-size: 18px; font-weight: 500;">您的帳戶已成功註銷</p>
-          <div style="background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 8px; padding: 16px;">
-            <p style="margin: 0 0 8px 0; color: #166534; font-size: 14px;">感謝您曾經使用我們的服務</p>
-            <p style="margin: 0; color: #166534; font-size: 14px;">祝您一切順利！</p>
+          <p style="margin-bottom: 20px; font-size: 20px; font-weight: 600; color: #1f2937;">您的帳戶已成功註銷</p>
+          <div style="background: linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%); border: 1px solid #10b981; border-radius: 12px; padding: 20px;">
+            <p style="margin: 0 0 12px 0; color: #047857; font-size: 16px; font-weight: 500;">感謝您曾經使用我們的服務</p>
+            <p style="margin: 0; color: #047857; font-size: 14px;">祝您一切順利，期待未來再次相見！</p>
           </div>
         </div>
       `,
       icon: 'success',
       confirmButtonText: '確認',
-      confirmButtonColor: '#059669',
+      confirmButtonColor: '#10b981',
       allowOutsideClick: false,
       allowEscapeKey: false,
-      width: '400px'
+      width: '480px',
+      customClass: {
+        popup: 'success-swal-popup'
+      }
     });
 
-    // 清除登入狀態並導向首頁
     authStore.clearAuthState();
     router.push('/home');
   } catch(err) {
@@ -357,22 +407,33 @@ const handleAccountDeletion = async () => {
     } else if (err.message) {
       errorMessage = err.message;
     }
+    
     await Swal.fire({
-      title: errorTitle,
-      text: errorMessage,
-      icon: 'error',
-      confirmButtonText: '確認',
-      confirmButtonColor: '#dc2626'
+      title: `<span style="color: #1f2937; font-weight: 600;">${errorTitle}</span>`,
+      html: `
+        <div style="text-align: center; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">
+          <div style="width: 64px; height: 64px; background: linear-gradient(135deg, #fef2f2, #fee2e2); border: 2px solid #f87171; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 20px;">
+            <i class="fas fa-exclamation-triangle" style="color: #ef4444; font-size: 24px;"></i>
+          </div>
+          <p style="margin: 0; color: #374151; font-size: 16px; line-height: 1.5;">${errorMessage}</p>
+        </div>
+      `,
+      confirmButtonText: '我知道了',
+      confirmButtonColor: '#6b7280',
+      width: '420px',
+      customClass: {
+        popup: 'error-swal-popup'
+      }
     });
   }
+  closeAllMobileDropdowns();
 }
 </script>
 
 <template>
-  <nav class="flex justify-center w-56 min-h-screen p-6 bg-gray-100">
+  <nav class="hidden md:flex justify-center w-56 min-h-screen p-6 bg-gray-100">
     <ul class="w-full space-y-1">
       <li v-for="item in menuItems" :key="item.name">
-        <!-- 左側選單 -->
         <div
           @click="handleMainMenuClick(item)"
           :class="[
@@ -392,7 +453,6 @@ const handleAccountDeletion = async () => {
             : '']" />
         </div>
 
-        <!-- 揪團活動紀錄的子選單 -->
         <div v-if="item.children && expandedEventRecords === item.name" class="px-2 py-2 mt-1 bg-[#e1ac6747] rounded-lg shadow-inner">
           <ul class="space-y-1">
             <li v-for="child in item.children" :key="child.name">
@@ -417,11 +477,150 @@ const handleAccountDeletion = async () => {
         <button @click="handleAccountDeletion"  class="flex items-center w-full gap-2 p-2 text-black transition rounded cursor-pointer hover:bg-gray-200">
           <i class="w-4 fa-solid fa-user-slash" />會員註銷</button>
       </li>
-      <!-- 登出 -->
       <li>
         <button @click="handleLogout" class="flex items-center w-full gap-2 p-2 text-black transition rounded cursor-pointer hover:bg-gray-200">
           <i class="w-4 fa-solid fa-arrow-right-from-bracket" />登出</button>
       </li>
     </ul>
   </nav>
+
+  <nav class="md:hidden bg-white border-b border-gray-200 shadow-sm sticky top-0 z-20">
+    <div class="px-2 py-2">
+      <div class="flex items-center justify-center relative">
+        <div class="absolute left-0 top-0 bottom-0 w-4 bg-gradient-to-r from-white to-transparent z-10 pointer-events-none"></div>
+        
+        <div class="flex space-x-1 overflow-x-auto scrollbar-hide w-full px-2" style="scroll-behavior: smooth;">
+        
+        <div class="absolute right-0 top-0 bottom-0 w-4 bg-gradient-to-l from-white to-transparent z-10 pointer-events-none"></div>
+          <button
+            @click="handleMobileMenuClick(menuItems[0])"
+            :class="[
+              'flex flex-col items-center px-3 py-2 rounded-lg transition-all duration-200 flex-shrink-0 min-w-[60px]',
+              selectedItem === 'profile'
+                ? 'bg-blue-100 text-blue-700 shadow-sm transform scale-95'
+                : 'text-gray-600 hover:bg-gray-50 hover:text-gray-800'
+            ]">
+            <i class="fa-solid fa-user text-base mb-1" />
+            <span class="text-xs font-medium whitespace-nowrap">會員資料</span>
+          </button>
+
+          <button
+            @click="handleMobileChildMenuClick({ name: 'published', to: { name: 'PublishedEvents', params: { id: userId } } })"
+            :class="[
+              'flex flex-col items-center px-3 py-2 rounded-lg transition-all duration-200 flex-shrink-0 min-w-[60px]',
+              selectedItem === 'published'
+                ? 'bg-blue-100 text-blue-700 shadow-sm transform scale-95'
+                : 'text-gray-600 hover:bg-gray-50 hover:text-gray-800'
+            ]">
+            <i class="fa-solid fa-bullhorn text-base mb-1" />
+            <span class="text-xs font-medium whitespace-nowrap">發布紀錄</span>
+          </button>
+
+          <button
+            @click="handleMobileChildMenuClick({ name: 'joined', to: { name: 'JoinedEvents', params: { id: userId } } })"
+            :class="[
+              'flex flex-col items-center px-3 py-2 rounded-lg transition-all duration-200 flex-shrink-0 min-w-[60px]',
+              selectedItem === 'joined'
+                ? 'bg-blue-100 text-blue-700 shadow-sm transform scale-95'
+                : 'text-gray-600 hover:bg-gray-50 hover:text-gray-800'
+            ]">
+            <i class="fa-solid fa-calendar-check text-base mb-1" />
+            <span class="text-xs font-medium whitespace-nowrap">參加紀錄</span>
+          </button>
+
+          <button
+            @click="handleMobileMenuClick(menuItems[2])"
+            :class="[
+              'flex flex-col items-center px-3 py-2 rounded-lg transition-all duration-200 flex-shrink-0 min-w-[60px]',
+              selectedItem === 'bar'
+                ? 'bg-blue-100 text-blue-700 shadow-sm transform scale-95'
+                : 'text-gray-600 hover:bg-gray-50 hover:text-gray-800'
+            ]">
+            <i class="fa-solid fa-beer-mug-empty text-base mb-1" />
+            <span class="text-xs font-medium whitespace-nowrap">酒吧收藏</span>
+          </button>
+
+          <button
+            @click="handleMobileMenuClick(menuItems[3])"
+            :class="[
+              'flex flex-col items-center px-3 py-2 rounded-lg transition-all duration-200 flex-shrink-0 min-w-[60px]',
+              selectedItem === 'card'
+                ? 'bg-blue-100 text-blue-700 shadow-sm transform scale-95'
+                : 'text-gray-600 hover:bg-gray-50 hover:text-gray-800'
+            ]">
+            <i class="fa-solid fa-id-card text-base mb-1" />
+            <span class="text-xs font-medium whitespace-nowrap">酒友卡</span>
+          </button>
+
+          <button
+            @click="handleMobileMenuClick(menuItems[4])"
+            :class="[
+              'flex flex-col items-center px-3 py-2 rounded-lg transition-all duration-200 flex-shrink-0 min-w-[60px]',
+              selectedItem === 'orders'
+                ? 'bg-blue-100 text-blue-700 shadow-sm transform scale-95'
+                : 'text-gray-600 hover:bg-gray-50 hover:text-gray-800'
+            ]">
+            <i class="fa-solid fa-receipt text-base mb-1" />
+            <span class="text-xs font-medium whitespace-nowrap">訂單紀錄</span>
+          </button>
+
+          <button
+            @click="handleAccountDeletion"
+            class="flex flex-col items-center px-3 py-2 rounded-lg transition-all duration-200 flex-shrink-0 min-w-[60px] text-red-600 hover:bg-red-50 hover:text-red-700">
+            <i class="fa-solid fa-user-slash text-base mb-1" />
+            <span class="text-xs font-medium whitespace-nowrap">會員註銷</span>
+          </button>
+
+          <button
+            @click="handleLogout"
+            class="flex flex-col items-center px-3 py-2 rounded-lg transition-all duration-200 flex-shrink-0 min-w-[60px] text-gray-600 hover:bg-gray-50 hover:text-gray-800">
+            <i class="fa-solid fa-arrow-right-from-bracket text-base mb-1" />
+            <span class="text-xs font-medium whitespace-nowrap">登出</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </nav>
+
+  <div 
+    v-if="showMobileDropdown" 
+    @click="closeAllMobileDropdowns"
+    class="fixed inset-0 z-40 md:hidden">
+  </div>
 </template>
+
+<style scoped>
+@media (max-width: 767px) {
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+
+  .overflow-x-auto::-webkit-scrollbar {
+    height: 4px;
+  }
+
+  .overflow-x-auto::-webkit-scrollbar-track {
+    background: rgba(0, 0, 0, 0.05);
+    border-radius: 2px;
+  }
+
+  .overflow-x-auto::-webkit-scrollbar-thumb {
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: 2px;
+  }
+
+  .overflow-x-auto::-webkit-scrollbar-thumb:hover {
+    background: rgba(0, 0, 0, 0.3);
+  }
+
+  .overflow-x-auto {
+    -webkit-overflow-scrolling: touch;
+    scroll-snap-type: x proximity;
+  }
+}
+</style>

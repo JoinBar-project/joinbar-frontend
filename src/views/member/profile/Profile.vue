@@ -143,7 +143,7 @@ const goToPreferencesEdit = () => {
           <div class="flex justify-center w-full mt-4">
             <button 
               type="button" 
-              class="px-4 py-2 text-white transition-all duration-150 bg-blue-500 rounded cursor-pointer active:scale-98 hover:bg-blue-600"
+              class="px-4 py-2 text-white transition-all duration-150 bg-[var(--color-primary-orange)] rounded cursor-pointer active:scale-98 hover:brightness-110"
               @click="goToProfileEdit">
               <i class="mr-2 fa-solid fa-user"></i>
               修改個人資料
@@ -160,7 +160,7 @@ const goToPreferencesEdit = () => {
           />
           
           <!-- 偏好設定編輯按鈕 -->
-          <div class="flex justify-center w-full mt-4">
+          <div class="flex justify-center w-full mt-8">
             <button 
               type="button" 
               class="px-4 py-2 bg-[var(--color-primary-orange)] text-white rounded cursor-pointer active:scale-98 transition-all duration-150 hover:brightness-110"
