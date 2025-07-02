@@ -1,9 +1,9 @@
 <script setup>
-import { computed } from 'vue';
 import { useEventForm } from '@/composables/useEventForm';
 import FormUpdate from './FormUpdate.vue';
 import AlertModal from '@/components/AlertModal.vue';
 import { useAuthStore } from '@/stores/authStore';
+
 
 const emit = defineEmits(['update']);
 const props = defineProps({
@@ -11,33 +11,15 @@ const props = defineProps({
     type: [String, Number],
     required: true,
   },
-  // 接收活動資料以檢查權限
-  event: {
-    type: Object,
-    default: () => ({})
-  }
 });
 
-const authStore = useAuthStore();
 const { showForm, showAlert, handleAlertAccept, handleAlertDeny, overlayClick } = useEventForm();
-
-// 檢查用戶是否為活動主辦人
-const isEventOwner = computed(() => {
-  const currentUserId = authStore.user?.id || authStore.currentUser?.id;
-  const eventHostId = props.event?.hostUser?.id || props.event?.hostUser;
-  return currentUserId && eventHostId && Number(currentUserId) === Number(eventHostId);
-});
-
-// 檢查是否可以顯示編輯按鈕
-const canEdit = computed(() => {
-  const result = authStore.isAuthenticated && isEventOwner.value && props.eventId;
-  return result;
-});
 
 function handleUpdate() {
   showForm.value = false;
   emit('update');
 }
+
 </script>
 
 <template>
@@ -47,14 +29,13 @@ function handleUpdate() {
       @accept="handleAlertAccept"
       @deny="handleAlertDeny" 
     />
-    
     <button
-      v-if="canEdit"
+      v-if="useAuthStore().isAuthenticated"
       class="btn-open-form btn-edit"
-      @click="showForm = true">
+      @click="showForm = true"
+      :disabled="!props.eventId">
       編輯活動
     </button>
-    
     <transition name="popup">
       <div
         v-if="showForm"
