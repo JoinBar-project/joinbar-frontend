@@ -286,7 +286,7 @@ const handleNavClick = (path) => {
 
 .mobile-menu {
   @apply fixed top-0 right-0 h-full bg-white text-black transform translate-x-full transition-transform duration-300 ease-in-out;
-  width: 60vw;
+  width: 50vw;
   z-index: 1995;
   box-shadow: -2px 0 10px rgba(0, 0, 0, 0.1);
 }
