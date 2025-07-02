@@ -1,6 +1,6 @@
 <template>
-  <div class="min-h-screen bg-gradient-to-br from-[#2a2426] via-[#1f1b1c] to-[#2a2426] relative overflow-hidden py-8">
-    <!-- 簡潔背景裝飾 -->
+  <div class="min-h-screen bg-gradient-to-br from-[#2a2426] via-[#1f1b1c] to-[#2a2426] relative overflow-hidden py-4">
+
     <div class="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-[#3A3435]/30 via-transparent to-transparent"></div>
     
     <div class="text-center mb-12 py-12 px-4 relative z-10">
@@ -38,7 +38,8 @@
               酒吧標籤後端 API 設計及 CRUD <br>
               導入 Gemini AI 實現智慧酒吧 推薦系統 <br>
               登入、註冊、酒吧收藏、關於我們頁面設計 <br>
-              首頁、登入、註冊、AI 聊天機器人 RWD
+              首頁、登入、註冊、AI 聊天機器人 RWD <br>
+              利用 Netify 實作前端部署
             </p>
             <div class="flex justify-center gap-4">
               <a href="https://github.com/2xin15" target="_blank" class="inline-flex items-center gap-2 px-8 py-2 text-sm font-medium rounded-full transition-all duration-300 bg-[#24292e] text-white hover:bg-[#1a1e22] hover:-translate-y-0.5">
@@ -53,37 +54,11 @@
           </div>
         </div>
 
+
         <!-- 成員2 -->
         <div class="member-card group relative overflow-hidden bg-white/90 backdrop-blur-sm rounded-[20px] p-8 text-center shadow-[0_25px_60px_rgba(0,0,0,0.25)] transition-all duration-500 hover:-translate-y-4 border">
           <div class="mb-6">
-            <img src="/ting.png" alt="成員2" class="w-[120px] h-[120px] rounded-full object-cover border-[4px] shadow-[0_5px_15px_rgba(0,0,0,0.1)] transition-transform duration-500 group-hover:scale-110 mx-auto ring-4" />
-          </div>
-          <div class="text-center">
-            <h3 class="text-[1.5rem] font-semibold text-[#2c3e50] mb-2">陳紫婷</h3>
-            <p class="text-base text-[#7f8c8d] font-medium mb-4">負責內容</p>
-            <p class="text-sm text-[#5a6c7d] leading-relaxed mb-6">
-              會員資料表建置 <br>
-              註冊登入及會員資料後端 API<br>
-              會員個人資料及頭像串接<br>
-              活動紀錄頁面設計
-            </p>
-            <div class="flex justify-center gap-4">
-              <a href="https://github.com/jasminecchen" target="_blank" class="inline-flex items-center gap-2 px-8 py-2 text-sm font-medium rounded-full transition-all duration-300 bg-[#24292e] text-white hover:bg-[#1a1e22] hover:-translate-y-0.5">
-                <i class="fab fa-github"></i>
-                GitHub
-              </a>
-              <a href="mailto:tingone59@gmail.com" class="inline-flex items-center gap-2 px-8 py-2 text-sm font-medium rounded-full transition-all duration-300 bg-[var(--color-primary-orange)] text-white hover:bg-[var(--color-secondary-green)] hover:-translate-y-0.5">
-                <i class="fas fa-envelope"></i>
-                Email
-              </a>
-            </div>
-          </div>
-        </div>
-
-        <!-- 成員3 -->
-        <div class="member-card group relative overflow-hidden bg-white/90 backdrop-blur-sm rounded-[20px] p-8 text-center shadow-[0_25px_60px_rgba(0,0,0,0.25)] transition-all duration-500 hover:-translate-y-4 border">
-          <div class="mb-6">
-            <img src="/bella.jpg" alt="成員3" class="w-[120px] h-[120px] rounded-full object-cover border-[4px] shadow-[0_5px_15px_rgba(0,0,0,0.1)] transition-transform duration-500 group-hover:scale-110 mx-auto ring-4" />
+            <img src="/bella.jpg" alt="成員2" class="w-[120px] h-[120px] rounded-full object-cover border-[4px] shadow-[0_5px_15px_rgba(0,0,0,0.1)] transition-transform duration-500 group-hover:scale-110 mx-auto ring-4" />
           </div>
           <div class="text-center">
             <h3 class="text-[1.5rem] font-semibold text-[#2c3e50] mb-2">鄭婉君</h3>
@@ -94,7 +69,8 @@
               活動後端 API 設計及 CRUD<br>
               活動前端切版畫面<br>
               訂閱頁面設計 及 串接金流<br>
-              訂閱後端 API 設計及 CRUD
+              訂閱後端 API 設計及 CRUD <br>
+              Zeabur 實現後端及資料庫部署
             </p>
             <div class="flex justify-center gap-4">
               <a href="https://github.com/Bella-Cheng" target="_blank" class="inline-flex items-center gap-2 px-8 py-2 text-sm font-medium rounded-full transition-all duration-300 bg-[#24292e] text-white hover:bg-[#1a1e22] hover:-translate-y-0.5">
@@ -109,10 +85,69 @@
           </div>
         </div>
 
+
+        <!-- 成員3 -->
+        <div class="member-card group relative overflow-hidden bg-white/90 backdrop-blur-sm rounded-[20px] p-8 text-center shadow-[0_25px_60px_rgba(0,0,0,0.25)] transition-all duration-500 hover:-translate-y-4 border">
+          <div class="mb-6">
+            <img src="/yaxin.png" alt="成員3" class="w-[120px] h-[120px] rounded-full object-cover border-[4px] shadow-[0_5px_15px_rgba(0,0,0,0.1)] transition-transform duration-500 group-hover:scale-110 mx-auto ring-4" />
+          </div>
+          <div class="text-center">
+            <h3 class="text-[1.5rem] font-semibold text-[#2c3e50] mb-2">紀雅馨</h3>
+            <p class="text-base text-[#7f8c8d] font-medium mb-4">負責內容</p>
+            <p class="text-sm text-[#5a6c7d] leading-relaxed mb-6">
+              前端基礎建構 <br>
+              活動功能模組化設計<br>
+              建立活動首頁資料取得 API<br>
+              活動留言板 API <br>
+              活動建立與編輯頁面設計 <br>
+              利用 Firebase 實現新增或更換活動照片功能
+            </p>
+            <div class="flex justify-center gap-4">
+              <a href="https://github.com/rakku2code" target="_blank" class="inline-flex items-center gap-2 px-8 py-2 text-sm font-medium rounded-full transition-all duration-300 bg-[#24292e] text-white hover:bg-[#1a1e22] hover:-translate-y-0.5">
+                <i class="fab fa-github"></i>
+                GitHub
+              </a>
+              <a href="mailto:rakku2code@gmail.com" class="inline-flex items-center gap-2 px-8 py-2 text-sm font-medium rounded-full transition-all duration-300 bg-[var(--color-primary-orange)] text-white hover:bg-[var(--color-secondary-green)] hover:-translate-y-0.5">
+                <i class="fas fa-envelope"></i>
+                Email
+              </a>
+            </div>
+          </div>
+        </div>
+
         <!-- 成員4 -->
         <div class="member-card group relative overflow-hidden bg-white/90 backdrop-blur-sm rounded-[20px] p-8 text-center shadow-[0_25px_60px_rgba(0,0,0,0.25)] transition-all duration-500 hover:-translate-y-4 border">
           <div class="mb-6">
-            <img src="/tsai.jpg" alt="成員4" class="w-[120px] h-[120px] rounded-full object-cover border-[4px] shadow-[0_5px_15px_rgba(0,0,0,0.1)] transition-transform duration-500 group-hover:scale-110 mx-auto ring-4" />
+            <img src="/ting.png" alt="成員4" class="w-[120px] h-[120px] rounded-full object-cover border-[4px] shadow-[0_5px_15px_rgba(0,0,0,0.1)] transition-transform duration-500 group-hover:scale-110 mx-auto ring-4" />
+          </div>
+          <div class="text-center">
+            <h3 class="text-[1.5rem] font-semibold text-[#2c3e50] mb-2">陳紫婷</h3>
+            <p class="text-base text-[#7f8c8d] font-medium mb-4">負責內容</p>
+            <p class="text-sm text-[#5a6c7d] leading-relaxed mb-6">
+              會員資料表建置 <br>
+              註冊登入及會員資料後端 API<br>
+              會員個人資料及頭像串接<br>
+              會員發布活動紀錄頁面設計及串接
+            </p>
+            <div class="flex justify-center gap-4">
+              <a href="https://github.com/jasminecchen" target="_blank" class="inline-flex items-center gap-2 px-8 py-2 text-sm font-medium rounded-full transition-all duration-300 bg-[#24292e] text-white hover:bg-[#1a1e22] hover:-translate-y-0.5">
+                <i class="fab fa-github"></i>
+                GitHub
+              </a>
+              <a href="mailto:tingone59@gmail.com" class="inline-flex items-center gap-2 px-8 py-2 text-sm font-medium rounded-full transition-all duration-300 bg-[var(--color-primary-orange)] text-white hover:bg-[var(--color-secondary-green)] hover:-translate-y-0.5">
+                <i class="fas fa-envelope"></i>
+                Email
+              </a>
+            </div>
+          </div>
+        </div>
+
+        
+
+        <!-- 成員5 -->
+        <div class="member-card group relative overflow-hidden bg-white/90 backdrop-blur-sm rounded-[20px] p-8 text-center shadow-[0_25px_60px_rgba(0,0,0,0.25)] transition-all duration-500 hover:-translate-y-4 border">
+          <div class="mb-6">
+            <img src="/tsai.jpg" alt="成員5" class="w-[120px] h-[120px] rounded-full object-cover border-[4px] shadow-[0_5px_15px_rgba(0,0,0,0.1)] transition-transform duration-500 group-hover:scale-110 mx-auto ring-4" />
           </div>
           <div class="text-center">
             <h3 class="text-[1.5rem] font-semibold text-[#2c3e50] mb-2">蔡昌成</h3>
@@ -122,7 +157,8 @@
               第三方登入後端api設計<br>
               驗證信功能實作與重發冷卻機制<br>
               軟刪除機制<br>
-              API 整合 - Axios 攔截器、錯誤處理、認證機制
+              API 整合 - Axios 攔截器、錯誤處理、認證機制 <br>
+              活動留言版後端api設計
             </p>
             <div class="flex justify-center gap-4">
               <a href="https://github.com/kirito489" target="_blank" class="inline-flex items-center gap-2 px-8 py-2 text-sm font-medium rounded-full transition-all duration-300 bg-[#24292e] text-white hover:bg-[#1a1e22] hover:-translate-y-0.5">
@@ -137,10 +173,10 @@
           </div>
         </div>
 
-        <!-- 成員5 -->
+        <!-- 成員6 -->
         <div class="member-card group relative overflow-hidden bg-white/90 backdrop-blur-sm rounded-[20px] p-8 text-center shadow-[0_25px_60px_rgba(0,0,0,0.25)] transition-all duration-500 hover:-translate-y-4 border">
           <div class="mb-6">
-            <img src="/bing.jpg" alt="成員5" class="w-[120px] h-[120px] rounded-full object-cover border-[4px] shadow-[0_5px_15px_rgba(0,0,0,0.1)] transition-transform duration-500 group-hover:scale-110 mx-auto ring-4" />
+            <img src="/bing.jpg" alt="成員6" class="w-[120px] h-[120px] rounded-full object-cover border-[4px] shadow-[0_5px_15px_rgba(0,0,0,0.1)] transition-transform duration-500 group-hover:scale-110 mx-auto ring-4" />
           </div>
           <div class="text-center">
             <h3 class="text-[1.5rem] font-semibold text-[#2c3e50] mb-2">戎彬</h3>
@@ -165,10 +201,10 @@
           </div>
         </div>
 
-        <!-- 成員6 -->
+        <!-- 成員7 -->
         <div class="member-card group relative overflow-hidden bg-white/95 backdrop-blur-sm rounded-[20px] p-8 text-center shadow-[0_20px_60px_rgba(0,0,0,0.15)] transition-all duration-500 hover:-translate-y-3 hover:shadow-[0_30px_80px_rgba(139,69,19,0.25)] border border-white/20">
           <div class="mb-6">
-            <img src="/wuu.png" alt="成員6" class="w-[120px] h-[120px] rounded-full object-cover border-[4px] border-[#f8f9fa] shadow-[0_5px_15px_rgba(0,0,0,0.1)] transition-transform duration-300 hover:scale-105 hover:shadow-[0_8px_25px_rgba(0,0,0,0.15)] mx-auto" />
+            <img src="/wuu.png" alt="成員7" class="w-[120px] h-[120px] rounded-full object-cover border-[4px] border-[#f8f9fa] shadow-[0_5px_15px_rgba(0,0,0,0.1)] transition-transform duration-300 hover:scale-105 hover:shadow-[0_8px_25px_rgba(0,0,0,0.15)] mx-auto" />
           </div>
           <div class="text-center">
             <h3 class="text-[1.5rem] font-semibold text-[#2c3e50] mb-2">竇孝武</h3>
@@ -176,7 +212,7 @@
             <p class="text-sm text-[#5a6c7d] leading-relaxed mb-6">
               地圖關鍵字搜尋、即時地點建議 <br>
               即時篩選更新、多重篩選設定<br>
-              動態酒吧資訊、酒吧詳情頁面<br>
+              動態酒吧資訊、酒吧詳情頁面設計<br>
               串接酒吧資料庫與收藏頁面 API
             </p>
             <div class="flex justify-center gap-4">

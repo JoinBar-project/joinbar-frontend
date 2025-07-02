@@ -33,9 +33,9 @@ const features = [
     gridArea: "1 / 4 / 2 / 5"
   },
   {
-    title: "用戶評論",
-    image: new URL('@/assets/homepage/interaction.gif', import.meta.url).href,
-    path: "/comments",
+    title: "喜好推薦",
+    image: new URL('@/assets/homepage/like.gif', import.meta.url).href,
+    action: "goToFavorite",
     gridArea: "2 / 1 / 3 / 2"
   },
   {
