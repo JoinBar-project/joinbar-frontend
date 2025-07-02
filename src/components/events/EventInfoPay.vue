@@ -3,23 +3,16 @@ import { useEvent } from '@/composables/useEvent.js';
 import { useCartStore } from '@/stores/cartStore';
 import { useRouter } from 'vue-router';
 import { useAuthStore } from '@/stores/authStore';
-import { ref, computed, onMounted, watch } from 'vue';
 import { useOrder } from '@/composables/useOrder';
 import { useLinePay } from '@/composables/useLinePay';
+import { ref, computed, onMounted, watch } from 'vue';
 import EventHoster from './EventHoster.vue';
 import MessageBoard from './MessageBoard.vue';
 import ModalEdit from '@/components/events/ModalEdit.vue';
-import BaseAlertModal from '@/components/common/BaseAlertModal.vue';
-import BaseConfirmModal from '@/components/common/BaseConfirmModal.vue';
 
 const props = defineProps({
   event: Object,
   tags: Array,
-  eventId: String,
-  user: {
-    type: Object,
-    required: true,
-  }
 });
 
 const emit = defineEmits(['update']);
@@ -35,68 +28,8 @@ const tagList = ref([...props.tags]);
 const isProcessing = ref(false);
 const hasParticipated = ref(false); 
 
-const alertModal = ref({
-  visible: false,
-  title: '',
-  message: '',
-  type: 'default'
-});
-
-const confirmModal = ref({
-  visible: false,
-  title: '',
-  message: '',
-  type: null,
-  confirmAction: null
-});
-
-const showAlert = (title, message, type = 'default') => {
-  alertModal.value = {
-    visible: true,
-    title,
-    message,
-    type
-  };
-};
-
-const showConfirm = (title, message, type = null) => {
-  return new Promise((resolve) => {
-    confirmModal.value = {
-      visible: true,
-      title,
-      message,
-      type,
-      confirmAction: resolve
-    };
-  });
-};
-
-const closeAlert = () => {
-  alertModal.value.visible = false;
-};
-
-const closeConfirm = () => {
-  confirmModal.value.visible = false;
-  if (confirmModal.value.confirmAction) {
-    confirmModal.value.confirmAction(false);
-  }
-};
-
-const handleConfirm = () => {
-  confirmModal.value.visible = false;
-  if (confirmModal.value.confirmAction) {
-    confirmModal.value.confirmAction(true);
-  }
-};
-
-const isOwner = computed(() => {
-  const currentUserId = authStore.currentUser?.id || authStore.user?.id;
-  const hostUserId = eventRef.value?.hostUser?.id || eventRef.value?.hostUser;
-  return currentUserId !== null && hostUserId !== null && Number(currentUserId) === Number(hostUserId);
-});
-
 const isInCart = computed(() => cart.isInCart(eventRef.value.id));
-
+const isOwner = computed(() => authStore.currentUser?.id === eventRef.value.hostUser);
 const isAuthenticated = computed(() => {
   return authStore.isAuthenticated || 
          !!authStore.user || 
@@ -107,7 +40,6 @@ const isAuthenticated = computed(() => {
 const {
   isJoin,
   joinedNum,
-  isOver24hr,
   showModal,
   formattedEventTime,
   closeModal,
@@ -189,7 +121,7 @@ const reloadEventData = async () => {
 
 const addToCart = async () => {
   if (hasParticipated.value) {
-    showAlert('提醒', '您已經報名過此活動了！', 'warning');
+    alert('您已經報名過此活動了！');
     return;
   }
 
@@ -202,14 +134,14 @@ const addToCart = async () => {
       imageUrl: e.imageUrl,
       barName: e.barName,
       location: e.location,
-      starAt: e.startAt,
-      endAt: e.endAt,
+      startDate: e.startDate,
+      endDate: e.endDate,
       maxPeople: e.maxPeople,
       hostUser: e.hostUser,
     });
-    showAlert('成功', result.message || '已加入購物車！', 'success');
+    alert(result.message || '已加入購物車！');
   } catch (error) {
-    showAlert('錯誤', error.message, 'error');
+    alert(error.message);
   }
 };
 
@@ -224,17 +156,13 @@ const buyNow = async () => {
   });
 
   if (hasParticipated.value) {
-    showAlert('提醒', '您已經報名過此活動了！', 'warning');
+    alert('您已經報名過此活動了！');
     return;
   }
 
   if (!isAuthenticated.value) {
     console.warn('❌ 認證檢查失敗，用戶未登入');
-    const shouldLogin = await showConfirm(
-      '需要登入',
-      '請先登入後再進行購買\n\n點擊「確定」前往登入頁面',
-      'question'
-    );
+    const shouldLogin = confirm('請先登入後再進行購買\n\n點擊「確定」前往登入頁面');
     if (shouldLogin) router.push('/login');
     return;
   }
@@ -304,23 +232,17 @@ const buyNow = async () => {
     }
     
     let errorMessage = '購買失敗，請重試';
-    let alertType = 'error';
-    
     if (error.message.includes('登入已過期') || error.response?.status === 401) {
       errorMessage = '登入已過期，請重新登入';
-      alertType = 'warning';
       localStorage.removeItem('access_token');
       localStorage.removeItem('user');
       setTimeout(() => router.push('/login'), 2000);
     } else if (error.message.includes('已滿員')) {
       errorMessage = '很抱歉，活動名額已滿！';
-      alertType = 'warning';
     } else if (error.message.includes('已結束') || error.message.includes('過期')) {
       errorMessage = '活動已結束，無法報名';
-      alertType = 'warning';
     } else if (error.message.includes('重複') || error.message.includes('已參加過')) {
       errorMessage = '您已經報名過此活動了';
-      alertType = 'warning';
       hasParticipated.value = true;
     } else if (error.response?.data?.message) {
       errorMessage = error.response.data.message;
@@ -328,7 +250,7 @@ const buyNow = async () => {
       errorMessage = error.message;
     }
     
-    showAlert('購買失敗', errorMessage, alertType);
+    alert(errorMessage);
   } finally {
     isProcessing.value = false;
   }
@@ -360,25 +282,6 @@ onMounted(async () => {
 </script>
 
 <template>
-  <!-- Alert Modal -->
-  <BaseAlertModal
-    :visible="alertModal.visible"
-    :title="alertModal.title"
-    :message="alertModal.message"
-    :type="alertModal.type"
-    @close="closeAlert"
-  />
-
-  <!-- Confirm Modal -->
-  <BaseConfirmModal
-    :visible="confirmModal.visible"
-    :title="confirmModal.title"
-    :message="confirmModal.message"
-    :type="confirmModal.type"
-    @confirm="handleConfirm"
-    @cancel="closeConfirm"
-  />
-
   <div :class="['modal', { 'modal-open': showModal }]">
     <div class="modal-box">
       <h3 class="text-lg font-bold">確認取消報名</h3>
@@ -447,16 +350,14 @@ onMounted(async () => {
           </div>
 
           <div class="edit-btn-container">
-            <!-- 主辦人：顯示編輯按鈕 -->
-            <ModalEdit
-              v-if="isOwner && eventRef.id"
-              :event-id="eventRef.id"
-              :event="eventRef"
-              @update="handleEventUpdate"
-            />
-          
-            <!-- 非主辦人且未參與：顯示購買按鈕 -->
-            <template v-else-if="!isOwner && !hasParticipated && authStore?.isAuthenticated">
+            <div v-if="hasParticipated" class="participation-status">
+              <div class="participation-badge">
+                <i class="fa-solid fa-check-circle"></i>
+                <span>已報名此活動</span>
+              </div>
+            </div>
+
+            <template v-else>
               <button
                 @click="addToCart"
                 type="button"
@@ -477,35 +378,27 @@ onMounted(async () => {
                 {{ isProcessing ? '處理中...' : '立即報名' }}
               </button>
             </template>
-          
-            <!-- 非主辦人且已參與：顯示參與狀態 -->
-            <div v-else-if="!isOwner && hasParticipated" class="participation-status">
-              <div class="participation-badge">
-                <i class="fa-solid fa-check-circle"></i>
-                <span>已報名此活動</span>
-              </div>
-            </div>
-            
-            <!-- 未登入用戶提示 -->
-            <div v-else-if="!authStore?.isAuthenticated" class="login-prompt">
-              <p style="padding: 20px; background: #f0f0f0; border-radius: 10px; text-align: center;">
-                請先登入以參加活動
-              </p>
-            </div>
+
+            <ModalEdit
+              v-if="eventRef.id"
+              :event-id="eventRef.id"
+              :event="eventRef"
+              @update="handleEventUpdate"
+            />
           </div>
         </div>
       </div>
     </div>
   </div>
-  <EventHoster :user="eventRef.hostUser" />
-  <MessageBoard v-if="isJoin" />
+  <EventHoster />
+  <MessageBoard v-if="hasParticipated" />
 </template>
 
 <style scoped>
 @reference "tailwindcss";
 
 .edit-btn-container {
-  @apply flex flex-col;
+  @apply flex;
 }
 
 .participation-badge {
@@ -529,10 +422,6 @@ onMounted(async () => {
 .participation-badge i {
   font-size: 20px;
   color: #10b981;
-}
-
-.login-prompt {
-  margin-top: 30px;
 }
 
 @keyframes fadeInUp {
@@ -710,10 +599,5 @@ button:disabled.event-btn-cart:hover {
     height: 300px;
     margin-bottom: 20px;
   }
-}
-
-:deep(.BaseAlertModal),
-:deep(.BaseConfirmModal) {
-  z-index: 99999 !important;
 }
 </style>
