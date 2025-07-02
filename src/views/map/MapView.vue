@@ -5,7 +5,7 @@
 
     <!-- 手機版頂部控制項 -->
     <div
-      class="mobile-top-controls md:hidden absolute top-0 left-0 right-0 z-[90] bg-white shadow-md w-full overflow-x-hidden"
+      class="mobile-top-controls md:hidden absolute top-0 left-0 right-0 z-[90] bg-white shadow-md w-full"
     >
       <div class="flex flex-wrap gap-2 justify-between items-center p-3">
         <div class="flex-shrink-0 mobile-bottom-toggle">
@@ -40,25 +40,11 @@
                 @click="handleSearch"
                 class="search-button-mobile"
                 :disabled="!isReady"
+                style="margin-left: 0"
               >
                 <i class="fas fa-search"></i>
               </button>
             </div>
-
-            <!-- 建議選項放回這裡 -->
-            <ul
-              v-if="suggestions.length && isMobile"
-              class="suggestions-list-mobile-overlay"
-            >
-              <li
-                v-for="(suggestion, idx) in suggestions"
-                :key="idx"
-                @click="selectSuggestion(suggestion)"
-              >
-                <span style="font-size: 16px">🔍</span>
-                {{ suggestion.description }}
-              </li>
-            </ul>
           </div>
           <button
             @click="handleGetCurrentLocation"
@@ -79,6 +65,21 @@
         </div>
       </div>
     </div>
+
+    <!-- 手機版建議選項獨立於地圖上方 -->
+    <ul
+      v-if="suggestions.length && isMobile"
+      class="suggestions-list-mobile-overlay"
+    >
+      <li
+        v-for="(suggestion, idx) in suggestions"
+        :key="idx"
+        @click="selectSuggestion(suggestion)"
+      >
+        <span style="font-size: 16px">🔍</span>
+        {{ suggestion.description }}
+      </li>
+    </ul>
 
     <!-- 桌面版頂部控制項 -->
     <div
@@ -1067,20 +1068,20 @@ onUnmounted(() => {
 /* 修改手機版搜尋建議選項 */
 .suggestions-list-mobile-overlay {
   position: absolute;
-  top: 100%;
-  left: 0;
-  right: 0;
-  width: auto;
+  top: 60px; /* 根據搜尋欄高度微調 */
+  left: 50%;
+  transform: translateX(-50%);
+  width: 90vw;
+  max-width: 500px;
   background: white;
-  border-radius: 8px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-  max-height: 200px;
+  border-radius: 16px;
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.18);
+  max-height: 220px;
   overflow-y: auto;
-  z-index: 1000; /* 降低 z-index，避免蓋住 Navbar */
+  z-index: 900; /* 高於地圖，低於 navbar */
   margin: 0;
   padding: 0;
   list-style: none;
-  margin-top: 4px;
 }
 
 .suggestions-list-mobile-overlay li {
@@ -1136,9 +1137,9 @@ onUnmounted(() => {
 }
 
 .search-panel-mobile {
-  position: relative;
+  position: static;
   flex-shrink: 1; /* 允許收縮 */
-  z-index: 200; /* 提高層級 */
+  z-index: 1000; /* 提高層級 */
 }
 
 .input-group-mobile {
