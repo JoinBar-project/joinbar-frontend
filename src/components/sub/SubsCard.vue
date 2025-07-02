@@ -116,7 +116,7 @@ onUnmounted(() => {
 
 
 <template>
-  <div class="relative overflow-hidden bg-stone-100">
+  <div class="relative overflow-hidde">
     <div 
       ref="spotlight"
       class="pointer-events-none fixed top-0 left-0 w-32 h-32 rounded-full

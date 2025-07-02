@@ -1,13 +1,15 @@
 <script setup>
 
 import SubsCard from '@/components/sub/SubsCard.vue'
-import SubForm from '@/components/sub/SubForm.vue'
+import SubsForm from '@/components/sub/SubsForm.vue'
 import SubBarCard from '@/components/sub/SubBarCard.vue'
 
 </script>
 
 <template>
-  <SubsCard />
-  <SubForm />
-  <SubBarCard />
+  <div>
+    <SubsCard />
+    <SubsForm />
+    <SubBarCard />
+  </div>
 </template>

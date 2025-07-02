@@ -5,17 +5,26 @@ import { ref, computed } from 'vue'
 const currentIndex = ref(0)
 const visibleCount = 3
 
-const visibleBars = computed(() =>
-  barList.value.slice(currentIndex.value, currentIndex.value + visibleCount)
-)
+const visibleBars = computed(() => {
+  const bars = []
+  for (let i = 0; i < visibleCount; i++) {
+    const index = (currentIndex.value + i) % barList.value.length
+    bars.push(barList.value[index])
+  }
+  return bars
+})
 
 function prev() {
-  if (currentIndex.value > 0) currentIndex.value--
+  
+  currentIndex.value =
+    (currentIndex.value - 1 + barList.value.length) % barList.value.length
 }
 
 function next() {
-  if (currentIndex.value + visibleCount < barList.value.length) currentIndex.value++
+  currentIndex.value = (currentIndex.value + 1) % barList.value.length
 }
+
+
 
 const barList = ref([
   { 
@@ -51,12 +60,15 @@ const barList = ref([
 </script>
 
 
-<template>
-  <div class="relative max-w-7xl mx-auto">
-    <div class="flex justify-between items-center mb-4">
-      <button @click="prev" class="text-3xl px-2" :disabled="currentIndex === 0">←</button>
+<template >
+  <div class="relative max-w-7xl mx-auto mb-40 ">
+    <div class="text-5xl text-center py-20 font-bold">合作酒吧</div>
+    <div class="flex justify-around items-center pb-4">
+      <button @click="prev">
+        <i class="fa-solid fa-caret-left text-6xl hover:text-[var(--color-primary-orange)]"></i>
+      </button>
 
-      <div class="flex gap-6 transition-all">
+      <div class="flex gap-20 transition-all">
         <div
           v-for="bar in visibleBars"
           :key="bar.id"
@@ -69,12 +81,11 @@ const barList = ref([
           </div>
         </div>
       </div>
+      <button @click="next">
+        <i class="fa-solid fa-caret-right text-6xl hover:text-[var(--color-primary-orange)]"></i>
+      </button>
     </div>
-      <button @click="next" class="text-3xl px-2" :disabled="currentIndex + visibleCount >= barList.length">→</button>
   </div>
-
-
-
 </template>
 
 
