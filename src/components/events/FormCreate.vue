@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed, watch, onMounted } from "vue";
+import { ref, computed, watch, onMounted, onUnmounted, nextTick } from "vue";
 import apiClient from "@/api/axios";
 import { useEventForm } from "@/composables/useEventForm";
 import { useAuthStore } from "@/stores/authStore";
@@ -7,6 +7,10 @@ import { useTagStore } from "@/stores/tag";
 import Hashtag from "./Hashtag.vue";
 import { useGoogleMaps } from "@/composables/useGoogleMaps/userIndex.js";
 import debounce from "lodash/debounce";
+
+import flatpickr from 'flatpickr';
+import 'flatpickr/dist/flatpickr.css';
+import { Mandarin } from 'flatpickr/dist/l10n/zh.js';
 
 const emit = defineEmits(["submit"]);
 
@@ -29,6 +33,74 @@ const {
 const imageFile = ref(null);
 const imagePreview = ref(null);
 const fileInput = ref(null);
+
+const startDateInput = ref(null);
+const endDateInput = ref(null);
+const startDatePicker = ref(null);
+const endDatePicker = ref(null);
+
+const initFlatpickr = async () => {
+  await nextTick();
+  
+  // 開始日期
+  if (startDateInput.value && !startDatePicker.value) {
+    startDatePicker.value = flatpickr(startDateInput.value, {
+      locale: Mandarin,
+      dateFormat: 'Y-m-d H:i',
+      enableTime: true,
+      time_24hr: true,
+      minDate: 'today',
+      allowInput: false,
+      clickOpens: true,
+      minuteIncrement: 30,
+      
+      onChange: function(selectedDates, dateStr) {
+        eventStartDate.value = dateStr;
+        
+        // 當開始日期改變時，更新結束日期的最小值
+        if (endDatePicker.value && selectedDates[0]) {
+          endDatePicker.value.set('minDate', selectedDates[0]);
+          
+          // 如果結束日期早於開始日期，清空結束日期
+          if (eventEndDate.value && new Date(eventEndDate.value) <= selectedDates[0]) {
+            endDatePicker.value.clear();
+            eventEndDate.value = '';
+          }
+        }
+      }
+    });
+  }
+  
+  // 結束日期
+  if (endDateInput.value && !endDatePicker.value) {
+    endDatePicker.value = flatpickr(endDateInput.value, {
+      locale: Mandarin,
+      dateFormat: 'Y-m-d H:i',
+      enableTime: true,
+      time_24hr: true,
+      minDate: 'today',
+      allowInput: false,
+      clickOpens: true,
+      minuteIncrement: 30,
+      
+      onChange: function(selectedDates, dateStr) {
+        eventEndDate.value = dateStr;
+      }
+    });
+  }
+}
+
+// 銷毀 flatpickr
+const destroyFlatpickr = () => {
+  if (startDatePicker.value) {
+    startDatePicker.value.destroy();
+    startDatePicker.value = null;
+  }
+  if (endDatePicker.value) {
+    endDatePicker.value.destroy();
+    endDatePicker.value = null;
+  }
+}
 
 const mapContainer = ref(null);
 const {
@@ -247,6 +319,7 @@ async function onSubmit() {
       },
     });
 
+    // 清空表單
     eventName.value = "";
     barName.value = "";
     eventLocation.value = "";
@@ -255,6 +328,10 @@ async function onSubmit() {
     eventPrice.value = "";
     eventPeople.value = "";
     eventHashtags.value = [];
+
+    // 清空日期選擇器
+    if (startDatePicker.value) startDatePicker.value.clear();
+    if (endDatePicker.value) endDatePicker.value.clear();
 
     if (imageFile.value) imageFile.value = null;
     if (imagePreview.value) imagePreview.value = null;
@@ -295,6 +372,14 @@ async function onSubmit() {
     });
   }
 }
+
+onMounted(async () => {
+  await initFlatpickr();
+})
+
+onUnmounted(() => {
+  destroyFlatpickr();
+})
 </script>
 
 <template>
@@ -396,17 +481,25 @@ async function onSubmit() {
           <div class="form-row">
             <label for="event-start-date">開始日期</label>
             <input
-              type="datetime-local"
+              ref="startDateInput"
+              type="text"
               id="event-start-date"
-              v-model="eventStartDate"
+              :value="eventStartDate"
+              placeholder="請選擇開始日期時間"
+              readonly
+              class="cursor-pointer"
             />
           </div>
           <div class="form-row">
             <label for="event-end-date">結束日期</label>
             <input
-              type="datetime-local"
+              ref="endDateInput"
+              type="text"
               id="event-end-date"
-              v-model="eventEndDate"
+              :value="eventEndDate"
+              placeholder="請選擇結束日期時間"
+              readonly
+              class="cursor-pointer"
             />
           </div>
           <div class="form-row" v-if="isAdmin">
@@ -512,5 +605,29 @@ async function onSubmit() {
 
 .btn-submit:hover {
   background-color: var(--color-primary-orange);
+}
+
+/* Flatpickr 自定義樣式 */
+:deep(.flatpickr-calendar) {
+  border-radius: 12px !important;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15) !important;
+  border: 1px solid #e5e7eb !important;
+  font-family: inherit !important;
+}
+
+:deep(.flatpickr-day.selected) {
+  background: #dc2626 !important;
+  border-color: #dc2626 !important;
+  color: white !important;
+}
+
+:deep(.flatpickr-day:hover:not(.selected)) {
+  background: #ff8800 !important;
+  border-color: #ff8800 !important;
+  color: white !important;
+}
+
+:deep(.flatpickr-time input) {
+  border-radius: 6px !important;
 }
 </style>
