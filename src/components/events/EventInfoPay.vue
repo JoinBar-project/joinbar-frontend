@@ -523,7 +523,7 @@ onMounted(async () => {
     </div>
   </div>
   <EventHoster :user="eventRef.hostUser" class="mb-6"/>
-  <MessageBoard v-if="isJoin" class="mb-12"/>
+  <MessageBoard v-if="isJoin || isHostUser" class="mb-12"/>
   <BaseAlertModal
     :visible="alertVisible"
     :type="alertType"

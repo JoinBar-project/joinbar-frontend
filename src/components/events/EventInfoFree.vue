@@ -299,7 +299,7 @@ const handleCancelConfirm = async () => {
     </div>
 
     <EventHoster :user="currentEvent.hostUser" class="mb-12" />
-    <MessageBoard v-if="isJoin" class="mb-12"/>
+    <MessageBoard v-if="isJoin || isHostUser" class="mb-12"/>
 
     <BaseConfirmModal
       :visible="showModal"
