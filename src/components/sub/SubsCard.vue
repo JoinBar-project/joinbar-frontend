@@ -73,8 +73,7 @@ const handleSubscribe = async (subscriptionType) => {
     }, 1000);
 
   } catch (err) {
-    console.error('訂閱流程發生錯誤:', err);
-    showAlert('danger', '訂閱流程發生錯誤', err?.message || '請稍後再試');
+    showAlert('error', '訂閱發生錯誤，請確認是否還有未結帳的訂單');
   }
 };
 
