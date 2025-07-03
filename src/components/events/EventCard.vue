@@ -1,7 +1,5 @@
 <script setup>
 import dayjs from 'dayjs'
-import timezone from 'dayjs/plugin/timezone'
-import utc from 'dayjs/plugin/utc'
 import 'dayjs/locale/zh-tw'
 import weekday from 'dayjs/plugin/weekday'
 import localizedFormat from 'dayjs/plugin/localizedFormat'
@@ -65,9 +63,11 @@ function goToInfo() {
         <p class="time text-gray-400 leading-normal">
           {{ formatEventDate(props.event.startAt) }} ~ {{ formatEventDate(props.event.endAt) }}
         </p>
-        <h3 class="title h-[5.5rem]">{{ props.event.name }}</h3>
-        <p class="md:leading-normal leading-2">
-          <span class="location">📍{{ sliceChinese(props.event.location, 6) }}</span>｜<span class="bar-name leading-[2] md:leading-[2.5]">{{ props.event.barName }}</span>
+        <h3 class="title">{{ props.event.name }}</h3>
+        <p class="bar-name leading-[2] md:leading-[2] md:text-sm">
+          <span class="font-bold text-[var(--color-primary-red)]">酒吧：</span><span class="text-stone-500">{{ props.event.barName }}</span><br/>
+          <span class="font-bold text-[var(--color-primary-red)]">地點：</span><span class="text-stone-500">{{ props.event.location }}</span>
+
         </p>
       </div>
     </div>
@@ -79,10 +79,10 @@ function goToInfo() {
         </span>
       </div>
       <div v-if="props.event.price === null" class="btn-open-form bg-[var(--color-secondary-green)] text-white hover:bg-[var(--color-primary-orange)]
-      active:bg-[var(--color-primary-orange)] text-xs md:text-xl">
+      active:bg-[var(--color-primary-orange)] text-xs md:text-sm">
         查看詳情
       </div>
-      <div v-else class="btn-open-form bg-[var(--color-primary-red)] text-white hover:bg-[var(--color-primary-orange)] active:bg-[var(--color-primary-orange)] text-xs md:text-xl">
+      <div v-else class="btn-open-form bg-[var(--color-primary-red)] text-white hover:bg-[var(--color-primary-orange)] active:bg-[var(--color-primary-orange)] text-xs md:text-sm">
         查看付費活動
       </div>
     </div>
@@ -93,11 +93,11 @@ function goToInfo() {
 @reference "tailwindcss";
 
 .event-card {
-  @apply flex flex-col justify-between bg-gray-100 rounded-2xl m-2 transition duration-300 transform hover:-translate-y-1 hover:shadow-xl cursor-pointer;
+  @apply flex flex-col justify-between bg-gray-100 rounded-2xl transition duration-300 transform hover:-translate-y-1 hover:shadow-xl cursor-pointer;
 }
 
 .event-img {
-  @apply w-full h-44 object-cover rounded-t-2xl bg-gray-300;
+  @apply w-full h-36 object-cover rounded-t-2xl bg-gray-300;
 }
 
 .event-info {
@@ -105,7 +105,7 @@ function goToInfo() {
 }
 
 .time {
-  @apply text-sm;
+  @apply text-xs;
 }
 
 .title {
@@ -117,11 +117,11 @@ function goToInfo() {
 }
 
 .tags {
-  @apply flex flex-nowrap gap-1 my-2;
+  @apply flex flex-nowrap gap-1;
 }
 
 .tag {
-  @apply inline-block border-2 px-2 py-1 rounded-2xl font-medium text-[10px] md:text-lg;
+  @apply inline-block border-2 px-2 py-1 rounded-2xl font-medium text-[10px] md:text-[10px];
   border-color: #8B7355;
   color: #8B7355;
 }
@@ -130,17 +130,13 @@ function goToInfo() {
   @apply text-black text-sm bg-gray-300 px-2 py-2 rounded-2xl;
 }
 
-.bar-name {
-  @apply font-bold;
-}
-
 .bottom-row {
-  @apply flex items-center justify-between flex-wrap gap-2 mt-2;
+  @apply flex items-center justify-between flex-wrap gap-2;
   margin-top: auto;
 }
 
 .btn-open-form {
-  @apply flex justify-center w-24 md:w-40 py-2 text-white rounded-2xl transition duration-200;
+  @apply flex justify-center w-24 md:w-30 py-2 text-white rounded-2xl transition duration-200;
 }
 
 </style>

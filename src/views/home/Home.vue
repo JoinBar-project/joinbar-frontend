@@ -1,7 +1,7 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import AdModal from '@/components/AdModal.vue'
-import adImageFile from '@/assets/homepage/subscribe.jpg'
+import adImageFile from '@/assets/homepage/subscribe.png'
 
 const showAd = ref(false)
 const adImage = adImageFile
@@ -10,7 +10,7 @@ onMounted(() => {
   showAd.value = true
 })
 
-const videoUrl = new URL('@/assets/homepage/JOINBAR-NOLOGO.mp4', import.meta.url).href
+const videoUrl = new URL('@/assets/homepage/BAR.mp4', import.meta.url).href
 
 const features = [
   {

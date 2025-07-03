@@ -478,15 +478,15 @@ onUnmounted(() => {
             </div>
             <div class="flex flex-col sm:flex-row justify-center items-center mt-4 gap-3 sm:space-x-2 w-full">
             
-              <button
+              <!-- <button
               class="btn flex-1 min-w-[180px] bg-white text-black border-[#e5e5e5] border-2 flex items-center justify-center px-4 py-2 rounded-lg hover:scale-105 transition text-sm w-full sm:w-auto">
               <img src="/google.svg" alt="Google logo" class="w-5 h-5 mr-2" />
               Register with Google
-            </button>
+            </button> -->
 
             <button
               @click="handleLineLogin"
-              class="btn flex-1 min-w-[180px] bg-[var(--color-line-green)] text-white border-[var(--color-line-green-dark)] border-2 flex items-center justify-center px-4 py-2 rounded-lg hover:scale-105 transition text-sm w-full sm:w-auto">
+              class="btn flex-1 min-w-[180px] bg-[var(--color-line-green)] text-white border-[var(--color-line-green-dark)] border-2 flex items-center justify-center px-4 py-2 rounded-lg hover:scale-105 transition text-sm w-full sm:w-auto shadow-none duration-300">
               <img src="/line.svg" alt="Line logo" class="w-5 h-5 mr-2" />
               <span v-if="authStore.isLineLoading">載入中...</span>
               <span v-else>Register with LINE</span>

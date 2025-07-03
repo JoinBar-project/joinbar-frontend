@@ -9,8 +9,22 @@ const alertModal = ref({
   onConfirm: null
 })
 
+const confirmModal = ref({
+  visible: false,
+  type: 'warning',
+  title: '',
+  message: '',
+  confirmText: '確認',
+  cancelText: '取消',
+  onConfirm: null,
+  onCancel: null
+})
+
 export const useAlertModal = () => {
+  
   const showAlert = (type, title, message, confirmText = '確認', onConfirm = null) => {
+    confirmModal.value.visible = false
+    
     alertModal.value = {
       visible: true,
       type,
@@ -18,6 +32,21 @@ export const useAlertModal = () => {
       message,
       confirmText,
       onConfirm
+    }
+  }
+
+  const showConfirm = (title, message, confirmText = '確認', cancelText = '取消', onConfirm = null, onCancel = null, type = 'warning') => {
+    alertModal.value.visible = false
+    
+    confirmModal.value = {
+      visible: true,
+      type,
+      title,
+      message,
+      confirmText,
+      cancelText,
+      onConfirm,
+      onCancel
     }
   }
 
@@ -32,9 +61,33 @@ export const useAlertModal = () => {
     }
   }
 
+  const handleConfirmModalConfirm = () => {
+    if (typeof confirmModal.value.onConfirm === 'function') {
+      confirmModal.value.onConfirm()
+    }
+    
+    confirmModal.value.visible = false
+    confirmModal.value.onConfirm = null
+    confirmModal.value.onCancel = null
+  }
+
+  const handleConfirmModalCancel = () => {
+    if (typeof confirmModal.value.onCancel === 'function') {
+      confirmModal.value.onCancel()
+    }
+    
+    confirmModal.value.visible = false
+    confirmModal.value.onConfirm = null
+    confirmModal.value.onCancel = null
+  }
+
   return {
     alertModal,
+    confirmModal,
     showAlert,
-    closeAlert
+    showConfirm,
+    closeAlert,
+    handleConfirmModalConfirm,
+    handleConfirmModalCancel
   }
 }
