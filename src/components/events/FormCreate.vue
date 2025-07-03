@@ -11,11 +11,13 @@ import debounce from "lodash/debounce";
 import flatpickr from 'flatpickr';
 import 'flatpickr/dist/flatpickr.css';
 import { Mandarin } from 'flatpickr/dist/l10n/zh.js';
+import { useAlertModal } from "@/composables/useAlertModal";
 
 const emit = defineEmits(["submit"]);
 
 const authStore = useAuthStore();
 const tagStore = useTagStore();
+const { showAlert } = useAlertModal();
 
 const isAdmin = computed(() => authStore.user?.role === "admin");
 
@@ -115,7 +117,7 @@ const {
   getPlaceDetails,
 } = useGoogleMaps(mapContainer, {
   googleMapsApiKey: import.meta.env.VITE_GOOGLE_MAPS_API_KEY,
-  onError: (msg) => alert(msg),
+  onError: (msg) => showAlert('error', '地圖錯誤', msg),
 });
 
 const searchBarName = ref("");
@@ -229,12 +231,12 @@ function handleImageSelect(event) {
   const file = event.target.files[0];
   if (file) {
     if (!file.type.startsWith("image/")) {
-      alert("請選擇圖片檔案");
+      showAlert('warning', '檔案格式錯誤', '請選擇圖片檔案');
       return;
     }
 
     if (file.size > 1 * 1024 * 1024) {
-      alert("圖片檔案大小不能超過 1MB");
+      showAlert('warning', '檔案過大', '圖片檔案大小不能超過 1MB');
       return;
     }
 
@@ -254,7 +256,7 @@ function triggerFileInput() {
 
 async function onSubmit() {
   if (!authStore.isAuthenticated) {
-    alert("請先登入後再建立活動");
+    showAlert('warning', '尚未登入', '請先登入後再建立活動');
     return;
   }
 
@@ -265,12 +267,12 @@ async function onSubmit() {
     !eventEndDate.value ||
     !eventPeople.value
   ) {
-    alert("請完整填寫所有欄位！");
+    showAlert('warning', '資料不完整', '請完整填寫所有欄位！');
     return;
   }
 
   if (isAdmin.value && (!eventPrice.value || isNaN(eventPrice.value))) {
-    alert("請輸入有效的價格！");
+    showAlert('warning', '價格錯誤', '請輸入有效的價格！');
     return;
   }
 
@@ -327,7 +329,7 @@ async function onSubmit() {
     eventPrice.value = "";
     eventPeople.value = "";
     eventHashtags.value = [];
-
+    
     // 清空日期
     if (startDatePicker.value) startDatePicker.value.clear();
     if (endDatePicker.value) endDatePicker.value.clear();
@@ -335,7 +337,7 @@ async function onSubmit() {
     if (imageFile.value) imageFile.value = null;
     if (imagePreview.value) imagePreview.value = null;
 
-    alert("活動建立成功！");
+    showAlert('success', '建立成功', '活動建立成功！');
 
     emit("submit", {
       success: true,
@@ -354,15 +356,15 @@ async function onSubmit() {
         headers: error.response.headers,
       });
       errorMessage = error.response.data?.message || "伺服器錯誤";
-      alert(`建立失敗: ${errorMessage}`);
+      showAlert('error', '建立失敗', errorMessage);
     } else if (error.request) {
       console.error("網路錯誤:", error.request);
       errorMessage = "網路連線錯誤，請檢查網路狀態";
-      alert(errorMessage);
+      showAlert('error', '網路錯誤', errorMessage);
     } else {
       console.error("其他錯誤:", error.message);
       errorMessage = error.message;
-      alert(`發生錯誤: ${errorMessage}`);
+      showAlert('error', '發生錯誤', errorMessage);
     }
 
     emit("submit", {

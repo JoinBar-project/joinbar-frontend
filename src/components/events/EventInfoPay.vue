@@ -9,7 +9,7 @@ import { useLinePay } from '@/composables/useLinePay';
 import EventHoster from './EventHoster.vue';
 import MessageBoard from './MessageBoard.vue';
 import ModalEdit from '@/components/events/ModalEdit.vue';
-import BaseAlertModal from '@/components/common/BaseAlertModal.vue'
+import { useAlertModal } from '@/composables/useAlertModal';
 import { useGoogleMaps } from "@/composables/useGoogleMaps/userIndex.js";
 
 const props = defineProps({
@@ -24,17 +24,7 @@ const props = defineProps({
 
 const emit = defineEmits(['update','close']);
 
-const alertVisible = ref(false)
-const alertType = ref('warning')
-const alertTitle = ref('')
-const alertMessage = ref('')
-
-const showAlert = (type, title, message) => {
-  alertType.value = type
-  alertTitle.value = title
-  alertMessage.value = message
-  alertVisible.value = true
-}
+const { showAlert } = useAlertModal();
 
 const router = useRouter();
 const cart = useCartStore();
@@ -202,8 +192,7 @@ const addToCart = async () => {
   }
   
   if (hasParticipated.value) {
-
-    showAlert('warning', '您已經報名過此活動了！');
+    showAlert('warning', '重複報名', '您已經報名過此活動了！');
     return;
   }
 
@@ -222,9 +211,9 @@ const addToCart = async () => {
       hostUser: e.hostUser,
     });
 
-    showAlert('success', result.message || '已加入購物車！');
+    showAlert('success', '加入成功', result.message || '已加入購物車！');
   } catch (error) {
-    alert(error.message);
+    showAlert('error', '加入失敗', error.message);
   }
 };
 
@@ -239,16 +228,12 @@ const buyNow = async () => {
   });
 
   if (hasParticipated.value) {
-    showAlert('warning', '您已經報名過此活動了！');
-    
+    showAlert('warning', '重複報名', '您已經報名過此活動了！');
     return;
   }
 
   if (!isAuthenticated.value) {
-
-    // console.warn('❌ 認證檢查失敗，用戶未登入');
-    showAlert('warning', '尚未登入', '請先登入才能加入購物車');
-
+    showAlert('warning', '尚未登入', '請先登入才能購買');
     return;
   }
 
@@ -275,7 +260,8 @@ const buyNow = async () => {
     const orderId = orderResponse.order.id || orderResponse.order.orderId;
 
     if (!orderId) {
-      showAlert('error', paymentResponse.data.message || '訂單建立失敗，無法獲取訂單 ID，請洽客服人員');
+      showAlert('error', '訂單錯誤', '訂單建立失敗，無法獲取訂單 ID，請洽客服人員');
+      return;
     }
 
     console.log("✅ 訂單創建成功:", {
@@ -290,8 +276,8 @@ const buyNow = async () => {
     });
 
     if (!paymentResponse.data.success) {
-      showAlert('error', paymentResponse.data.message || 'LINE Pay 付款失敗，請洽客服人員');
-
+      showAlert('error', '付款失敗', paymentResponse.data?.message || 'LINE Pay 付款失敗，請洽客服人員');
+      return;
     }
 
     const paymentResult = paymentResponse.data.data;
@@ -311,7 +297,7 @@ const buyNow = async () => {
 
     window.location.href = paymentResult.paymentUrl;
   } catch (error) {
-    showAlert('error', '立即購買失敗:', error)
+    console.error('❌ 立即購買失敗:', error);
     
     if (error.response) {
       console.error("❌ API 錯誤詳情:", {
@@ -349,7 +335,7 @@ const buyNow = async () => {
       errorMessage = error.message;
     }
 
-    alert(errorMessage);
+    showAlert('error', '購買失敗', errorMessage);
   } finally {
     isProcessing.value = false;
   }
@@ -403,7 +389,6 @@ onMounted(async () => {
 </script>
 
 <template>
-
   <div class="flex justify-center items-center pt-[2%] max-w-full">
     <div class="relative w-full max-w-[1200px] min-w-[1170px] bg-[#f1f1f1] rounded-[20px] overflow-hidden pb-[30px]">
       <div>
@@ -418,8 +403,6 @@ onMounted(async () => {
             class="w-full h-full border-0 rounded-lg"
             style="min-height: 300px; background: #2d2d2d"
           ></div>
-
-
         </div>
 
         <div class="pt-[40px] pr-[70px] pb-[40px] pl-[500px]">
@@ -524,19 +507,10 @@ onMounted(async () => {
   </div>
   <EventHoster :user="eventRef.hostUser" class="mb-6"/>
   <MessageBoard v-if="isJoin || isHostUser" class="mb-12"/>
-  <BaseAlertModal
-    :visible="alertVisible"
-    :type="alertType"
-    :title="alertTitle"
-    :message="alertMessage"
-    @close="alertVisible = false"
-    @update="handleModalUpdate"
-  />
 </template>
 
 <style scoped>
 @reference "tailwindcss";
-
 
 @keyframes fadeInUp {
   from {

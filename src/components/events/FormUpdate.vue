@@ -8,12 +8,14 @@ import { useRouter } from 'vue-router';
 import flatpickr from 'flatpickr';
 import 'flatpickr/dist/flatpickr.css';
 import { Mandarin } from 'flatpickr/dist/l10n/zh.js';
+import { useAlertModal } from '@/composables/useAlertModal';
 
 const emit = defineEmits(['update', 'delete', 'cancel']);
 const props = defineProps({ eventId: String });
 
 const eventStore = useEventStore();
 const router = useRouter();
+const { showAlert, showConfirm } = useAlertModal();
 
 const {
   eventName,
@@ -25,6 +27,8 @@ const {
   eventPeople,
   eventHashtags,
   eventImageUrl,
+  handleUpdate,
+  handleDelete,
   loadEvent,
   isAdmin,
 } = useEventForm(props.eventId);
@@ -151,32 +155,38 @@ async function onUpdate() {
   if (loading.value) return;
 
   // 基本驗證
-  if (!eventName.value?.trim()) {
-    alert('請填寫活動名稱！');
+  const missingFields = [];
+  if (!eventName.value?.trim()) missingFields.push('活動名稱');
+  if (!barName.value?.trim()) missingFields.push('酒吧名稱');
+  if (!eventStartDate.value) missingFields.push('開始日期');
+  if (!eventEndDate.value) missingFields.push('結束日期');
+  if (!eventPeople.value) missingFields.push('參加人數');
+
+  if (missingFields.length > 0) {
+    showAlert('warning', '欄位未完整', `請完整填寫以下欄位：${missingFields.join('、')}`);
     return;
   }
-  if (!barName.value?.trim()) {
-    alert('請填寫酒吧名稱！');
+
+  // 檢查日期邏輯
+  const startDate = new Date(eventStartDate.value);
+  const endDate = new Date(eventEndDate.value);
+  
+  if (startDate >= endDate) {
+    showAlert('warning', '日期錯誤', '結束日期必須晚於開始日期');
     return;
   }
-  if (!eventStartDate.value) {
-    alert('請選擇開始日期！');
-    return;
-  }
-  if (!eventEndDate.value) {
-    alert('請選擇結束日期！');
-    return;
-  }
-  if (!eventPeople.value) {
-    alert('請填寫參加人數！');
+
+  // 檢查人數限制
+  const peopleCount = parseInt(eventPeople.value);
+  if (peopleCount < 1 || peopleCount > 30) {
+    showAlert('warning', '人數限制', '參加人數必須在 1 到 30 人之間');
     return;
   }
 
   loading.value = true;
-
+  
   try {
     const formData = new FormData();
-    
     // 基本資料
     formData.append('name', eventName.value.trim());
     formData.append('barName', barName.value.trim());
@@ -216,70 +226,71 @@ async function onUpdate() {
     // 使用 EventStore 的 updateEvent 方法
     const result = await eventStore.updateEvent(props.eventId, formData);
 
-    if (result.success) {
-      alert('活動更新成功！');
+    if (result && result.success) {
+      showAlert('success', '更新成功', '活動更新成功！');
       emit('update');
     } else {
-      alert(`更新失敗：${result.error}`);
+      showAlert('error', '更新失敗', result?.message || '更新失敗');
     }
 
   } catch (error) {
     console.error('[活動更新失敗]', error);
-    alert('網路或系統錯誤，請稍後再試');
+    showAlert('error', '網路錯誤', '網路或系統錯誤，請稍後再試');
   } finally {
     loading.value = false;
   }
 }
 
 async function onDelete() {
-  if (loading.value || !confirm('確定要刪除這個活動嗎？')) return;
+  if (loading.value) return;
 
-  loading.value = true;
-  
-  try {
-    const result = await eventStore.deleteEvent(props.eventId);
-    
-    if (result.success) {
-      alert('活動刪除成功！');
-      router.push({
-        path: '/event',
-        state: { message: '活動已成功刪除！' }
-      });
-    } else {
-      alert(`刪除失敗: ${result.error}`);
-    }
-    
-  } catch (error) {
-    console.error('[活動刪除失敗]', error);
-    alert('刪除操作發生錯誤，請稍後再試');
-  } finally {
-    loading.value = false;
-  }
+  showConfirm(
+    '確認刪除',
+    '確定要刪除這個活動嗎？此操作無法復原。',
+    '刪除',
+    '取消',
+    async () => {
+      loading.value = true;
+      try {
+        await eventStore.deleteEvent(props.eventId);
+        showAlert('success', '刪除成功', '活動已成功刪除！', '確定', () => {
+          router.push('/event');
+        });
+      } catch (error) {
+        const errorMessage = eventStore.error || error?.message || '刪除失敗，請稍後再試';
+        showAlert('error', '刪除失敗', errorMessage);
+      } finally {
+        loading.value = false;
+      }
+    },
+    () => {
+      // 取消刪除
+      console.log('取消刪除');
+    },
+    'danger'
+  );
 }
 
 function handleImageSelect(event) {
   const file = event.target.files[0];
-  console.log('選擇圖片:', file);
-  
-  if (!file) return;
-  
-  if (!file.type.startsWith('image/')) {
-    alert('請選擇圖片檔案');
-    return;
+  if (file) {
+    if (!file.type.startsWith('image/')) {
+      showAlert('warning', '檔案格式錯誤', '請選擇圖片檔案');
+      return;
+    }
+    
+    if (file.size > 1 * 1024 * 1024) {
+      showAlert('warning', '檔案過大', '圖片檔案大小不能超過 1MB');
+      return;
+    }
+
+    imageFile.value = file;
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      imagePreview.value = e.target.result;
+    };
+    reader.readAsDataURL(file);
   }
-  
-  if (file.size > 5 * 1024 * 1024) {
-    alert('圖片檔案大小不能超過 5MB');
-    return;
-  }
-  
-  imageFile.value = file;
-  const reader = new FileReader();
-  reader.onload = (e) => {
-    imagePreview.value = e.target.result;
-    console.log('圖片預覽已更新');
-  };
-  reader.readAsDataURL(file);
 }
 
 function triggerFileInput() {
@@ -288,7 +299,7 @@ function triggerFileInput() {
 
 onUnmounted(() => {
   destroyFlatpickr();
-})
+});
 </script>
 
 <template>

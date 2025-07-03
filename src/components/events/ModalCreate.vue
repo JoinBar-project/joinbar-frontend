@@ -1,76 +1,75 @@
 <script setup>
 import { useEventForm } from '@/composables/useEventForm';
 import FormCreate from './FormCreate.vue';
-import AlertModal from '@/components/AlertModal.vue';
 import { useAuthStore } from '@/stores/authStore';
 import { ref } from 'vue';
-import BaseAlertModal from '@/components/common/BaseAlertModal.vue';
+import { useAlertModal } from '@/composables/useAlertModal';
 
 const emit = defineEmits(['submit', 'eventCreated', 'close']);
 
-const alertVisible = ref(false)
-const alertType = ref('warning')
-const alertTitle = ref('')
-const alertMessage = ref('')
-
-const showConfirmModal = (type, title, message) => {
-  alertType.value = type
-  alertTitle.value = title
-  alertMessage.value = message
-  alertVisible.value = true
-}
-
-const { showForm, showAlert, handleAlertAccept, handleAlertDeny, overlayClick } = useEventForm();
+const { showAlert, showConfirm } = useAlertModal();
+const { showForm, overlayClick } = useEventForm();
 const authStore = useAuthStore();
 
 function handleSubmit(result) {
   if (result.success) {
     emit('eventCreated', result.newEvent);
     showForm.value = false;
-  
   } else {
-    showConfirmModal('warning', '建立活動失敗', '請洽客服');
-
+    showAlert('error', '建立活動失敗', result.error || '請洽客服');
   }
 }
+
 function handleClick() {
   if (!authStore.isAuthenticated) {
-    showConfirmModal('warning', '尚未登入', '請先登入才能建立活動');
+    showAlert('warning', '尚未登入', '請先登入才能建立活動');
     return;
   }
   showForm.value = true;
 }
 
+function handleCloseModal() {
+  showConfirm(
+    '確認關閉',
+    '確定要關閉建立活動視窗嗎？未儲存的資料將會遺失。',
+    '確定關閉',
+    '繼續編輯',
+    () => {
+      // 確認關閉
+      showForm.value = false;
+    },
+    () => {
+      // 取消關閉，繼續編輯
+      console.log('繼續編輯');
+    },
+    'warning'
+  );
+}
+
+function handleOverlayClick(event) {
+  if (event.target === event.currentTarget) {
+    handleCloseModal();
+  }
+}
 </script>
 
 <template>
   <div>
-    <AlertModal
-      :visible="showAlert"
-      @accept="handleAlertAccept"
-      @deny="handleAlertDeny" 
-    />
-    <BaseAlertModal
-      :visible="alertVisible"
-      :type="alertType"
-      :title="alertTitle"
-      :message="alertMessage"
-      @close="alertVisible = false"
-    />
     <button
       class="btn-open-form btn-create"
       @click="handleClick">
       建立活動
     </button>
+    
     <transition name="popup">
       <div
         v-if="showForm"
         class="popup-overlay"
-        @click="overlayClick">
+        @click="handleOverlayClick">
         <div class="modal-content">
           <button
             class="popup-close-btn"
-            @click="showAlert = true">
+            @click="handleCloseModal">
             ×
           </button>
           <FormCreate
@@ -88,6 +87,7 @@ function handleClick() {
 .btn-open-form {
   @apply mt-[30px] rounded-[20px] border-0 md:text-[24px] text-center shadow-md cursor-pointer transition-colors duration-200 mx-auto block;
 }
+
 .btn-create {
   @apply px-4 md:px-6 py-3 text-white font-medium rounded-xl shadow-lg hover:shadow-xl hover:bg-[#a83c51] transform hover:scale-105 transition-all duration-300 ease-in-out;
   background-color: var(--color-primary-red);
@@ -116,5 +116,23 @@ function handleClick() {
 
 .popup-close-btn:hover {
   @apply text-red-600;
+}
+
+.popup-enter-active, .popup-leave-active {
+  transition: opacity 0.3s ease;
+}
+
+.popup-enter-from, .popup-leave-to {
+  opacity: 0;
+}
+
+.popup-enter-active .modal-content,
+.popup-leave-active .modal-content {
+  transition: transform 0.3s ease;
+}
+
+.popup-enter-from .modal-content,
+.popup-leave-to .modal-content {
+  transform: scale(0.9) translateY(-20px);
 }
 </style>

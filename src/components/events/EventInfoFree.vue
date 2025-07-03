@@ -6,7 +6,7 @@ import EventHoster from './EventHoster.vue';
 import MessageBoard from './MessageBoard.vue';
 import ModalEdit from '@/components/events/ModalEdit.vue';
 import BaseConfirmModal from '@/components/common/BaseConfirmModal.vue';
-import BaseAlertModal from '@/components/common/BaseAlertModal.vue';
+import { useAlertModal } from '@/composables/useAlertModal';
 import { useGoogleMaps } from "@/composables/useGoogleMaps/userIndex.js";
 import { useAuthStore } from '@/stores/authStore'; 
 const authStore = useAuthStore(); 
@@ -23,17 +23,7 @@ const props = defineProps({
   },
 });
 
-const alertVisible = ref(false);
-const alertType = ref('');
-const alertTitle = ref('');
-const alertMessage = ref('');
-
-function showAlert(type, title, message) {
-  alertType.value = type;
-  alertTitle.value = title;
-  alertMessage.value = message;
-  alertVisible.value = true;
-}
+const { showAlert } = useAlertModal();
 
 const eventRef = toRef(props, 'event');
 const localEvent = ref({ ...props.event });
@@ -195,14 +185,11 @@ const handleCancelConfirm = async () => {
 };
 </script>
 
-
 <template>
   <div>
-
     <div v-if="isUpdating" class="fixed inset-0 bg-black/50 flex justify-center items-center z-[9999]">
       <div class="bg-white p-8 rounded-[10px] flex items-center gap-4 text-[1.2rem] shadow-md">
         <i class="fa-solid fa-spinner fa-spin text-[var(--color-primary-orange)] pr-[30px] mt-[13px] min-w-[30px]"></i>
-
         <span>更新中...</span>
       </div>
     </div>
@@ -291,7 +278,7 @@ const handleCancelConfirm = async () => {
                 <p style="padding: 20px; background: #f0f0f0; border-radius: 10px; text-align: center;">
                   請先登入以參加活動
                 </p>
-              </div>
+              </div>            
             </div>
           </div>
         </div>
@@ -310,13 +297,6 @@ const handleCancelConfirm = async () => {
       cancelText="取消"
       @confirm="handleCancelConfirm"
       @cancel="closeModal"
-    />
-    <BaseAlertModal
-      :visible="alertVisible"
-      :type="alertType"
-      :title="alertTitle"
-      :message="alertMessage"
-      @close="alertVisible = false"
     />
   </div>
 </template>
