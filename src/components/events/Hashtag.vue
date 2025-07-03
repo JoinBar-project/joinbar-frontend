@@ -93,7 +93,7 @@ onMounted(() => {
   <div class="form-row">
     <label for="hashtag-input">特色標籤</label>
     <div style="display:flex;align-items:center;gap:8px;width:100%;flex-wrap:wrap;">
-      <button type="button" class="btn-hashtag-modal" @click="openModal">選擇</button>
+      <button type="button" class="btn-hashtag-modal inline-block" @click="openModal">選擇</button>
       <div class="selected-tags">
         <div v-if="selectedTags.length === 0" class="no-tags-info" style="color: #666; font-size: 12px;">
           目前無選擇標籤

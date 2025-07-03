@@ -384,9 +384,10 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <section class="event-form" id="new-event">
-    <div class="form-header">建立新活動</div>
+  <section class="event-form hidden md:block" id="new-event">
     <div class="form-container">
+    <div class="form-header">建立新活動</div>
+
       <div
         class="cursor-pointer bg-gradient-to-br from-gray-100 to-gray-300 rounded-3xl form-image-upload water-drop-upload hover:opacity-80 active:opacity-50"
         @click="triggerFileInput"
@@ -539,7 +540,167 @@ onUnmounted(() => {
       </div>
     </div>
   </section>
+
+  <!-- 手機版 -->
+  <section id="new-event-mobile" class="block md:hidden w-full">
+    <div class="form-header">建立新活動</div>
+
+    <div class="bg-gray-100 p-4 w-full">
+      <!-- 活動圖上傳 -->
+      <div
+        @click="triggerFileInput"
+        class="rounded-xl bg-gray-200 overflow-hidden w-full cursor-pointer"
+      >
+        <input ref="fileInput" type="file" accept="image/*" @change="handleImageSelect" class="hidden" />
+
+        <template v-if="!imagePreview">
+          <div class="h-40 flex flex-col items-center justify-center text-gray-500 text-sm">
+            <i class="fa-solid fa-upload text-lg"></i>
+            <div>點擊上傳圖片</div>
+          </div>
+        </template>
+
+        <template v-else>
+          <!-- ✅ 圖片：填滿 -->
+          <img
+            :src="imagePreview"
+            alt="圖片預覽"
+            class="w-full h-40 object-cover block"
+          />
+        </template>
+      </div>
+
+      <!-- 表單欄位 -->
+      <div class="form-row">
+        <label for="event-name">活動名稱</label>
+        <input
+          type="text"
+          id="event-name"
+          v-model="eventName"
+          placeholder="請輸入活動名稱"
+        />
+      </div>
+
+      <div class="form-row">
+        <label for="bar-name">酒吧名稱</label>
+        <div style="position: relative; width: 100%">
+          <input
+            type="text"
+            id="bar-name"
+            v-model="searchBarName"
+            placeholder="請輸入酒吧名稱"
+            autocomplete="off"
+            style="width: 100%"
+          />
+          <ul
+            v-if="suggestions.length"
+            class="suggestions-list"
+            style="
+              position: absolute;
+              top: 40px;
+              left: 0;
+              right: 0;
+              z-index: 20;
+              background: white;
+              border: 1px solid #ddd;
+              border-radius: 8px;
+              max-height: 200px;
+              overflow-y: auto;
+              box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+            "
+          >
+            <li
+              v-for="(suggestion, idx) in suggestions"
+              :key="idx"
+              @click="selectSuggestion(suggestion)"
+              style="
+                padding: 10px 12px;
+                cursor: pointer;
+                border-bottom: 1px solid #f0f0f0;
+                display: flex;
+                align-items: center;
+                gap: 6px;
+              "
+            >
+              <span style="font-size: 18px">🔍</span>
+              {{ suggestion.description }}
+            </li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="event-location">{{ barAddress }}</div>
+
+      <div class="form-row">
+        <label for="event-start-date">開始日期</label>
+        <input
+          ref="startDateInput"
+          type="text"
+          id="event-start-date"
+          :value="eventStartDate"
+          placeholder="請選擇開始日期時間"
+          readonly
+          class="cursor-pointer"
+        />
+      </div>
+      <div class="form-row">
+        <label for="event-end-date">結束日期</label>
+        <input
+          ref="endDateInput"
+          type="text"
+          id="event-end-date"
+          :value="eventEndDate"
+          placeholder="請選擇結束日期時間"
+          readonly
+          class="cursor-pointer"
+        />
+      </div>
+
+      <div class="form-row" v-if="isAdmin">
+        <label for="event-price">價格</label>
+        <input
+          type="number"
+          id="event-price"
+          v-model="eventPrice"
+          placeholder="請輸入價格"
+        />
+      </div>
+
+      <div class="form-row">
+        <label for="event-people">參加人數</label>
+        <input
+          type="number"
+          id="event-people"
+          v-model="eventPeople"
+          min="1"
+          step="1"
+          max="30"
+        />
+      </div>
+
+      <div>
+        <Hashtag v-model="eventHashtags" />
+      </div>
+
+      <!-- 地圖容器 -->
+      <div class="mt-4 w-full h-52 bg-gray-300 rounded-lg overflow-hidden">
+        <div ref="mapContainer" class="w-full h-full"></div>
+      </div>
+
+      <!-- 發佈按鈕 -->
+      <div class="text-center mt-6">
+        <button
+          @click="onSubmit"
+          class="w-32 py-2 text-white rounded-lg bg-[var(--color-primary-red)] hover:bg-[var(--color-primary-orange)]"
+        >
+          發佈
+        </button>
+      </div>
+    </div>
+  </section>
 </template>
+
+
 
 <style scoped>
 @reference "tailwindcss";
