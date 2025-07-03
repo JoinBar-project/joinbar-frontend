@@ -26,8 +26,15 @@ const badgeMap = allBadges.reduce((acc, badge) => {
 
       <div class="bg-[var(--color-secondary-green)]/70 text-left md:text-center text-white font-medium py-6 text-xs pl-2 md:pl-0 md:text-xl">享有好禮</div>
       <div class="bg-[var(--color-secondary-green)]/70 text-white font-medium py-6 text-xs md:text-xl">VIP 專屬特調</div>
-      <div class="bg-[var(--color-secondary-green)]/70 text-white font-medium py-6 text-xs md:text-xl">合作酒吧招待飲品</div>
-      <div class="bg-[var(--color-secondary-green)]/70 text-white font-medium py-6 text-xs md:text-xl">合作酒吧招待小點</div>
+      <div class="bg-[var(--color-secondary-green)]/70 text-white font-medium py-6 text-xs md:text-xl">
+        <span class="hidden md:block">合作酒吧招待飲品</span>
+        <span class="block md:hidden">招待飲品</span>
+      </div>
+      <div class="bg-[var(--color-secondary-green)]/70 text-white font-medium py-6 text-xs md:text-xl">
+        <span class="block md:hidden">招待小點</span>
+        <span class="hidden md:block">合作酒吧招待小點</span>
+      </div>
+
 
       <div class="font-medium text-left md:text-center py-6 text-xs pl-2 md:pl-0 md:text-xl">專屬活動邀請</div>
       <div class="py-6 text-xs md:text-xl"><i class="fa-solid fa-check text-[var(--color-primary-red)]"></i></div>
@@ -66,7 +73,7 @@ const badgeMap = allBadges.reduce((acc, badge) => {
     </div>
   </div>
   <div class="flex justify-center my-10 md:my-35">
-    <div class="w-120 h-1 bg-gradient-to-r from-transparent via-[#afb18c] through-[#e1ac67] to-transparent rounded-full shadow-lg">
+    <div class="w-80 md:w-120 h-1 bg-gradient-to-r from-transparent via-[#afb18c] through-[#e1ac67] to-transparent rounded-full shadow-lg">
     </div>
   </div>
 </template>
