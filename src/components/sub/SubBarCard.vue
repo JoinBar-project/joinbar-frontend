@@ -61,8 +61,8 @@ const barList = ref([
 
 
 <template >
-  <div class="relative max-w-7xl mx-auto mb-40 ">
-    <div class="text-5xl text-center py-20 font-bold">合作酒吧</div>
+  <div class="relative max-w-7xl pb-40 mx-auto">
+    <div class="text-5xl text-center pb-20 font-bold">合作酒吧</div>
     <div class="flex justify-around items-center pb-4">
       <button @click="prev">
         <i class="fa-solid fa-caret-left text-6xl hover:text-[var(--color-primary-orange)]"></i>

@@ -7,7 +7,7 @@ import SubBarCard from '@/components/sub/SubBarCard.vue'
 </script>
 
 <template>
-  <div>
+  <div class="text-stone-500 bg-stone-50">
     <SubsCard />
     <SubsForm />
     <SubBarCard />

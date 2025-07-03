@@ -9,8 +9,8 @@ const badgeMap = allBadges.reduce((acc, badge) => {
 </script>
 
 <template>
-  <div class="max-w-7xl mx-auto p-6">
-    <div class="text-5xl text-center py-14 font-bold">專屬會員權益</div>
+  <div class="max-w-7xl mx-auto">
+    <div class="text-5xl text-center pb-20 font-bold">專屬會員權益</div>
 
     <div class="grid grid-cols-4 text-center text-xl rounded-lg overflow-hidden shadow-lg border border-gray-200">
 
@@ -63,6 +63,10 @@ const badgeMap = allBadges.reduce((acc, badge) => {
         <li><i class="fa-solid fa-crown text-yellow-500 mr-2"></i>專屬活動將不定期以 E-mail 通知參加方式</li>
         <li><i class="fa-solid fa-crown text-yellow-500 mr-2"></i>生日專屬禮物會依 E-mail 通知領取／兌換方式</li>
       </ul>
+    </div>
+  </div>
+  <div class="flex justify-center my-35">
+    <div class="w-120 h-1 bg-gradient-to-r from-transparent via-[#afb18c] through-[#e1ac67] to-transparent rounded-full shadow-lg">
     </div>
   </div>
 </template>
