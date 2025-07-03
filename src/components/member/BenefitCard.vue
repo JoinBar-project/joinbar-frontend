@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import dayjs from 'dayjs'
 import { updateBenefitStatus } from '@/api/memberCard'
 import vipCocktail from '@/assets/benefit/vip-cocktail.jpg'

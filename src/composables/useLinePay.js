@@ -42,7 +42,7 @@ export function useLinePay() {
      }
 
       const response = await axios.post(
-        `${API_BASE_URL}/linepay/create`, 
+        `${API_BASE_URL}/api/linepay/create`, 
         { orderId: String(orderId) }, 
         config
       )
@@ -128,7 +128,7 @@ export function useLinePay() {
       }
 
       const response = await axios.get(
-        `${API_BASE_URL}/linepay/status/${orderId}`, 
+        `${API_BASE_URL}/api/linepay/status/${orderId}`, 
         {
           headers: {
             'Authorization': `Bearer ${token}`

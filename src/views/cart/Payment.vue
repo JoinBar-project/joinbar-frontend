@@ -15,30 +15,61 @@
     </div>
 
     <div v-else>
-      <div class="cart-header">
-        <div>活動</div>
-        <div>單價</div>
-        <div>數量</div>
-        <div>小計</div>
-      </div>
-
-      <div
-        v-for="item in displayItems"
-        :key="item.id || item.eventId"
-        class="cart-row">
-        <div class="product">
-          <img
-            class="product-img"
-            :src="item.image || item.imageUrl || 'https://placehold.co/80x80'"
-            :alt="item.name || item.eventName" />
-          <div class="product-info">
-            <p class="product-name">{{ item.name || item.eventName }}</p>
-          </div>
+      <div class="desktop-items">
+        <div class="cart-header">
+          <div>活動</div>
+          <div>單價</div>
+          <div>數量</div>
+          <div>小計</div>
         </div>
 
-        <div class="price">${{ item.price }}</div>
-        <div class="quantity text-center">{{ item.quantity }}</div>
-        <div class="subtotal">${{ calcSubtotal(item) }}</div>
+        <div
+          v-for="item in displayItems"
+          :key="item.id || item.eventId"
+          class="cart-row">
+          <div class="product">
+            <img
+              class="product-img"
+              :src="item.image || item.imageUrl || 'https://placehold.co/80x80'"
+              :alt="item.name || item.eventName" />
+            <div class="product-info">
+              <p class="product-name">{{ item.name || item.eventName }}</p>
+            </div>
+          </div>
+
+          <div class="price">${{ item.price }}</div>
+          <div class="quantity text-center">{{ item.quantity }}</div>
+          <div class="subtotal">${{ calcSubtotal(item) }}</div>
+        </div>
+      </div>
+
+      <div class="mobile-items">
+        <h3 class="section-title">購買項目</h3>
+        <div v-for="item in displayItems" :key="item.id || item.eventId" class="item-card">
+          <div class="item-header">
+            <img
+              class="item-img"
+              :src="item.image || item.imageUrl || 'https://placehold.co/60x60'"
+              :alt="item.name || item.eventName" />
+            <div class="item-info">
+              <h4 class="item-name">{{ item.name || item.eventName }}</h4>
+            </div>
+          </div>
+          <div class="item-details">
+            <div class="detail-row">
+              <span>單價</span>
+              <span>${{ item.price }}</span>
+            </div>
+            <div class="detail-row">
+              <span>數量</span>
+              <span>{{ item.quantity }}</span>
+            </div>
+            <div class="detail-row total-row">
+              <span>小計</span>
+              <span class="subtotal-value">${{ calcSubtotal(item) }}</span>
+            </div>
+          </div>
+        </div>
       </div>
 
       <div class="customer-section section-spacing">
@@ -534,6 +565,14 @@ const goBack = () => {
   }
 }
 
+.desktop-items {
+  display: block;
+}
+
+.mobile-items {
+  display: none;
+}
+
 .cart-header {
   display: flex;
   padding: 16px 0;
@@ -688,8 +727,6 @@ const goBack = () => {
   font-size: 16px;
   color: #dc3545;
  }
-
- /* 移除不需要的樣式 */
  
  .error-message {
   background-color: rgba(235, 150, 164, 0.1);
@@ -844,10 +881,202 @@ const goBack = () => {
   background: var(--color-icon-secondary, #bcaea4);
   color: var(--color-black, #1a1a1a);
  }
- 
- @media (max-width: 768px) {
+
+@media (max-width: 767px) {
+  .cart-container {
+    margin: 20px 16px;
+    padding: 20px;
+    border-radius: 16px;
+  }
+
+  .cart-container h2 {
+    font-size: 20px;
+    margin-bottom: 20px;
+  }
+
+  .desktop-items {
+    display: none;
+  }
+
+  .mobile-items {
+    display: block;
+    margin-bottom: 24px;
+  }
+
+  .section-title {
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--color-text-selected, #f5d1c0);
+    margin-bottom: 16px;
+  }
+
+  .item-card {
+    background: rgba(245, 209, 192, 0.05);
+    border: 1px solid var(--color-icon-secondary, #bcaea4);
+    border-radius: 12px;
+    margin-bottom: 12px;
+    overflow: hidden;
+  }
+
+  .item-header {
+    display: flex;
+    align-items: center;
+    padding: 16px;
+    gap: 12px;
+  }
+
+  .item-img {
+    width: 60px;
+    height: 60px;
+    object-fit: cover;
+    border-radius: 8px;
+    background-color: #f0f0f0;
+    flex-shrink: 0;
+  }
+
+  .item-info {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .item-name {
+    font-size: 16px;
+    font-weight: 600;
+    margin: 0;
+    color: var(--color-text-selected, #f5d1c0);
+    line-height: 1.3;
+  }
+
+  .item-details {
+    padding: 0 16px 16px 16px;
+    border-top: 1px solid rgba(188, 174, 164, 0.3);
+  }
+
+  .detail-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 0;
+    font-size: 14px;
+  }
+
+  .detail-row span:first-child {
+    color: var(--color-text-unselected, #937e7e);
+    font-weight: 500;
+  }
+
+  .detail-row span:last-child {
+    color: var(--color-text-selected, #f5d1c0);
+    font-weight: 600;
+  }
+
+  .total-row {
+    border-top: 1px solid rgba(188, 174, 164, 0.3);
+    margin-top: 8px;
+    padding-top: 12px;
+  }
+
+  .subtotal-value {
+    font-size: 16px;
+    color: var(--color-select, #d17361) !important;
+  }
+
   .form-grid {
     grid-template-columns: 1fr;
+    gap: 20px;
   }
- }
+
+  .form-input {
+    padding: 14px 16px;
+    font-size: 16px;
+    min-height: 24px;
+  }
+
+  .form-group label {
+    font-size: 15px;
+    margin-bottom: 8px;
+  }
+
+  .total-bar {
+    flex-direction: column;
+    gap: 16px;
+    background: rgba(245, 209, 192, 0.05);
+    padding: 20px;
+    border-radius: 12px;
+    border: 1px solid var(--color-icon-secondary, #bcaea4);
+    margin-bottom: 24px;
+  }
+
+  .total-label {
+    font-size: 18px;
+    text-align: center;
+  }
+
+  .payment-btn {
+    width: 100%;
+    max-width: none;
+    padding: 18px 24px;
+    min-height: 56px;
+    font-size: 16px;
+  }
+
+  .error-message {
+    flex-direction: column;
+    gap: 12px;
+    text-align: left;
+  }
+
+  .error-content {
+    width: 100%;
+  }
+
+  .error-close {
+    align-self: flex-end;
+    padding: 8px;
+    min-height: 36px;
+    min-width: 36px;
+  }
+
+  .customer-section {
+    margin-top: 24px;
+  }
+
+  .customer-section h3 {
+    font-size: 16px;
+    margin-bottom: 20px;
+  }
+
+  .form-incomplete-warning {
+    padding: 16px;
+    font-size: 15px;
+    margin-top: 20px;
+  }
+
+  .warning-icon {
+    font-size: 18px;
+  }
+
+  .btn {
+    padding: 12px 16px;
+    font-size: 14px;
+    min-height: 44px;
+  }
+
+  .loading-box {
+    padding: 40px 0;
+  }
+
+  .spinner {
+    width: 36px;
+    height: 36px;
+  }
+
+  .section-spacing {
+    margin-top: 24px;
+  }
+
+  .payment-method {
+    margin-top: 24px;
+  }
+}
  </style>

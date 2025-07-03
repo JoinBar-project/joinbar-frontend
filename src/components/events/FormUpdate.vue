@@ -11,6 +11,8 @@ const props = defineProps({ eventId: String });
 
 const eventStore = useEventStore();
 
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:3000";
+
 const {
   eventName,
   barName,
@@ -83,7 +85,7 @@ async function onUpdate() {
       formData.append('tags', JSON.stringify(tagIds));
     }
 
-    const res = await axios.put(`/api/event/update/${props.eventId}`, formData, {
+    const res = await axios.put(`${API_BASE_URL}/api/event/update/${props.eventId}`, formData, {
       headers: {
         'Authorization': `Bearer ${token}`,
       },

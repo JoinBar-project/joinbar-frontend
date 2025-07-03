@@ -128,7 +128,7 @@
       <div
         class="text-center mt-2 text-sm text-[var(--color-primary-orange)] underline underline-offset-4 cursor-pointer hover:text-[var(--color-secondary-green)] transition"
         @click="useTestAccount">
-        後台管理員登入
+        測試帳號登入
       </div>
 
       <!-- 註冊區 -->
@@ -308,8 +308,8 @@ const handleLineLogin = async () => {
 }
 
 const useTestAccount = () => {
-  loginForm.value.email = 'admin@test.com'
-  loginForm.value.password = 'Aa201201'
+  loginForm.value.email = '123@example.com'
+  loginForm.value.password = 'Test123456'
 
   errors.value.email = false
   errors.value.password = false
