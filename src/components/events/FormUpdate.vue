@@ -117,7 +117,31 @@ const updateFlatpickrValues = () => {
   }
 }
 
+// 固定背景滾動
+const lockBodyScroll = () => {
+  document.body.style.overflow = 'hidden';
+  document.body.style.position = 'fixed';
+  document.body.style.top = '0';
+  document.body.style.left = '0';
+  document.body.style.width = '100%';
+  document.body.style.height = '100%';
+  document.documentElement.style.overflow = 'hidden';
+};
+
+const unlockBodyScroll = () => {
+  document.body.style.overflow = '';
+  document.body.style.position = '';
+  document.body.style.top = '';
+  document.body.style.left = '';
+  document.body.style.width = '';
+  document.body.style.height = '';
+  document.documentElement.style.overflow = '';
+};
+
 onMounted(async () => {
+  // 鎖定背景滾動
+  lockBodyScroll();
+  
   if (props.eventId) {
     await loadEvent(props.eventId);
     if (!imageFile.value && eventImageUrl.value) {
@@ -299,6 +323,8 @@ function triggerFileInput() {
 
 onUnmounted(() => {
   destroyFlatpickr();
+  // 解鎖背景滾動
+  unlockBodyScroll();
 });
 </script>
 
@@ -547,40 +573,43 @@ onUnmounted(() => {
 /* 手機版RWD優化 */
 @media (max-width: 768px) {
   .event-form {
-    @apply fixed inset-0 z-[99];
-    overflow: hidden;
-    width: 100vw;
-    height: 140vh;
+    @apply z-[99];
   }
 
   .form-container {
-    @apply w-full max-w-none m-0 p-0;
-    height: 100vh;
+    @apply w-full max-w-none m-0;
+    height: 100%;
+    max-height: 100%;
     overflow-y: auto;
     overflow-x: hidden;
     -webkit-overflow-scrolling: touch;
     position: relative;
     box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
   }
 
   .form-header {
-    @apply text-sm p-3 sticky top-0 z-10;
+    @apply text-sm p-2 sticky top-0 z-10 rounded-t-xl;
     background-color: var(--color-black);
     width: 100%;
     box-sizing: border-box;
+    flex-shrink: 0;
   }
 
   .form-image-upload {
-    @apply h-40 text-base mx-2 my-2;
+    @apply h-32 text-sm mx-2 my-2;
     width: calc(100% - 1rem);
     box-sizing: border-box;
+    flex-shrink: 0;
   }
 
   .form-layout {
-    @apply grid-cols-1 p-3 gap-3;
-    min-height: auto;
+    @apply grid-cols-1 p-2 gap-2;
     width: 100%;
     box-sizing: border-box;
+    flex: 1;
+    min-height: 0;
   }
 
   .form-left {
@@ -589,41 +618,42 @@ onUnmounted(() => {
   }
 
   .form-right {
-    @apply order-2 h-48 min-h-48 w-full;
+    @apply order-2 h-40 min-h-40 w-full;
     box-sizing: border-box;
   }
 
   .form-row {
-    @apply grid-cols-1 gap-1 my-2 w-full;
+    @apply grid-cols-1 gap-1 my-1 w-full;
     box-sizing: border-box;
   }
 
   .form-row label {
-    @apply text-left text-sm font-medium mb-1;
+    @apply text-left text-xs font-medium mb-1;
   }
 
   .form-row input {
-    @apply h-10 text-sm px-3 w-full;
+    @apply h-8 text-xs px-2 w-full;
     box-sizing: border-box;
     max-width: 100%;
   }
 
   .event-location {
-    @apply ml-0 text-xs mb-2 p-2 bg-red-50 rounded-lg w-full;
+    @apply ml-0 text-xs mb-1 p-1 bg-red-50 rounded-lg w-full;
     color: var(--color-primary-red);
     box-sizing: border-box;
     word-wrap: break-word;
   }
 
   .form-bottom {
-    @apply grid-cols-1 px-3 gap-3 pb-4 pt-3 w-full;
+    @apply grid-cols-1 px-2 gap-2 pb-3 pt-2 w-full;
     background-color: #f3f4f6;
-    margin-top: auto;
     box-sizing: border-box;
+    flex-shrink: 0;
+    border-radius: 0 0 0.75rem 0.75rem;
   }
 
   .form-bottom button {
-    @apply w-full py-3 text-sm font-semibold;
+    @apply w-full py-2 text-xs font-semibold;
     box-sizing: border-box;
     max-width: 100%;
   }
@@ -652,6 +682,7 @@ onUnmounted(() => {
   }
 }
 
+/* 日期選擇器樣式 */
 :deep(.flatpickr-calendar) {
   border-radius: 12px !important;
   box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15) !important;
@@ -709,30 +740,56 @@ onUnmounted(() => {
   border-color: var(--color-primary-orange) !important;
 }
 
-:deep(.flatpickr-time input) {
-  border-radius: 6px !important;
-}
-
-/* 手機版日期選擇器優化 */
+/* 手機版日期選擇器和彈窗優化 */
 @media (max-width: 768px) {
   :deep(.flatpickr-calendar) {
-    max-width: calc(100vw - 2rem) !important;
+    position: fixed !important;
+    top: 50% !important;
     left: 50% !important;
-    transform: translateX(-50%) !important;
+    transform: translate(-50%, -50%) !important;
+    z-index: 9999 !important;
+    max-width: calc(100vw - 2rem) !important;
+    width: auto !important;
   }
 
-  /* 防止水平滾動 */
-  body {
-    overflow-x: hidden !important;
+  /* 警示彈窗固定置中 */
+  :deep(.alert-modal),
+  :deep(.confirm-modal),
+  :deep([role="dialog"]),
+  :deep(.modal),
+  :deep(.swal2-container),
+  :deep(.swal2-popup) {
+    position: fixed !important;
+    top: 50% !important;
+    left: 50% !important;
+    transform: translate(-50%, -50%) !important;
+    z-index: 99999 !important;
+    max-width: calc(100vw - 2rem) !important;
+    width: auto !important;
+    margin: 0 !important;
   }
-  
-  html {
-    overflow-x: hidden !important;
+
+  /* SweetAlert2 特殊處理 */
+  :deep(.swal2-container) {
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    bottom: 0 !important;
+    transform: none !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    z-index: 99999 !important;
   }
-  
-  * {
-    max-width: 100vw !important;
-    box-sizing: border-box !important;
+
+  :deep(.swal2-popup) {
+    position: relative !important;
+    top: auto !important;
+    left: auto !important;
+    transform: none !important;
+    margin: 1rem !important;
+    max-width: calc(100vw - 2rem) !important;
   }
 }
 </style>
