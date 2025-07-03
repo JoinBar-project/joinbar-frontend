@@ -2,6 +2,7 @@
 import { ref } from 'vue';
 import { useRouter } from 'vue-router';
 import { useAuthStore } from '@/stores/authStore';
+import { useCartStore } from '@/stores/cartStore'; 
 import { storeToRefs } from 'pinia';
 import { computed } from 'vue';
 import UserAvatar from '@/components/UserAvatar.vue';
@@ -9,6 +10,7 @@ import Swal from 'sweetalert2';
 
 const router = useRouter();
 const authStore = useAuthStore();
+const cartStore = useCartStore();
 const { user, isAuthenticated } = storeToRefs(authStore);
 
 const isMobileMenuOpen = ref(false);
@@ -20,6 +22,20 @@ const toggleMobileMenu = () => {
 const closeMobileMenu = () => {
   isMobileMenuOpen.value = false;
 };
+
+const cartItemCount = computed(() => {
+  const items = cartStore.items;
+  
+  if (items && typeof items === 'object' && 'items' in items) {
+    return Array.isArray(items.items) ? items.items.length : 0;
+  }
+  
+  if (Array.isArray(items)) {
+    return items.length;
+  }
+  
+  return 0;
+});
 
 const goToMember = () => {
   router.push({
@@ -124,7 +140,12 @@ const handleNavClick = (path) => {
         </div>
       </li>
       <li>
-        <RouterLink to="/cart"><img class="cart-icon" src="/cart.png" alt="Cart Icon" /></RouterLink>
+        <RouterLink to="/cart" class="cart-link-wrapper">
+          <img class="cart-icon" src="/cart.png" alt="Cart Icon" />
+          <span v-if="cartItemCount > 0" class="cart-badge">
+            {{ cartItemCount > 99 ? '99+' : cartItemCount }}
+          </span>
+        </RouterLink>
       </li>
     </ul>
 
@@ -147,54 +168,54 @@ const handleNavClick = (path) => {
       <button @click="closeMobileMenu" class="close-btn">×</button>
       
       <div v-if="isAuthenticated" class="mobile-user-section">
-        <div class="mobile-user-info" @click="goToMember">
-          <UserAvatar 
-            :avatar-url="avatarUrl"
-            :display-name="user.username"
-            size="md" />
-          <div class="mobile-user-text">
-            <span class="mobile-username">{{ user.username }}</span>
-            <span class="mobile-user-subtitle">會員中心</span>
+        <div class="mobile-user-avatar-container" @click="goToMember">
+          <div class="mobile-user-avatar">
+            <UserAvatar 
+              :avatar-url="avatarUrl"
+              :display-name="user.username"
+              size="md" />
           </div>
+          <div class="hover-tooltip">會員中心</div>
         </div>
+        <div class="mobile-username">{{ user.username }}</div>
+      </div>
+
+      <div v-else class="mobile-login-section">
+        <div class="mobile-login-avatar">
+          <div class="default-avatar"></div>
+        </div>
+        <button @click="handleNavClick('/login')" class="mobile-login-text">點擊登入</button>
       </div>
 
       <ul class="mobile-nav-links">
         <li>
           <button @click="handleNavClick('/map')" class="mobile-nav-item">
-            <i class="fas fa-map-marker-alt"></i>
+            <i class="fas fa-map-marker-alt mobile-nav-icon"></i>
             <span>酒吧地圖</span>
           </button>
         </li>
         <li>
           <button @click="handleNavClick('/event')" class="mobile-nav-item">
-            <i class="fas fa-calendar-alt"></i>
+            <i class="fas fa-calendar-alt mobile-nav-icon"></i>
             <span>酒吧活動</span>
           </button>
         </li>
         <li>
           <button @click="handleNavClick('/subscription')" class="mobile-nav-item">
-            <i class="fas fa-star"></i>
+            <i class="fas fa-star mobile-nav-icon"></i>
             <span>訂閱優惠</span>
           </button>
         </li>
         <li>
           <button @click="handleNavClick('/cart')" class="mobile-nav-item">
-            <i class="fas fa-shopping-cart"></i>
+            <i class="fas fa-shopping-cart mobile-nav-icon"></i>
             <span>購物車</span>
-          </button>
-        </li>
-        
-        <li v-if="!isAuthenticated">
-          <button @click="handleNavClick('/login')" class="mobile-nav-item login-item">
-            <i class="fas fa-sign-in-alt"></i>
-            <span>登入/註冊</span>
           </button>
         </li>
         
         <li v-if="isAuthenticated">
           <button @click="handleLogout" class="mobile-nav-item logout-item">
-            <i class="fas fa-sign-out-alt"></i>
+            <i class="fas fa-sign-out-alt mobile-nav-icon"></i>
             <span>登出</span>
           </button>
         </li>
@@ -204,7 +225,7 @@ const handleNavClick = (path) => {
 </template>
 
 <style scoped>
-@reference "tailwindcss";
+@import "tailwindcss";
 
 .navbar {
   @apply flex justify-between items-center px-8 py-4 text-white h-24;
@@ -237,7 +258,7 @@ const handleNavClick = (path) => {
 
 .hamburger-btn {
   @apply hidden relative w-8 h-8 flex-col justify-center items-center cursor-pointer bg-transparent border-none;
-  z-index: 60;
+  z-index: 2000;
 }
 
 .hamburger-btn span {
@@ -260,12 +281,13 @@ const handleNavClick = (path) => {
 .mobile-overlay {
   @apply fixed inset-0 bg-black;
   background-color: rgba(0, 0, 0, 0.5);
-  z-index: 40;
+  z-index: 1990;
 }
 
 .mobile-menu {
-  @apply fixed top-0 right-0 w-80 h-full bg-white text-black transform translate-x-full transition-transform duration-300 ease-in-out;
-  z-index: 50;
+  @apply fixed top-0 right-0 h-full bg-white text-black transform translate-x-full transition-transform duration-300 ease-in-out;
+  width: 50vw;
+  z-index: 1995;
   box-shadow: -2px 0 10px rgba(0, 0, 0, 0.1);
 }
 
@@ -274,31 +296,59 @@ const handleNavClick = (path) => {
 }
 
 .close-btn {
-  @apply absolute top-4 right-4 w-8 h-8 bg-transparent border-none cursor-pointer text-2xl text-gray-600 hover:text-gray-800 z-10;
+  @apply absolute top-4 right-4 w-8 h-8 bg-transparent border-none cursor-pointer text-2xl text-gray-400 hover:text-gray-600;
+  z-index: 1999;
 }
 
 .mobile-user-section {
-  @apply p-6 bg-gray-50 border-b border-gray-200;
+  @apply flex flex-col items-center pt-8 pb-3 px-6;
+  background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
 }
 
-.mobile-user-info {
-  @apply flex items-center gap-4 cursor-pointer hover:bg-gray-100 p-3 rounded-lg transition-colors duration-200;
+.mobile-user-avatar-container {
+  @apply relative mb-2 cursor-pointer;
 }
 
-.mobile-user-text {
-  @apply flex flex-col;
+.mobile-user-avatar {
+  @apply transition-transform duration-200 hover:scale-105;
+}
+
+.hover-tooltip {
+  @apply absolute -bottom-8 left-1/2 transform -translate-x-1/2 bg-gray-800 text-white text-xs px-2 py-1 rounded opacity-0 transition-opacity duration-200 whitespace-nowrap;
+  pointer-events: none;
+}
+
+.mobile-user-avatar-container:hover .hover-tooltip {
+  @apply opacity-100;
 }
 
 .mobile-username {
-  @apply text-lg font-semibold text-gray-800;
+  @apply text-lg font-semibold text-gray-800 text-center;
 }
 
-.mobile-user-subtitle {
-  @apply text-sm text-gray-500;
+.mobile-login-section {
+  @apply flex flex-col items-center pt-8 pb-3 px-6;
+  background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+}
+
+.mobile-login-avatar {
+  @apply mb-2;
+}
+
+.default-avatar {
+  @apply w-12 h-12 rounded-full bg-gray-300 flex items-center justify-center;
+  background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="%23999"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>');
+  background-size: 60%;
+  background-repeat: no-repeat;
+  background-position: center;
+}
+
+.mobile-login-text {
+  @apply text-lg font-medium text-gray-600 bg-transparent border-none cursor-pointer hover:text-gray-800 transition-colors duration-200;
 }
 
 .mobile-nav-links {
-  @apply list-none p-0 m-0 pt-4;
+  @apply list-none p-0 m-0 flex-1;
 }
 
 .mobile-nav-links li {
@@ -306,37 +356,40 @@ const handleNavClick = (path) => {
 }
 
 .mobile-nav-item {
-  @apply w-full flex items-center gap-4 p-4 text-left hover:bg-gray-50 transition-colors duration-200 border-none bg-transparent cursor-pointer;
+  @apply w-full flex items-center gap-4 px-4 py-4 text-left hover:bg-gray-50 transition-colors duration-200 border-none bg-transparent cursor-pointer;
+  padding-right: 12px;
 }
 
-.mobile-nav-item i {
-  @apply text-gray-600 w-5 text-center;
+.mobile-nav-icon {
+  @apply text-gray-500 w-5 text-center text-lg;
 }
 
 .mobile-nav-item span {
-  @apply text-gray-800 font-medium;
+  @apply text-gray-700 font-medium text-base;
 }
 
-.mobile-nav-item:hover i {
-  @apply text-blue-600;
+.mobile-nav-item:hover .mobile-nav-icon {
+  @apply text-blue-500;
 }
 
 .mobile-nav-item:hover span {
-  @apply text-blue-600;
+  @apply text-blue-500;
 }
 
-.login-item {
-  @apply bg-blue-50;
-}
-
-.login-item i,
-.login-item span {
-  @apply text-blue-600;
-}
-
-.logout-item:hover i,
+.logout-item:hover .mobile-nav-icon,
 .logout-item:hover span {
-  @apply text-red-600;
+  @apply text-red-500;
+}
+
+.cart-link-wrapper {
+  @apply relative;
+}
+
+.cart-badge {
+  @apply absolute bg-red-500 text-white text-xs font-bold rounded-full min-w-4 h-4 flex items-center justify-center border-2 border-white leading-none z-10;
+  top: 15px;
+  right: 2px;
+  font-size: 10px;
 }
 
 @media (max-width: 767px) {
@@ -351,5 +404,4 @@ const handleNavClick = (path) => {
   .hamburger-btn {
     @apply flex;
   }
-}
-</style>
+}</style>
