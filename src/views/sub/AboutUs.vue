@@ -65,12 +65,13 @@
             <p class="text-base text-[#7f8c8d] font-medium mb-4">負責內容</p>
             <p class="text-sm text-[#5a6c7d] leading-relaxed mb-6">
               後端環境建構 <br>
-              活動資料庫建置<br>
-              活動後端 API 設計及 CRUD<br>
-              活動前端切版畫面<br>
+              活動 後端資料庫、API 及 CRUD<br>
+              活動 前端頁面設計<br>
+              訂閱、優惠券 頁面設計與串接金流<br>
               訂閱頁面設計 及 串接金流<br>
-              訂閱後端 API 設計及 CRUD <br>
-              Zeabur 實現後端及資料庫部署
+              訂閱、優惠券 資料庫、API 及 CRUD <br>
+              Zeabur 實現後端及資料庫部署 <br>
+              撰寫 Swagger API 文件
             </p>
             <div class="flex justify-center gap-4">
               <a href="https://github.com/Bella-Cheng" target="_blank" class="inline-flex items-center gap-2 px-8 py-2 text-sm font-medium rounded-full transition-all duration-300 bg-[#24292e] text-white hover:bg-[#1a1e22] hover:-translate-y-0.5">
@@ -154,11 +155,11 @@
             <p class="text-base text-[#7f8c8d] font-medium mb-4">負責內容</p>
             <p class="text-sm text-[#5a6c7d] leading-relaxed mb-6">
               註冊登入前端邏輯串接 Pinia store 設計 <br>
-              第三方登入後端api設計<br>
+              第三方登入後端 API 設計<br>
               驗證信功能實作與重發冷卻機制<br>
               軟刪除機制<br>
               API 整合 - Axios 攔截器、錯誤處理、認證機制 <br>
-              活動留言版後端api設計
+              活動留言版後端 API 設計
             </p>
             <div class="flex justify-center gap-4">
               <a href="https://github.com/kirito489" target="_blank" class="inline-flex items-center gap-2 px-8 py-2 text-sm font-medium rounded-full transition-all duration-300 bg-[#24292e] text-white hover:bg-[#1a1e22] hover:-translate-y-0.5">
@@ -211,9 +212,10 @@
             <p class="text-base text-[#7f8c8d] font-medium mb-4">負責內容</p>
             <p class="text-sm text-[#5a6c7d] leading-relaxed mb-6">
               地圖關鍵字搜尋、即時地點建議 <br>
-              即時篩選更新、多重篩選設定<br>
-              動態酒吧資訊、酒吧詳情頁面設計<br>
-              串接酒吧資料庫與收藏頁面 API
+              地圖篩選功能與頁面設計<br>
+              酒吧資訊與詳情頁面設計<br>
+              串接酒吧資料庫與收藏頁面 API<br>
+              串接活動地圖
             </p>
             <div class="flex justify-center gap-4">
               <a href="https://github.com/DouFreddy" target="_blank" class="inline-flex items-center gap-2 px-8 py-2 text-sm font-medium rounded-full transition-all duration-300 bg-[#24292e] text-white hover:bg-[#1a1e22] hover:-translate-y-0.5">

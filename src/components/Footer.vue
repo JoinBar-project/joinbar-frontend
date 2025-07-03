@@ -11,6 +11,7 @@
         <router-link to="/event">酒吧活動</router-link>
         <router-link to="/subscription">訂閱優惠</router-link>
         <router-link to="/aboutUs">關於我們</router-link>
+        <a href="https://joinbar-backend.zeabur.app/api-docs/">API 文件</a>
       </div>
 
       <!-- 酒駕提醒 -->
