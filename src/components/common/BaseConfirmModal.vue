@@ -2,11 +2,10 @@
   <transition name="modal-fade">
     <div 
       v-if="visible" 
-      class="fixed inset-0 z-50 flex items-center justify-center bg-black/40" 
+      class="fixed inset-0 z-[9999] flex items-center justify-center bg-black/40" 
       @click.self="onCancel"
     >
       <div class="w-full max-w-md p-6 space-y-4 bg-white shadow-xl rounded-2xl">
-
         <!-- 可選的圖標區域 -->
         <div v-if="type" class="flex justify-center mb-2">
           <div 
@@ -43,7 +42,6 @@
             {{ confirmText }}
           </button>
         </div>
-
       </div>
     </div>
   </transition>

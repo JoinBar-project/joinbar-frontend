@@ -1,8 +1,6 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
-import axios from 'axios'
-
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000'
+import apiClient from '@/api/axios'
 
 export const useEventStore = defineStore('event', () => {
   const event = ref(null)
@@ -13,13 +11,16 @@ export const useEventStore = defineStore('event', () => {
 
   const createEvent = async (payload) => {
     loading.value = true
+    error.value = null
     try {
-      const res = await axios.post(`${API_BASE_URL}/api/event/create`, payload)
+      const res = await apiClient.post('/event/create', payload) 
       event.value = res.data.event
       events.value.push(res.data.event)
-      error.value = null
+      return { success: true, data: res.data.event }
     } catch (e) {
       error.value = e.response?.data?.message || e.message
+      console.error('創建活動失敗:', e)
+      return { success: false, error: error.value }
     } finally {
       loading.value = false
     }
@@ -27,12 +28,15 @@ export const useEventStore = defineStore('event', () => {
 
   const fetchEvents = async () => {
     loading.value = true
+    error.value = null
     try {
-      const res = await axios.get(`${API_BASE_URL}/api/event/all`)
+      const res = await apiClient.get('/event/all') 
       events.value = res.data
-      error.value = null
+      return { success: true, data: res.data }
     } catch (e) {
       error.value = e.response?.data?.message || e.message
+      console.error('獲取活動列表失敗:', e)
+      return { success: false, error: error.value }
     } finally {
       loading.value = false
     }
@@ -40,54 +44,62 @@ export const useEventStore = defineStore('event', () => {
 
   const updateEvent = async (id, payload) => {
     loading.value = true
+    error.value = null
     try {
-      const res = await axios.put(`${API_BASE_URL}/api/event/update/${id}`, payload)
+      const res = await apiClient.put(`/event/update/${id}`, payload) 
+      
+      // 更新本地事件列表
       const index = events.value.findIndex(e => e.id == id)
       if (index !== -1) {
         events.value[index] = { ...events.value[index], ...res.data }
       }
+      
       event.value = res.data
-      error.value = null
+      return { success: true, data: res.data }
     } catch (e) {
       error.value = e.response?.data?.message || e.message
+      console.error('更新活動失敗:', e)
+      return { success: false, error: error.value }
     } finally {
       loading.value = false
     }
   }
 
   const deleteEvent = async (id) => {
-    loading.value = true;
+    loading.value = true
+    error.value = null
     try {
-      const token = localStorage.getItem('access_token');
-      await axios.delete(`${API_BASE_URL}/api/event/delete/${id}`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
+      await apiClient.delete(`/event/delete/${id}`) 
 
       // 軟刪除後更新本地資料
-      const index = events.value.findIndex(e => e.id == id);
+      const index = events.value.findIndex(e => e.id == id)
       if (index !== -1) {
-        events.value[index].status = 2;
+        events.value[index].status = 2 // 假設 2 代表已刪除
       }
 
-      event.value = null;
-      error.value = null;
+      event.value = null
+      return { success: true } // ✅ 統一返回格式
     } catch (e) {
-      error.value = e.response?.data?.message || e.message || '刪除失敗';
-      throw new Error(error.value);
+      error.value = e.response?.data?.message || e.message || '刪除失敗'
+      console.error('刪除活動失敗:', e)
+      return { success: false, error: error.value }
     } finally {
-      loading.value = false;
+      loading.value = false
     }
-  };
+  }
 
   const fetchEvent = async (id) => {
     loading.value = true
+    error.value = null
     try {
-      const res = await axios.get(`${API_BASE_URL}/api/event/${id}`)
+      const res = await apiClient.get(`/event/${id}`) 
       event.value = res.data.event
       tagIds.value = res.data.tags || []
-      error.value = null
+      return { success: true, data: res.data }
     } catch (e) {
       error.value = e.response?.data?.message || e.message
+      console.error('獲取活動詳情失敗:', e)
+      return { success: false, error: error.value }
     } finally {
       loading.value = false
     }
@@ -98,16 +110,25 @@ export const useEventStore = defineStore('event', () => {
     error.value = null
   }
 
+  const clearError = () => {
+    error.value = null
+  }
+
   return {
+    // 狀態
     event,
     events,
+    tagIds,
     loading,
     error,
+    
+    // 方法
     createEvent,
     fetchEvents,
     updateEvent,
     deleteEvent,
     fetchEvent,
     clearEvent,
+    clearError,
   }
 })

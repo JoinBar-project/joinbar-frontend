@@ -116,30 +116,33 @@ onUnmounted(() => {
 
 
 <template>
-  <div class="relative overflow-hidden bg-stone-100">
+  <div class="relative overflow-hidde">
     <div 
       ref="spotlight"
       class="pointer-events-none fixed top-0 left-0 w-32 h-32 rounded-full
              bg-yellow-400 opacity-50 blur-3xl z-50 transition-transform duration-75 mix-blend-screen">
     </div>
 
-    <div class="bg-[url('@/assets/sub/bar-background2.jpg')] py-20 w-full relative bg-cover bg-[center_88%] opacity-92">
+    <div class="bg-[url('@/assets/sub/bar-background2.jpg')] py-70 w-full relative bg-cover bg-[center_98%] opacity-92">
       <div class="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_rgba(0,0,0,0.1)_20%,_rgba(0,0,0,0.9)_100%)]"></div>
-      <div class="mb-4 relative z-20">
+      <div class="mb-4 relative z-20 bottom-35">
         <h2 class="title text-center p-10 text-7xl text-stone-50 font-bold">酒友卡訂閱</h2>
         <p class="text-center text-stone-50 text-2xl">每月酒香，讓友情更醇厚</p>
       </div>
     </div>
 
     <div class="max-w-7xl m-auto">
-      <div class="grid grid-cols-3 gap-20">
+      <div class="grid grid-cols-3 gap-20 relative bottom-65">
         <div
           v-for="card in cardData"
           :key="card.type"
-          class="bg-[var(--color-black)] flex border rounded-[16px] my-20 hover:scale-105 transition-transform duration-300"
+          class="bg-[#211d1e] flex flex-col rounded-[16px] hover:scale-105 transition-transform duration-300 overflow-hidden"
         >
-          <div class="m-auto w-[66%]">
-            <h3 class="text-6xl text-stone-50 pt-10 pb-4 w-full">{{ card.title }}</h3>
+        <div
+          class="h-[6px] w-full bg-gradient-to-r from-[var(--color-secondary-green)] to-[var(--color-primary-orange)]"
+        ></div>
+          <div class="w-[66%] mx-auto">
+            <h3 class="text-2xl md:text-5xl font-black text-transparent bg-clip-text bg-gradient-to-r from-[var(--color-primary-orange)] to-[var(--color-secondary-green)] mb-2 tracking-wide pt-10 pb-4 text-center">{{ card.title }}</h3>
             <p class="text-zinc-300 py-10 text-center">
               <span class="text-[var(--color-primary-orange)] text-3xl font-bold">
                 ${{ card.price.toLocaleString() }}
@@ -147,7 +150,7 @@ onUnmounted(() => {
             </p>
             <div v-for="(benefit, idx) in card.benefits" :key="idx" class="flex py-4">
               <i class="fa-solid fa-check text-[var(--color-primary-orange)] pr-4"></i>
-              <p class="text-stone-50 font-bold">
+              <p class="text-zinc-200 font-bold">
                 {{ benefit.benefit.replace('1 次', `${benefit.counts} 次 `) }}
               </p>
             </div>
@@ -159,7 +162,7 @@ onUnmounted(() => {
                 'mt-20 mb-10 px-6 py-2 text-lg rounded-[12px] block mx-auto transition',
                 isSubscribed(card.type)
                   ? 'disabled:bg-[var(--color-primary-orange)] text-white text-2xl'
-                  : 'text-stone-50 border-2 border-[var(--color-primary-orange)] bg-neutral-900 hover:bg-[var(--color-primary-orange)]'
+                  : 'text-stone-200 border-2 border-[var(--color-primary-orange)] bg-neutral-900 hover:bg-[var(--color-primary-orange)]'
               ]"
             >
               {{ isSubscribed(card.type) ? '已訂閱' : '即刻擁有' }}
@@ -167,6 +170,10 @@ onUnmounted(() => {
           
           </div>
         </div>
+      </div>
+    </div>
+    <div class="flex justify-center relative bottom-30">
+      <div class="w-120 h-1 bg-gradient-to-r from-transparent via-[#afb18c] through-[#e1ac67] to-transparent rounded-full shadow-lg">
       </div>
     </div>
   </div>
@@ -184,7 +191,7 @@ onUnmounted(() => {
 <style scoped>
 
 .title{
-  text-shadow: 2px 2px 8px rgba(0,0,0,2);
+  text-shadow: 2px 2px 8px rgba(0,0,0,0.8);
 }
 
 </style>

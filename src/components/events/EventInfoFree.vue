@@ -6,8 +6,10 @@ import EventHoster from './EventHoster.vue';
 import MessageBoard from './MessageBoard.vue';
 import ModalEdit from '@/components/events/ModalEdit.vue';
 import BaseConfirmModal from '@/components/common/BaseConfirmModal.vue';
-import BaseAlertModal from '@/components/common/BaseAlertModal.vue';
+import { useAlertModal } from '@/composables/useAlertModal';
 import { useGoogleMaps } from "@/composables/useGoogleMaps/userIndex.js";
+import { useAuthStore } from '@/stores/authStore'; 
+const authStore = useAuthStore(); 
 
 const emit = defineEmits(['update', 'close']);
 
@@ -21,17 +23,7 @@ const props = defineProps({
   },
 });
 
-const alertVisible = ref(false);
-const alertType = ref('');
-const alertTitle = ref('');
-const alertMessage = ref('');
-
-function showAlert(type, title, message) {
-  alertType.value = type;
-  alertTitle.value = title;
-  alertMessage.value = message;
-  alertVisible.value = true;
-}
+const { showAlert } = useAlertModal();
 
 const eventRef = toRef(props, 'event');
 const localEvent = ref({ ...props.event });
@@ -40,15 +32,22 @@ const isUpdating = ref(false);
 
 const currentEvent = computed(() => localEvent.value || {});
 const currentTags = computed(() => localTags.value || []);
+
 const currentUserId = computed(() => {
-  const user = JSON.parse(localStorage.getItem("user"));
-  return user?.id ? Number(user.id) : null;
+  return authStore.user?.id || authStore.currentUser?.id || (() => {
+    try {
+      const user = JSON.parse(localStorage.getItem('user') || '{}');
+      return user?.id ? Number(user.id) : null;
+    } catch {
+      return null;
+    }
+  })();
 });
+
 const isHostUser = computed(() => {
-  return (
-    currentUserId.value !== null &&
-    Number(currentEvent.value.hostUser) === currentUserId.value
-  );
+  const userId = currentUserId.value;
+  const hostId = currentEvent.value?.hostUser?.id || currentEvent.value?.hostUser;
+  return userId !== null && hostId !== null && Number(userId) === Number(hostId);
 });
 
 const mapContainer = ref(null);
@@ -186,17 +185,14 @@ const handleCancelConfirm = async () => {
 };
 </script>
 
-
 <template>
   <div>
-
-    <div v-if="isUpdating" class="fixed inset-0 bg-black/50 flex justify-center items-center z-[9999]">
-      <div class="bg-white p-8 rounded-[10px] flex items-center gap-4 text-[1.2rem] shadow-md">
-        <i class="fa-solid fa-spinner fa-spin text-[var(--color-primary-orange)] pr-[30px] mt-[13px] min-w-[30px]"></i>
-
-        <span>更新中...</span>
-      </div>
+    <div v-if="isUpdating" class="fixed inset-0 flex items-center justify-center bg-black/50 z-9998">
+    <div class="bg-white p-8 rounded-[10px] flex items-center gap-4 text-[1.2rem] shadow-md">
+      <i class="fa-solid fa-spinner fa-spin text-[var(--color-primary-orange)] pr-[30px] mt-[13px] min-w-[30px]"></i>
+      <span>更新中...</span>
     </div>
+  </div>
 
     <div class="max-w-[100vw] pt-[2%] flex justify-center items-center">
       <div class="w-full max-w-[1200px] min-w-[1170px] bg-[#f1f1f1] pb-[30px] mx-auto relative rounded-[20px] overflow-hidden">
@@ -207,7 +203,7 @@ const handleCancelConfirm = async () => {
           <div class="absolute bottom-[70px] left-[80px] z-[2] bg-gray-500 rounded-[10px] max-w-[325px] w-[325px] h-[520px] mx-auto shadow-md cursor-pointer">
             <div
               ref="mapContainer"
-              class="w-full h-full rounded-lg border-0"
+              class="w-full h-full border-0 rounded-lg"
               style="min-height: 300px; background: #2d2d2d"
             ></div>
           </div>
@@ -247,39 +243,42 @@ const handleCancelConfirm = async () => {
 
             <div class="flex">
 
-              <button
-                @click="handleJoinToggle"
-                :disabled="isJoin || isUpdating"
-                :class="{
-                  'opacity-50 cursor-not-allowed': isJoin || isUpdating,
-                }"
-                type="button"
-                class="event-btn event-btn-free"
-              >
-                {{ isUpdating ? "處理中..." : isJoin ? "已報名" : "參加活動" }}
-              </button>
-
-              <button
-                v-if="isJoin"
-                @click="openCancelModal()"
-                :disabled="!isOver24hr || isUpdating"
-                :class="[
-                  'event-btn-free',
-                  isOver24hr && !isUpdating
-                    ? 'cursor-pointer'
-                    : 'cursor-not-allowed opacity-50',
-                ]"
-                type="button"
-                class="event-btn-free"
-              >
-                {{ isUpdating ? "處理中..." : "取消報名" }}
-              </button>
-
+              <!-- 主辦人 -->
               <ModalEdit
-                v-if="currentEvent.id && isHostUser"
+                v-if="isHostUser && currentEvent.id"
                 :event-id="currentEvent.id"
+                :event="currentEvent"
                 @update="handleEventUpdate"
               />
+
+              <!-- 非主辦人 -->
+              <template v-else-if="!isHostUser && authStore?.isAuthenticated">
+                <button
+                  @click="handleJoinToggle"
+                  :disabled="isJoin || isUpdating"
+                  :class="{ 'opacity-50 cursor-not-allowed': isJoin || isUpdating }"
+                  type="button"
+                  class="event-btn event-btn-free">
+                  {{ isUpdating ? '處理中...' : (isJoin ? '已報名' : '參加活動') }}
+                </button>
+                
+                <button
+                  v-if="isJoin"
+                  @click="openCancelModal()"
+                  :disabled="!isOver24hr || isUpdating"
+                  :class="['event-btn-free', (isOver24hr && !isUpdating) ? 'cursor-pointer' : 'cursor-not-allowed opacity-50']"
+                  type="button"
+                  class="event-btn-free">
+                  {{ isUpdating ? '處理中...' : '取消報名' }}
+                </button>
+              </template>
+
+              <!-- 未登入用戶提示 -->
+              <div v-else-if="!authStore?.isAuthenticated" class="login-prompt">
+                <p style="padding: 20px; background: #f0f0f0; border-radius: 10px; text-align: center;">
+                  請先登入以參加活動
+                </p>
+              </div>            
             </div>
           </div>
         </div>
@@ -287,7 +286,7 @@ const handleCancelConfirm = async () => {
     </div>
 
     <EventHoster :user="currentEvent.hostUser" class="mb-12" />
-    <MessageBoard v-if="isJoin" class="mb-12"/>
+    <MessageBoard v-if="isJoin || isHostUser" class="mb-12"/>
 
     <BaseConfirmModal
       :visible="showModal"
@@ -298,13 +297,6 @@ const handleCancelConfirm = async () => {
       cancelText="取消"
       @confirm="handleCancelConfirm"
       @cancel="closeModal"
-    />
-    <BaseAlertModal
-      :visible="alertVisible"
-      :type="alertType"
-      :title="alertTitle"
-      :message="alertMessage"
-      @close="alertVisible = false"
     />
   </div>
 </template>
@@ -335,5 +327,9 @@ const handleCancelConfirm = async () => {
 .event-btn-free:disabled {
   opacity: 0.6;
   cursor: not-allowed;
+}
+
+.login-prompt {
+  margin-top: 30px;
 }
 </style>

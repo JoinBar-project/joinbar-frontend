@@ -22,6 +22,10 @@ const props = defineProps({
   },
 })
 
+console.log('🕒 props.event.startAt:', props.event.startAt)
+console.log('📘 typeof:', typeof props.event.startAt)
+console.log('🔍 包含 T 和 Z?', props.event.startAt?.includes?.('T'), props.event.startAt?.includes?.('Z'))
+
 const emit = defineEmits(['update'])
 
 const tagStore = useTagStore()
@@ -34,8 +38,9 @@ function getTagName(id) {
 function formatEventDate(dateStr) {
   if (!dateStr) return ''
   const weekMap = ['日', '一', '二', '三', '四', '五', '六']
-  const d = dayjs(dateStr)
-  return `${d.format('LL')}(${weekMap[d.day()]}) ${d.format('HH:mm')}`
+  // 減去 8 小時
+  const d = dayjs(dateStr).subtract(8, 'hour')
+  return `${d.format('YYYY.MM.DD')} ${d.format('HH:mm')} (週${weekMap[d.day()]})`
 }
 
 function sliceChinese(str, n) {
@@ -52,27 +57,34 @@ function goToInfo() {
 
 <template>
   <div class="event-card" @click="goToInfo">
-    <img :src="props.event.imageUrl" alt="活動圖片" class="event-img" />
-    <div class="event-info">
-      <p class="time text-gray-400 leading-normal">
-        {{ formatEventDate(props.event.startAt) }} ~ {{ formatEventDate(props.event.endAt) }}
-      </p>
-      <h3 class="title h-[5.5rem]">{{ props.event.name }}</h3>
-      <p class="leading-normal">
-        <span class="location">📍{{ sliceChinese(props.event.location, 6) }}</span>｜<span class="bar-name leading-[2.5]">{{ props.event.barName }}</span>
-      </p>
-      <div class="bottom-row">
-        <div class="tags">
-          <span class="tag" v-for="tagId in props.event.tagIds" :key="tagId">
-            #{{ getTagName(tagId) }}
-          </span>
-        </div>
-        <div v-if="props.event.price === null" class="btn-open-form bg-[var(--color-secondary-green)] text-white hover:bg-[var(--color-primary-orange)]">
-          查看詳情
-        </div>
-        <div v-else class="btn-open-form bg-[var(--color-primary-red)] text-white hover:bg-[var(--color-primary-orange)]">
-          查看付費活動
-        </div>
+    
+    <div>
+      <img :src="props.event.imageUrl" alt="活動圖片" class="event-img" />
+      <div class="event-info">
+        <p class="time text-gray-400 leading-normal">
+          {{ formatEventDate(props.event.startAt) }} ~ {{ formatEventDate(props.event.endAt) }}
+        </p>
+        <h3 class="title">{{ props.event.name }}</h3>
+        <p class="bar-name leading-[2] md:leading-[2] md:text-sm">
+          <span class="font-bold text-[var(--color-primary-red)]">酒吧：</span><span class="text-stone-500">{{ props.event.barName }}</span><br/>
+          <span class="font-bold text-[var(--color-primary-red)]">地點：</span><span class="text-stone-500">{{ props.event.location }}</span>
+
+        </p>
+      </div>
+    </div>
+ 
+    <div class="bottom-row p-4">
+      <div class="tags">
+        <span class="tag" v-for="tagId in props.event.tagIds" :key="tagId">
+          #{{ getTagName(tagId) }}
+        </span>
+      </div>
+      <div v-if="props.event.price === null" class="btn-open-form bg-[var(--color-secondary-green)] text-white hover:bg-[var(--color-primary-orange)]
+      active:bg-[var(--color-primary-orange)] text-xs md:text-sm">
+        查看詳情
+      </div>
+      <div v-else class="btn-open-form bg-[var(--color-primary-red)] text-white hover:bg-[var(--color-primary-orange)] active:bg-[var(--color-primary-orange)] text-xs md:text-sm">
+        查看付費活動
       </div>
     </div>
   </div>
@@ -82,11 +94,11 @@ function goToInfo() {
 @reference "tailwindcss";
 
 .event-card {
-  @apply bg-gray-100 rounded-2xl m-2 transition duration-300 transform hover:-translate-y-1 hover:shadow-xl cursor-pointer;
+  @apply flex flex-col justify-between bg-gray-100 rounded-2xl transition duration-300 transform hover:-translate-y-1 hover:shadow-xl cursor-pointer;
 }
 
 .event-img {
-  @apply w-full h-44 object-cover rounded-t-2xl bg-gray-300;
+  @apply w-full h-36 object-cover rounded-t-2xl bg-gray-300;
 }
 
 .event-info {
@@ -94,7 +106,7 @@ function goToInfo() {
 }
 
 .time {
-  @apply text-sm;
+  @apply text-xs;
 }
 
 .title {
@@ -106,11 +118,11 @@ function goToInfo() {
 }
 
 .tags {
-  @apply flex flex-nowrap gap-1 my-2;
+  @apply flex flex-nowrap gap-1;
 }
 
 .tag {
-  @apply inline-block border-2 px-2 py-1 rounded-2xl text-xs font-medium;
+  @apply inline-block border-2 px-2 py-1 rounded-2xl font-medium text-[10px] md:text-[10px];
   border-color: #8B7355;
   color: #8B7355;
 }
@@ -119,24 +131,13 @@ function goToInfo() {
   @apply text-black text-sm bg-gray-300 px-2 py-2 rounded-2xl;
 }
 
-.bar-name {
-  @apply font-bold;
-}
-
 .bottom-row {
-  @apply flex items-center justify-between gap-2 mt-2;
+  @apply flex items-center justify-between flex-wrap gap-2;
+  margin-top: auto;
 }
 
 .btn-open-form {
-  @apply flex justify-center mt-2 w-32 py-2 text-white rounded-2xl transition duration-200;
+  @apply flex justify-center w-24 md:w-30 py-2 text-white rounded-2xl transition duration-200;
 }
 
-/* .btn-edit {
-  background-color: var(--color-primary-red);
-  color: white;
-} */
-
-/* .open-info-btn:hover {
-  background-color: #878a6a;
-} */
 </style>
