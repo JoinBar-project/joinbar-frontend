@@ -21,27 +21,36 @@ const {
 const router = useRouter();
 const route = useRoute();
 
-// 全局 LINE Pay 回調處理
+// 在 App.vue 中
 const handleGlobalLinePayCallback = () => {
-  const urlParams = new URLSearchParams(window.location.search);
-  const transactionId = urlParams.get('transactionId');
-  const orderId = urlParams.get('orderId');
+  // 確保在組件完全掛載後再執行
+  if (!route || !router) {
+    console.warn('路由系統還未完全初始化');
+    return;
+  }
 
-  console.log('🔍 App.vue 檢查 LINE Pay 回調:', {
-    href: window.location.href,
-    transactionId,
-    orderId,
-    currentPath: route.path
-  });
+  try {
+    const urlParams = new URLSearchParams(window.location.search);
+    const transactionId = urlParams.get('transactionId');
+    const orderId = urlParams.get('orderId');
 
-  // 如果有 LINE Pay 參數且不在正確頁面
-  if (transactionId && orderId && route.path !== '/payment-waiting') {
-    console.log('✅ 檢測到 LINE Pay 回調，跳轉到等待頁面');
-
-    router.replace({
-      path: '/payment-waiting',
-      query: { orderId, transactionId }
+    console.log('🔍 App.vue 檢查 LINE Pay 回調:', {
+      href: window.location.href,
+      transactionId,
+      orderId,
+      currentPath: route.path
     });
+
+    if (transactionId && orderId && route.path !== '/payment-waiting') {
+      console.log('✅ 檢測到 LINE Pay 回調，跳轉到等待頁面');
+
+      router.replace({
+        path: '/payment-waiting',
+        query: { orderId, transactionId }
+      });
+    }
+  } catch (error) {
+    console.error('LINE Pay 回調處理錯誤:', error);
   }
 };
 
