@@ -86,10 +86,10 @@ function handleClick() {
 @reference "tailwindcss";
 
 .btn-open-form {
-  @apply mt-[30px] rounded-[20px] border-0 text-[24px] text-center shadow-md cursor-pointer transition-colors duration-200 mx-auto block;
+  @apply mt-[30px] rounded-[20px] border-0 md:text-[24px] text-center shadow-md cursor-pointer transition-colors duration-200 mx-auto block;
 }
 .btn-create {
-  @apply px-6 py-3 text-white font-medium rounded-xl shadow-lg hover:shadow-xl hover:bg-[#a83c51] transform hover:scale-105 transition-all duration-300 ease-in-out;
+  @apply px-4 md:px-6 py-3 text-white font-medium rounded-xl shadow-lg hover:shadow-xl hover:bg-[#a83c51] transform hover:scale-105 transition-all duration-300 ease-in-out;
   background-color: var(--color-primary-red);
 }
 
