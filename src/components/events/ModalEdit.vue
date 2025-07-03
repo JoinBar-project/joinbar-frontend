@@ -106,7 +106,7 @@ function handleOverlayClick(event) {
 }
 
 .popup-overlay {
-  @apply fixed top-0 left-0 z-[100] w-full h-full flex justify-center items-center;
+  @apply fixed top-0 left-0 z-9998 w-full h-full flex justify-center items-center;
   background-color: rgba(0, 0, 0, 0.6);
 }
 
@@ -115,11 +115,11 @@ function handleOverlayClick(event) {
 }
 
 .popup-close-btn {
-  @apply absolute right-4 text-[30px] bg-transparent border-none text-white cursor-pointer z-[101] transition-colors duration-200;
+  @apply absolute right-4 text-[30px] bg-transparent border-none text-white cursor-pointer z-3000 transition-colors duration-200;
 }
 
 .popup-close-btn:hover {
-  @apply text-orange-600;
+  @apply text-red-600;
 }
 
 .popup-enter-active, .popup-leave-active {

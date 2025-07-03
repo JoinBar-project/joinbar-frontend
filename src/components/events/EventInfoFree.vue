@@ -187,12 +187,12 @@ const handleCancelConfirm = async () => {
 
 <template>
   <div>
-    <div v-if="isUpdating" class="fixed inset-0 bg-black/50 flex justify-center items-center z-[9999]">
-      <div class="bg-white p-8 rounded-[10px] flex items-center gap-4 text-[1.2rem] shadow-md">
-        <i class="fa-solid fa-spinner fa-spin text-[var(--color-primary-orange)] pr-[30px] mt-[13px] min-w-[30px]"></i>
-        <span>更新中...</span>
-      </div>
+    <div v-if="isUpdating" class="fixed inset-0 flex items-center justify-center bg-black/50 z-9998">
+    <div class="bg-white p-8 rounded-[10px] flex items-center gap-4 text-[1.2rem] shadow-md">
+      <i class="fa-solid fa-spinner fa-spin text-[var(--color-primary-orange)] pr-[30px] mt-[13px] min-w-[30px]"></i>
+      <span>更新中...</span>
     </div>
+  </div>
 
     <div class="max-w-[100vw] pt-[2%] flex justify-center items-center">
       <div class="w-full max-w-[1200px] min-w-[1170px] bg-[#f1f1f1] pb-[30px] mx-auto relative rounded-[20px] overflow-hidden">

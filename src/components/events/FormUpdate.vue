@@ -482,9 +482,15 @@ onUnmounted(() => {
 
 .form-row input {
   @apply h-9 px-4 text-base border-2 border-gray-300 rounded-lg bg-white 
-         focus:border-blue-500 focus:ring-2 focus:ring-blue-200 focus:outline-none
+         focus:ring-2 focus:outline-none
          transition-all duration-200 ease-in-out
          placeholder:text-gray-400;
+}
+
+.form-row input:focus {
+  border-color: var(--color-primary-orange);
+  ring-color: var(--color-primary-orange);
+  box-shadow: 0 0 0 2px rgba(255, 136, 0, 0.2);
 }
 
 .form-row input:required {
@@ -492,7 +498,7 @@ onUnmounted(() => {
 }
 
 .form-row input:required:valid {
-  @apply border-green-300;
+  border-color: var(--color-primary-orange);
 }
 
 .event-location {
@@ -546,15 +552,53 @@ onUnmounted(() => {
 }
 
 :deep(.flatpickr-day.selected) {
-  background: #dc2626 !important;
-  border-color: #dc2626 !important;
+  background: #e1ac67 !important;
+  border-color: #e1ac67 !important;
   color: white !important;
 }
 
 :deep(.flatpickr-day:hover:not(.selected)) {
-  background: #ff8800 !important;
-  border-color: #ff8800 !important;
+  background: #e1ac67 !important;
+  border-color: #e1ac67 !important;
   color: white !important;
+}
+
+:deep(.flatpickr-months .flatpickr-month) {
+  background: #e1ac67 !important;
+  color: white !important;
+}
+
+:deep(.flatpickr-current-month .flatpickr-monthDropdown-months) {
+  background: #e1ac67 !important;
+  color: white !important;
+}
+
+:deep(.flatpickr-current-month .numInputWrapper input) {
+  color: white !important;
+}
+
+:deep(.flatpickr-weekdays) {
+  background: var(--color-primary-orange) !important;
+}
+
+:deep(.flatpickr-weekday) {
+  background: var(--color-primary-orange) !important;
+  color: white !important;
+}
+
+:deep(.flatpickr-time input) {
+  border-radius: 6px !important;
+  border: 1px solid #e5e7eb !important;
+}
+
+:deep(.flatpickr-time input:focus) {
+  border-color: var(--color-primary-orange) !important;
+  box-shadow: 0 0 0 2px rgba(255, 136, 0, 0.2) !important;
+}
+
+:deep(.flatpickr-confirm) {
+  background: var(--color-primary-orange) !important;
+  border-color: var(--color-primary-orange) !important;
 }
 
 :deep(.flatpickr-time input) {
