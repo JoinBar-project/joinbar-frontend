@@ -38,7 +38,8 @@ function getTagName(id) {
 function formatEventDate(dateStr) {
   if (!dateStr) return ''
   const weekMap = ['日', '一', '二', '三', '四', '五', '六']
-  const d = dayjs(dateStr).tz('Asia/Taipei')
+  // const d = dayjs(dateStr).tz('Asia/Taipei')
+  const d = dayjs(dateStr)
   return `${d.format('LL')}(${weekMap[d.day()]}) ${d.format('HH:mm')}`
 }
 
