@@ -80,7 +80,7 @@
 
     <div
       class="top-left-controls hidden md:flex absolute top-5 left-[var(--sidebar-width,40px)] z-[101] flex-row flex-wrap items-center gap-[10px] p-[15px] bg-white/90 rounded-lg shadow-[0_4px_12px_rgba(0,0,0,0.2)] transition-[left] duration-300 ease-in-out"
-      :style="{ left: isSidebarCollapsed ? '96px' : '440px' }"
+      :style="{ left: isSidebarCollapsed ? '84px' : '440px' }"
     >
       <button
         class="filter-toggle-button map-control-button"
@@ -138,8 +138,18 @@
       ]"
     >
       <div class="sidebar-toggle-btn" @click="toggleSidebarCollapse">
-        <span v-if="!isSidebarCollapsed">⮜</span>
-        <span v-else>⮞</span>
+        <img
+          v-if="!isSidebarCollapsed"
+          src="/close-left.svg"
+          alt="收合"
+          style="width: 24px; height: 24px"
+        />
+        <img
+          v-else
+          src="/open-right.svg"
+          alt="展開"
+          style="width: 24px; height: 24px"
+        />
       </div>
       <div v-if="!isSidebarCollapsed">
         <div class="mobile-sidebar-header md:hidden">
@@ -1176,10 +1186,10 @@ onUnmounted(() => {
 }
 
 .bar-list-sidebar.sidebar-collapsed {
-  width: 32px !important;
-  min-width: 32px !important;
-  max-width: 32px !important;
-  overflow: visible !important;
+  width: 32px;
+  min-width: 32px;
+  max-width: 32px;
+  overflow: visible;
   box-shadow: none;
   background: transparent;
 }
@@ -1206,9 +1216,9 @@ onUnmounted(() => {
   html,
   body,
   .relative.w-screen.h-screen.overflow-hidden {
-    overflow-x: hidden !important;
-    width: 100vw !important;
-    max-width: 100vw !important;
+    overflow-x: hidden;
+    width: 100vw;
+    max-width: 100vw;
     position: relative;
   }
 
@@ -1303,13 +1313,13 @@ onUnmounted(() => {
     font-size: 10px;
   }
   .filter-panel-mobile {
-    position: fixed !important;
-    top: 0 !important;
-    left: 0 !important;
-    width: 80% !important;
-    height: 100% !important;
-    bottom: 0 !important;
-    z-index: 99999 !important;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 80%;
+    height: 100%;
+    bottom: 0;
+    z-index: 99999;
     padding-top: env(safe-area-inset-top);
     border-radius: 10px;
   }
