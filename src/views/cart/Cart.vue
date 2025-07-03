@@ -91,6 +91,7 @@
               :title="'移除 ' + item.name"
             >
               <i class="fa-solid fa-trash-can remove-icon"></i>
+
             </button>
           </div>
           

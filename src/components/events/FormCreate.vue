@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed, watch, onMounted } from "vue";
+import { ref, computed, watch, onMounted, onUnmounted, nextTick } from "vue";
 import apiClient from "@/api/axios";
 import { useEventForm } from "@/composables/useEventForm";
 import { useAuthStore } from "@/stores/authStore";
@@ -8,10 +8,16 @@ import Hashtag from "./Hashtag.vue";
 import { useGoogleMaps } from "@/composables/useGoogleMaps/userIndex.js";
 import debounce from "lodash/debounce";
 
+import flatpickr from 'flatpickr';
+import 'flatpickr/dist/flatpickr.css';
+import { Mandarin } from 'flatpickr/dist/l10n/zh.js';
+import { useAlertModal } from "@/composables/useAlertModal";
+
 const emit = defineEmits(["submit"]);
 
 const authStore = useAuthStore();
 const tagStore = useTagStore();
+const { showAlert } = useAlertModal();
 
 const isAdmin = computed(() => authStore.user?.role === "admin");
 
@@ -30,6 +36,73 @@ const imageFile = ref(null);
 const imagePreview = ref(null);
 const fileInput = ref(null);
 
+const startDateInput = ref(null);
+const endDateInput = ref(null);
+const startDatePicker = ref(null);
+const endDatePicker = ref(null);
+
+const initFlatpickr = async () => {
+  await nextTick();
+  
+  // 開始日期
+  if (startDateInput.value && !startDatePicker.value) {
+    startDatePicker.value = flatpickr(startDateInput.value, {
+      locale: Mandarin,
+      dateFormat: 'Y-m-d H:i',
+      enableTime: true,
+      time_24hr: true,
+      minDate: 'today',
+      allowInput: false,
+      clickOpens: true,
+      minuteIncrement: 30,
+      
+      onChange: function(selectedDates, dateStr) {
+        eventStartDate.value = dateStr;
+        
+        // 選定開始日期時 設定最小時間
+        if (endDatePicker.value && selectedDates[0]) {
+          endDatePicker.value.set('minDate', selectedDates[0]);
+          
+          // 結束日期早於開始日期 清掉結束日期
+          if (eventEndDate.value && new Date(eventEndDate.value) <= selectedDates[0]) {
+            endDatePicker.value.clear();
+            eventEndDate.value = '';
+          }
+        }
+      }
+    });
+  }
+  
+  // 結束日期
+  if (endDateInput.value && !endDatePicker.value) {
+    endDatePicker.value = flatpickr(endDateInput.value, {
+      locale: Mandarin,
+      dateFormat: 'Y-m-d H:i',
+      enableTime: true,
+      time_24hr: true,
+      minDate: 'today',
+      allowInput: false,
+      clickOpens: true,
+      minuteIncrement: 30,
+      
+      onChange: function(selectedDates, dateStr) {
+        eventEndDate.value = dateStr;
+      }
+    });
+  }
+}
+
+const destroyFlatpickr = () => {
+  if (startDatePicker.value) {
+    startDatePicker.value.destroy();
+    startDatePicker.value = null;
+  }
+  if (endDatePicker.value) {
+    endDatePicker.value.destroy();
+    endDatePicker.value = null;
+  }
+}
+
 const mapContainer = ref(null);
 const {
   isReady,
@@ -44,7 +117,7 @@ const {
   getPlaceDetails,
 } = useGoogleMaps(mapContainer, {
   googleMapsApiKey: import.meta.env.VITE_GOOGLE_MAPS_API_KEY,
-  onError: (msg) => alert(msg),
+  onError: (msg) => showAlert('error', '地圖錯誤', msg),
 });
 
 const searchBarName = ref("");
@@ -158,12 +231,12 @@ function handleImageSelect(event) {
   const file = event.target.files[0];
   if (file) {
     if (!file.type.startsWith("image/")) {
-      alert("請選擇圖片檔案");
+      showAlert('warning', '檔案格式錯誤', '請選擇圖片檔案');
       return;
     }
 
     if (file.size > 1 * 1024 * 1024) {
-      alert("圖片檔案大小不能超過 1MB");
+      showAlert('warning', '檔案過大', '圖片檔案大小不能超過 1MB');
       return;
     }
 
@@ -183,7 +256,7 @@ function triggerFileInput() {
 
 async function onSubmit() {
   if (!authStore.isAuthenticated) {
-    alert("請先登入後再建立活動");
+    showAlert('warning', '尚未登入', '請先登入後再建立活動');
     return;
   }
 
@@ -194,12 +267,12 @@ async function onSubmit() {
     !eventEndDate.value ||
     !eventPeople.value
   ) {
-    alert("請完整填寫所有欄位！");
+    showAlert('warning', '資料不完整', '請完整填寫所有欄位！');
     return;
   }
 
   if (isAdmin.value && (!eventPrice.value || isNaN(eventPrice.value))) {
-    alert("請輸入有效的價格！");
+    showAlert('warning', '價格錯誤', '請輸入有效的價格！');
     return;
   }
 
@@ -247,6 +320,7 @@ async function onSubmit() {
       },
     });
 
+    // 清空表單
     eventName.value = "";
     barName.value = "";
     eventLocation.value = "";
@@ -255,11 +329,15 @@ async function onSubmit() {
     eventPrice.value = "";
     eventPeople.value = "";
     eventHashtags.value = [];
+    
+    // 清空日期
+    if (startDatePicker.value) startDatePicker.value.clear();
+    if (endDatePicker.value) endDatePicker.value.clear();
 
     if (imageFile.value) imageFile.value = null;
     if (imagePreview.value) imagePreview.value = null;
 
-    alert("活動建立成功！");
+    showAlert('success', '建立成功', '活動建立成功！');
 
     emit("submit", {
       success: true,
@@ -278,15 +356,15 @@ async function onSubmit() {
         headers: error.response.headers,
       });
       errorMessage = error.response.data?.message || "伺服器錯誤";
-      alert(`建立失敗: ${errorMessage}`);
+      showAlert('error', '建立失敗', errorMessage);
     } else if (error.request) {
       console.error("網路錯誤:", error.request);
       errorMessage = "網路連線錯誤，請檢查網路狀態";
-      alert(errorMessage);
+      showAlert('error', '網路錯誤', errorMessage);
     } else {
       console.error("其他錯誤:", error.message);
       errorMessage = error.message;
-      alert(`發生錯誤: ${errorMessage}`);
+      showAlert('error', '發生錯誤', errorMessage);
     }
 
     emit("submit", {
@@ -295,6 +373,14 @@ async function onSubmit() {
     });
   }
 }
+
+onMounted(async () => {
+  await initFlatpickr();
+})
+
+onUnmounted(() => {
+  destroyFlatpickr();
+})
 </script>
 
 <template>
@@ -302,7 +388,7 @@ async function onSubmit() {
     <div class="form-header">建立新活動</div>
     <div class="form-container">
       <div
-        class="bg-gradient-to-br from-gray-100 to-gray-300 rounded-3xl cursor-pointer form-image-upload water-drop-upload hover:opacity-80 active:opacity-50"
+        class="cursor-pointer bg-gradient-to-br from-gray-100 to-gray-300 rounded-3xl form-image-upload water-drop-upload hover:opacity-80 active:opacity-50"
         @click="triggerFileInput"
       >
         <input
@@ -325,7 +411,7 @@ async function onSubmit() {
             class="object-cover w-full h-full"
           />
           <div
-            class="flex absolute inset-0 justify-center items-center rounded-t-xl opacity-0 backdrop-blur-sm transition-opacity hover:opacity-100"
+            class="absolute inset-0 flex items-center justify-center transition-opacity opacity-0 rounded-t-xl backdrop-blur-sm hover:opacity-100"
           >
             <span class="text-lg font-medium text-white">點擊重新選擇</span>
           </div>
@@ -396,17 +482,25 @@ async function onSubmit() {
           <div class="form-row">
             <label for="event-start-date">開始日期</label>
             <input
-              type="datetime-local"
+              ref="startDateInput"
+              type="text"
               id="event-start-date"
-              v-model="eventStartDate"
+              :value="eventStartDate"
+              placeholder="請選擇開始日期時間"
+              readonly
+              class="cursor-pointer"
             />
           </div>
           <div class="form-row">
             <label for="event-end-date">結束日期</label>
             <input
-              type="datetime-local"
+              ref="endDateInput"
+              type="text"
               id="event-end-date"
-              v-model="eventEndDate"
+              :value="eventEndDate"
+              placeholder="請選擇結束日期時間"
+              readonly
+              class="cursor-pointer"
             />
           </div>
           <div class="form-row" v-if="isAdmin">
@@ -434,7 +528,7 @@ async function onSubmit() {
         <div class="form-right">
           <div
             ref="mapContainer"
-            class="w-full h-full rounded-lg border-0"
+            class="w-full h-full border-0 rounded-lg"
             style="min-height: 300px; background: #2d2d2d"
           ></div>
         </div>
@@ -512,5 +606,28 @@ async function onSubmit() {
 
 .btn-submit:hover {
   background-color: var(--color-primary-orange);
+}
+
+:deep(.flatpickr-calendar) {
+  border-radius: 12px !important;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15) !important;
+  border: 1px solid #e5e7eb !important;
+  font-family: inherit !important;
+}
+
+:deep(.flatpickr-day.selected) {
+  background: #dc2626 !important;
+  border-color: #dc2626 !important;
+  color: white !important;
+}
+
+:deep(.flatpickr-day:hover:not(.selected)) {
+  background: #ff8800 !important;
+  border-color: #ff8800 !important;
+  color: white !important;
+}
+
+:deep(.flatpickr-time input) {
+  border-radius: 6px !important;
 }
 </style>

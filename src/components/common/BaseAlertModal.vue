@@ -38,7 +38,7 @@ const buttonClass = computed(() => {
   <transition name="modal-fade">
     <div
       v-if="visible"
-      class="fixed inset-0 z-50 flex items-center justify-center bg-black/40"
+      class="fixed inset-0 z-[9999] flex items-center justify-center bg-black/40"
       @click.self="onClose"
     >
       <div class="w-full max-w-md p-6 space-y-4 text-center bg-white shadow-xl rounded-2xl">
@@ -69,7 +69,6 @@ const buttonClass = computed(() => {
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
             </svg>
           </div>
-
         </slot>
 
         <h2 class="text-xl font-semibold text-gray-800">{{ title }}</h2>
