@@ -4,6 +4,9 @@ import { RouterLink, useRouter } from 'vue-router';
 import { useAuthStore } from '@/stores/authStore';
 import { storeToRefs } from 'pinia';
 import Swal from 'sweetalert2';
+import { useAlertModal } from '@/composables/useAlertModal';
+
+const { showAlert, showConfirm } = useAlertModal();
 
 const authStore = useAuthStore();
 const { user } = storeToRefs(authStore);
@@ -73,55 +76,45 @@ const closeAllMobileDropdowns = () => {
 };
 
 const handleLogout = async () => {
-  if (authStore.loginMethod === 'line') {
-    try {
-      const result = await authStore.lineLogout();
+  showConfirm(
+    '確認登出',
+    '您確定要登出嗎？',
+    '確認登出',
+    '取消',
+    async () => {
+      // 確認登出
+      try {
+        const result = authStore.loginMethod === 'line' 
+          ? await authStore.lineLogout()
+          : await authStore.logout();
 
-      if (result.success) {
-        await Swal.fire({
-          title: '登出成功！',
-          text: '您已安全登出，感謝使用',
-          icon: 'success',
-          confirmButtonText: '確認',
-          timer: 1500,
-          timerProgressBar: true
-        });
-        router.push('/login');
+        if (result.success) {
+          showAlert(
+            'success',
+            '登出成功！',
+            '您已安全登出，感謝使用',
+            '確認',
+            () => {
+              router.push('/login');
+            }
+          );
+        }
+      } catch (error) {
+        console.error('登出失敗:', error);
+        showAlert(
+          'error',
+          '登出失敗',
+          '請稍後再試',
+          '確認'
+        );
       }
-    } catch (error) {
-      console.error('登出失敗:', error);
-      await Swal.fire({
-        title: '登出失敗',
-        text: '請稍後再試',
-        icon: 'error',
-        confirmButtonText: '確認'
-      });
-    }
-  } else {
-    try {
-      const result = await authStore.logout();
-
-      if (result.success) {
-        await Swal.fire({
-          title: '登出成功！',
-          text: '您已安全登出，感謝使用',
-          icon: 'success',
-          confirmButtonText: '確認',
-          timer: 1500,
-          timerProgressBar: true
-        });
-        router.push('/login');
-      }
-    } catch (error) {
-      console.error('登出失敗:', error);
-      await Swal.fire({
-        title: '登出失敗',
-        text: '請稍後再試',
-        icon: 'error',
-        confirmButtonText: '確認'
-      });
-    }
-  }
+    },
+    () => {
+      console.log('用戶取消登出');
+    },
+    'warning'
+  );
+  
   closeAllMobileDropdowns();
 };
 
@@ -431,7 +424,7 @@ const handleAccountDeletion = async () => {
 </script>
 
 <template>
-  <nav class="hidden md:flex justify-center w-56 min-h-screen p-6 bg-gray-100">
+  <nav class="justify-center hidden w-56 min-h-screen p-6 bg-gray-100 md:flex">
     <ul class="w-full space-y-1">
       <li v-for="item in menuItems" :key="item.name">
         <div
@@ -484,14 +477,14 @@ const handleAccountDeletion = async () => {
     </ul>
   </nav>
 
-  <nav class="md:hidden bg-white border-b border-gray-200 shadow-sm sticky top-0 z-20">
+  <nav class="sticky top-0 z-20 bg-white border-b border-gray-200 shadow-sm md:hidden">
     <div class="px-2 py-2">
-      <div class="flex items-center justify-center relative">
-        <div class="absolute left-0 top-0 bottom-0 w-4 bg-gradient-to-r from-white to-transparent z-10 pointer-events-none"></div>
+      <div class="relative flex items-center justify-center">
+        <div class="absolute top-0 bottom-0 left-0 z-10 w-4 pointer-events-none bg-gradient-to-r from-white to-transparent"></div>
         
-        <div class="flex space-x-1 overflow-x-auto scrollbar-hide w-full px-2" style="scroll-behavior: smooth;">
+        <div class="flex w-full px-2 space-x-1 overflow-x-auto scrollbar-hide" style="scroll-behavior: smooth;">
         
-        <div class="absolute right-0 top-0 bottom-0 w-4 bg-gradient-to-l from-white to-transparent z-10 pointer-events-none"></div>
+        <div class="absolute top-0 bottom-0 right-0 z-10 w-4 pointer-events-none bg-gradient-to-l from-white to-transparent"></div>
           <button
             @click="handleMobileMenuClick(menuItems[0])"
             :class="[
@@ -500,7 +493,7 @@ const handleAccountDeletion = async () => {
                 ? 'bg-blue-100 text-blue-700 shadow-sm transform scale-95'
                 : 'text-gray-600 hover:bg-gray-50 hover:text-gray-800'
             ]">
-            <i class="fa-solid fa-user text-base mb-1" />
+            <i class="mb-1 text-base fa-solid fa-user" />
             <span class="text-xs font-medium whitespace-nowrap">會員資料</span>
           </button>
 
@@ -512,7 +505,7 @@ const handleAccountDeletion = async () => {
                 ? 'bg-blue-100 text-blue-700 shadow-sm transform scale-95'
                 : 'text-gray-600 hover:bg-gray-50 hover:text-gray-800'
             ]">
-            <i class="fa-solid fa-bullhorn text-base mb-1" />
+            <i class="mb-1 text-base fa-solid fa-bullhorn" />
             <span class="text-xs font-medium whitespace-nowrap">發布紀錄</span>
           </button>
 
@@ -524,7 +517,7 @@ const handleAccountDeletion = async () => {
                 ? 'bg-blue-100 text-blue-700 shadow-sm transform scale-95'
                 : 'text-gray-600 hover:bg-gray-50 hover:text-gray-800'
             ]">
-            <i class="fa-solid fa-calendar-check text-base mb-1" />
+            <i class="mb-1 text-base fa-solid fa-calendar-check" />
             <span class="text-xs font-medium whitespace-nowrap">參加紀錄</span>
           </button>
 
@@ -536,7 +529,7 @@ const handleAccountDeletion = async () => {
                 ? 'bg-blue-100 text-blue-700 shadow-sm transform scale-95'
                 : 'text-gray-600 hover:bg-gray-50 hover:text-gray-800'
             ]">
-            <i class="fa-solid fa-beer-mug-empty text-base mb-1" />
+            <i class="mb-1 text-base fa-solid fa-beer-mug-empty" />
             <span class="text-xs font-medium whitespace-nowrap">酒吧收藏</span>
           </button>
 
@@ -548,7 +541,7 @@ const handleAccountDeletion = async () => {
                 ? 'bg-blue-100 text-blue-700 shadow-sm transform scale-95'
                 : 'text-gray-600 hover:bg-gray-50 hover:text-gray-800'
             ]">
-            <i class="fa-solid fa-id-card text-base mb-1" />
+            <i class="mb-1 text-base fa-solid fa-id-card" />
             <span class="text-xs font-medium whitespace-nowrap">酒友卡</span>
           </button>
 
@@ -560,21 +553,21 @@ const handleAccountDeletion = async () => {
                 ? 'bg-blue-100 text-blue-700 shadow-sm transform scale-95'
                 : 'text-gray-600 hover:bg-gray-50 hover:text-gray-800'
             ]">
-            <i class="fa-solid fa-receipt text-base mb-1" />
+            <i class="mb-1 text-base fa-solid fa-receipt" />
             <span class="text-xs font-medium whitespace-nowrap">訂單紀錄</span>
           </button>
 
           <button
             @click="handleAccountDeletion"
             class="flex flex-col items-center px-3 py-2 rounded-lg transition-all duration-200 flex-shrink-0 min-w-[60px] text-red-600 hover:bg-red-50 hover:text-red-700">
-            <i class="fa-solid fa-user-slash text-base mb-1" />
+            <i class="mb-1 text-base fa-solid fa-user-slash" />
             <span class="text-xs font-medium whitespace-nowrap">會員註銷</span>
           </button>
 
           <button
             @click="handleLogout"
             class="flex flex-col items-center px-3 py-2 rounded-lg transition-all duration-200 flex-shrink-0 min-w-[60px] text-gray-600 hover:bg-gray-50 hover:text-gray-800">
-            <i class="fa-solid fa-arrow-right-from-bracket text-base mb-1" />
+            <i class="mb-1 text-base fa-solid fa-arrow-right-from-bracket" />
             <span class="text-xs font-medium whitespace-nowrap">登出</span>
           </button>
         </div>

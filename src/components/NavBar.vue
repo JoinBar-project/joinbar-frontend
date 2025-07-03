@@ -5,11 +5,13 @@ import { useAuthStore } from '@/stores/authStore';
 import { storeToRefs } from 'pinia';
 import { computed } from 'vue';
 import UserAvatar from '@/components/UserAvatar.vue';
-import Swal from 'sweetalert2';
+import { useAlertModal } from '@/composables/useAlertModal';
 
 const router = useRouter();
 const authStore = useAuthStore();
 const { user, isAuthenticated } = storeToRefs(authStore);
+
+const { showAlert, showConfirm } = useAlertModal();
 
 const isMobileMenuOpen = ref(false);
 
@@ -30,55 +32,45 @@ const goToMember = () => {
 };
 
 const handleLogout = async () => {
-  if(authStore.loginMethod === 'line' ) {
-    try {
-      const result = await authStore.lineLogout();
+  showConfirm(
+    '確認登出',
+    '您確定要登出嗎？',
+    '確認登出',
+    '取消',
+    async () => {
+      // 確認登出
+      try {
+        const result = authStore.loginMethod === 'line' 
+          ? await authStore.lineLogout()
+          : await authStore.logout();
 
-      if (result.success) {
-        await Swal.fire({
-          title: '登出成功！',
-          text: '您已安全登出，感謝使用',
-          icon: 'success',
-          confirmButtonText: '確認',
-          timer: 1500,
-          timerProgressBar: true
-        });
-        router.push('/login');
+        if (result.success) {
+          showAlert(
+            'success',
+            '登出成功！',
+            '您已安全登出，感謝使用',
+            '確認',
+            () => {
+              router.push('/login');
+            }
+          );
+        }
+      } catch (error) {
+        console.error('登出失敗:', error);
+        showAlert(
+          'error',
+          '登出失敗',
+          '請稍後再試',
+          '確認'
+        );
       }
-    } catch (error) {
-      console.error('登出失敗:', error);
-      await Swal.fire({
-        title: '登出失敗',
-        text: '請稍後再試',
-        icon: 'error',
-        confirmButtonText: '確認'
-      });
-    }
-  } else {
-    try {
-      const result = await authStore.logout();
-
-      if (result.success) {
-        await Swal.fire({
-          title: '登出成功！',
-          text: '您已安全登出，感謝使用',
-          icon: 'success',
-          confirmButtonText: '確認',
-          timer: 1500,
-          timerProgressBar: true
-        });
-        router.push('/login');
-      }
-    } catch (error) {
-      console.error('登出失敗:', error);
-      await Swal.fire({
-        title: '登出失敗',
-        text: '請稍後再試',
-        icon: 'error',
-        confirmButtonText: '確認'
-      });
-    }
-  }
+    },
+    () => {
+      console.log('用戶取消登出');
+    },
+    'warning'
+  );
+  
   closeMobileMenu();
 };
 
