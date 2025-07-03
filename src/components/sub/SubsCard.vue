@@ -123,7 +123,7 @@ onUnmounted(() => {
              bg-yellow-400 opacity-50 blur-3xl z-50 transition-transform duration-75 mix-blend-screen">
     </div>
 
-    <div class="bg-[url('@/assets/sub/bar-background2.jpg')] py-90 w-full relative bg-cover bg-[center_98%] opacity-92">
+    <div class="bg-[url('@/assets/sub/bar-background2.jpg')] py-70 w-full relative bg-cover bg-[center_98%] opacity-92">
       <div class="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_rgba(0,0,0,0.1)_20%,_rgba(0,0,0,0.9)_100%)]"></div>
       <div class="mb-4 relative z-20 bottom-35">
         <h2 class="title text-center p-10 text-7xl text-stone-50 font-bold">酒友卡訂閱</h2>
