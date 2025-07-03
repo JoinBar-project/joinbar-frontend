@@ -5,11 +5,18 @@ import { onMounted } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
 import JoinBot from '@/components/JoinBot.vue';
 import BaseAlertModal from '@/components/common/BaseAlertModal.vue';
+import BaseConfirmModal from '@/components/common/BaseConfirmModal.vue';
 import { useAlertModal } from '@/composables/useAlertModal';
 import { baseTheme } from '@/themes/baseTheme';
 import { zhTW, dateZhTW } from 'naive-ui';
 
-const { alertModal, closeAlert } = useAlertModal();
+const { 
+  alertModal, 
+  confirmModal, 
+  closeAlert, 
+  handleConfirmModalConfirm, 
+  handleConfirmModalCancel 
+} = useAlertModal();
 
 const router = useRouter();
 const route = useRoute();
@@ -54,9 +61,10 @@ router.afterEach(to => {
 
 <template>
   <n-config-provider 
-  :theme-overrides="baseTheme" 
-  :locale="zhTW"
-  :date-locale="dateZhTW">
+    :theme-overrides="baseTheme" 
+    :locale="zhTW"
+    :date-locale="dateZhTW"
+  >
     <div class="app-layout">
       <NavBar />
       <main class="main-content">
@@ -66,13 +74,27 @@ router.afterEach(to => {
       <JoinBot />
     </div>
 
+    <!-- 警告 Modal -->
     <BaseAlertModal
       :visible="alertModal.visible"
       :type="alertModal.type"
       :title="alertModal.title"
       :message="alertModal.message"
       :confirmText="alertModal.confirmText"
-      @close="closeAlert" />
+      @close="closeAlert" 
+    />
+
+    <!-- 確認 Modal  -->
+    <BaseConfirmModal
+      :visible="confirmModal.visible"
+      :type="confirmModal.type"
+      :title="confirmModal.title"
+      :message="confirmModal.message"
+      :confirmText="confirmModal.confirmText"
+      :cancelText="confirmModal.cancelText"
+      @confirm="handleConfirmModalConfirm"
+      @cancel="handleConfirmModalCancel"
+    />
   </n-config-provider>
 </template>
 
