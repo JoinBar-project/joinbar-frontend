@@ -6,6 +6,8 @@ import { useRouter, useRoute } from 'vue-router';
 import JoinBot from '@/components/JoinBot.vue';
 import BaseAlertModal from '@/components/common/BaseAlertModal.vue';
 import { useAlertModal } from '@/composables/useAlertModal';
+import { baseTheme } from '@/themes/baseTheme';
+import { zhTW, dateZhTW } from 'naive-ui';
 
 const { alertModal, closeAlert } = useAlertModal();
 
@@ -51,24 +53,28 @@ router.afterEach(to => {
 </script>
 
 <template>
-  <div class="app-layout">
-    <NavBar />
-    <main class="main-content">
-      <router-view />
-    </main>
-    <Footer />
-    <JoinBot />
-  </div>
+  <n-config-provider 
+  :theme-overrides="baseTheme" 
+  :locale="zhTW"
+  :date-locale="dateZhTW">
+    <div class="app-layout">
+      <NavBar />
+      <main class="main-content">
+        <router-view />
+      </main>
+      <Footer />
+      <JoinBot />
+    </div>
 
-  <BaseAlertModal
-    :visible="alertModal.visible"
-    :type="alertModal.type"
-    :title="alertModal.title"
-    :message="alertModal.message"
-    :confirmText="alertModal.confirmText"
-    @close="closeAlert" />
+    <BaseAlertModal
+      :visible="alertModal.visible"
+      :type="alertModal.type"
+      :title="alertModal.title"
+      :message="alertModal.message"
+      :confirmText="alertModal.confirmText"
+      @close="closeAlert" />
+  </n-config-provider>
 </template>
-
 
 <style>
 body {
@@ -90,6 +96,6 @@ body {
 
 .main-content {
   /*主內容填滿空間，footer 推到底 */
-    flex: 1; 
+  flex: 1;
 }
 </style>
