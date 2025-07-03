@@ -28,7 +28,6 @@
           <option value="pending">待付款</option>
           <option value="confirmed">已確認</option>
           <option value="cancelled">已取消</option>
-          <option value="refunded">已退款</option>   
           <option value="expired">已過期</option>    
         </select>
       </div>

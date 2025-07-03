@@ -131,7 +131,7 @@ const handleApiError = (error, defaultMessage = '請求失敗') => {
         errorMessage = data?.message || '資料驗證失敗'
         break
       case 500:
-        errorMessage = '伺服器內部錯誤'
+        errorMessage = '您有未付款訂單，請先前往會員中心的訂單紀錄重新付款或取消訂單'
         break
       default:
         errorMessage = data?.message || `HTTP ${status}: ${error.response.statusText}`

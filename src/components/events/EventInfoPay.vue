@@ -297,7 +297,7 @@ const buyNow = async () => {
 
     window.location.href = paymentResult.paymentUrl;
   } catch (error) {
-    console.error('❌ 立即購買失敗:', error);
+    showAlert('error', '立即購買失敗:', error.message);
     
     if (error.response) {
       console.error("❌ API 錯誤詳情:", {
@@ -328,14 +328,13 @@ const buyNow = async () => {
       error.message.includes("已參加過")
     ) {
       errorMessage = "您已經報名過此活動了";
-      hasParticipated.value = true; // 更新為已參與狀態
+      hasParticipated.value = true; 
     } else if (error.response?.data?.message) {
       errorMessage = error.response.data.message;
     } else if (error.message) {
       errorMessage = error.message;
     }
 
-    showAlert('error', '購買失敗', errorMessage);
   } finally {
     isProcessing.value = false;
   }
