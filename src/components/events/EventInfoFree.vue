@@ -1,6 +1,6 @@
 <script setup>
 import { useEvent } from '@/composables/useEvent.js';
-import { toRef, computed, ref, watch, onMounted } from 'vue';
+import { toRef, computed, ref, watch, onMounted, nextTick } from 'vue';
 import { getEventById } from '@/api/event';
 import EventHoster from './EventHoster.vue';
 import MessageBoard from './MessageBoard.vue';
@@ -67,6 +67,37 @@ const {
   scrollwheel: false,
 });
 
+// 設置地圖容器
+const setupMapContainer = async () => {
+  await nextTick();
+  const isDesktop = window.innerWidth >= 768;
+  const desktopMap = document.querySelector('.desktop-map-container');
+  const mobileMap = document.querySelector('.mobile-map-container');
+  
+  let newContainer = null;
+  
+  if (isDesktop && desktopMap) {
+    newContainer = desktopMap;
+    console.log('🗺️ 設置桌面版地圖容器');
+  } else if (!isDesktop && mobileMap) {
+    newContainer = mobileMap;
+    console.log('🗺️ 設置手機版地圖容器');
+  }
+  
+  // 如果容器改變了，重新設置地圖
+  if (newContainer && newContainer !== mapContainer.value) {
+    mapContainer.value = newContainer;
+    
+    // 如果地圖 API 已經載入，重新初始化地圖
+    if (isReady.value) {
+      await initMap();
+      if (currentEvent.value?.location) {
+        displayEventLocation(currentEvent.value.location);
+      }
+    }
+  }
+};
+
 const displayEventLocation = async (location) => {
   if (!location || !isReady.value) return;
   try {
@@ -94,13 +125,29 @@ const displayEventLocation = async (location) => {
 };
 
 onMounted(async () => {
+  console.log("🔄 組件掛載，開始載入資料...");
+  
   await loadGoogleMapsAPI();
+  await setupMapContainer();
+  
   if (mapContainer.value) {
     await initMap();
     if (currentEvent.value?.location) {
       await displayEventLocation(currentEvent.value.location);
     }
   }
+  
+  // 監聽窗口大小變化，使用防抖處理
+  let resizeTimer;
+  const handleResize = async () => {
+    clearTimeout(resizeTimer);
+    resizeTimer = setTimeout(async () => {
+      console.log('📱 螢幕尺寸改變，重新設置地圖...');
+      await setupMapContainer();
+    }, 300);
+  };
+  
+  window.addEventListener('resize', handleResize);
 });
 
 watch(
@@ -171,7 +218,7 @@ const handleJoinToggle = async () => {
   try {
     await toggleJoin();
   } catch (error) {
-    showAlert('warning', '尚未登入', '請先登入才能加入購物車');
+    showAlert('warning', '尚未登入', '請先登入才能參加活動');
   }
 };
 
@@ -195,7 +242,7 @@ const handleCancelConfirm = async () => {
       </div>
     </div>
 
-    <!-- 主要內容容器 -->
+    <!-- 主容器 -->
     <div class="flex items-center justify-center max-w-full px-4 pt-4 md:pt-8 md:px-0">
       <div class="w-full max-w-7xl md:min-w-[1170px] bg-gray-100 pb-8 mx-auto relative rounded-xl md:rounded-2xl overflow-hidden">
         <!-- 活動圖片 -->
@@ -207,8 +254,7 @@ const handleCancelConfirm = async () => {
           <!-- 桌面版地圖 - 左側浮動 -->
           <div class="hidden md:block absolute bottom-16 left-20 z-10 bg-gray-500 rounded-lg max-w-[325px] w-[325px] h-[520px] shadow-md">
             <div
-              ref="mapContainer"
-              class="w-full h-full bg-gray-800 border-0 rounded-lg"
+              class="w-full h-full bg-gray-800 border-0 rounded-lg desktop-map-container"
               style="min-height: 300px;"
             ></div>
           </div>
@@ -228,7 +274,7 @@ const handleCancelConfirm = async () => {
 
             <!-- 活動標題 -->
             <h3 class="mt-5 mb-5 text-xl font-bold md:text-3xl">{{ currentEvent.name }}</h3>
-
+            
             <!-- 活動資訊 -->
             <div v-if="formattedEventTime" class="flex items-start py-1">
               <i class="pr-4 mt-3 text-sm fa-solid fa-calendar md:pr-7 min-w-6 md:min-w-8 md:text-base"></i>
@@ -260,14 +306,13 @@ const handleCancelConfirm = async () => {
             <!-- 手機版地圖 -->
             <div class="block w-full mt-5 mb-5 bg-gray-500 rounded-lg shadow-md md:hidden h-60">
               <div
-                ref="mapContainer"
-                class="w-full h-full bg-gray-800 border-0 rounded-lg"
+                class="w-full h-full bg-gray-800 border-0 rounded-lg mobile-map-container"
                 style="min-height: 240px;"
               ></div>
             </div>
 
             <!-- 操作按鈕區域 -->
-            <div class="flex flex-col gap-0 mt-8 md:flex-row md:gap-8">
+            <div class="flex flex-col gap-4 mt-8 md:flex-row md:gap-8">
               <!-- 主辦人編輯按鈕 -->
               <ModalEdit
                 v-if="isHostUser && currentEvent.id"
@@ -293,7 +338,7 @@ const handleCancelConfirm = async () => {
                   @click="openCancelModal()"
                   :disabled="!isOver24hr || isUpdating"
                   :class="[
-                    'w-full md:w-auto rounded-2xl border-0 text-lg md:text-2xl text-center shadow-md bg-white px-8 md:px-12 py-2 md:py-3 transition-all duration-300 hover:bg-orange-500 hover:text-white mt-4 md:mt-0',
+                    'w-full md:w-auto rounded-2xl border-0 text-lg md:text-2xl text-center shadow-md bg-white px-8 md:px-12 py-2 md:py-3 transition-all duration-300 hover:bg-orange-500 hover:text-white',
                     (isOver24hr && !isUpdating) ? 'cursor-pointer' : 'cursor-not-allowed opacity-50'
                   ]"
                   type="button"
