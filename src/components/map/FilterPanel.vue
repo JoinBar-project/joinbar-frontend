@@ -172,7 +172,7 @@
     </div>
 
     <div class="filter-actions">
-      <button @click="resetFilters" class="action-button reset-button">
+      <button @click="closePanel" class="action-button reset-button">
         確定
       </button>
     </div>

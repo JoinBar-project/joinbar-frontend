@@ -1,9 +1,7 @@
 <template>
   <div class="flex overflow-hidden relative w-screen h-screen">
-    <!-- 將 Navbar slot/區塊移到這裡，確保在最上層 -->
     <slot name="navbar"></slot>
 
-    <!-- 手機版頂部控制項 -->
     <div
       class="mobile-top-controls md:hidden absolute top-0 left-0 right-0 z-[90] bg-white shadow-md w-full"
     >
@@ -66,7 +64,6 @@
       </div>
     </div>
 
-    <!-- 手機版建議選項獨立於地圖上方 -->
     <ul
       v-if="suggestions.length && isMobile"
       class="suggestions-list-mobile-overlay"
@@ -81,9 +78,9 @@
       </li>
     </ul>
 
-    <!-- 桌面版頂部控制項 -->
     <div
-      class="top-left-controls hidden md:flex absolute top-5 left-[400px] z-[100] flex-row flex-wrap items-center gap-[10px] p-[15px] bg-white/90 rounded-lg shadow-[0_4px_12px_rgba(0,0,0,0.2)] transition-[left] duration-300 ease-in-out"
+      class="top-left-controls hidden md:flex absolute top-5 left-[var(--sidebar-width,40px)] z-[101] flex-row flex-wrap items-center gap-[10px] p-[15px] bg-white/90 rounded-lg shadow-[0_4px_12px_rgba(0,0,0,0.2)] transition-[left] duration-300 ease-in-out"
+      :style="{ left: isSidebarCollapsed ? '96px' : '440px' }"
     >
       <button
         class="filter-toggle-button map-control-button"
@@ -95,7 +92,6 @@
           class="filter-svg-icon"
         />
       </button>
-
       <div class="search-panel-map">
         <div class="input-group" ref="searchInputRef">
           <input
@@ -124,7 +120,6 @@
           </button>
         </div>
       </div>
-
       <button
         @click="handleGetCurrentLocation"
         class="place-now-map map-control-button"
@@ -136,27 +131,35 @@
     <aside
       :class="[
         'bar-list-sidebar',
-        { 'sidebar-mobile-hidden': !showSidebarOnMobile },
+        {
+          'sidebar-mobile-hidden': !showSidebarOnMobile,
+          'sidebar-collapsed': isSidebarCollapsed,
+        },
       ]"
     >
-      <div class="mobile-sidebar-header md:hidden">
-        <div class="flex justify-between items-center p-4 bg-white border-b">
-          <h3 class="text-lg font-bold">酒吧列表</h3>
-          <button
-            @click="toggleMobileSidebar"
-            class="text-gray-500 hover:text-gray-700"
-          >
-            <i class="fas fa-times"></i>
-          </button>
-        </div>
+      <div class="sidebar-toggle-btn" @click="toggleSidebarCollapse">
+        <span v-if="!isSidebarCollapsed">⮜</span>
+        <span v-else>⮞</span>
       </div>
-
-      <div class="overflow-y-auto flex-grow p-4">
-        <BarList
-          :bars="filteredBars"
-          @bar-selected="handleBarSelected"
-          @toggle-wishlist="handleToggleWishlist"
-        />
+      <div v-if="!isSidebarCollapsed">
+        <div class="mobile-sidebar-header md:hidden">
+          <div class="flex justify-between items-center p-4 bg-white border-b">
+            <h3 class="text-lg font-bold">酒吧列表</h3>
+            <button
+              @click="toggleMobileSidebar"
+              class="text-gray-500 hover:text-gray-700"
+            >
+              <i class="fas fa-times"></i>
+            </button>
+          </div>
+        </div>
+        <div class="overflow-y-auto flex-grow p-4">
+          <BarList
+            :bars="filteredBars"
+            @bar-selected="handleBarSelected"
+            @toggle-wishlist="handleToggleWishlist"
+          />
+        </div>
       </div>
     </aside>
 
@@ -215,17 +218,15 @@ const myMapId = import.meta.env.VITE_MAP_ID;
 
 const mapContainer = ref(null);
 
-// 響應式設計相關
 const showSidebarOnMobile = ref(false);
 const isMobile = ref(false);
 
-// 檢測設備類型
 const checkDeviceType = () => {
   isMobile.value = window.innerWidth < 768;
   if (!isMobile.value) {
-    showSidebarOnMobile.value = true; // 桌面版始終顯示側邊欄
+    showSidebarOnMobile.value = false;
   } else {
-    showSidebarOnMobile.value = false; // 手機版預設隱藏側邊欄
+    showSidebarOnMobile.value = false;
   }
 };
 
@@ -233,7 +234,6 @@ const toggleMobileSidebar = () => {
   showSidebarOnMobile.value = !showSidebarOnMobile.value;
 };
 
-// 原有的所有邏輯保持不變...
 const {
   map,
   infoWindow,
@@ -265,7 +265,6 @@ const {
   },
 });
 
-// 保留所有原有的 ref 和 computed
 const isFilterPanelOpen = ref(false);
 const searchQuery = ref("");
 const suggestions = ref([]);
@@ -294,7 +293,6 @@ const combinedLoading = computed(
 );
 
 const filteredBars = computed(() => {
-  // 保留原有的篩選邏輯...
   let bars = googleBars.value || [];
   if (!Array.isArray(bars)) bars = [];
   const filters = currentFilters.value;
@@ -410,10 +408,10 @@ const filteredBars = computed(() => {
   ) {
     bars = bars.filter((bar) => {
       const now = dayjs();
-      const currentDay = now.day(); // 0 = 星期日, 6 = 星期六
+      const currentDay = now.day();
 
       if (!bar.opening_hours || !bar.opening_hours.periods) {
-        return false; // 如果沒有營業時間資訊，則不顯示
+        return false;
       }
 
       const openTime = dayjs()
@@ -437,10 +435,9 @@ const filteredBars = computed(() => {
       });
 
       if (periodsToday.length === 0) {
-        return false; // 今天沒有營業時間
+        return false;
       }
 
-      // 檢查是否符合使用者選定的時間範圍
       return periodsToday.some((period) => {
         const periodOpenHour = Math.floor(period.open.time / 100);
         const periodOpenMinute = period.open.time % 100;
@@ -454,13 +451,13 @@ const filteredBars = computed(() => {
           const periodCloseMinute = period.close.time % 100;
           periodClose = dayjs().hour(periodCloseHour).minute(periodCloseMinute);
 
-          // 處理跨天的情況 (例如 22:00 - 02:00)
+          // 處理跨天的情況
           if (periodClose.isBefore(periodOpen)) {
             periodClose = periodClose.add(1, "day");
           }
         } else {
           // 如果沒有關閉時間，表示營業到深夜或24小時
-          periodClose = dayjs().endOf("day").add(1, "day"); // 視為營業到隔天
+          periodClose = dayjs().endOf("day").add(1, "day");
         }
 
         // 檢查使用者選擇的開放時間是否在酒吧的營業時間內
@@ -469,15 +466,14 @@ const filteredBars = computed(() => {
           periodClose,
           null,
           "[)"
-        ); // [起始時間, 結束時間)
+        );
         const userCloseTimeWithinPeriod = closeTime.isBetween(
           periodOpen,
           periodClose,
           null,
           "(]"
-        ); // (起始時間, 結束時間]
+        );
 
-        // 檢查酒吧營業時間是否包含使用者選擇的時間段
         const periodCoversUserRange =
           periodOpen.isSameOrBefore(openTime) &&
           periodClose.isSameOrAfter(closeTime);
@@ -510,7 +506,6 @@ const filteredBars = computed(() => {
   return result;
 });
 
-// 保留所有原有的方法...
 const debouncedSearchSuggestions = debounce(async () => {
   if (!searchQuery.value) {
     suggestions.value = [];
@@ -519,7 +514,6 @@ const debouncedSearchSuggestions = debounce(async () => {
   suggestions.value = await getPlacePredictions(searchQuery.value);
 }, 300);
 
-// 所有其他方法保持不變...
 async function selectSuggestion(suggestion) {
   searchQuery.value = suggestion.description;
   suggestions.value = [];
@@ -596,10 +590,9 @@ async function handleSearch() {
   closeInfoWindow();
   try {
     let mainBars = [];
-    let typeForNearby = "establishment"; // 預設搜尋類型
+    let typeForNearby = "establishment";
     const q = searchQuery.value.trim().toLowerCase();
 
-    // 根據關鍵字判斷搜尋類型
     if (
       ["bar", "酒吧", "pub", "night club", "夜店", "交易吧", "intention"].some(
         (k) => q.includes(k)
@@ -625,13 +618,12 @@ async function handleSearch() {
         const c = map.value.getCenter();
         center = new window.google.maps.LatLng(c.lat(), c.lng());
       } else {
-        // Fallback to a default location (Taipei)
         center = new window.google.maps.LatLng(25.0478, 121.517);
       }
 
       const fallbackRequest = {
         location: center,
-        radius: 5000, // 搜尋半徑
+        radius: 5000,
         type: typeForNearby,
       };
 
@@ -639,7 +631,6 @@ async function handleSearch() {
       mainBars = await new Promise((resolve) => {
         service.nearbySearch(fallbackRequest, async (results, status) => {
           if (status === google.places.PlacesServiceStatus.OK && results) {
-            // 對於附近搜尋的結果，獲取更詳細的資料
             const detailedBars = await Promise.all(
               results.slice(0, 20).map(async (place) => {
                 try {
@@ -693,7 +684,6 @@ async function handleSearch() {
                     isBarLike: isBarLike,
                   };
                 } catch (e) {
-                  // 如果獲取詳情失敗，返回原始的 place 物件
                   return place;
                 }
               })
@@ -707,9 +697,8 @@ async function handleSearch() {
     }
 
     if (mainBars && mainBars.length > 0) {
-      mainBarForSearch.value = null; // 清除之前的主要搜尋結果
+      mainBarForSearch.value = null;
       googleBars.value = mainBars;
-      // 將地圖中心移動到第一個結果
       if (googleMapsInstance.value && mainBars[0] && mainBars[0].location) {
         panTo(mainBars[0].location, 15);
       }
@@ -743,13 +732,11 @@ async function handleGetCurrentLocation() {
     }
   } catch (err) {
     console.error("獲取目前位置失敗:", err);
-    // 如果失敗，設定一個預設中心點
     const google = googleMapsInstance.value;
     if (google && map.value) {
       const fallbackLocation = new window.google.maps.LatLng(25.0478, 121.517); // 台北市中心
       map.value.setCenter(fallbackLocation);
       map.value.setZoom(15);
-      // 仍然嘗試搜尋該預設位置附近的酒吧
       const bars = await searchBarsInMapBounds(false);
       googleBars.value = bars;
     }
@@ -763,7 +750,6 @@ function handleFilterChanged(filters) {
 }
 
 async function handleBarSelected(bar) {
-  // 如果是從列表點擊，且沒有完整的 googleReviews，則去獲取
   if (bar.place_id && (!bar.googleReviews || bar.googleReviews.length === 0)) {
     try {
       const detail = await getPlaceDetails(bar.place_id);
@@ -777,7 +763,6 @@ async function handleBarSelected(bar) {
   selectedBarForDetail.value = bar || {};
   isBarDetailModalOpen.value = true;
 
-  // 更新 URL 參數
   const params = new URLSearchParams({
     barId: bar.place_id || bar.id,
     name: bar.name || "",
@@ -789,10 +774,9 @@ async function handleBarSelected(bar) {
     query: { ...route.query, ...Object.fromEntries(params) },
   });
 
-  // 地圖操作：移動視角並顯示資訊窗
+  // 地圖移動視角並顯示資訊窗
   if (bar.location && map && googleMapsInstance()) {
     panTo(bar.location);
-    // 為了顯示資訊窗，需要一個臨时的 Marker
     const tempMarker = new window.google.maps.Marker({
       position: new window.google.maps.LatLng(
         bar.location.lat,
@@ -801,7 +785,7 @@ async function handleBarSelected(bar) {
       map: map.value,
       title: bar.name,
       icon: {
-        url: bar.isBarLike ? "/wine.png" : "/MapMarker.png", // 假設 bar.isBarLike 判斷是否為酒吧類型
+        url: bar.isBarLike ? "/wine.png" : "/MapMarker.png",
         scaledSize: new window.google.maps.Size(40, 40),
         anchor: new window.google.maps.Point(20, 40),
       },
@@ -818,9 +802,8 @@ async function handleBarSelected(bar) {
 function closeBarDetailModal() {
   isBarDetailModalOpen.value = false;
   selectedBarForDetail.value = null;
-  closeInfoWindow(); // 關閉地圖上的資訊窗
+  closeInfoWindow();
 
-  // 清除 URL 參數
   const newQuery = { ...route.query };
   delete newQuery.barId;
   delete newQuery.name;
@@ -856,11 +839,11 @@ function handleTagClick(tag) {
   if (!tag) {
     selectedTag.value = null;
     searchQuery.value = "";
-    googleBars.value = []; // 清空酒吧列表
+    googleBars.value = [];
   } else {
     selectedTag.value = tag;
-    searchQuery.value = tag; // 將標籤設為搜尋關鍵字
-    handleSearch(); // 執行搜尋
+    searchQuery.value = tag;
+    handleSearch();
   }
 }
 
@@ -875,11 +858,9 @@ function toggleFilterPanel() {
   isFilterPanelOpen.value = !isFilterPanelOpen.value;
 }
 
-// 添加必要的 watch 和初始化邏輯
 const checkUrlForBarDetail = async () => {
   const barId = route.query.barId;
   if (barId && !isBarDetailModalOpen.value) {
-    // 先檢查現有的酒吧列表中是否有這個酒吧
     let barFromList = googleBars.value.find(
       (bar) => bar.place_id === barId || bar.id === barId
     );
@@ -887,7 +868,6 @@ const checkUrlForBarDetail = async () => {
       selectedBarForDetail.value = barFromList;
       isBarDetailModalOpen.value = true;
     } else {
-      // 從參數創建基本資訊
       const barFromUrl = {
         id: barId,
         place_id: barId,
@@ -895,7 +875,6 @@ const checkUrlForBarDetail = async () => {
         rating: parseFloat(route.query.rating) || null,
         reviews: parseInt(route.query.reviews) || 0,
         address: route.query.address || "",
-        // 添加載入標記
         isQuickLoad: true,
         isWishlisted: false,
       };
@@ -946,14 +925,12 @@ const checkUrlForBarDetail = async () => {
             googleReviews: fullData.reviews || [],
           };
           selectedBarForDetail.value = detailedBar;
-          // 將完整資料加入到酒吧列表中
           const existingIndex = googleBars.value.findIndex(
             (bar) => bar.place_id === barId
           );
           if (existingIndex === -1) {
             googleBars.value.unshift(detailedBar);
           }
-          // 如果有位置資訊，移動地圖視角
           if (detailedBar.location && map.value) {
             panTo(detailedBar.location);
           }
@@ -973,7 +950,6 @@ watch(
       typeof googleMapsInstance === "function" &&
       googleMapsInstance()
     ) {
-      // 確保地圖容器有正確的尺寸
       setTimeout(() => {
         if (map.value && window.google && window.google.maps) {
           window.google.maps.event.trigger(map.value, "resize");
@@ -1011,7 +987,6 @@ watch(isReady, (ready) => {
     if (map.value && map.value.addListener) {
       map.value.addListener("idle", onMapIdleHandler);
     }
-    // 地圖準備好後立即檢查 URL 參數
     checkUrlForBarDetail();
   }
 });
@@ -1041,9 +1016,23 @@ watch([isMobile, showSidebarOnMobile], () => {
   if (map.value && window.google && window.google.maps) {
     setTimeout(() => {
       window.google.maps.event.trigger(map.value, "resize");
-    }, 300); // 給予一些時間讓 CSS 變更生效
+    }, 300); // 讓 CSS 變更生效
   }
 });
+
+const isSidebarCollapsed = ref(true);
+
+watch(filteredBars, (bars) => {
+  if (bars && bars.length > 0) {
+    isSidebarCollapsed.value = false;
+  } else {
+    isSidebarCollapsed.value = true;
+  }
+});
+
+function toggleSidebarCollapse() {
+  isSidebarCollapsed.value = !isSidebarCollapsed.value;
+}
 
 onMounted(() => {
   checkDeviceType();
@@ -1052,9 +1041,7 @@ onMounted(() => {
 
   // 初始化地圖，並在初始化完成後檢查 URL 參數
   loadGoogleMapsAPI().then(() => {
-    initMap().then(() => {
-      // checkUrlForBarDetail() 在 isReady watch 中執行
-    });
+    initMap().then(() => {});
   });
 });
 
@@ -1065,10 +1052,9 @@ onUnmounted(() => {
 </script>
 
 <style scoped>
-/* 修改手機版搜尋建議選項 */
 .suggestions-list-mobile-overlay {
   position: absolute;
-  top: 60px; /* 根據搜尋欄高度微調 */
+  top: 60px;
   left: 50%;
   transform: translateX(-50%);
   width: 90vw;
@@ -1078,7 +1064,7 @@ onUnmounted(() => {
   box-shadow: 0 6px 24px rgba(0, 0, 0, 0.18);
   max-height: 220px;
   overflow-y: auto;
-  z-index: 900; /* 高於地圖，低於 navbar */
+  z-index: 900;
   margin: 0;
   padding: 0;
   list-style: none;
@@ -1117,19 +1103,19 @@ onUnmounted(() => {
 }
 
 .mobile-control-button {
-  padding: 6px; /* 減小內邊距 */
+  padding: 6px;
   border: none;
   background-color: #f8f9fa;
   color: #333;
-  border-radius: 6px; /* 減小圓角 */
+  border-radius: 6px;
   cursor: pointer;
   transition: background-color 0.2s;
-  min-width: 32px; /* 減小最小寬度 */
-  height: 32px; /* 減小高度 */
+  min-width: 32px;
+  height: 32px;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 12px; /* 減小圖標大小 */
+  font-size: 12px;
 }
 
 .mobile-control-button:hover {
@@ -1138,8 +1124,8 @@ onUnmounted(() => {
 
 .search-panel-mobile {
   position: static;
-  flex-shrink: 1; /* 允許收縮 */
-  z-index: 1000; /* 提高層級 */
+  flex-shrink: 1;
+  z-index: 1000;
 }
 
 .input-group-mobile {
@@ -1185,13 +1171,35 @@ onUnmounted(() => {
 
 /* 側邊欄手機版樣式 */
 .bar-list-sidebar {
-  width: 160px;
-  background-color: #f7f7f7;
+  position: relative;
+  transition: width 0.3s;
+}
+
+.bar-list-sidebar.sidebar-collapsed {
+  width: 32px !important;
+  min-width: 32px !important;
+  max-width: 32px !important;
+  overflow: visible !important;
+  box-shadow: none;
+  background: transparent;
+}
+
+.sidebar-toggle-btn {
+  position: absolute;
+  top: 50%;
+  right: -16px;
+  transform: translateY(-50%);
+  width: 32px;
+  height: 48px;
+  background: #fff;
+  border-radius: 0 8px 8px 0;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
   display: flex;
-  flex-direction: column;
-  box-shadow: 2px 0 8px rgba(0, 0, 0, 0.1);
-  z-index: 50;
-  transition: transform 0.3s ease-in-out;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  z-index: 1000;
+  border: 1px solid #eee;
 }
 
 @media (max-width: 767px) {
@@ -1295,8 +1303,17 @@ onUnmounted(() => {
     font-size: 10px;
   }
   .filter-panel-mobile {
-    padding-top: 24px;
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    width: 80% !important;
+    height: 100% !important;
+    bottom: 0 !important;
+    z-index: 99999 !important;
+    padding-top: env(safe-area-inset-top);
+    border-radius: 10px;
   }
+
   .location-button-mobile,
   .filter-toggle-button {
     width: 28px;
@@ -1337,24 +1354,11 @@ onUnmounted(() => {
   }
 }
 
-/* 底部按鈕樣式 */
 .mobile-bottom-toggle button {
   backdrop-filter: blur(10px);
   background-color: rgba(255, 255, 255, 0.95);
 }
 
-/* 濾鏡面板手機版樣式 */
-.filter-panel-mobile {
-  position: fixed !important;
-  top: 0 !important;
-  left: 0 !important;
-  width: 100% !important;
-  height: 100% !important;
-  z-index: 600 !important;
-  padding-top: env(safe-area-inset-top);
-}
-
-/* 桌面版樣式保持不變 */
 .top-left-controls {
   gap: 0px;
   flex-wrap: nowrap;
@@ -1634,14 +1638,12 @@ onUnmounted(() => {
   }
 }
 
-/* 會員選單 z-index 最高 */
 :global(.mobile-menu.open) {
-  z-index: 99999 !important;
+  z-index: 10000 !important;
 }
 
-/* 藍色圈圈縮小但字體不變 */
 .mobile-bottom-toggle .rounded-full.bg-blue-500 {
-  padding: 2px 6px !important; /* py-0.5 px-1.5 */
+  padding: 2px 6px !important;
   font-size: 12px !important;
   min-width: 22px;
   min-height: 18px;
