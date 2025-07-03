@@ -21,7 +21,7 @@ const {
 const router = useRouter();
 const route = useRoute();
 
-// 在 App.vue 中
+// 🔧 修復：安全的 LINE Pay 回調處理
 const handleGlobalLinePayCallback = () => {
   // 確保在組件完全掛載後再執行
   if (!route || !router) {
@@ -34,14 +34,21 @@ const handleGlobalLinePayCallback = () => {
     const transactionId = urlParams.get('transactionId');
     const orderId = urlParams.get('orderId');
 
+    // 🔧 修復：安全地獲取 currentPath
+    const currentPath = route.path || window.location.pathname || '/';
+
     console.log('🔍 App.vue 檢查 LINE Pay 回調:', {
       href: window.location.href,
       transactionId,
       orderId,
-      currentPath: route.path
+      currentPath
     });
 
-    if (transactionId && orderId && route.path !== '/payment-waiting') {
+    // 🔧 修復：檢查參數不是 'null' 字串
+    if (transactionId && orderId && 
+        transactionId !== 'null' && orderId !== 'null' &&
+        currentPath !== '/payment-waiting') {
+      
       console.log('✅ 檢測到 LINE Pay 回調，跳轉到等待頁面');
 
       router.replace({
@@ -58,7 +65,10 @@ onMounted(async () => {
   // 等待路由器完全就緒
   try {
     await router.isReady();
-    handleGlobalLinePayCallback();
+    // 🔧 修復：延遲執行，確保路由穩定
+    setTimeout(() => {
+      handleGlobalLinePayCallback();
+    }, 100);
   } catch (error) {
     console.error('路由器初始化失敗:', error);
   }
@@ -68,7 +78,9 @@ onMounted(async () => {
 router.afterEach(async (to) => {
   // 確保路由變化完成後再執行
   await nextTick();
-  handleGlobalLinePayCallback();
+  setTimeout(() => {
+    handleGlobalLinePayCallback();
+  }, 50);
 });
 </script>
 
@@ -87,27 +99,30 @@ router.afterEach(async (to) => {
       <JoinBot />
     </div>
 
-    <!-- 警告 Modal -->
-    <BaseAlertModal
-      :visible="alertModal.visible"
-      :type="alertModal.type"
-      :title="alertModal.title"
-      :message="alertModal.message"
-      :confirmText="alertModal.confirmText"
-      @close="closeAlert" 
-    />
+    <!-- 🔧 修復：只有在路由就緒時才顯示 Modal -->
+    <template v-if="route && route.path">
+      <!-- 警告 Modal -->
+      <BaseAlertModal
+        :visible="alertModal.visible"
+        :type="alertModal.type"
+        :title="alertModal.title"
+        :message="alertModal.message"
+        :confirmText="alertModal.confirmText"
+        @close="closeAlert" 
+      />
 
-    <!-- 確認 Modal  -->
-    <BaseConfirmModal
-      :visible="confirmModal.visible"
-      :type="confirmModal.type"
-      :title="confirmModal.title"
-      :message="confirmModal.message"
-      :confirmText="confirmModal.confirmText"
-      :cancelText="confirmModal.cancelText"
-      @confirm="handleConfirmModalConfirm"
-      @cancel="handleConfirmModalCancel"
-    />
+      <!-- 確認 Modal  -->
+      <BaseConfirmModal
+        :visible="confirmModal.visible"
+        :type="confirmModal.type"
+        :title="confirmModal.title"
+        :message="confirmModal.message"
+        :confirmText="confirmModal.confirmText"
+        :cancelText="confirmModal.cancelText"
+        @confirm="handleConfirmModalConfirm"
+        @cancel="handleConfirmModalCancel"
+      />
+    </template>
   </n-config-provider>
 </template>
 
