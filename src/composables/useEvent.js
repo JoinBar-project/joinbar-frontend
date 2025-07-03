@@ -3,6 +3,7 @@ import dayjs from 'dayjs';
 import utc from 'dayjs/plugin/utc';
 import timezone from 'dayjs/plugin/timezone';
 import 'dayjs/locale/zh-tw';
+import { useAuthStore } from '@/stores/authStore'; 
 
 dayjs.extend(utc);
 dayjs.extend(timezone);
@@ -51,8 +52,8 @@ export function useEvent(event, showAlert = () => {}) {
   });
 
   function toggleJoin() {
-    const token = localStorage.getItem('access_token');
-    if (!token) {
+    const authStore = useAuthStore(); 
+    if (!authStore.isAuthenticated) {
       showAlert('warning', '尚未登入', '請先登入才能參加活動');
       return;
     }
