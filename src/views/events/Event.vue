@@ -66,7 +66,7 @@ function scrollToTop() {
 
   <div class="page">
     <ModalCreate @eventCreated="handleEventCreated" />
-    <div class="event-list">
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 my-4 px-4 md:px-[200px]">
       <EventCard
         v-for="event in visibleEvents"
         :key="event.id"
@@ -93,12 +93,7 @@ function scrollToTop() {
 .page {
   padding: 20px;
 }
-.event-list {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 10px;
-  margin: 10px 200px;
-}
+
 .load-more-container {
   text-align: center;
   margin-top: 20px;
