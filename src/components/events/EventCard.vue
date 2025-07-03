@@ -38,9 +38,9 @@ function getTagName(id) {
 function formatEventDate(dateStr) {
   if (!dateStr) return ''
   const weekMap = ['日', '一', '二', '三', '四', '五', '六']
-  // const d = dayjs(dateStr).tz('Asia/Taipei')
-  const d = dayjs(dateStr)
-  return `${d.format('LL')}(${weekMap[d.day()]}) ${d.format('HH:mm')}`
+  // 減去 8 小時
+  const d = dayjs(dateStr).subtract(8, 'hour')
+  return `${d.format('YYYY.MM.DD')} ${d.format('HH:mm')} (週${weekMap[d.day()]})`
 }
 
 function sliceChinese(str, n) {
