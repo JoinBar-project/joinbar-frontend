@@ -8,19 +8,19 @@ export const allBadges = [
   {
     id: 2,
     key: 'monthly',
-    name: '月卡',
+    name: '月卡徽章',
     image: new URL('../assets/event/monthly.png', import.meta.url).href
   },
   {
     id: 3,
     key: 'seasonal',
-    name: '季卡',
+    name: '季卡徽章',
     image: new URL('../assets/event/seasonal.png', import.meta.url).href
   },
   {
     id: 4,
     key: 'vip',
-    name: '年卡',
+    name: '黑卡徽章',
     image: new URL('../assets/event/vip.png', import.meta.url).href
   }
 ]
