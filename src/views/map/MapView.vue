@@ -1,13 +1,97 @@
 <template>
-  <div class="flex h-screen w-screen overflow-hidden relative">
-    <div class="top-left-controls absolute top-5 left-[400px] z-[100] flex flex-row flex-wrap items-center gap-[10px] p-[15px] bg-white/90 rounded-lg shadow-[0_4px_12px_rgba(0,0,0,0.2)] transition-[left] duration-300 ease-in-out">
+  <div class="flex overflow-hidden relative w-screen h-screen">
+    <slot name="navbar"></slot>
+
+    <div
+      class="mobile-top-controls md:hidden absolute top-0 left-0 right-0 z-[90] bg-white shadow-md w-full"
+    >
+      <div class="flex flex-wrap gap-2 justify-between items-center p-3">
+        <div class="flex-shrink-0 mobile-bottom-toggle">
+          <button
+            @click="toggleMobileSidebar"
+            class="flex gap-2 items-center px-4 py-2 bg-white rounded-full border shadow"
+          >
+            <i class="fas fa-list"></i>
+            <span class="text-sm font-medium">酒吧列表</span>
+            <span class="px-2 py-1 text-xs text-white bg-blue-500 rounded-full">
+              {{ filteredBars.length }}
+            </span>
+          </button>
+        </div>
+        <div class="flex flex-1 gap-1 items-center min-w-0">
+          <div
+            class="flex-shrink w-24 search-panel-mobile sm:w-32"
+            ref="searchInputRef"
+            style="position: relative"
+          >
+            <div class="input-group-mobile">
+              <input
+                type="text"
+                id="searchInput"
+                class="search-input-mobile"
+                v-model="searchQuery"
+                placeholder="搜尋地點..."
+                @input="debouncedSearchSuggestions"
+                style="margin-left: 0"
+              />
+              <button
+                @click="handleSearch"
+                class="search-button-mobile"
+                :disabled="!isReady"
+                style="margin-left: 0"
+              >
+                <i class="fas fa-search"></i>
+              </button>
+            </div>
+          </div>
+          <button
+            @click="handleGetCurrentLocation"
+            class="location-button-mobile mobile-control-button"
+          >
+            <i class="fas fa-location-arrow"></i>
+          </button>
+          <button
+            class="filter-toggle-button mobile-control-button"
+            @click="toggleFilterPanel"
+          >
+            <img
+              src="/filter-toggle-button.svg"
+              alt="filter"
+              class="filter-svg-icon"
+            />
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <ul
+      v-if="suggestions.length && isMobile"
+      class="suggestions-list-mobile-overlay"
+    >
+      <li
+        v-for="(suggestion, idx) in suggestions"
+        :key="idx"
+        @click="selectSuggestion(suggestion)"
+      >
+        <span style="font-size: 16px">🔍</span>
+        {{ suggestion.description }}
+      </li>
+    </ul>
+
+    <div
+      class="top-left-controls hidden md:flex absolute top-5 left-[var(--sidebar-width,40px)] z-[101] flex-row flex-wrap items-center gap-[10px] p-[15px] bg-white/90 rounded-lg shadow-[0_4px_12px_rgba(0,0,0,0.2)] transition-[left] duration-300 ease-in-out"
+      :style="{ left: isSidebarCollapsed ? '84px' : '440px' }"
+    >
       <button
         class="filter-toggle-button map-control-button"
         @click="toggleFilterPanel"
       >
-        <i class="fas fa-filter"></i>
+        <img
+          src="/filter-toggle-button.svg"
+          alt="filter"
+          class="filter-svg-icon"
+        />
       </button>
-
       <div class="search-panel-map">
         <div class="input-group" ref="searchInputRef">
           <input
@@ -18,7 +102,7 @@
             placeholder="輸入地點名稱或關鍵字"
             @input="debouncedSearchSuggestions"
           />
-          <ul v-if="suggestions.length" class="suggestions-list">
+          <ul v-if="suggestions.length && !isMobile" class="suggestions-list">
             <li
               v-for="(suggestion, index) in suggestions"
               :key="index"
@@ -36,7 +120,6 @@
           </button>
         </div>
       </div>
-
       <button
         @click="handleGetCurrentLocation"
         class="place-now-map map-control-button"
@@ -45,17 +128,59 @@
       </button>
     </div>
 
-    <aside class="bar-list-sidebar">
-      <div class="flex-grow overflow-y-auto p-4">
-        <BarList
-          :bars="filteredBars"
-          @bar-selected="handleBarSelected"
-          @toggle-wishlist="handleToggleWishlist"
+    <aside
+      :class="[
+        'bar-list-sidebar',
+        {
+          'sidebar-mobile-hidden': !showSidebarOnMobile,
+          'sidebar-collapsed': isSidebarCollapsed,
+        },
+      ]"
+    >
+      <div class="sidebar-toggle-btn" @click="toggleSidebarCollapse">
+        <img
+          v-if="!isSidebarCollapsed"
+          src="/close-left.svg"
+          alt="收合"
+          style="width: 24px; height: 24px"
         />
+        <img
+          v-else
+          src="/open-right.svg"
+          alt="展開"
+          style="width: 24px; height: 24px"
+        />
+      </div>
+
+      <!-- 修復：將 v-if 移到內部，並保持 flex 結構 -->
+      <div class="sidebar-content" v-if="!isSidebarCollapsed">
+        <div class="mobile-sidebar-header md:hidden">
+          <div class="flex justify-between items-center p-4 bg-white border-b">
+            <h3 class="text-lg font-bold">酒吧列表</h3>
+            <button
+              @click="toggleMobileSidebar"
+              class="text-gray-500 hover:text-gray-700"
+            >
+              <i class="fas fa-times"></i>
+            </button>
+          </div>
+        </div>
+
+        <!-- 關鍵：恢復 flex-grow 和 overflow-y-auto 的組合 -->
+        <div class="overflow-y-auto flex-grow p-4">
+          <BarList
+            :bars="filteredBars"
+            @bar-selected="handleBarSelected"
+            @toggle-wishlist="handleToggleWishlist"
+          />
+        </div>
       </div>
     </aside>
 
-    <div ref="mapContainer" class="map-container"></div>
+    <div
+      ref="mapContainer"
+      :class="['map-container', { 'map-fullscreen': !showSidebarOnMobile }]"
+    ></div>
 
     <FilterPanel
       v-if="isFilterPanelOpen"
@@ -64,6 +189,7 @@
       @tag-click="handleTagClick"
       :initial-filters="currentFilters"
       :selected-tag="selectedTag"
+      :class="{ 'filter-panel-mobile': isMobile }"
     />
 
     <BarDetailModal
@@ -81,7 +207,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, onUnmounted, computed, watch } from "vue";
+import { ref, onMounted, onUnmounted, computed, watch, nextTick } from "vue";
 import debounce from "lodash/debounce";
 import dayjs from "dayjs";
 import isBetween from "dayjs/plugin/isBetween";
@@ -105,6 +231,22 @@ const googleMapsApiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
 const myMapId = import.meta.env.VITE_MAP_ID;
 
 const mapContainer = ref(null);
+
+const showSidebarOnMobile = ref(false);
+const isMobile = ref(false);
+
+const checkDeviceType = () => {
+  isMobile.value = window.innerWidth < 768;
+  if (!isMobile.value) {
+    showSidebarOnMobile.value = false;
+  } else {
+    showSidebarOnMobile.value = false;
+  }
+};
+
+const toggleMobileSidebar = () => {
+  showSidebarOnMobile.value = !showSidebarOnMobile.value;
+};
 
 const {
   map,
@@ -140,7 +282,6 @@ const {
 const isFilterPanelOpen = ref(false);
 const searchQuery = ref("");
 const suggestions = ref([]);
-
 const currentFilters = ref({
   address: "current_location",
   ratingSort: "any",
@@ -281,47 +422,82 @@ const filteredBars = computed(() => {
   ) {
     bars = bars.filter((bar) => {
       const now = dayjs();
-      const currentDayOfWeek = now.day();
+      const currentDay = now.day();
 
-      if (!bar.opening_hours || !bar.opening_hours.periods) return false;
+      if (!bar.opening_hours || !bar.opening_hours.periods) {
+        return false;
+      }
 
-      const filterStart = dayjs()
+      const openTime = dayjs()
         .hour(filters.minOpenHour)
         .minute(filters.minOpenMinute);
-      let filterEnd = dayjs()
+      const closeTime = dayjs()
         .hour(filters.maxOpenHour)
         .minute(filters.maxOpenMinute);
-      if (filters.maxOpenHour === 24 && filters.maxOpenMinute === 0) {
-        filterEnd = filterEnd.endOf("day");
+
+      // 檢查是否在營業時間內
+      const isOpenNow = bar.opening_hours.isOpen();
+      if (!isOpenNow) return false;
+
+      // 細化到今天的營業時間段
+      const periodsToday = bar.opening_hours.periods.filter((period) => {
+        return (
+          period.open &&
+          period.open.day === currentDay &&
+          (!period.close || period.close.day === currentDay)
+        );
+      });
+
+      if (periodsToday.length === 0) {
+        return false;
       }
-      if (filterEnd.isBefore(filterStart)) {
-        filterEnd = filterEnd.add(1, "day");
-      }
 
-      for (const period of bar.opening_hours.periods) {
-        if (period.open && period.close) {
-          let openTime = dayjs()
-            .day(period.open.day)
-            .hour(Math.floor(period.open.time / 100))
-            .minute(period.open.time % 100);
-          let closeTime = dayjs()
-            .day(period.close.day)
-            .hour(Math.floor(period.close.time / 100))
-            .minute(period.close.time % 100);
+      return periodsToday.some((period) => {
+        const periodOpenHour = Math.floor(period.open.time / 100);
+        const periodOpenMinute = period.open.time % 100;
+        const periodOpen = dayjs()
+          .hour(periodOpenHour)
+          .minute(periodOpenMinute);
 
-          if (closeTime.isBefore(openTime)) {
-            closeTime = closeTime.add(1, "day");
+        let periodClose = null;
+        if (period.close) {
+          const periodCloseHour = Math.floor(period.close.time / 100);
+          const periodCloseMinute = period.close.time % 100;
+          periodClose = dayjs().hour(periodCloseHour).minute(periodCloseMinute);
+
+          // 處理跨天的情況
+          if (periodClose.isBefore(periodOpen)) {
+            periodClose = periodClose.add(1, "day");
           }
-
-          const hasIntersection =
-            openTime.isBefore(filterEnd) && closeTime.isAfter(filterStart);
-
-          if (hasIntersection) {
-            return true;
-          }
+        } else {
+          // 如果沒有關閉時間，表示營業到深夜或24小時
+          periodClose = dayjs().endOf("day").add(1, "day");
         }
-      }
-      return false;
+
+        // 檢查使用者選擇的開放時間是否在酒吧的營業時間內
+        const userOpenTimeWithinPeriod = openTime.isBetween(
+          periodOpen,
+          periodClose,
+          null,
+          "[)"
+        );
+        const userCloseTimeWithinPeriod = closeTime.isBetween(
+          periodOpen,
+          periodClose,
+          null,
+          "(]"
+        );
+
+        const periodCoversUserRange =
+          periodOpen.isSameOrBefore(openTime) &&
+          periodClose.isSameOrAfter(closeTime);
+
+        return (
+          userOpenTimeWithinPeriod ||
+          userCloseTimeWithinPeriod ||
+          periodCoversUserRange
+        );
+      });
     });
   }
 
@@ -359,7 +535,6 @@ async function selectSuggestion(suggestion) {
   isLoading.value = true;
   clearMarkers("all");
   closeInfoWindow();
-
   try {
     const detail = await getPlaceDetails(suggestion.place_id);
     if (detail && detail.geometry && detail.geometry.location) {
@@ -414,25 +589,8 @@ async function selectSuggestion(suggestion) {
   }
 }
 
-// 點擊欄位以外區域會收起建議清單
-function handleClickOutside(event) {
-  const el = searchInputRef.value;
-  if (el && !el.contains(event.target)) {
-    suggestions.value = [];
-  }
-}
-
-onMounted(() => {
-  document.addEventListener("click", handleClickOutside);
-});
-
-onUnmounted(() => {
-  document.removeEventListener("click", handleClickOutside);
-});
-
 async function handleSearch() {
   suggestions.value = [];
-
   if (!isReady.value) {
     alert("地圖尚未載入完成，請稍候再試");
     return;
@@ -444,11 +602,11 @@ async function handleSearch() {
   isLoading.value = true;
   clearMarkers("all");
   closeInfoWindow();
-
   try {
     let mainBars = [];
     let typeForNearby = "establishment";
     const q = searchQuery.value.trim().toLowerCase();
+
     if (
       ["bar", "酒吧", "pub", "night club", "夜店", "交易吧", "intention"].some(
         (k) => q.includes(k)
@@ -465,6 +623,8 @@ async function handleSearch() {
 
     const result = await searchAndDisplayPlaces(searchQuery.value);
     mainBars = result && result.results ? result.results : [];
+
+    // 如果主要搜尋沒有結果，則嘗試使用附近的搜尋
     if ((!mainBars || mainBars.length === 0) && typeForNearby) {
       const google = googleMapsInstance.value;
       let center = null;
@@ -474,11 +634,13 @@ async function handleSearch() {
       } else {
         center = new window.google.maps.LatLng(25.0478, 121.517);
       }
+
       const fallbackRequest = {
         location: center,
         radius: 5000,
         type: typeForNearby,
       };
+
       const service = new google.places.PlacesService(map.value);
       mainBars = await new Promise((resolve) => {
         service.nearbySearch(fallbackRequest, async (results, status) => {
@@ -500,6 +662,7 @@ async function handleSearch() {
                         BAR_PLACE_TYPES.includes(type)
                       )
                     : false;
+
                   return {
                     id: detail.place_id,
                     place_id: detail.place_id,
@@ -546,6 +709,7 @@ async function handleSearch() {
         });
       });
     }
+
     if (mainBars && mainBars.length > 0) {
       mainBarForSearch.value = null;
       googleBars.value = mainBars;
@@ -571,17 +735,20 @@ async function handleGetCurrentLocation() {
   try {
     clearMarkers("all");
     closeInfoWindow();
+    // 獲取側邊欄寬度，用於調整地圖中心點
     const sidebarWidth =
       document.querySelector(".bar-list-sidebar")?.offsetWidth || 0;
     const currentLocation = await getMapCurrentLocation(sidebarWidth);
     if (currentLocation) {
+      // 獲取當前位置後，重新搜尋地圖範圍內的酒吧
       const bars = await searchBarsInMapBounds(false);
       googleBars.value = bars;
     }
   } catch (err) {
+    console.error("獲取目前位置失敗:", err);
     const google = googleMapsInstance.value;
     if (google && map.value) {
-      const fallbackLocation = new window.google.maps.LatLng(25.0478, 121.517);
+      const fallbackLocation = new window.google.maps.LatLng(25.0478, 121.517); // 台北市中心
       map.value.setCenter(fallbackLocation);
       map.value.setZoom(15);
       const bars = await searchBarsInMapBounds(false);
@@ -594,10 +761,6 @@ async function handleGetCurrentLocation() {
 
 function handleFilterChanged(filters) {
   currentFilters.value = { ...filters };
-}
-
-function toggleFilterPanel() {
-  isFilterPanelOpen.value = !isFilterPanelOpen.value;
 }
 
 async function handleBarSelected(bar) {
@@ -621,11 +784,11 @@ async function handleBarSelected(bar) {
     reviews: bar.reviews || 0,
     address: bar.address || "",
   });
-
   router.replace({
     query: { ...route.query, ...Object.fromEntries(params) },
   });
 
+  // 地圖移動視角並顯示資訊窗
   if (bar.location && map && googleMapsInstance()) {
     panTo(bar.location);
     const tempMarker = new window.google.maps.Marker({
@@ -644,6 +807,10 @@ async function handleBarSelected(bar) {
     const infoContent = formatBarInfoWindowContent(bar);
     showInfoWindow(tempMarker, infoContent);
   }
+  // 手機版自動隱藏側邊欄
+  if (isMobile.value) {
+    showSidebarOnMobile.value = false;
+  }
 }
 
 function closeBarDetailModal() {
@@ -657,17 +824,18 @@ function closeBarDetailModal() {
   delete newQuery.rating;
   delete newQuery.reviews;
   delete newQuery.address;
-
   router.replace({ query: newQuery });
 }
 
 function handleToggleWishlist(barId) {
+  // 更新 googleBars 列表中的收藏狀態
   const barIndex = googleBars.value.findIndex((b) => b.place_id === barId);
   if (barIndex > -1) {
     const updatedBar = { ...googleBars.value[barIndex] };
     updatedBar.isWishlisted = !updatedBar.isWishlisted;
     googleBars.value.splice(barIndex, 1, updatedBar);
   }
+  // 同步更新 selectedBarForDetail 的收藏狀態
   if (
     selectedBarForDetail.value &&
     selectedBarForDetail.value.place_id === barId
@@ -693,34 +861,27 @@ function handleTagClick(tag) {
   }
 }
 
-watch(
-  mapContainer,
-  (newVal) => {
-    if (
-      newVal &&
-      typeof googleMapsInstance === "function" &&
-      googleMapsInstance()
-    ) {
-      initMap();
-    }
-  },
-  { immediate: true }
-);
+function handleClickOutside(event) {
+  const el = searchInputRef.value;
+  if (el && !el.contains(event.target)) {
+    suggestions.value = [];
+  }
+}
+
+function toggleFilterPanel() {
+  isFilterPanelOpen.value = !isFilterPanelOpen.value;
+}
 
 const checkUrlForBarDetail = async () => {
   const barId = route.query.barId;
-
   if (barId && !isBarDetailModalOpen.value) {
-    // 先檢查現有的酒吧列表中是否有這個酒吧
     let barFromList = googleBars.value.find(
       (bar) => bar.place_id === barId || bar.id === barId
     );
-
     if (barFromList) {
       selectedBarForDetail.value = barFromList;
       isBarDetailModalOpen.value = true;
     } else {
-      // 從參數創建基本資訊
       const barFromUrl = {
         id: barId,
         place_id: barId,
@@ -728,14 +889,11 @@ const checkUrlForBarDetail = async () => {
         rating: parseFloat(route.query.rating) || null,
         reviews: parseInt(route.query.reviews) || 0,
         address: route.query.address || "",
-        // 添加載入標記
         isQuickLoad: true,
         isWishlisted: false,
       };
-
       selectedBarForDetail.value = barFromUrl;
       isBarDetailModalOpen.value = true;
-      
       try {
         const fullData = await getPlaceDetails(barId);
         if (
@@ -780,18 +938,13 @@ const checkUrlForBarDetail = async () => {
             url: fullData.url,
             googleReviews: fullData.reviews || [],
           };
-
           selectedBarForDetail.value = detailedBar;
-
-          // 將完整資料加入到酒吧列表中
           const existingIndex = googleBars.value.findIndex(
             (bar) => bar.place_id === barId
           );
           if (existingIndex === -1) {
             googleBars.value.unshift(detailedBar);
           }
-
-          // 如果有位置資訊，移動地圖視角
           if (detailedBar.location && map.value) {
             panTo(detailedBar.location);
           }
@@ -802,6 +955,24 @@ const checkUrlForBarDetail = async () => {
     }
   }
 };
+
+watch(
+  mapContainer,
+  (newVal) => {
+    if (
+      newVal &&
+      typeof googleMapsInstance === "function" &&
+      googleMapsInstance()
+    ) {
+      setTimeout(() => {
+        if (map.value && window.google && window.google.maps) {
+          window.google.maps.event.trigger(map.value, "resize");
+        }
+      }, 100);
+    }
+  },
+  { immediate: true }
+);
 
 watch(
   () => route.query.barId,
@@ -830,6 +1001,7 @@ watch(isReady, (ready) => {
     if (map.value && map.value.addListener) {
       map.value.addListener("idle", onMapIdleHandler);
     }
+    checkUrlForBarDetail();
   }
 });
 
@@ -853,67 +1025,406 @@ watch(selectedBar, (newVal) => {
   }
 });
 
-onMounted(async () => {
-  isLoading.value = true;
-  try {
-    await loadGoogleMapsAPI();
-    if (mapContainer.value) {
-      await initMap();
-      requestGeolocationPermission();
-      let gotLocation = false;
-      try {
-        const sidebarWidth =
-          document.querySelector(".bar-list-sidebar")?.offsetWidth || 0;
-        const currentLocation = await getMapCurrentLocation(sidebarWidth);
-        if (currentLocation) {
-          gotLocation = true;
-          const bars = await searchBarsInMapBounds(false);
-          googleBars.value = bars;
-        }
-      } catch (geoErr) {
-        const google = googleMapsInstance.value;
-        if (google && map.value) {
-          const fallbackLocation = new window.google.maps.LatLng(
-            25.0478,
-            121.517
-          );
-          map.value.setCenter(fallbackLocation);
-          map.value.setZoom(15);
-          const bars = await searchBarsInMapBounds(false);
-          googleBars.value = bars;
-        }
-        if (!gotLocation) {
-          alert("無法獲取您的目前位置");
-        }
-      }
-    } else {
-      console.error("錯誤：地圖容器 ref 未綁定，無法初始化地圖。");
-    }
-  } catch (err) {
-    console.error("地圖或數據載入失敗:", err);
-    alert("初始化失敗，請檢查控制台錯誤。");
-  } finally {
-    isLoading.value = false;
+// 監聽視窗大小變化，重新調整地圖
+watch([isMobile, showSidebarOnMobile], () => {
+  if (map.value && window.google && window.google.maps) {
+    setTimeout(() => {
+      window.google.maps.event.trigger(map.value, "resize");
+    }, 300); // 讓 CSS 變更生效
   }
-  await checkUrlForBarDetail();
 });
 
+const isSidebarCollapsed = ref(true);
+
+watch(filteredBars, (bars) => {
+  if (bars && bars.length > 0) {
+    isSidebarCollapsed.value = false;
+  } else {
+    isSidebarCollapsed.value = true;
+  }
+});
+
+function toggleSidebarCollapse() {
+  isSidebarCollapsed.value = !isSidebarCollapsed.value;
+}
+
+onMounted(() => {
+  checkDeviceType();
+  window.addEventListener("resize", checkDeviceType);
+  document.addEventListener("click", handleClickOutside);
+
+  // 初始化地圖，並在初始化完成後檢查 URL 參數
+  loadGoogleMapsAPI().then(() => {
+    initMap().then(() => {});
+  });
+});
+
+onUnmounted(() => {
+  window.removeEventListener("resize", checkDeviceType);
+  document.removeEventListener("click", handleClickOutside);
+});
 </script>
 
 <style scoped>
+.suggestions-list-mobile-overlay {
+  position: absolute;
+  top: 60px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 90vw;
+  max-width: 500px;
+  background: white;
+  border-radius: 16px;
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.18);
+  max-height: 220px;
+  overflow-y: auto;
+  z-index: 900;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.suggestions-list-mobile-overlay li {
+  padding: 12px 16px;
+  border-bottom: 1px solid #f0f0f0;
+  cursor: pointer;
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  transition: background-color 0.2s ease;
+}
+
+.suggestions-list-mobile-overlay li:hover {
+  background-color: #f8f9fa;
+}
+
+.suggestions-list-mobile-overlay li:last-child {
+  border-bottom: none;
+}
+
+.suggestions-list-mobile-overlay li:first-child {
+  border-radius: 8px 8px 0 0;
+}
+
+.suggestions-list-mobile-overlay li:last-child {
+  border-radius: 0 0 8px 8px;
+}
+
+.mobile-top-controls {
+  padding-top: env(safe-area-inset-top);
+}
+
+.mobile-control-button {
+  padding: 6px;
+  border: none;
+  background-color: #f8f9fa;
+  color: #333;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+  min-width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+}
+
+.mobile-control-button:hover {
+  background-color: #e9ecef;
+}
+
+.search-panel-mobile {
+  position: static;
+  flex-shrink: 1;
+  z-index: 1000;
+}
+
+.input-group-mobile {
+  display: flex;
+  background-color: #f8f9fa;
+  border-radius: 16px;
+  overflow: hidden;
+  align-items: stretch;
+  height: 32px;
+}
+
+.search-input-mobile {
+  flex: 1;
+  border: none;
+  background: transparent;
+  padding: 8px 12px;
+  outline: none;
+  font-size: 14px;
+  min-width: 0;
+  height: 32px;
+}
+
+.search-button-mobile {
+  min-width: 32px;
+  min-height: 32px;
+  padding: 2px 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  background: transparent;
+  color: #666;
+  cursor: pointer;
+}
+
+.search-button-mobile i {
+  font-size: 16px;
+  color: #666;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
 .bar-list-sidebar {
+  position: relative;
+  transition: width 0.3s;
   width: 380px;
+  height: 100vh;
   background-color: #f7f7f7;
   display: flex;
   flex-direction: column;
   box-shadow: 2px 0 8px rgba(0, 0, 0, 0.1);
   z-index: 50;
-  transition: transform 0.3s ease-in-out;
 }
 
-.bar-list-sidebar.sidebar-hidden {
-  transform: translateX(-100%);
+.bar-list-sidebar.sidebar-collapsed {
+  width: 32px;
+  min-width: 32px;
+  max-width: 32px;
+  overflow: visible;
+  box-shadow: none;
+  background: transparent;
+}
+
+.sidebar-content {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  flex: 1;
+  overflow: hidden;
+}
+
+.mobile-sidebar-header {
+  flex-shrink: 0;
+  border-radius: 12px 12px 0 0;
+}
+
+.sidebar-content .overflow-y-auto {
+  flex: 1;
+  overflow-y: auto;
+  min-height: 0;
+  max-height: 100%;
+}
+
+.sidebar-toggle-btn {
   position: absolute;
+  top: 50%;
+  right: -16px;
+  transform: translateY(-50%);
+  width: 32px;
+  height: 48px;
+  background: #fff;
+  border-radius: 0 8px 8px 0;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  z-index: 1000;
+  border: 1px solid #eee;
+}
+
+@media (max-width: 767px) {
+  html,
+  body,
+  .relative.w-screen.h-screen.overflow-hidden {
+    overflow-x: hidden;
+    width: 100vw;
+    max-width: 100vw;
+    position: relative;
+  }
+
+  .bar-list-sidebar {
+    position: absolute;
+    top: 60px;
+    left: 0;
+    width: 80vw;
+    max-width: 320px;
+    height: calc(100vh - 60px);
+    border-radius: 12px;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+    z-index: 300;
+    background: #fff;
+    transition: none;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .sidebar-mobile-hidden {
+    display: none;
+  }
+
+  .mobile-sidebar-header {
+    border-radius: 12px 12px 0 0;
+    flex-shrink: 0;
+  }
+
+  .sidebar-content {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    flex: 1;
+  }
+
+  .sidebar-content .overflow-y-auto {
+    flex: 1;
+    overflow-y: auto;
+    min-height: 0;
+    max-height: none;
+    padding: 4px;
+  }
+
+  .map-container {
+    width: 100%;
+    height: calc(100vh - 60px);
+    margin-top: 60px;
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+
+  .map-fullscreen {
+    padding-top: 60px;
+  }
+
+  .mobile-top-controls {
+    justify-content: flex-start;
+  }
+
+  .mobile-top-controls .flex.flex-1.gap-1.items-center.min-w-0 {
+    margin-left: 8px;
+  }
+
+  .search-panel-mobile {
+    width: 120px;
+    min-width: 100px;
+    max-width: 120px;
+  }
+
+  .mobile-control-button {
+    min-width: 33px;
+    height: 28px;
+    font-size: 11px;
+    margin-left: 2px;
+  }
+
+  .filter-toggle-button {
+    width: 36px;
+    height: 36px;
+    min-width: 36px;
+    min-height: 36px;
+    padding: 8px;
+    margin-left: 4px;
+    flex-shrink: 0;
+  }
+
+  .filter-svg-icon {
+    width: 20px;
+    height: 20px;
+  }
+
+  .mobile-bottom-toggle button {
+    width: 90px;
+    min-width: 108px;
+    max-width: 108px;
+    padding: 4px 10px;
+    min-height: 24px;
+    height: 28px;
+    border-radius: 14px;
+    gap: 4px;
+    margin-left: -4px;
+  }
+
+  .mobile-bottom-toggle button i {
+    font-size: 11px;
+  }
+
+  .mobile-bottom-toggle button span {
+    font-size: 10px;
+  }
+
+  .filter-panel-mobile {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 80%;
+    height: 100%;
+    bottom: 0;
+    z-index: 99999;
+    padding-top: env(safe-area-inset-top);
+    border-radius: 10px;
+  }
+
+  .location-button-mobile,
+  .filter-toggle-button {
+    width: 28px;
+    height: 28px;
+    min-width: 28px;
+    min-height: 28px;
+    font-size: 16px;
+    margin-left: 2px;
+  }
+
+  .mobile-top-controls .flex.flex-wrap.gap-2.justify-between.items-center.p-3 {
+    transform: scale(1.18);
+    transform-origin: left center;
+    width: 100%;
+    max-width: 100vw;
+    box-sizing: border-box;
+  }
+}
+
+@media (max-width: 480px) {
+  .search-panel-mobile {
+    width: 140px;
+    min-width: 120px;
+  }
+
+  .mobile-control-button {
+    min-width: 26px;
+    height: 26px;
+    font-size: 10px;
+  }
+
+  .search-input-mobile {
+    font-size: 16px;
+  }
+}
+
+.mobile-bottom-toggle button {
+  backdrop-filter: blur(10px);
+  background-color: rgba(255, 255, 255, 0.95);
+}
+
+.top-left-controls {
+  gap: 8px;
+  flex-wrap: nowrap;
+  align-items: center;
+  justify-content: flex-start;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.search-and-location-group {
+  display: flex;
+  flex-grow: 1;
+  align-items: center;
 }
 
 .map-control-button {
@@ -931,6 +1442,7 @@ onMounted(async () => {
     transform 0.2s;
   box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
   outline: none;
+  flex-shrink: 0;
 }
 
 .map-control-button:hover {
@@ -939,47 +1451,39 @@ onMounted(async () => {
   box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
 }
 
-.map-control-button:focus {
-  outline: none;
-  box-shadow: none;
-}
-
 .filter-toggle-button {
-  order: 1;
-  padding: 0;
-  background-color: transparent;
+  background: #f8f9fa;
+  border: none;
   box-shadow: none;
-  border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 40px;
-  height: 40px;
-  font-size: 24px;
-  color: #3a3435;
+  padding: 12px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+  min-width: 44px;
+  min-height: 44px;
+  flex-shrink: 0;
 }
 
 .filter-toggle-button:hover {
-  background-color: rgba(0, 0, 0, 0.1);
-  transform: translateY(0);
-  box-shadow: none;
+  background: #e9ecef;
 }
 
-.filter-toggle-button:focus {
-  outline: none;
-  box-shadow: none;
-}
-
-.filter-toggle-button .fas {
-  color: #3a3435;
+.filter-svg-icon {
+  width: 24px;
+  height: 24px;
+  display: block;
+  flex-shrink: 0;
 }
 
 .search-panel-map {
-  order: 2;
   display: flex;
   position: relative;
-  width: 300px;
-  flex-shrink: 1;
+  flex: 1;
+  min-width: 120px;
+  max-width: 300px;
   align-items: center;
 }
 
@@ -987,6 +1491,7 @@ onMounted(async () => {
   display: flex;
   position: relative;
   width: 100%;
+  min-width: 0;
   gap: 0;
 }
 
@@ -999,6 +1504,8 @@ onMounted(async () => {
   border-radius: 8px 0 0 8px;
   outline: none;
   flex: 1;
+  min-width: 0;
+  width: auto;
   margin: 0;
 }
 
@@ -1009,9 +1516,9 @@ onMounted(async () => {
   margin: 0;
   border: 1px solid #decdd5;
   border-left: 0;
-  border-radius: 0px 5px 5px 0px;
+  border-right: 0;
+  border-radius: 0;
   cursor: pointer;
-  order: 3;
   box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
   outline: none;
   transition:
@@ -1039,15 +1546,17 @@ onMounted(async () => {
 .place-now-map {
   padding: 8px 12px;
   margin: 0;
-  border: none;
+  border: 1px solid #decdd5;
+  border-left: 0;
   background-color: var(--color-main-text);
   color: #3a3435;
-  border-radius: 5px;
+  border-radius: 0 8px 8px 0;
   cursor: pointer;
   white-space: nowrap;
-  order: 4;
   box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
   outline: none;
+  flex-shrink: 0;
+  min-width: max-content;
 }
 
 .place-now-map:hover {
@@ -1071,23 +1580,19 @@ onMounted(async () => {
   overflow-y: auto;
   box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
 }
+
 .suggestions-list li {
   padding: 10px 12px;
   cursor: pointer;
   border-bottom: 1px solid #f0f0f0;
 }
+
 .suggestions-list li:last-child {
   border-bottom: none;
 }
+
 .suggestions-list li:hover {
   background: #f0f0f0;
-}
-
-.no-bars-message {
-  text-align: center;
-  color: #666;
-  margin-top: 20px;
-  font-size: 18px;
 }
 
 .map-container {
@@ -1137,18 +1642,94 @@ onMounted(async () => {
   }
 }
 
-.remove-filter-button:hover {
-  opacity: 1;
+@media (min-width: 768px) {
+  .mobile-top-controls,
+  .mobile-bottom-toggle {
+    display: none;
+  }
+
+  .suggestions-list-mobile-overlay {
+    display: none;
+  }
+
+  .map-container {
+    padding-top: 0;
+  }
+
+  .bar-list-sidebar {
+    position: relative;
+    transform: none;
+    width: 380px;
+    height: 100vh;
+  }
+
+  .sidebar-content {
+    height: 100%;
+  }
+
+  .sidebar-content .overflow-y-auto {
+    height: 100%;
+  }
+
+  html,
+  body {
+    overflow-x: hidden;
+  }
+
+  .top-left-controls {
+    width: auto;
+    max-width: calc(100vw - 420px);
+    flex-wrap: nowrap;
+    gap: 10px;
+  }
+
+  .search-panel-map {
+    display: flex;
+  }
+
+  .search-and-location-group {
+    display: flex;
+    align-items: center;
+    flex-grow: 1;
+  }
+
+  .filter-toggle-button {
+    margin-right: 0;
+  }
+
+  .input-group {
+    flex: 1;
+  }
+
+  .search-input {
+    border-radius: 8px 0 0 8px;
+    border-right: none;
+  }
+
+  .search-bt {
+    border-radius: 0;
+    border-left: none;
+    border-right: none;
+  }
+
+  .place-now-map {
+    border-radius: 0 8px 8px 0;
+    border-left: none;
+  }
 }
 
-@media (max-width: 768px) {
-  .top-left-controls {
-    left: 20px;
-    width: calc(100% - 40px);
-    flex-direction: column;
-  }
-  .search-panel-map {
-    width: 100%;
-  }
+:global(.mobile-menu.open) {
+  z-index: 10000;
+}
+
+.mobile-bottom-toggle .rounded-full.bg-blue-500 {
+  padding: 2px 6px;
+  font-size: 12px;
+  min-width: 22px;
+  min-height: 18px;
+  line-height: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
 </style>
