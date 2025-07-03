@@ -9,7 +9,7 @@ import { useLinePay } from '@/composables/useLinePay';
 import EventHoster from './EventHoster.vue';
 import MessageBoard from './MessageBoard.vue';
 import ModalEdit from '@/components/events/ModalEdit.vue';
-import BaseAlertModal from '@/components/common/BaseAlertModal.vue'
+import { useAlertModal } from '@/composables/useAlertModal';
 import { useGoogleMaps } from "@/composables/useGoogleMaps/userIndex.js";
 
 const props = defineProps({
@@ -24,17 +24,7 @@ const props = defineProps({
 
 const emit = defineEmits(['update','close']);
 
-const alertVisible = ref(false)
-const alertType = ref('warning')
-const alertTitle = ref('')
-const alertMessage = ref('')
-
-const showAlert = (type, title, message) => {
-  alertType.value = type
-  alertTitle.value = title
-  alertMessage.value = message
-  alertVisible.value = true
-}
+const { showAlert } = useAlertModal();
 
 const router = useRouter();
 const cart = useCartStore();
@@ -49,9 +39,13 @@ const isProcessing = ref(false);
 const hasParticipated = ref(false);
 
 const isInCart = computed(() => cart.isInCart(eventRef.value.id));
-const isOwner = computed(
-  () => authStore.currentUser?.id === eventRef.value.hostUser
-);
+
+const isOwner = computed(() => {
+  const currentUserId = authStore.currentUser?.id || authStore.user?.id;
+  const hostUserId = eventRef.value?.hostUser?.id || eventRef.value?.hostUser;
+  return currentUserId !== null && hostUserId !== null && Number(currentUserId) === Number(hostUserId);
+});
+
 const isAuthenticated = computed(() => {
   return (
     authStore.isAuthenticated ||
@@ -198,8 +192,7 @@ const addToCart = async () => {
   }
   
   if (hasParticipated.value) {
-
-    showAlert('warning', '您已經報名過此活動了！');
+    showAlert('warning', '重複報名', '您已經報名過此活動了！');
     return;
   }
 
@@ -218,9 +211,9 @@ const addToCart = async () => {
       hostUser: e.hostUser,
     });
 
-    showAlert('success', result.message || '已加入購物車！');
+    showAlert('success', '加入成功', result.message || '已加入購物車！');
   } catch (error) {
-    alert(error.message);
+    showAlert('error', '加入失敗', error.message);
   }
 };
 
@@ -235,16 +228,12 @@ const buyNow = async () => {
   });
 
   if (hasParticipated.value) {
-    showAlert('warning', '您已經報名過此活動了！');
-    
+    showAlert('warning', '重複報名', '您已經報名過此活動了！');
     return;
   }
 
   if (!isAuthenticated.value) {
-
-    // console.warn('❌ 認證檢查失敗，用戶未登入');
-    showAlert('warning', '尚未登入', '請先登入才能加入購物車');
-
+    showAlert('warning', '尚未登入', '請先登入才能購買');
     return;
   }
 
@@ -271,7 +260,8 @@ const buyNow = async () => {
     const orderId = orderResponse.order.id || orderResponse.order.orderId;
 
     if (!orderId) {
-      showAlert('error', paymentResponse.data.message || '訂單建立失敗，無法獲取訂單 ID，請洽客服人員');
+      showAlert('error', '訂單錯誤', '訂單建立失敗，無法獲取訂單 ID，請洽客服人員');
+      return;
     }
 
     console.log("✅ 訂單創建成功:", {
@@ -286,8 +276,8 @@ const buyNow = async () => {
     });
 
     if (!paymentResponse.data.success) {
-      showAlert('error', paymentResponse.data.message || 'LINE Pay 付款失敗，請洽客服人員');
-
+      showAlert('error', '付款失敗', paymentResponse.data?.message || 'LINE Pay 付款失敗，請洽客服人員');
+      return;
     }
 
     const paymentResult = paymentResponse.data.data;
@@ -307,7 +297,7 @@ const buyNow = async () => {
 
     window.location.href = paymentResult.paymentUrl;
   } catch (error) {
-    showAlert('error', '立即購買失敗:', error)
+    showAlert('error', '立即購買失敗:', error.message);
     
     if (error.response) {
       console.error("❌ API 錯誤詳情:", {
@@ -338,14 +328,13 @@ const buyNow = async () => {
       error.message.includes("已參加過")
     ) {
       errorMessage = "您已經報名過此活動了";
-      hasParticipated.value = true; // 更新為已參與狀態
+      hasParticipated.value = true; 
     } else if (error.response?.data?.message) {
       errorMessage = error.response.data.message;
     } else if (error.message) {
       errorMessage = error.message;
     }
 
-    alert(errorMessage);
   } finally {
     isProcessing.value = false;
   }
@@ -399,7 +388,6 @@ onMounted(async () => {
 </script>
 
 <template>
-
   <div class="flex justify-center items-center pt-[2%] max-w-full">
     <div class="relative w-full max-w-[1200px] min-w-[1170px] bg-[#f1f1f1] rounded-[20px] overflow-hidden pb-[30px]">
       <div>
@@ -411,11 +399,9 @@ onMounted(async () => {
           class="absolute bottom-[70px] left-[80px] z-[2] bg-gray-500 rounded-[10px] max-w-[325px] w-[325px] h-[580px] mx-auto shadow-md cursor-pointer">
           <div
             ref="mapContainer"
-            class="w-full h-full rounded-lg border-0"
+            class="w-full h-full border-0 rounded-lg"
             style="min-height: 300px; background: #2d2d2d"
           ></div>
-
-
         </div>
 
         <div class="pt-[40px] pr-[70px] pb-[40px] pl-[500px]">
@@ -443,7 +429,7 @@ onMounted(async () => {
           </div>
           <div class="flex items-center py-[1px]">
             <i class="fa-solid fa-dollar-sign pr-[30px] text-[#860914] font-bold"></i>
-            <p class="text-[20px] leading-[2.5] m-0 text-[#860914] font-bold">費用：新台幣 <span>{{ eventRef.price }}</span> 元</p>v
+            <p class="text-[20px] leading-[2.5] m-0 text-[#860914] font-bold">費用：新台幣 <span>{{ eventRef.price }}</span> 元</p>
           </div>
 
           <div class="flex items-center py-[1px]">
@@ -460,14 +446,24 @@ onMounted(async () => {
           </div>
 
           <div class="flex">
-            <div v-if="hasParticipated" class="participation-status">
+            <!-- 主辦人：顯示編輯按鈕 -->
+            <ModalEdit
+              v-if="isOwner && eventRef.id"
+              :event-id="eventRef.id"
+              :event="eventRef"
+              @update="handleEventUpdate"
+            />
+
+            <!-- 非主辦人且已參與：顯示參與狀態 -->
+            <div v-else-if="!isOwner && hasParticipated"  class="participation-status">
               <div class="flex items-center gap-3 bg-white text-[#333] px-7 py-[10px] rounded-[20px] text-[24px] font-semibold shadow-md mt-[30px] mr-[30px] text-center cursor-default">
                 <i class="fa-solid fa-check-circle text-[20px] text-emerald-500"></i>
                 <span>已報名此活動</span>
               </div>
             </div>
 
-            <template v-else>
+            <!-- 非主辦人且未參與：顯示購買按鈕 -->
+            <template v-else-if="!isOwner && !hasParticipated && authStore?.isAuthenticated">
               <button
                 @click="addToCart"
                 type="button"
@@ -497,31 +493,23 @@ onMounted(async () => {
               </button>
             </template>
 
-            <ModalEdit
-              v-if="isOwner && eventRef.id"
-              :event-id="eventRef.id"
-              @update="handleEventUpdate"
-            />
+            <!-- 未登入用戶提示 -->
+            <div v-else-if="!authStore?.isAuthenticated" class="login-prompt">
+              <p style="padding: 20px; background: #f0f0f0; border-radius: 10px; text-align: center;">
+                請先登入以參加活動
+              </p>
+            </div>
           </div>
         </div>
       </div>
     </div>
   </div>
   <EventHoster :user="eventRef.hostUser" class="mb-6"/>
-  <MessageBoard v-if="isJoin" class="mb-12"/>
-  <BaseAlertModal
-    :visible="alertVisible"
-    :type="alertType"
-    :title="alertTitle"
-    :message="alertMessage"
-    @close="alertVisible = false"
-    @update="handleModalUpdate"
-  />
+  <MessageBoard v-if="isJoin || isHostUser" class="mb-12"/>
 </template>
 
 <style scoped>
 @reference "tailwindcss";
-
 
 @keyframes fadeInUp {
   from {
@@ -532,6 +520,10 @@ onMounted(async () => {
     opacity: 1;
     transform: translateY(0);
   }
+}
+
+.login-prompt {
+  margin-top: 30px;
 }
 
 .event-btn:disabled {

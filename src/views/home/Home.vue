@@ -209,6 +209,13 @@ const bars = [
   .feature-card:nth-child(1) {
     grid-area: main;
     min-height: 160px; 
+    padding-bottom: 32px;
+  }
+
+    .feature-card:nth-child(1) {
+    grid-area: main;
+    min-height: 160px; 
+    padding-bottom: 32px;
   }
 
   .feature-card:nth-child(2) {
@@ -239,6 +246,7 @@ const bars = [
 
   .feature-card:nth-child(1) {
     grid-area: 1 / 2 / 3 / 4;
+    padding-bottom: 32px;
   }
   .feature-card:nth-child(2) {
     grid-area: 1 / 1 / 2 / 2; 

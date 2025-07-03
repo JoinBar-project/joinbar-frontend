@@ -1,6 +1,9 @@
 <template>
   <div class="cart-container">
-    <h2>購物車</h2>
+    <div class="flex gap-2">
+      <h2 class="inline-flex gap-2 text-lg font-semibold">購物車</h2>
+      <img src="/cart.png" alt="Cart Icon" class="w-8 h-8" />
+    </div>
 
     <div v-if="isLoading || cart.loading" class="loading-box">
       <div class="spinner"></div>
@@ -88,7 +91,7 @@
               :title="'移除 ' + item.name"
             >
               <i class="fa-solid fa-trash-can remove-icon"></i>
-              
+
             </button>
           </div>
           
@@ -345,14 +348,14 @@ const goShopping = () => {
 }
 
 .cart-container h2 {
-  color: var(--color-text-selected, #f5d1c0);
+  color: var(--color-primary-orange);
   margin-bottom: 32px;
 }
 
 .loading-box {
   text-align: center;
   padding: 48px 0;
-  color: var(--color-text-selected, #f5d1c0);
+  color: var(--color-primary-orange);
 }
 
 .spinner {
@@ -553,7 +556,7 @@ const goShopping = () => {
 
 .total-label {
   font-size: 19px;
-  color: var(--color-text-selected, #f5d1c0);
+  color: var(--color-main-text);
   margin: 0;
 }
 
@@ -562,7 +565,7 @@ const goShopping = () => {
 }
 
 .checkout-btn {
-  background-color: var(--color-select, #d17361);
+  background-color: var(--color-secondary-green);
   color: white;
   border: none;
   padding: 10px 24px;
@@ -590,18 +593,18 @@ const goShopping = () => {
 .empty-cart h3 {
   font-size: 24px;
   margin-bottom: 16px;
-  color: var(--color-text-selected, #f5d1c0);
+  color: var(--color-main-text);
 }
 
 .empty-description {
   font-size: 16px;
   margin-bottom: 32px;
-  color: var(--color-text-unselected, #937e7e);
+  color: var(--color-text-unselected);
   line-height: 1.5;
 }
 
 .shop-btn {
-  background-color: var(--color-select, #d17361);
+  background-color: var(--color-secondary-green);
   color: white;
   border: none;
   padding: 12px 32px;
@@ -613,7 +616,7 @@ const goShopping = () => {
 }
 
 .shop-btn:hover {
-  background-color: #b85d4a;
+  background-color: var(--color-primary-orange);
 }
 
 .success-toast {
@@ -736,7 +739,6 @@ const goShopping = () => {
     transform: none;
   }
 
-  /* FontAwesome 图标样式 */
   .remove-icon {
     font-size: 16px;
     transition: all 0.2s ease;
@@ -746,7 +748,6 @@ const goShopping = () => {
     transform: translateY(-1px);
   }
 
-  /* SVG 图标样式 (备选方案) */
   .remove-icon-svg {
     width: 18px;
     height: 18px;
@@ -846,5 +847,6 @@ const goShopping = () => {
     left: 16px;
     text-align: center;
   }
+
 }
 </style>
