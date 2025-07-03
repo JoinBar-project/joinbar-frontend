@@ -151,7 +151,9 @@
           style="width: 24px; height: 24px"
         />
       </div>
-      <div v-if="!isSidebarCollapsed">
+
+      <!-- 修復：將 v-if 移到內部，並保持 flex 結構 -->
+      <div class="sidebar-content" v-if="!isSidebarCollapsed">
         <div class="mobile-sidebar-header md:hidden">
           <div class="flex justify-between items-center p-4 bg-white border-b">
             <h3 class="text-lg font-bold">酒吧列表</h3>
@@ -163,6 +165,8 @@
             </button>
           </div>
         </div>
+
+        <!-- 關鍵：恢復 flex-grow 和 overflow-y-auto 的組合 -->
         <div class="overflow-y-auto flex-grow p-4">
           <BarList
             :bars="filteredBars"
@@ -1107,7 +1111,6 @@ onUnmounted(() => {
   border-radius: 0 0 8px 8px;
 }
 
-/* 手機版樣式 */
 .mobile-top-controls {
   padding-top: env(safe-area-inset-top);
 }
@@ -1179,10 +1182,16 @@ onUnmounted(() => {
   justify-content: center;
 }
 
-/* 側邊欄手機版樣式 */
 .bar-list-sidebar {
   position: relative;
   transition: width 0.3s;
+  width: 380px;
+  height: 100vh;
+  background-color: #f7f7f7;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 2px 0 8px rgba(0, 0, 0, 0.1);
+  z-index: 50;
 }
 
 .bar-list-sidebar.sidebar-collapsed {
@@ -1192,6 +1201,26 @@ onUnmounted(() => {
   overflow: visible;
   box-shadow: none;
   background: transparent;
+}
+
+.sidebar-content {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  flex: 1;
+  overflow: hidden;
+}
+
+.mobile-sidebar-header {
+  flex-shrink: 0;
+  border-radius: 12px 12px 0 0;
+}
+
+.sidebar-content .overflow-y-auto {
+  flex: 1;
+  overflow-y: auto;
+  min-height: 0;
+  max-height: 100%;
 }
 
 .sidebar-toggle-btn {
@@ -1228,13 +1257,15 @@ onUnmounted(() => {
     left: 0;
     width: 80vw;
     max-width: 320px;
-    height: auto;
+    height: calc(100vh - 60px);
     border-radius: 12px;
     box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
     z-index: 300;
     background: #fff;
     transition: none;
     padding: 0;
+    display: flex;
+    flex-direction: column;
   }
 
   .sidebar-mobile-hidden {
@@ -1243,11 +1274,22 @@ onUnmounted(() => {
 
   .mobile-sidebar-header {
     border-radius: 12px 12px 0 0;
+    flex-shrink: 0;
   }
 
-  .bar-list-sidebar .flex-grow.p-4.overflow-y-auto {
-    max-height: 60vh;
+  .sidebar-content {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    flex: 1;
+  }
+
+  .sidebar-content .overflow-y-auto {
+    flex: 1;
     overflow-y: auto;
+    min-height: 0;
+    max-height: none;
+    padding: 4px;
   }
 
   .map-container {
@@ -1283,18 +1325,20 @@ onUnmounted(() => {
   }
 
   .filter-toggle-button {
-    width: 28px;
-    height: 28px;
-    font-size: 12px;
-    margin-right: -10px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 0;
+    width: 36px;
+    height: 36px;
+    min-width: 36px;
+    min-height: 36px;
+    padding: 8px;
+    margin-left: 4px;
+    flex-shrink: 0;
   }
-  .filter-toggle-button i {
-    font-size: 12px;
+
+  .filter-svg-icon {
+    width: 20px;
+    height: 20px;
   }
+
   .mobile-bottom-toggle button {
     width: 90px;
     min-width: 108px;
@@ -1306,12 +1350,15 @@ onUnmounted(() => {
     gap: 4px;
     margin-left: -4px;
   }
+
   .mobile-bottom-toggle button i {
     font-size: 11px;
   }
+
   .mobile-bottom-toggle button span {
     font-size: 10px;
   }
+
   .filter-panel-mobile {
     position: fixed;
     top: 0;
@@ -1332,10 +1379,6 @@ onUnmounted(() => {
     min-height: 28px;
     font-size: 16px;
     margin-left: 2px;
-  }
-  .filter-svg-icon {
-    width: 18px;
-    height: 18px;
   }
 
   .mobile-top-controls .flex.flex-wrap.gap-2.justify-between.items-center.p-3 {
@@ -1370,10 +1413,12 @@ onUnmounted(() => {
 }
 
 .top-left-controls {
-  gap: 0px;
+  gap: 8px;
   flex-wrap: nowrap;
   align-items: center;
   justify-content: flex-start;
+  min-width: 0;
+  overflow: hidden;
 }
 
 .search-and-location-group {
@@ -1397,6 +1442,7 @@ onUnmounted(() => {
     transform 0.2s;
   box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
   outline: none;
+  flex-shrink: 0;
 }
 
 .map-control-button:hover {
@@ -1412,22 +1458,32 @@ onUnmounted(() => {
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 0;
+  padding: 12px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+  min-width: 44px;
+  min-height: 44px;
+  flex-shrink: 0;
 }
+
 .filter-toggle-button:hover {
   background: #e9ecef;
 }
+
 .filter-svg-icon {
-  width: 16px;
-  height: 16px;
+  width: 24px;
+  height: 24px;
   display: block;
+  flex-shrink: 0;
 }
 
 .search-panel-map {
   display: flex;
   position: relative;
-  width: 300px;
-  flex-shrink: 1;
+  flex: 1;
+  min-width: 120px;
+  max-width: 300px;
   align-items: center;
 }
 
@@ -1435,6 +1491,7 @@ onUnmounted(() => {
   display: flex;
   position: relative;
   width: 100%;
+  min-width: 0;
   gap: 0;
 }
 
@@ -1447,6 +1504,8 @@ onUnmounted(() => {
   border-radius: 8px 0 0 8px;
   outline: none;
   flex: 1;
+  min-width: 0;
+  width: auto;
   margin: 0;
 }
 
@@ -1496,6 +1555,8 @@ onUnmounted(() => {
   white-space: nowrap;
   box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
   outline: none;
+  flex-shrink: 0;
+  min-width: max-content;
 }
 
 .place-now-map:hover {
@@ -1584,11 +1645,11 @@ onUnmounted(() => {
 @media (min-width: 768px) {
   .mobile-top-controls,
   .mobile-bottom-toggle {
-    display: none !important;
+    display: none;
   }
 
   .suggestions-list-mobile-overlay {
-    display: none !important;
+    display: none;
   }
 
   .map-container {
@@ -1599,11 +1660,20 @@ onUnmounted(() => {
     position: relative;
     transform: none;
     width: 380px;
+    height: 100vh;
+  }
+
+  .sidebar-content {
+    height: 100%;
+  }
+
+  .sidebar-content .overflow-y-auto {
+    height: 100%;
   }
 
   html,
   body {
-    overflow-x: hidden !important;
+    overflow-x: hidden;
   }
 
   .top-left-controls {
@@ -1649,12 +1719,12 @@ onUnmounted(() => {
 }
 
 :global(.mobile-menu.open) {
-  z-index: 10000 !important;
+  z-index: 10000;
 }
 
 .mobile-bottom-toggle .rounded-full.bg-blue-500 {
-  padding: 2px 6px !important;
-  font-size: 12px !important;
+  padding: 2px 6px;
+  font-size: 12px;
   min-width: 22px;
   min-height: 18px;
   line-height: 1;
