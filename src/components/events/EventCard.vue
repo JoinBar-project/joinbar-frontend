@@ -64,9 +64,9 @@ function goToInfo() {
           {{ formatEventDate(props.event.startAt) }} ~ {{ formatEventDate(props.event.endAt) }}
         </p>
         <h3 class="title">{{ props.event.name }}</h3>
-        <p class="bar-name leading-[2] md:leading-[2] md:text-base">
-          <span class="font-bold text-[var(--color-primary-red)]">酒吧：</span><span class="text-stone-600">{{ props.event.barName }}</span><br/>
-          <span class="font-bold text-[var(--color-primary-red)]">地點：</span><span class="text-stone-600">{{ props.event.location }}</span>
+        <p class="bar-name leading-[2] md:leading-[2] md:text-sm">
+          <span class="font-bold text-[var(--color-primary-red)]">酒吧：</span><span class="text-stone-500">{{ props.event.barName }}</span><br/>
+          <span class="font-bold text-[var(--color-primary-red)]">地點：</span><span class="text-stone-500">{{ props.event.location }}</span>
 
         </p>
       </div>
@@ -105,7 +105,7 @@ function goToInfo() {
 }
 
 .time {
-  @apply text-sm;
+  @apply text-xs;
 }
 
 .title {
