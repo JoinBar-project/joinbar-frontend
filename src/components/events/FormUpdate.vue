@@ -550,7 +550,7 @@ onUnmounted(() => {
     @apply fixed inset-0 z-[99];
     overflow: hidden;
     width: 100vw;
-    height: 100vh;
+    height: 140vh;
   }
 
   .form-container {
