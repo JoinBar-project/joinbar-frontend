@@ -3,7 +3,7 @@ import { useEvent } from '@/composables/useEvent.js';
 import { useCartStore } from '@/stores/cartStore';
 import { useRouter } from 'vue-router';
 import { useAuthStore } from '@/stores/authStore';
-import { ref, computed, onMounted, watch } from 'vue';
+import { ref, computed, onMounted, watch, nextTick } from 'vue';
 import { useOrder } from '@/composables/useOrder';
 import { useLinePay } from '@/composables/useLinePay';
 import EventHoster from './EventHoster.vue';
@@ -62,6 +62,7 @@ const {
   updateParticipationStatus
 } = useEvent(eventRef);
 
+// 地圖相關
 const mapContainer = ref(null);
 const {
   isReady,
@@ -77,6 +78,37 @@ const {
   onError: (msg) => console.error("Google Maps 錯誤:", msg),
   scrollwheel: false,
 });
+
+// 設置地圖容器
+const setupMapContainer = async () => {
+  await nextTick();
+  const isDesktop = window.innerWidth >= 768;
+  const desktopMap = document.querySelector('.desktop-map-container');
+  const mobileMap = document.querySelector('.mobile-map-container');
+  
+  let newContainer = null;
+  
+  if (isDesktop && desktopMap) {
+    newContainer = desktopMap;
+    console.log('🗺️ 設置桌面版地圖容器');
+  } else if (!isDesktop && mobileMap) {
+    newContainer = mobileMap;
+    console.log('🗺️ 設置手機版地圖容器');
+  }
+  
+  // 如果容器改變了，重新設置地圖
+  if (newContainer && newContainer !== mapContainer.value) {
+    mapContainer.value = newContainer;
+    
+    // 如果地圖 API 已經載入，重新初始化地圖
+    if (isReady.value) {
+      await initMap();
+      if (eventRef.value?.location) {
+        displayEventLocation(eventRef.value.location);
+      }
+    }
+  }
+};
 
 // 顯示活動位置的函數
 const displayEventLocation = async (location) => {
@@ -363,10 +395,26 @@ watch(
 
 onMounted(async () => {
   console.log("🔄 組件掛載，開始載入資料...");
+
   await loadGoogleMapsAPI();
+  await setupMapContainer();
+  
   if (mapContainer.value) {
     await initMap();
   }
+  
+  // 監聽窗口大小變化，使用防抖處理
+  let resizeTimer;
+  const handleResize = async () => {
+    clearTimeout(resizeTimer);
+    resizeTimer = setTimeout(async () => {
+      console.log('📱 螢幕尺寸改變，重新設置地圖...');
+      await setupMapContainer();
+    }, 300);
+  };
+  
+  window.addEventListener('resize', handleResize);
+  
   // 用 eventId 取得最新資料並檢查參與狀態
   if (eventRef.value?.id) {
     await reloadEventData();
@@ -388,65 +436,86 @@ onMounted(async () => {
 </script>
 
 <template>
-  <div class="flex justify-center items-center pt-[2%] max-w-full">
-    <div class="relative w-full max-w-[1200px] min-w-[1170px] bg-[#f1f1f1] rounded-[20px] overflow-hidden pb-[30px]">
+  <!-- 主容器 -->
+  <div class="flex items-center justify-center max-w-full px-4 pt-4 md:pt-8 md:px-0">
+    <div class="w-full max-w-7xl md:min-w-[1170px] bg-gray-100 pb-8 mx-auto relative rounded-xl md:rounded-2xl overflow-hidden">
+      <!-- 活動圖片 -->
       <div>
-        <img :src="eventRef.imageUrl" class="w-full aspect-[3.5/1] object-cover" alt="活動圖片" />
+        <img :src="eventRef.imageUrl" alt="活動圖片" class="w-full aspect-[2/1] md:aspect-[3.5/1] object-cover" />
       </div>
 
-      <div class="flex">
-        <div 
-          class="absolute bottom-[70px] left-[80px] z-[2] bg-gray-500 rounded-[10px] max-w-[325px] w-[325px] h-[580px] mx-auto shadow-md cursor-pointer">
+      <div class="relative event-content-box">
+        <!-- 桌面版地圖 -->
+        <div class="hidden md:block absolute bottom-42 left-20 z-10 bg-gray-500 rounded-lg max-w-[325px] w-[325px] h-[520px] shadow-md">
           <div
-            ref="mapContainer"
-            class="w-full h-full border-0 rounded-lg"
-            style="min-height: 300px; background: #2d2d2d"
+            class="w-full h-full bg-gray-800 border-0 rounded-lg desktop-map-container"
+            style="min-height: 300px;"
           ></div>
         </div>
 
-        <div class="pt-[40px] pr-[70px] pb-[40px] pl-[500px]">
-          <div class="flex mb-[20px]">
-            <div v-for="tag in tagList" :key="tag.id" class="bg-[var(--color-black)] text-white text-center rounded-[20px] px-[20px] py-[8px] mr-[10px]">
+        <!-- 內容區域 -->
+        <div class="pt-5 px-5 pb-10 md:pt-5 md:pr-16 md:pb-10 md:pl-[500px]">
+          <!-- 標籤 -->
+          <div class="flex flex-wrap gap-2 mb-3 md:gap-3">
+            <div 
+              v-for="tag in tagList" 
+              :key="tag.id" 
+              class="px-4 py-2 text-sm text-center text-white bg-black rounded-full md:px-5 whitespace-nowrap md:text-base"
+            >
               {{ tag.name }}
             </div>
           </div>
 
-          <h3 class="text-[28px] my-[10px] font-bold">{{ eventRef.name }}</h3>
+          <!-- 活動標題 -->
+          <h3 class="mt-5 mb-5 text-xl font-bold md:text-3xl">{{ eventRef.name }}</h3>
 
-          <div v-if="formattedEventTime" class="flex items-center py-[1px]">
-            <i class="fa-solid fa-calendar pr-[26px]"></i>
-            <p class="text-[20px] leading-[2.5] m-0">活動時間：{{ formattedEventTime }}</p>
+          <!-- 活動資訊 -->
+          <div v-if="formattedEventTime" class="flex items-center py-1">
+            <i class="pr-4 text-sm fa-solid fa-calendar md:pr-7 min-w-6 md:min-w-8 md:text-base"></i>
+            <p class="m-0 text-base leading-10 md:text-xl">活動時間：{{ formattedEventTime }}</p>
           </div>
 
-          <div class="flex items-center py-[1px]">
-            <i class="fa-solid fa-wine-glass pr-[30px]"></i>
-            <p class="text-[20px] leading-[2.5] m-0">店名：{{ eventRef.barName }}</p>
+          <div class="flex items-center py-1">
+            <i class="pr-4 text-sm fa-solid fa-wine-glass md:pr-8 min-w-6 md:min-w-8 md:text-base"></i>
+            <p class="m-0 text-base leading-10 md:text-xl">店名：{{ eventRef.barName }}</p>
           </div>
 
-          <div class="flex items-center py-[1px]">
-            <i class="fa-solid fa-location-dot pr-[30px]"></i>
-            <p class="text-[20px] leading-[2.5] m-0">地址：{{ eventRef.location }}</p>
-          </div>
-          <div class="flex items-center py-[1px]">
-            <i class="fa-solid fa-dollar-sign pr-[30px] text-[#860914] font-bold"></i>
-            <p class="text-[20px] leading-[2.5] m-0 text-[#860914] font-bold">費用：新台幣 <span>{{ eventRef.price }}</span> 元</p>
+          <div class="flex items-center py-1">
+            <i class="pr-4 text-sm fa-solid fa-location-dot md:pr-8 min-w-6 md:min-w-8 md:text-base"></i>
+            <p class="m-0 text-base leading-10 md:text-xl">地址：{{ eventRef.location }}</p>
           </div>
 
-          <div class="flex items-center py-[1px]">
-            <i class="fa-solid fa-circle-exclamation pr-[26px] text-[#860914] font-bold"></i>
-            <p class="text-[20px] leading-[2.5] m-0 text-[#860914] font-bold">注意： 付費活動無法取消</p>
+          <div class="flex items-center py-1">
+            <i class="pr-4 text-sm font-bold text-red-800 fa-solid fa-dollar-sign md:pr-8 min-w-6 md:min-w-8 md:text-base"></i>
+            <p class="m-0 text-base font-bold leading-10 text-red-800 md:text-xl">
+              費用：新台幣 <span>{{ eventRef.price }}</span> 元
+            </p>
           </div>
 
-          <div class="flex items-center py-[1px]">
-            <i class="fa-solid fa-user pr-[30px]"></i>
-            <p class="text-[20px] leading-[2.5] m-0">
+          <div class="flex items-center py-1">
+            <i class="pr-4 text-sm font-bold text-red-800 fa-solid fa-circle-exclamation md:pr-7 min-w-6 md:min-w-8 md:text-base"></i>
+            <p class="m-0 text-base font-bold leading-10 text-red-800 md:text-xl">注意： 付費活動無法取消</p>
+          </div>
+
+          <div class="flex items-center py-1">
+            <i class="pr-4 text-sm fa-solid fa-user md:pr-8 min-w-6 md:min-w-8 md:text-base"></i>
+            <p class="m-0 text-base leading-10 md:text-xl">
               目前報名人數： <span>{{ joinedNum }}</span> ｜ 報名人數上限：
               <span>{{ eventRef.maxPeople || "無報名人數限制" }}</span>
             </p>
           </div>
 
-          <div class="flex">
-            <!-- 主辦人：顯示編輯按鈕 -->
+          <!-- 手機版地圖 -->
+          <div class="block w-full mt-5 mb-5 bg-gray-500 rounded-lg shadow-md md:hidden h-60">
+            <div
+              class="w-full h-full bg-gray-800 border-0 rounded-lg mobile-map-container"
+              style="min-height: 240px;"
+            ></div>
+          </div>
+
+          <!-- 操作按鈕區域 -->
+          <div class="flex flex-col gap-4 mt-8 md:flex-row md:gap-8">
+            <!-- 主辦人編輯按鈕 -->
             <ModalEdit
               v-if="isOwner && eventRef.id"
               :event-id="eventRef.id"
@@ -455,9 +524,9 @@ onMounted(async () => {
             />
 
             <!-- 非主辦人且已參與：顯示參與狀態 -->
-            <div v-else-if="!isOwner && hasParticipated"  class="participation-status">
-              <div class="flex items-center gap-3 bg-white text-[#333] px-7 py-[10px] rounded-[20px] text-[24px] font-semibold shadow-md mt-[30px] mr-[30px] text-center cursor-default">
-                <i class="fa-solid fa-check-circle text-[20px] text-emerald-500"></i>
+            <div v-else-if="!isOwner && hasParticipated" class="participation-status">
+              <div class="flex items-center gap-3 px-6 py-3 text-lg font-semibold text-gray-800 bg-white shadow-md cursor-default md:px-7 rounded-2xl md:text-2xl">
+                <i class="text-base fa-solid fa-check-circle md:text-xl text-emerald-500"></i>
                 <span>已報名此活動</span>
               </div>
             </div>
@@ -467,7 +536,7 @@ onMounted(async () => {
               <button
                 @click="addToCart"
                 type="button"
-                class="mt-[30px] mr-[30px] rounded-[20px] border-0 text-[24px] text-center shadow-md cursor-pointer transition-all duration-300 ease-in-out bg-white pt-[8px] pr-[28px] pb-[10px] pl-[28px] hover:bg-[#bbb] hover:text-white disabled:hover:bg-white disabled:hover:text-inherit opacity-100 disabled:opacity-60 disabled:cursor-not-allowed"
+                class="w-full px-6 py-3 text-lg text-center transition-all duration-300 bg-white border-0 shadow-md md:w-auto rounded-2xl md:text-2xl md:px-7 hover:bg-gray-400 hover:text-white disabled:opacity-60 disabled:cursor-not-allowed disabled:hover:bg-white disabled:hover:text-gray-800"
                 :disabled="isInCart || isProcessing"
                 :class="{
                   'opacity-50 cursor-not-allowed': isInCart || isProcessing,
@@ -485,17 +554,16 @@ onMounted(async () => {
               <button 
                 @click="buyNow" 
                 type="button" 
-                class="mt-[30px] mr-[30px] rounded-[20px] border-0 text-[24px] text-center shadow-md cursor-pointer transition-all duration-300 ease-in-out bg-[#860914] text-[#ecd8d8] pt-[8px] pr-[16px] pb-[10px] pl-[16px] hover:bg-[#d4624e] disabled:hover:bg-[#860914]"
+                class="w-full px-4 py-3 mt-0 text-lg text-center text-red-100 transition-all duration-300 bg-red-800 border-0 shadow-md md:w-auto rounded-2xl md:text-2xl md:px-4 hover:bg-red-600 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-red-800 md:mt-0"
                 :disabled="isProcessing"
-                :class="{ 'opacity-50 cursor-not-allowed': isProcessing }"
               >
                 {{ isProcessing ? "處理中..." : "立即報名" }}
               </button>
             </template>
 
             <!-- 未登入用戶提示 -->
-            <div v-else-if="!authStore?.isAuthenticated" class="login-prompt">
-              <p style="padding: 20px; background: #f0f0f0; border-radius: 10px; text-align: center;">
+            <div v-else-if="!authStore?.isAuthenticated" class="w-full">
+              <p class="p-4 text-sm text-center bg-gray-200 rounded-lg md:p-5 md:text-base">
                 請先登入以參加活動
               </p>
             </div>
@@ -504,13 +572,18 @@ onMounted(async () => {
       </div>
     </div>
   </div>
+  
+  <!-- 其他組件 -->
   <EventHoster :user="eventRef.hostUser" class="mb-6"/>
-  <MessageBoard v-if="isJoin || isHostUser" class="mb-12"/>
+  <MessageBoard v-if="isJoin || isOwner" class="mb-12"/>
 </template>
 
 <style scoped>
-@reference "tailwindcss";
+.event-content-box {
+  position: relative;
+}
 
+/* 動畫效果 */
 @keyframes fadeInUp {
   from {
     opacity: 0;
@@ -522,44 +595,15 @@ onMounted(async () => {
   }
 }
 
-.login-prompt {
-  margin-top: 30px;
-}
-
-.event-btn:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-}
-
-button:disabled.event-btn-cart:hover {
-  background-color: white;
-  color: inherit;
-  cursor: not-allowed;
-}
-
-@media (max-width: 768px) {
-  .participation-badge {
-    padding: 12px 24px;
-    font-size: 16px;
-    margin-top: 20px;
-  }
-
-  .event-information-card {
-    min-width: auto;
-  }
-
-  .event-content {
-    padding: 20px;
-  }
-
-  .event-map {
-    position: relative;
-    left: 0;
-    bottom: 0;
+/* 確保在小螢幕上內容不會被遮擋 */
+@media (max-width: 767px) {
+  .participation-status {
     width: 100%;
-    max-width: 100%;
-    height: 300px;
-    margin-bottom: 20px;
+  }
+  
+  .participation-status .flex {
+    justify-content: center;
+    width: 100%;
   }
 }
 </style>

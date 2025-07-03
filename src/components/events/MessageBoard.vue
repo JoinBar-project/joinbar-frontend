@@ -124,39 +124,99 @@ onMounted(() => {
 </script>
 
 <template>
-  <div class="event-message-section">
-    <div class="event-message-bg">
-      <div class="message-board-title">BarTalks 留言板</div>
-      <div class="message-board">
-        <div v-for="(message, index) in messageboard" :key="index" class="message-content">
-          <div class="headshot">
-            <img :src="message.headshot" @error="e => e.target.src = defaultAvatarUrl" alt="大頭照" />
-          </div>
-          <div class="message">
-            <p class="user">{{ message.user }}</p>
-            <p>{{ message.messageContent }}</p>
-            <p class="message-date">{{ message.messageTime }}</p>
+  <div class="flex items-center justify-center max-w-full px-4 md:px-0">
+    <div class="w-full max-w-7xl md:max-w-[1200px] md:min-w-[1000px] bg-gray-100 mx-auto rounded-xl md:rounded-2xl pb-10 md:pb-15">
+      
+      <!-- 標題 -->
+      <div class="py-6 text-xl font-medium text-center md:text-3xl md:py-10">
+        BarTalks 留言板
+      </div>
+      
+      <!-- 留言板主體 -->
+      <div class="w-full max-w-[1036px] mx-auto bg-white rounded-xl md:rounded-2xl p-4 md:p-10">
+        
+        <!-- 留言列表 -->
+        <div class="space-y-4 md:space-y-6">
+          <div v-for="(message, index) in messageboard" :key="index" class="message-item">
+            <!-- 桌面版佈局 -->
+            <div class="items-start hidden md:flex">
+              <div class="flex-shrink-0 w-12 mr-4 md:w-16 md:mr-5">
+                <img 
+                  :src="message.headshot" 
+                  @error="e => e.target.src = defaultAvatarUrl" 
+                  alt="大頭照" 
+                  class="object-cover w-full rounded-full aspect-square"
+                />
+              </div>
+              <div class="flex-1 min-w-0">
+                <p class="mb-1 text-base font-bold text-gray-900 md:text-lg">{{ message.user }}</p>
+                <p class="mb-2 text-sm leading-relaxed text-gray-800 md:text-base">{{ message.messageContent }}</p>
+                <p class="mb-6 text-xs text-gray-500">{{ message.messageTime }}</p>
+              </div>
+            </div>
+            
+            <!-- 手機版佈局 -->
+            <div class="block md:hidden">
+              <div class="flex items-start space-x-3">
+                <div class="flex-shrink-0 w-10 h-10">
+                  <img 
+                    :src="message.headshot" 
+                    @error="e => e.target.src = defaultAvatarUrl" 
+                    alt="大頭照" 
+                    class="object-cover w-full h-full rounded-full"
+                  />
+                </div>
+                <div class="flex-1 min-w-0">
+                  <p class="mb-1 text-sm font-bold text-gray-900">{{ message.user }}</p>
+                  <p class="mb-2 text-sm leading-relaxed text-gray-800">{{ message.messageContent }}</p>
+                  <p class="mb-4 text-xs text-gray-500">{{ message.messageTime }}</p>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
-        <div class="message-area">
-          <textarea 
-            ref="textareaRef"
-            v-model="messageContent"
-            @click="updateCursorPosition"
-            @keyup="updateCursorPosition"
-            @input="updateCursorPosition"
-            class="textarea" 
-            placeholder="來分享你的想法吧！"
-          ></textarea>
-          <p v-if="errorMessage" class="text-red-700 mt-2">※ {{ errorMessage }}</p>
-          <div class="message-tool">
-            <i @click="handleEmojiModal" class="fa-regular fa-face-smile"></i>
-            <emoji-picker 
-              v-if="showEmojiModal" 
-              @emoji-click="handleEmojiSelect" 
-              class="emoji emoji-picker"
-            ></emoji-picker>
-            <button @click="submitMessage" class="message-btn" type="button">送出</button>
+        
+        <!-- 留言輸入區 -->
+        <div class="w-full p-4 mx-auto mt-6 bg-gray-100 rounded-xl md:rounded-2xl md:p-6 md:mt-8 md:w-4/5">
+          <div class="space-y-3 md:space-y-4">
+            <!-- 文字輸入區 -->
+            <div class="flex flex-col space-y-3 md:flex-row md:items-start md:space-y-0 md:space-x-4">
+              <textarea 
+                ref="textareaRef"
+                v-model="messageContent"
+                @click="updateCursorPosition"
+                @keyup="updateCursorPosition"
+                @input="updateCursorPosition"
+                class="flex-1 bg-transparent border-0 p-3 md:p-4 text-sm md:text-base resize-none focus:outline-none placeholder-gray-500 min-h-[80px] md:min-h-[100px]" 
+                placeholder="來分享你的想法吧！"
+              ></textarea>
+            </div>
+            
+            <!-- 錯誤訊息 -->
+            <p v-if="errorMessage" class="text-sm text-red-700">※ {{ errorMessage }}</p>
+            
+            <!-- 工具列 -->
+            <div class="relative flex items-center justify-between">
+              <div class="relative">
+                <i 
+                  @click="handleEmojiModal" 
+                  class="text-lg text-gray-600 transition-colors cursor-pointer fa-regular fa-face-smile md:text-xl hover:text-orange-500"
+                ></i>
+                <emoji-picker 
+                  v-if="showEmojiModal" 
+                  @emoji-click="handleEmojiSelect" 
+                  class="absolute right-0 z-10 mb-2 emoji-picker bottom-full md:right-auto md:left-0"
+                ></emoji-picker>
+              </div>
+              
+              <button 
+                @click="submitMessage" 
+                class="px-4 py-2 text-sm font-medium text-white transition-colors duration-200 bg-green-600 border-0 rounded-lg cursor-pointer md:px-6 md:py-3 hover:bg-orange-500 md:text-base"
+                type="button"
+              >
+                送出
+              </button>
+            </div>
           </div>
         </div>
       </div>
@@ -165,127 +225,45 @@ onMounted(() => {
 </template>
 
 <style scoped>
-.event-message-section {
-  max-width: 100vw;
-  /* padding-top: 2%; */
-  display: flex;
-  justify-content: center;
-  align-items: center;
-}
-
-.event-message-bg {
-  max-width: 1200px;
-  min-width: 1000px;
-  width: 100%;
-  background-color: #f1f1f1;
-  margin: 0 auto;
-  border-radius: 20px;
-  padding-bottom: 60px;
-}
-
-.message-board {
-  max-width: 1036px;
-  width: 100%;
-  margin: 0 auto;
-  background-color: #fff;
-  border-radius: 20px;
-  padding: 40px 10px;
-}
-
-.message-board-title {
-  font-size: 30px;
-  text-align: center;
-  padding: 40px 0;
-}
-
-.message-area {
-  background-color: #f1f1f1;
-  width: 80%;
-  border-radius: 20px;
-  margin: 0 auto;
-  padding: 20px 30px 15px 30px;
-  margin-top: 20px;
-}
-
-.textarea {
-  width: 80%;
-  background-color: #ffffff00;
-  border: 0 solid;
-  padding: 10px;
-  height: 100%;
-}
-
-.message-content {
-  display: flex;
-  align-items: top;
-  justify-content: center;
-}
-
-.headshot {
-  width: 6%;
-  padding: 0 20px 0 0;
-}
-
-.headshot > img {
-  aspect-ratio: 1 / 1;
-  object-fit: cover;
-  width: 100%;
-  border-radius: 100%;
-}
-
-.user {
-  font-weight: bold;
-  margin: 0;
-}
-
-.message {
-  width: 78%;
-  padding: 0 20px 20px 20px;
-  line-height: 2;
-}
-
-.message-date {
-  color: #979595;
-  font-size: 12px;
-  margin-bottom: 30px;
-}
-
-.message-btn {
-  border-radius: 6px;
-  background-color: var(--color-secondary-green);
-  border: 0 solid;
-  color: #fff;
-  padding: 5px 10px;
-  cursor: pointer;
-}
-
-.message-btn:hover {
-  background-color: var(--color-primary-orange);
-}
-
-.fa-regular {
-  cursor: pointer;
-  padding: 20px 20px 20px 0;
-  font-size: 18px;
-}
-
-.fa-regular:hover {
-  color: var(--color-primary-orange);
-}
-
-.message-tool {
-  display: flex;
-  position: relative;
-  justify-content: end;
-  align-items: center;
-}
-
-.emoji {
-  position: absolute;
-  z-index: 10;
-  right: -240px;
-  top: -200px;
-  min-width: 320px;
+.emoji-picker {
+  min-width: 280px;
+  max-width: 320px;
   max-height: 200px;
+  border-radius: 12px;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+}
+
+@media (max-width: 767px) {
+  .emoji-picker {
+    min-width: 260px;
+    max-width: 280px;
+    border-radius: 12px;
+    right: -260px;
+    top: 35px;
+    transform: translateX(0);
+    z-index: 2000;
+  }
+}
+
+@media (max-width: 767px) {
+  textarea {
+    min-height: 80px;
+  }
+}
+
+.message-item:not(:last-child) {
+  border-bottom: 1px solid #f3f4f6;
+  padding-bottom: 1rem;
+}
+
+@media (min-width: 768px) {
+  .message-item:not(:last-child) {
+    padding-bottom: 1.5rem;
+  }
+}
+
+.message-item p {
+  word-wrap: break-word;
+  overflow-wrap: break-word;
 }
 </style>

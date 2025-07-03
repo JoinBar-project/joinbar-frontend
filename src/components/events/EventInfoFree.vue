@@ -1,6 +1,6 @@
 <script setup>
 import { useEvent } from '@/composables/useEvent.js';
-import { toRef, computed, ref, watch, onMounted } from 'vue';
+import { toRef, computed, ref, watch, onMounted, nextTick } from 'vue';
 import { getEventById } from '@/api/event';
 import EventHoster from './EventHoster.vue';
 import MessageBoard from './MessageBoard.vue';
@@ -67,6 +67,37 @@ const {
   scrollwheel: false,
 });
 
+// 設置地圖容器
+const setupMapContainer = async () => {
+  await nextTick();
+  const isDesktop = window.innerWidth >= 768;
+  const desktopMap = document.querySelector('.desktop-map-container');
+  const mobileMap = document.querySelector('.mobile-map-container');
+  
+  let newContainer = null;
+  
+  if (isDesktop && desktopMap) {
+    newContainer = desktopMap;
+    console.log('🗺️ 設置桌面版地圖容器');
+  } else if (!isDesktop && mobileMap) {
+    newContainer = mobileMap;
+    console.log('🗺️ 設置手機版地圖容器');
+  }
+  
+  // 如果容器改變了，重新設置地圖
+  if (newContainer && newContainer !== mapContainer.value) {
+    mapContainer.value = newContainer;
+    
+    // 如果地圖 API 已經載入，重新初始化地圖
+    if (isReady.value) {
+      await initMap();
+      if (currentEvent.value?.location) {
+        displayEventLocation(currentEvent.value.location);
+      }
+    }
+  }
+};
+
 const displayEventLocation = async (location) => {
   if (!location || !isReady.value) return;
   try {
@@ -94,13 +125,29 @@ const displayEventLocation = async (location) => {
 };
 
 onMounted(async () => {
+  console.log("🔄 組件掛載，開始載入資料...");
+  
   await loadGoogleMapsAPI();
+  await setupMapContainer();
+  
   if (mapContainer.value) {
     await initMap();
     if (currentEvent.value?.location) {
       await displayEventLocation(currentEvent.value.location);
     }
   }
+  
+  // 監聽窗口大小變化，使用防抖處理
+  let resizeTimer;
+  const handleResize = async () => {
+    clearTimeout(resizeTimer);
+    resizeTimer = setTimeout(async () => {
+      console.log('📱 螢幕尺寸改變，重新設置地圖...');
+      await setupMapContainer();
+    }, 300);
+  };
+  
+  window.addEventListener('resize', handleResize);
 });
 
 watch(
@@ -171,7 +218,7 @@ const handleJoinToggle = async () => {
   try {
     await toggleJoin();
   } catch (error) {
-    showAlert('warning', '尚未登入', '請先登入才能加入購物車');
+    showAlert('warning', '尚未登入', '請先登入才能參加活動');
   }
 };
 
@@ -187,63 +234,86 @@ const handleCancelConfirm = async () => {
 
 <template>
   <div>
-    <div v-if="isUpdating" class="fixed inset-0 flex items-center justify-center bg-black/50 z-9998">
-    <div class="bg-white p-8 rounded-[10px] flex items-center gap-4 text-[1.2rem] shadow-md">
-      <i class="fa-solid fa-spinner fa-spin text-[var(--color-primary-orange)] pr-[30px] mt-[13px] min-w-[30px]"></i>
-      <span>更新中...</span>
+    <!-- Loading 狀態 -->
+    <div v-if="isUpdating" class="fixed inset-0 flex items-center justify-center bg-black/50 z-[9998]">
+      <div class="flex items-center gap-4 p-6 text-lg bg-white rounded-lg shadow-md md:p-8 md:text-xl">
+        <i class="pr-4 mt-3 text-orange-500 fa-solid fa-spinner fa-spin md:pr-8 min-w-6 md:min-w-8"></i>
+        <span>更新中...</span>
+      </div>
     </div>
-  </div>
 
-    <div class="max-w-[100vw] pt-[2%] flex justify-center items-center">
-      <div class="w-full max-w-[1200px] min-w-[1170px] bg-[#f1f1f1] pb-[30px] mx-auto relative rounded-[20px] overflow-hidden">
+    <!-- 主容器 -->
+    <div class="flex items-center justify-center max-w-full px-4 pt-4 md:pt-8 md:px-0">
+      <div class="w-full max-w-7xl md:min-w-[1170px] bg-gray-100 pb-8 mx-auto relative rounded-xl md:rounded-2xl overflow-hidden">
+        <!-- 活動圖片 -->
         <div>
-          <img :src="currentEvent.imageUrl" alt="活動圖片" class="w-full aspect-[3.5/1] object-cover"/>
+          <img :src="currentEvent.imageUrl" alt="活動圖片" class="w-full aspect-[2/1] md:aspect-[3.5/1] object-cover"/>
         </div>
-        <div class="event-content-box">
-          <div class="absolute bottom-[70px] left-[80px] z-[2] bg-gray-500 rounded-[10px] max-w-[325px] w-[325px] h-[520px] mx-auto shadow-md cursor-pointer">
+        
+        <div class="relative event-content-box">
+          <!-- 桌面版地圖 - 左側浮動 -->
+          <div class="hidden md:block absolute bottom-16 left-20 z-10 bg-gray-500 rounded-lg max-w-[325px] w-[325px] h-[520px] shadow-md">
             <div
-              ref="mapContainer"
-              class="w-full h-full border-0 rounded-lg"
-              style="min-height: 300px; background: #2d2d2d"
+              class="w-full h-full bg-gray-800 border-0 rounded-lg desktop-map-container"
+              style="min-height: 300px;"
             ></div>
           </div>
-          <div class="pt-[20px] pr-[70px] pb-[40px] pl-[500px]">
-            <div class="flex flex-wrap gap-[10px] mt-[10px]">
-              <div v-for="tag in currentTags" :key="tag.id" class="bg-[var(--color-black)] text-white text-center rounded-[20px] px-[20px] py-[8px] whitespace-nowrap">{{ tag.name }}</div>
+          
+          <!-- 內容區域 -->
+          <div class="pt-5 px-5 pb-10 md:pt-5 md:pr-16 md:pb-10 md:pl-[500px]">
+            <!-- 標籤 -->
+            <div class="flex flex-wrap gap-2 mt-3 md:gap-3">
+              <div 
+                v-for="tag in currentTags" 
+                :key="tag.id" 
+                class="px-4 py-2 text-sm text-center text-white bg-black rounded-full md:px-5 whitespace-nowrap md:text-base"
+              >
+                {{ tag.name }}
+              </div>
             </div>
 
-            <h3 class="text-[28px] font-bold mt-[20px] mb-[20px]">{{ currentEvent.name }}</h3>
-
-            <div v-if="formattedEventTime" class="flex items-start py-[1px]">
-              <i class="fa-solid fa-calendar pr-[26px] mt-[13px] min-w-[30px]"></i>
-              <p class="text-[20px] leading-[2] m-0">活動時間：{{ formattedEventTime }}</p>
+            <!-- 活動標題 -->
+            <h3 class="mt-5 mb-5 text-xl font-bold md:text-3xl">{{ currentEvent.name }}</h3>
+            
+            <!-- 活動資訊 -->
+            <div v-if="formattedEventTime" class="flex items-start py-1">
+              <i class="pr-4 mt-3 text-sm fa-solid fa-calendar md:pr-7 min-w-6 md:min-w-8 md:text-base"></i>
+              <p class="m-0 text-base leading-8 md:text-xl">活動時間：{{ formattedEventTime }}</p>
             </div>
 
-            <div class="flex items-start py-[1px]">
-              <i class="fa-solid fa-wine-glass pr-[30px] mt-[13px] min-w-[30px]"></i>
-              <p class="text-[20px] leading-[2] m-0">店名：{{ currentEvent.barName }}</p>
+            <div class="flex items-start py-1">
+              <i class="pr-4 mt-3 text-sm fa-solid fa-wine-glass md:pr-8 min-w-6 md:min-w-8 md:text-base"></i>
+              <p class="m-0 text-base leading-8 md:text-xl">店名：{{ currentEvent.barName }}</p>
             </div>
 
-            <div class="flex items-start py-[1px]">
-              <i class="fa-solid fa-location-dot pr-[30px] mt-[13px] min-w-[30px]"></i>
-              <p class="text-[20px] leading-[2] m-0">地址：{{ currentEvent.location }}</p>
+            <div class="flex items-start py-1">
+              <i class="pr-4 mt-3 text-sm fa-solid fa-location-dot md:pr-8 min-w-6 md:min-w-8 md:text-base"></i>
+              <p class="m-0 text-base leading-8 md:text-xl">地址：{{ currentEvent.location }}</p>
             </div>
 
-            <div class="flex items-start py-[1px]">
-              <i class="fa-solid fa-user pr-[30px] mt-[13px] min-w-[30px]"></i>
-              <p class="text-[20px] leading-[2] m-0">
+            <div class="flex items-start py-1">
+              <i class="pr-4 mt-3 text-sm fa-solid fa-user md:pr-8 min-w-6 md:min-w-8 md:text-base"></i>
+              <p class="m-0 text-base leading-8 md:text-xl">
                 目前報名人數：<span>{{ joinedNum }}</span> ｜ 報名人數上限：<span>{{ currentEvent.maxPeople || '無報名人數限制' }}</span>
               </p>
             </div>
 
-            <div class="flex items-start py-[1px]">
-              <i class="fa-solid fa-circle-exclamation pr-[26px] text-[#860914] font-bold mt-[13px] min-w-[30px]"></i>
-              <p class="text-[20px] leading-[2] m-0 text-[#860914] font-bold">注意： 活動開始前 24 小時內無法取消報名</p>
+            <div class="flex items-start py-1">
+              <i class="pr-4 mt-3 text-sm font-bold text-red-800 fa-solid fa-circle-exclamation md:pr-7 min-w-6 md:min-w-8 md:text-base"></i>
+              <p class="m-0 text-base font-bold leading-8 text-red-800 md:text-xl">注意： 活動開始前 24 小時內無法取消報名</p>
             </div>
 
-            <div class="flex">
+            <!-- 手機版地圖 -->
+            <div class="block w-full mt-5 mb-5 bg-gray-500 rounded-lg shadow-md md:hidden h-60">
+              <div
+                class="w-full h-full bg-gray-800 border-0 rounded-lg mobile-map-container"
+                style="min-height: 240px;"
+              ></div>
+            </div>
 
-              <!-- 主辦人 -->
+            <!-- 操作按鈕區域 -->
+            <div class="flex flex-col gap-4 mt-8 md:flex-row md:gap-8">
+              <!-- 主辦人編輯按鈕 -->
               <ModalEdit
                 v-if="isHostUser && currentEvent.id"
                 :event-id="currentEvent.id"
@@ -251,14 +321,15 @@ const handleCancelConfirm = async () => {
                 @update="handleEventUpdate"
               />
 
-              <!-- 非主辦人 -->
+              <!-- 非主辦人按鈕 -->
               <template v-else-if="!isHostUser && authStore?.isAuthenticated">
                 <button
                   @click="handleJoinToggle"
                   :disabled="isJoin || isUpdating"
                   :class="{ 'opacity-50 cursor-not-allowed': isJoin || isUpdating }"
                   type="button"
-                  class="event-btn event-btn-free">
+                  class="w-full px-8 py-2 text-lg text-center transition-all duration-300 bg-white border-0 shadow-md md:w-auto rounded-2xl md:text-2xl md:px-12 md:py-3 hover:bg-orange-500 hover:text-white disabled:opacity-60 disabled:cursor-not-allowed"
+                >
                   {{ isUpdating ? '處理中...' : (isJoin ? '已報名' : '參加活動') }}
                 </button>
                 
@@ -266,16 +337,19 @@ const handleCancelConfirm = async () => {
                   v-if="isJoin"
                   @click="openCancelModal()"
                   :disabled="!isOver24hr || isUpdating"
-                  :class="['event-btn-free', (isOver24hr && !isUpdating) ? 'cursor-pointer' : 'cursor-not-allowed opacity-50']"
+                  :class="[
+                    'w-full md:w-auto rounded-2xl border-0 text-lg md:text-2xl text-center shadow-md bg-white px-8 md:px-12 py-2 md:py-3 transition-all duration-300 hover:bg-orange-500 hover:text-white',
+                    (isOver24hr && !isUpdating) ? 'cursor-pointer' : 'cursor-not-allowed opacity-50'
+                  ]"
                   type="button"
-                  class="event-btn-free">
+                >
                   {{ isUpdating ? '處理中...' : '取消報名' }}
                 </button>
               </template>
 
               <!-- 未登入用戶提示 -->
-              <div v-else-if="!authStore?.isAuthenticated" class="login-prompt">
-                <p style="padding: 20px; background: #f0f0f0; border-radius: 10px; text-align: center;">
+              <div v-else-if="!authStore?.isAuthenticated" class="w-full">
+                <p class="p-4 text-sm text-center bg-gray-200 rounded-lg md:p-5 md:text-base">
                   請先登入以參加活動
                 </p>
               </div>            
@@ -285,9 +359,11 @@ const handleCancelConfirm = async () => {
       </div>
     </div>
 
+    <!-- 其他組件 -->
     <EventHoster :user="currentEvent.hostUser" class="mb-12" />
     <MessageBoard v-if="isJoin || isHostUser" class="mb-12"/>
 
+    <!-- 確認取消模態框 -->
     <BaseConfirmModal
       :visible="showModal"
       type="warning"
@@ -302,34 +378,14 @@ const handleCancelConfirm = async () => {
 </template>
 
 <style scoped>
-@reference "tailwindcss";
-
-.event-btn-free {
-  margin-right: 30px;
-  margin-top: 30px;
-  border-radius: 20px;
-  border: 0;
-  font-size: 24px;
-  text-align: center;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
-  background-color: white;
-  padding: 8px 45px 10px 45px;
-  transition:
-    background-color 0.3s ease,
-    color 0.3s ease;
+.event-content-box {
+  position: relative;
 }
 
-.event-btn-free:hover:not(:disabled) {
-  background-color: var(--color-primary-orange);
-  color: white;
-}
-
-.event-btn-free:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-}
-
-.login-prompt {
-  margin-top: 30px;
+/* 確保在小螢幕上內容不會被遮擋 */
+@media (max-width: 767px) {
+  .event-content-box {
+    position: static;
+  }
 }
 </style>

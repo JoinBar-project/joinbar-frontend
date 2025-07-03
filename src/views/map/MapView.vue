@@ -102,15 +102,6 @@
             placeholder="輸入地點名稱或關鍵字"
             @input="debouncedSearchSuggestions"
           />
-          <ul v-if="suggestions.length && !isMobile" class="suggestions-list">
-            <li
-              v-for="(suggestion, index) in suggestions"
-              :key="index"
-              @click="selectSuggestion(suggestion)"
-            >
-              🔍 {{ suggestion.description }}
-            </li>
-          </ul>
           <button
             @click="handleSearch"
             class="btn search-bt map-control-button"
@@ -119,6 +110,15 @@
             <b>🔍 搜尋</b>
           </button>
         </div>
+        <ul v-if="suggestions.length && !isMobile" class="suggestions-list">
+            <li
+              v-for="(suggestion, index) in suggestions"
+              :key="index"
+              @click="selectSuggestion(suggestion)"
+            >
+              🔍 {{ suggestion.description }}
+            </li>
+          </ul>
       </div>
       <button
         @click="handleGetCurrentLocation"
@@ -1067,8 +1067,8 @@ onUnmounted(() => {
 
 <style scoped>
 .suggestions-list-mobile-overlay {
-  position: absolute;
-  top: 60px;
+  position: fixed;
+  top: 160px;
   left: 50%;
   transform: translateX(-50%);
   width: 90vw;
@@ -1078,8 +1078,7 @@ onUnmounted(() => {
   box-shadow: 0 6px 24px rgba(0, 0, 0, 0.18);
   max-height: 220px;
   overflow-y: auto;
-  z-index: 900;
-  margin: 0;
+  z-index: 9999;
   padding: 0;
   list-style: none;
 }
@@ -1325,18 +1324,18 @@ onUnmounted(() => {
   }
 
   .filter-toggle-button {
-    width: 36px;
-    height: 36px;
-    min-width: 36px;
-    min-height: 36px;
-    padding: 8px;
-    margin-left: 4px;
+    width: 24px;
+    height: 24px;
+    min-width: 24px;
+    min-height: 24px;
+    padding: 4px;
+    margin-left: -4px;
     flex-shrink: 0;
   }
 
   .filter-svg-icon {
-    width: 20px;
-    height: 20px;
+    width: 16px;
+    height: 16px;
   }
 
   .mobile-bottom-toggle button {
@@ -1392,8 +1391,8 @@ onUnmounted(() => {
 
 @media (max-width: 480px) {
   .search-panel-mobile {
-    width: 140px;
-    min-width: 120px;
+    width: 120px;
+    min-width: 100px;
   }
 
   .mobile-control-button {
@@ -1418,7 +1417,6 @@ onUnmounted(() => {
   align-items: center;
   justify-content: flex-start;
   min-width: 0;
-  overflow: hidden;
 }
 
 .search-and-location-group {
@@ -1458,12 +1456,12 @@ onUnmounted(() => {
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 12px;
+  padding: 0px;
   border-radius: 8px;
   cursor: pointer;
   transition: background-color 0.2s;
-  min-width: 44px;
-  min-height: 44px;
+  min-width: 28px;
+  min-height: 28px;
   flex-shrink: 0;
 }
 
@@ -1569,7 +1567,7 @@ onUnmounted(() => {
   top: calc(100% + 5px);
   left: 0;
   right: 0;
-  z-index: 20;
+  z-index: 9999;
   list-style: none;
   margin: 0;
   padding: 0;
