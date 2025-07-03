@@ -151,11 +151,11 @@
   }
   
   .footer-links {
-    @apply gap-4 text-center;
+    @apply flex justify-between gap-4 flex-nowrap whitespace-nowrap;
   }
-  
+
   .footer-links a {
-    @apply text-sm; 
+    @apply flex-1 text-sm text-center;
   }
   
   .responsibility-link {
