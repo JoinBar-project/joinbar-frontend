@@ -46,7 +46,7 @@ const handleGlobalLinePayCallback = () => {
 
     // 🔧 修復：檢查參數不是 'null' 字串
     if (transactionId && orderId && 
-        transactionId !== 'null' && orderId !== 'null' &&
+        transactionId !== null && orderId !== null &&
         currentPath !== '/payment-waiting') {
       
       console.log('✅ 檢測到 LINE Pay 回調，跳轉到等待頁面');
