@@ -211,7 +211,7 @@ onMounted(() => {
               
               <button 
                 @click="submitMessage" 
-                class="px-4 py-2 text-sm font-medium text-white transition-colors duration-200 bg-green-600 border-0 rounded-lg cursor-pointer md:px-6 md:py-3 hover:bg-orange-500 md:text-base"
+                class="px-4 py-2 text-sm font-medium text-white transition-colors duration-200 bg-[var(--color-secondary-green)] border-0 rounded-lg cursor-pointer md:px-6 md:py-3 hover:bg-[var(--color-primary-orange)] md:text-base"
                 type="button"
               >
                 送出
