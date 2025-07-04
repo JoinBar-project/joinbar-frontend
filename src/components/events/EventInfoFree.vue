@@ -328,7 +328,7 @@ const handleCancelConfirm = async () => {
                   :disabled="isJoin || isUpdating"
                   :class="{ 'opacity-50 cursor-not-allowed': isJoin || isUpdating }"
                   type="button"
-                  class="w-full px-8 py-2 text-lg text-center transition-all duration-300 bg-white border-0 shadow-md md:w-auto rounded-2xl md:text-2xl md:px-12 md:py-3 hover:bg-orange-500 hover:text-white disabled:opacity-60 disabled:cursor-not-allowed"
+                  class="w-full px-8 py-2 text-lg text-center transition-all duration-300 bg-white border-0 shadow-md md:w-auto rounded-2xl md:text-2xl md:px-12 md:py-3 hover:bg-[var(--color-primary-orange)] hover:text-white disabled:opacity-60 disabled:cursor-not-allowed"
                 >
                   {{ isUpdating ? '處理中...' : (isJoin ? '已報名' : '參加活動') }}
                 </button>
@@ -338,7 +338,7 @@ const handleCancelConfirm = async () => {
                   @click="openCancelModal()"
                   :disabled="!isOver24hr || isUpdating"
                   :class="[
-                    'w-full md:w-auto rounded-2xl border-0 text-lg md:text-2xl text-center shadow-md bg-white px-8 md:px-12 py-2 md:py-3 transition-all duration-300 hover:bg-orange-500 hover:text-white',
+                    'w-full md:w-auto rounded-2xl border-0 text-lg md:text-2xl text-center shadow-md bg-white px-8 md:px-12 py-2 md:py-3 transition-all duration-300 hover:bg-[var(--color-primary-orange)] hover:text-white',
                     (isOver24hr && !isUpdating) ? 'cursor-pointer' : 'cursor-not-allowed opacity-50'
                   ]"
                   type="button"
