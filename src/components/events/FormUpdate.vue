@@ -688,6 +688,7 @@ onUnmounted(() => {
   box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15) !important;
   border: 1px solid #e5e7eb !important;
   font-family: inherit !important;
+  z-index: 99999 !important;
 }
 
 :deep(.flatpickr-day.selected) {
@@ -740,6 +741,16 @@ onUnmounted(() => {
   border-color: var(--color-primary-orange) !important;
 }
 
+:deep(.flatpickr-prev-month),
+:deep(.flatpickr-next-month) {
+  color: white !important;
+}
+
+:deep(.flatpickr-prev-month:hover),
+:deep(.flatpickr-next-month:hover) {
+  color: #e1ac67 !important;
+}
+
 /* 手機版日期選擇器和彈窗優化 */
 @media (max-width: 768px) {
   :deep(.flatpickr-calendar) {
@@ -747,9 +758,75 @@ onUnmounted(() => {
     top: 50% !important;
     left: 50% !important;
     transform: translate(-50%, -50%) !important;
-    z-index: 9999 !important;
+    z-index: 99999 !important;
     max-width: calc(100vw - 2rem) !important;
     width: auto !important;
+    min-width: 300px !important;
+  }
+
+  :deep(.flatpickr-months .flatpickr-month) {
+    background: #e1ac67 !important;
+    color: white !important;
+  }
+
+  :deep(.flatpickr-current-month .flatpickr-monthDropdown-months) {
+    background: #e1ac67 !important;
+    color: white !important;
+  }
+
+  :deep(.flatpickr-current-month .numInputWrapper input) {
+    color: white !important;
+    background: transparent !important;
+  }
+
+  :deep(.flatpickr-weekdays) {
+    background: var(--color-primary-orange) !important;
+  }
+
+  :deep(.flatpickr-weekday) {
+    background: var(--color-primary-orange) !important;
+    color: white !important;
+  }
+
+  :deep(.flatpickr-day.selected) {
+    background: #e1ac67 !important;
+    border-color: #e1ac67 !important;
+    color: white !important;
+  }
+
+  :deep(.flatpickr-day:hover:not(.selected)) {
+    background: #e1ac67 !important;
+    border-color: #e1ac67 !important;
+    color: white !important;
+  }
+
+  :deep(.flatpickr-time input) {
+    border-radius: 6px !important;
+    border: 1px solid #e5e7eb !important;
+    background: white !important;
+    color: #333 !important;
+  }
+
+  :deep(.flatpickr-time input:focus) {
+    border-color: var(--color-primary-orange) !important;
+    box-shadow: 0 0 0 2px rgba(255, 136, 0, 0.2) !important;
+  }
+
+  :deep(.flatpickr-confirm) {
+    background: var(--color-primary-orange) !important;
+    border-color: var(--color-primary-orange) !important;
+    color: white !important;
+  }
+
+  :deep(.flatpickr-prev-month),
+  :deep(.flatpickr-next-month) {
+    color: white !important;
+  }
+
+  :deep(.flatpickr-prev-month:hover),
+  :deep(.flatpickr-next-month:hover) {
+    color: #fff !important;
+    background: rgba(255, 255, 255, 0.1) !important;
   }
 
   /* 警示彈窗固定置中 */
