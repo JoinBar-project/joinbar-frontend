@@ -95,7 +95,7 @@ const showBadges = computed(() => {
       <!-- 手機版佈局 -->
       <div class="block md:hidden">
         <!-- 標題 -->
-        <div class="w-full py-3 text-lg font-medium text-center text-white bg-orange-500 rounded-t-xl">
+        <div class="w-full py-3 text-lg font-medium text-center text-white bg-[var(--color-primary-orange)] rounded-t-xl">
           活動發起人
         </div>
         
@@ -127,8 +127,8 @@ const showBadges = computed(() => {
               :class="[
                 'px-8 py-3 border-0 rounded-full text-lg font-bold cursor-pointer text-white transition-colors duration-200 w-full max-w-xs',
                 toggleFollow 
-                  ? 'bg-orange-500'
-                  : 'bg-green-600 hover:bg-orange-500'
+                  ? 'bg-[var(--color-primary-orange)]'
+                  : 'bg-[var(--color-secondary-green)] hover:bg-[var(--color-primary-orange)]'
               ]"
             >
               {{ toggleFollow ? '已 追 蹤' : '追 蹤' }}
@@ -164,7 +164,7 @@ const showBadges = computed(() => {
       <!-- 桌面版佈局 -->
       <div class="hidden md:block">
         <div class="w-full max-w-[1036px] mx-auto grid grid-cols-9 gap-5">
-          <div class="col-span-2 py-2 text-lg text-center text-white bg-orange-500 rounded-b-2xl">
+          <div class="col-span-2 py-2 text-lg text-center text-white bg-[var(--color-primary-orange)] rounded-b-2xl">
             活動發起人
           </div>
           <div class="flex items-center col-span-2 row-span-2">
@@ -185,8 +185,8 @@ const showBadges = computed(() => {
               :class="[
                 'p-[10px] max-w-[175px] w-[175px] border-0 rounded-[30px] text-[20px] font-bold cursor-pointer text-white transition-colors duration-200',
                 toggleFollow 
-                  ? 'bg-orange-500'
-                  : 'bg-green-600 hover:bg-orange-500'
+                  ? 'bg-[var(--color-primary-orange)]'
+                  : 'bg-[var(--color-secondary-green)] hover:bg-[var(--color-primary-orange)]'
               ]"
             >
               {{ toggleFollow ? '已 追 蹤' : '追 蹤' }}
